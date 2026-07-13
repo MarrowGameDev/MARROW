@@ -620,28 +620,28 @@ func _build_inventory_ui() -> void:
 	safe_area.anchor_bottom = 1.0
 	safe_area.process_mode = Node.PROCESS_MODE_ALWAYS
 	safe_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	safe_area.add_theme_constant_override("margin_left", 40)
-	safe_area.add_theme_constant_override("margin_top", 24)
-	safe_area.add_theme_constant_override("margin_right", 40)
-	safe_area.add_theme_constant_override("margin_bottom", 24)
+	safe_area.add_theme_constant_override("margin_left", 34)
+	safe_area.add_theme_constant_override("margin_top", 18)
+	safe_area.add_theme_constant_override("margin_right", 34)
+	safe_area.add_theme_constant_override("margin_bottom", 18)
 	inventory_root.add_child(safe_area)
 
 	var panel := PanelContainer.new()
 	panel.name = "InventoryPanel"
 	panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(0.99, 0.985, 0.945, 0.90), Color(0.87, 0.63, 0.19, 0.95), 2, 0))
+	panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(0.99, 0.985, 0.955, 0.86), Color(0.87, 0.63, 0.19, 0.96), 2, 0))
 	safe_area.add_child(panel)
 
 	var panel_margin := MarginContainer.new()
-	panel_margin.add_theme_constant_override("margin_left", 26)
-	panel_margin.add_theme_constant_override("margin_top", 18)
-	panel_margin.add_theme_constant_override("margin_right", 26)
-	panel_margin.add_theme_constant_override("margin_bottom", 16)
+	panel_margin.add_theme_constant_override("margin_left", 24)
+	panel_margin.add_theme_constant_override("margin_top", 16)
+	panel_margin.add_theme_constant_override("margin_right", 24)
+	panel_margin.add_theme_constant_override("margin_bottom", 14)
 	panel.add_child(panel_margin)
 
 	var root := VBoxContainer.new()
 	root.process_mode = Node.PROCESS_MODE_ALWAYS
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 9)
 	panel_margin.add_child(root)
 
 	var header := HBoxContainer.new()
@@ -679,11 +679,11 @@ func _build_inventory_ui() -> void:
 
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 28)
+	body.add_theme_constant_override("separation", 18)
 	root.add_child(body)
 
 	var left_panel := VBoxContainer.new()
-	left_panel.custom_minimum_size = Vector2(690, 0)
+	left_panel.custom_minimum_size = Vector2(650, 0)
 	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left_panel.add_theme_constant_override("separation", 8)
@@ -704,12 +704,12 @@ func _build_inventory_ui() -> void:
 	items_grid = GridContainer.new()
 	items_grid.process_mode = Node.PROCESS_MODE_ALWAYS
 	items_grid.columns = 6
-	items_grid.add_theme_constant_override("h_separation", 10)
-	items_grid.add_theme_constant_override("v_separation", 10)
+	items_grid.add_theme_constant_override("h_separation", 12)
+	items_grid.add_theme_constant_override("v_separation", 12)
 	grid_margin.add_child(items_grid)
 
 	var sort_label := Label.new()
-	sort_label.text = "Sort: Newest"
+	sort_label.text = "Sort: Newest    Empty slots show room for new pieces"
 	sort_label.add_theme_font_size_override("font_size", 16)
 	sort_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	left_panel.add_child(sort_label)
@@ -721,20 +721,20 @@ func _build_inventory_ui() -> void:
 	body.add_child(right_panel)
 
 	var preview_panel := PanelContainer.new()
-	preview_panel.custom_minimum_size = Vector2(430, 300)
-	preview_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.22), Color(0.87, 0.63, 0.19, 0.85), 1, 0))
+	preview_panel.custom_minimum_size = Vector2(430, 330)
+	preview_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.18), Color(0.87, 0.63, 0.19, 0.88), 1, 0))
 	right_panel.add_child(preview_panel)
 
 	var preview_area := MarginContainer.new()
-	preview_area.add_theme_constant_override("margin_left", 14)
-	preview_area.add_theme_constant_override("margin_top", 14)
-	preview_area.add_theme_constant_override("margin_right", 14)
-	preview_area.add_theme_constant_override("margin_bottom", 14)
+	preview_area.add_theme_constant_override("margin_left", 12)
+	preview_area.add_theme_constant_override("margin_top", 12)
+	preview_area.add_theme_constant_override("margin_right", 12)
+	preview_area.add_theme_constant_override("margin_bottom", 12)
 	preview_panel.add_child(preview_area)
 	preview_area.add_child(_build_paper_doll())
 
 	var details_panel := PanelContainer.new()
-	details_panel.custom_minimum_size = Vector2(430, 92)
+	details_panel.custom_minimum_size = Vector2(430, 96)
 	details_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.32), Color(0.87, 0.63, 0.19, 0.85), 1, 0))
 	right_panel.add_child(details_panel)
 
@@ -747,7 +747,7 @@ func _build_inventory_ui() -> void:
 
 	hover_info_label = Label.new()
 	hover_info_label.name = "HoverInfoLabel"
-	hover_info_label.custom_minimum_size = Vector2(390, 62)
+	hover_info_label.custom_minimum_size = Vector2(390, 66)
 	hover_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hover_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hover_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -757,7 +757,7 @@ func _build_inventory_ui() -> void:
 
 	inventory_label = Label.new()
 	inventory_label.name = "InventoryLabel"
-	inventory_label.custom_minimum_size = Vector2(430, 42)
+	inventory_label.custom_minimum_size = Vector2(430, 44)
 	inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inventory_label.add_theme_font_size_override("font_size", 13)
 	inventory_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
@@ -920,32 +920,35 @@ func _make_inventory_style(bg: Color, border: Color, border_width: int = 1, radi
 	style.content_margin_top = 4
 	style.content_margin_right = 6
 	style.content_margin_bottom = 4
+	style.shadow_color = Color(0.21, 0.13, 0.04, 0.10)
+	style.shadow_size = 4
+	style.shadow_offset = Vector2(0, 2)
 	return style
 
 
 func _make_empty_inventory_slot() -> Control:
 	var slot := Control.new()
-	slot.custom_minimum_size = Vector2(88, 82)
+	slot.custom_minimum_size = Vector2(96, 86)
 	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var frame := PanelContainer.new()
 	frame.position = Vector2(0, 0)
-	frame.size = Vector2(88, 82)
+	frame.size = Vector2(96, 86)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.16), Color(0.87, 0.63, 0.19, 0.62), 1, 0))
+	frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.58), 1, 0))
 	slot.add_child(frame)
 
 	var diamond := ColorRect.new()
 	diamond.color = Color(0.87, 0.63, 0.19, 0.16)
-	diamond.position = Vector2(38, 30)
-	diamond.size = Vector2(16, 16)
+	diamond.position = Vector2(39, 31)
+	diamond.size = Vector2(18, 18)
 	diamond.rotation = PI / 4.0
 	diamond.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot.add_child(diamond)
 
 	var diamond_inner := ColorRect.new()
 	diamond_inner.color = Color(0.98, 0.975, 0.955, 0.92)
-	diamond_inner.position = Vector2(41, 33)
+	diamond_inner.position = Vector2(43, 35)
 	diamond_inner.size = Vector2(10, 10)
 	diamond_inner.rotation = PI / 4.0
 	diamond_inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -956,13 +959,13 @@ func _make_empty_inventory_slot() -> Control:
 func _build_character_preview_panel() -> Control:
 	var container := SubViewportContainer.new()
 	container.name = "CharacterPreview"
-	container.position = Vector2(106.0, 12.0)
-	container.size = Vector2(190.0, 224.0)
+	container.position = Vector2(98.0, 15.0)
+	container.size = Vector2(210.0, 276.0)
 	container.stretch = true
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var viewport := SubViewport.new()
-	viewport.size = Vector2i(190, 224)
+	viewport.size = Vector2i(210, 276)
 	viewport.transparent_bg = true
 	container.add_child(viewport)
 
@@ -979,9 +982,9 @@ func _build_character_preview_panel() -> Control:
 
 	var rig_holder := Node3D.new()
 	rig_holder.name = "PreviewRigHolder"
-	rig_holder.position = Vector3(0.0, -0.22, 0.0)
+	rig_holder.position = Vector3(0.0, -0.26, 0.0)
 	rig_holder.rotation_degrees = Vector3(0.0, 180.0, 0.0)
-	rig_holder.scale = Vector3.ONE * 1.35
+	rig_holder.scale = Vector3.ONE * 1.48
 	preview_scene.add_child(rig_holder)
 
 	inventory_preview_rig = ModularSkeletonRig.new()
@@ -990,7 +993,7 @@ func _build_character_preview_panel() -> Control:
 
 	var camera := Camera3D.new()
 	camera.name = "PreviewCamera"
-	camera.position = Vector3(0.0, 0.65, 2.7)
+	camera.position = Vector3(0.0, 0.68, 2.85)
 	camera.look_at(Vector3(0.0, 0.05, 0.0), Vector3.UP)
 	camera.current = true
 	preview_scene.add_child(camera)
@@ -1019,14 +1022,37 @@ func _sync_inventory_preview() -> void:
 # the functional slots around it still handle drag/drop and right-click unequip.
 func _build_paper_doll() -> Control:
 	var doll := Control.new()
-	doll.custom_minimum_size = Vector2(402, 272)
+	doll.custom_minimum_size = Vector2(406, 306)
 	doll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	var center_frame := PanelContainer.new()
+	center_frame.position = Vector2(88, 0)
+	center_frame.size = Vector2(230, 306)
+	center_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
+	doll.add_child(center_frame)
+
+	var ring := ColorRect.new()
+	ring.position = Vector2(171, 96)
+	ring.size = Vector2(64, 64)
+	ring.rotation = PI / 4.0
+	ring.color = Color(0.87, 0.63, 0.19, 0.16)
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	doll.add_child(ring)
+
+	var ring_inner := ColorRect.new()
+	ring_inner.position = Vector2(182, 107)
+	ring_inner.size = Vector2(42, 42)
+	ring_inner.rotation = PI / 4.0
+	ring_inner.color = Color(0.99, 0.985, 0.955, 0.78)
+	ring_inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	doll.add_child(ring_inner)
+
 	doll.add_child(_build_character_preview_panel())
-	_place_slot(doll, "left_arm", "L. Arm", Vector2(2, 24))
-	_place_slot(doll, "right_arm", "R. Arm", Vector2(326, 24))
-	_place_slot(doll, "body", "Torso", Vector2(2, 120))
-	_place_slot(doll, "legs", "Legs", Vector2(326, 120))
+	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 18))
+	_place_slot(doll, "right_arm", "R. Arm", Vector2(324, 18))
+	_place_slot(doll, "body", "Torso", Vector2(0, 116))
+	_place_slot(doll, "legs", "Legs", Vector2(324, 116))
 
 	return doll
 

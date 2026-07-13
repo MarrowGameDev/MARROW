@@ -1,0 +1,33 @@
+# Godot local/editor generated data.
+.godot/
+
+# Godot 3 legacy generated import cache, kept in case the project is opened
+# with older tooling.
+.import/
+
+# Exported builds and temporary packages.
+export/
+exports/
+build/
+builds/
+dist/
+*.pck
+*.apk
+*.aab
+*.exe
+*.dmg
+*.zip
+
+# Runtime/editor logs.
+*.log
+logs/
+
+# OS and editor noise.
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.temp
+*.swp
+*.bak
+*~
