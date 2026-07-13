@@ -76,10 +76,16 @@ Player relationships:
 
 `PlayerCameraController`:
 - lives on `Player/CameraPivot`.
+- keeps `CameraPivot` as a top-level visual pivot that follows the player position.
+- uses `Player/CameraPivot/SpringArm3D` for zoom distance and camera collision.
+- uses `Player/CameraPivot/SpringArm3D/Camera3D` as the active camera.
 - captures and hides the mouse during gameplay.
+- supports Escape to release the mouse and click to recapture it.
 - releases and shows the mouse while inventory is open.
 - rotates camera yaw/pitch from `InputEventMouseMotion`.
 - clamps pitch between configurable min/max angles.
+- zooms with the mouse wheel between configurable min/max distances.
+- smooths pivot follow and zoom distance in `_process`.
 - exposes flat camera forward/right vectors for camera-relative movement.
 
 `Player`:
