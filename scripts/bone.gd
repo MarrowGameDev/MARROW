@@ -4,7 +4,7 @@ extends Area3D
 # Later, different enemies can set this to different bone types.
 @export var bone_id: String = "dummy_bone"
 
-# How long the player must hold E while standing near the bone.
+# How long the player must hold the interact button while standing near the bone.
 @export var pickup_hold_time: float = 0.8
 
 # This prevents the same pickup from being collected twice in one frame.
@@ -33,12 +33,12 @@ func _ready() -> void:
 
 
 # _process runs every rendered frame.
-# We use it here because holding E is a small interaction timer, not physics movement.
+# We use it here because holding Interact is a small interaction timer, not physics movement.
 func _process(delta: float) -> void:
 	if collected or player_in_range == null:
 		return
 
-	if Input.is_action_pressed("inventory"):
+	if Input.is_action_pressed("interact"):
 		hold_progress += delta
 		_update_prompt()
 
@@ -82,7 +82,7 @@ func _on_body_exited(body: Node3D) -> void:
 	_update_prompt()
 
 
-# This finishes the pickup after E has been held long enough.
+# This finishes the pickup after Interact has been held long enough.
 func _collect() -> void:
 	if collected or player_in_range == null:
 		return
@@ -96,7 +96,7 @@ func _collect() -> void:
 	queue_free()
 
 
-# This gives basic feedback while holding E near the pickup.
+# This gives basic feedback while holding Interact near the pickup.
 func _update_prompt() -> void:
 	if prompt_label == null:
 		return
@@ -106,7 +106,33 @@ func _update_prompt() -> void:
 		return
 
 	var percent := int((hold_progress / pickup_hold_time) * 100.0)
-	prompt_label.text = "Hold E: " + BoneDatabase.display_name(bone_id) + " " + str(percent) + "%"
+	prompt_label.text = "Hold " + _action_binding_text("interact") + ": " + BoneDatabase.display_name(bone_id) + " " + str(percent) + "%"
+
+
+func _action_binding_text(action: String) -> String:
+	if not InputMap.has_action(action):
+		return action
+	var events := InputMap.action_get_events(action)
+	if events.is_empty():
+		return action
+	var event := events[0]
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		var key_name := OS.get_keycode_string(key_event.keycode)
+		if key_name != "":
+			return key_name
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		match mouse_event.button_index:
+			MOUSE_BUTTON_LEFT:
+				return "Left Click"
+			MOUSE_BUTTON_RIGHT:
+				return "Right Click"
+			MOUSE_BUTTON_MIDDLE:
+				return "Middle Click"
+			_:
+				return "Mouse " + str(mouse_event.button_index)
+	return action
 
 
 # Tier 1E: display name and color now come from the shared scripts/bone_database.gd.

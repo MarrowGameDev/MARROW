@@ -53,7 +53,7 @@ func _process(delta: float) -> void:
 			_update_label()
 		return
 
-	if Input.is_action_pressed("inventory"):
+	if Input.is_action_pressed("interact"):
 		hold_progress += delta
 		_update_label()
 		if hold_progress >= chest_open_hold_time:
@@ -231,7 +231,7 @@ func _update_label() -> void:
 		label.text = camp_name + "\nChest unlocked"
 	else:
 		var percent := int((hold_progress / chest_open_hold_time) * 100.0)
-		label.text = camp_name + "\nHold E to open: " + str(percent) + "%"
+		label.text = camp_name + "\nHold " + _action_binding_text("interact") + " to open: " + str(percent) + "%"
 
 
 func _remaining_enemy_count() -> int:
@@ -240,6 +240,32 @@ func _remaining_enemy_count() -> int:
 		if enemy != null and is_instance_valid(enemy) and bool(enemy.get("alive")):
 			count += 1
 	return count
+
+
+func _action_binding_text(action: String) -> String:
+	if not InputMap.has_action(action):
+		return action
+	var events := InputMap.action_get_events(action)
+	if events.is_empty():
+		return action
+	var event := events[0]
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		var key_name := OS.get_keycode_string(key_event.keycode)
+		if key_name != "":
+			return key_name
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		match mouse_event.button_index:
+			MOUSE_BUTTON_LEFT:
+				return "Left Click"
+			MOUSE_BUTTON_RIGHT:
+				return "Right Click"
+			MOUSE_BUTTON_MIDDLE:
+				return "Middle Click"
+			_:
+				return "Mouse " + str(mouse_event.button_index)
+	return action
 
 
 func _make_material(color: Color, glowing: bool = false) -> StandardMaterial3D:

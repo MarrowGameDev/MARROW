@@ -6,6 +6,21 @@ const EQUIPPED_BONE_SCENE: PackedScene = preload("res://scenes/equipped_bone.tsc
 # Tier 1D: the short-lived, visible attack box we spawn in front of the player.
 const ATTACK_HITBOX_SCENE: PackedScene = preload("res://scenes/attack_hitbox.tscn")
 
+const CONTROL_SETTINGS_PATH := "user://control_settings.cfg"
+const CONTROL_BINDINGS: Array = [
+	{"action": "move_forward", "label": "Move Forward"},
+	{"action": "move_back", "label": "Move Back"},
+	{"action": "move_left", "label": "Move Left"},
+	{"action": "move_right", "label": "Move Right"},
+	{"action": "jump", "label": "Jump"},
+	{"action": "sprint", "label": "Sprint"},
+	{"action": "attack", "label": "Attack"},
+	{"action": "inventory", "label": "Inventory"},
+	{"action": "interact", "label": "Interact"},
+	{"action": "equip", "label": "Equip Next"},
+	{"action": "stealth_finish", "label": "Stealth Finish"}
+]
+
 # These are the player's normal stats before any bones are equipped.
 # The @export tag means you can tune these values in the Godot editor later.
 @export var base_move_speed: float = 6.0
@@ -45,7 +60,7 @@ var base_max_health: int = 0
 # For now it only stores bone names, which is enough to prove pickup works.
 var bone_inventory: Array[String] = []
 
-# Pressing E toggles the inventory screen (which also pauses the game).
+# Pressing Tab toggles the inventory screen (which also pauses the game).
 var inventory_open: bool = false
 var inventory_root: Control
 var inventory_label: Label
@@ -53,12 +68,42 @@ var hover_info_label: Label
 var inventory_status_label: Label
 var inventory_category: String = "all"
 var inventory_tab_buttons: Dictionary = {}
+var inventory_safe_area: MarginContainer = null
+var inventory_panel: PanelContainer = null
+var inventory_panel_margin: MarginContainer = null
+var inventory_scroll: ScrollContainer = null
+var inventory_content_root: VBoxContainer = null
+var inventory_tabs_container: HBoxContainer = null
+var inventory_body: HBoxContainer = null
+var inventory_left_panel: VBoxContainer = null
+var inventory_grid_panel: PanelContainer = null
+var inventory_right_panel: VBoxContainer = null
+var inventory_preview_panel: PanelContainer = null
+var inventory_preview_container: SubViewportContainer = null
+var inventory_preview_viewport: SubViewport = null
+var inventory_details_panel: PanelContainer = null
+var inventory_paper_doll: Control = null
+var inventory_footer: HBoxContainer = null
+var settings_panel: ScrollContainer = null
+var settings_box_panel: PanelContainer = null
+var settings_box_margin: MarginContainer = null
+var settings_controls_list: VBoxContainer = null
+var settings_title_label: Label = null
+var settings_status_label: Label = null
+var settings_reset_button: Button = null
+var control_rows: Dictionary = {}
+var control_labels: Dictionary = {}
+var control_buttons: Dictionary = {}
+var rebinding_action: String = ""
+var rebinding_button: Button = null
 var inventory_preview_rig: ModularSkeletonRig = null
 var inventory_preview_root: Node3D = null
 
 # Drag-and-drop inventory widgets.
 var slot_widgets: Dictionary = {}    # slot name -> BoneSlotWidget on the paper doll
 var items_grid: GridContainer = null # holds a draggable BoneItemTile per collected bone
+var inventory_item_tile_size: Vector2 = Vector2(96, 86)
+var inventory_empty_slot_size: Vector2 = Vector2(96, 86)
 
 # Multi-slot equipment: each body slot ("right_arm","left_arm","legs","body")
 # can hold one bone id, and each keeps its own attached visual. Wearing bones in
@@ -67,8 +112,8 @@ var equipped: Dictionary = {}          # slot -> bone_id
 var equipped_visuals: Dictionary = {}  # slot -> Node3D
 var equip_cursor: int = 0              # which collected bone Q equips next
 
-# This counts nearby world interactions that use E.
-# When it is above 0, E is reserved for the world prompt instead of inventory.
+# This counts nearby world interactions that use the Interact action.
+# When it is above 0, that action is reserved for the world prompt.
 var nearby_bone_pickups: int = 0
 
 # Tier 1D attack state.
@@ -106,17 +151,36 @@ var sprinting_this_frame: bool = false
 func _ready() -> void:
 	add_to_group("player")
 	# Keep processing while the tree is paused, so the inventory screen (which
-	# pauses the game) can still be closed and browsed with Q/E.
+	# pauses the game) can still be closed and browsed.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_load_control_settings()
 	base_max_health = max_health
 	health = max_health
 	_recalculate_stats()
 	_build_inventory_ui()
+	get_viewport().size_changed.connect(Callable(self, "_apply_inventory_responsive_layout"))
 	_build_health_ui()
 	_build_stealth_ui()
 	_rebuild_item_tiles()
 	_update_inventory_ui()
 	_setup_procedural_character()
+	_apply_inventory_responsive_layout()
+
+
+func _input(event: InputEvent) -> void:
+	if rebinding_action == "":
+		return
+	if not _is_bindable_control_event(event):
+		return
+
+	get_viewport().set_input_as_handled()
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if key_event.keycode == KEY_ESCAPE:
+			_cancel_rebinding()
+			return
+
+	_apply_control_binding(rebinding_action, event)
 
 
 # Godot calls _physics_process many times per second on a steady physics clock.
@@ -615,38 +679,50 @@ func _build_inventory_ui() -> void:
 
 	inventory_root.add_child(_build_inventory_blur_layer())
 
-	var safe_area := MarginContainer.new()
-	safe_area.anchor_right = 1.0
-	safe_area.anchor_bottom = 1.0
-	safe_area.process_mode = Node.PROCESS_MODE_ALWAYS
-	safe_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	safe_area.add_theme_constant_override("margin_left", 34)
-	safe_area.add_theme_constant_override("margin_top", 18)
-	safe_area.add_theme_constant_override("margin_right", 34)
-	safe_area.add_theme_constant_override("margin_bottom", 18)
-	inventory_root.add_child(safe_area)
+	inventory_safe_area = MarginContainer.new()
+	inventory_safe_area.anchor_right = 1.0
+	inventory_safe_area.anchor_bottom = 1.0
+	inventory_safe_area.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory_safe_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inventory_safe_area.add_theme_constant_override("margin_left", 34)
+	inventory_safe_area.add_theme_constant_override("margin_top", 18)
+	inventory_safe_area.add_theme_constant_override("margin_right", 34)
+	inventory_safe_area.add_theme_constant_override("margin_bottom", 18)
+	inventory_root.add_child(inventory_safe_area)
 
-	var panel := PanelContainer.new()
-	panel.name = "InventoryPanel"
-	panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(0.99, 0.985, 0.955, 0.86), Color(0.87, 0.63, 0.19, 0.96), 2, 0))
-	safe_area.add_child(panel)
+	inventory_panel = PanelContainer.new()
+	inventory_panel.name = "InventoryPanel"
+	inventory_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(0.99, 0.985, 0.955, 0.86), Color(0.87, 0.63, 0.19, 0.96), 2, 0))
+	inventory_safe_area.add_child(inventory_panel)
 
-	var panel_margin := MarginContainer.new()
-	panel_margin.add_theme_constant_override("margin_left", 24)
-	panel_margin.add_theme_constant_override("margin_top", 16)
-	panel_margin.add_theme_constant_override("margin_right", 24)
-	panel_margin.add_theme_constant_override("margin_bottom", 14)
-	panel.add_child(panel_margin)
+	inventory_panel_margin = MarginContainer.new()
+	inventory_panel_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_panel_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_panel_margin.add_theme_constant_override("margin_left", 24)
+	inventory_panel_margin.add_theme_constant_override("margin_top", 16)
+	inventory_panel_margin.add_theme_constant_override("margin_right", 24)
+	inventory_panel_margin.add_theme_constant_override("margin_bottom", 14)
+	inventory_panel.add_child(inventory_panel_margin)
 
-	var root := VBoxContainer.new()
-	root.process_mode = Node.PROCESS_MODE_ALWAYS
-	root.add_theme_constant_override("separation", 9)
-	panel_margin.add_child(root)
+	inventory_scroll = ScrollContainer.new()
+	inventory_scroll.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_panel_margin.add_child(inventory_scroll)
+
+	inventory_content_root = VBoxContainer.new()
+	inventory_content_root.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory_content_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_content_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_content_root.add_theme_constant_override("separation", 9)
+	inventory_scroll.add_child(inventory_content_root)
 
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 16)
-	root.add_child(header)
+	inventory_content_root.add_child(header)
 
 	var left_rule := _make_rule()
 	header.add_child(left_rule)
@@ -670,36 +746,36 @@ func _build_inventory_ui() -> void:
 	inventory_status_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	header.add_child(inventory_status_label)
 
-	_build_inventory_tabs(root)
+	_build_inventory_tabs(inventory_content_root)
 
 	var divider := ColorRect.new()
 	divider.color = Color(0.87, 0.63, 0.19, 0.70)
 	divider.custom_minimum_size = Vector2(0, 1)
-	root.add_child(divider)
+	inventory_content_root.add_child(divider)
 
-	var body := HBoxContainer.new()
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 18)
-	root.add_child(body)
+	inventory_body = HBoxContainer.new()
+	inventory_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_body.add_theme_constant_override("separation", 18)
+	inventory_content_root.add_child(inventory_body)
 
-	var left_panel := VBoxContainer.new()
-	left_panel.custom_minimum_size = Vector2(650, 0)
-	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left_panel.add_theme_constant_override("separation", 8)
-	body.add_child(left_panel)
+	inventory_left_panel = VBoxContainer.new()
+	inventory_left_panel.custom_minimum_size = Vector2(650, 0)
+	inventory_left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_left_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_left_panel.add_theme_constant_override("separation", 8)
+	inventory_body.add_child(inventory_left_panel)
 
-	var grid_panel := PanelContainer.new()
-	grid_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	grid_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.28), Color(0.87, 0.63, 0.19, 0.75), 1, 0))
-	left_panel.add_child(grid_panel)
+	inventory_grid_panel = PanelContainer.new()
+	inventory_grid_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_grid_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.28), Color(0.87, 0.63, 0.19, 0.75), 1, 0))
+	inventory_left_panel.add_child(inventory_grid_panel)
 
 	var grid_margin := MarginContainer.new()
 	grid_margin.add_theme_constant_override("margin_left", 14)
 	grid_margin.add_theme_constant_override("margin_top", 14)
 	grid_margin.add_theme_constant_override("margin_right", 14)
 	grid_margin.add_theme_constant_override("margin_bottom", 14)
-	grid_panel.add_child(grid_margin)
+	inventory_grid_panel.add_child(grid_margin)
 
 	items_grid = GridContainer.new()
 	items_grid.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -712,38 +788,38 @@ func _build_inventory_ui() -> void:
 	sort_label.text = "Sort: Newest    Empty slots show room for new pieces"
 	sort_label.add_theme_font_size_override("font_size", 16)
 	sort_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	left_panel.add_child(sort_label)
+	inventory_left_panel.add_child(sort_label)
 
-	var right_panel := VBoxContainer.new()
-	right_panel.custom_minimum_size = Vector2(430, 0)
-	right_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_panel.add_theme_constant_override("separation", 10)
-	body.add_child(right_panel)
+	inventory_right_panel = VBoxContainer.new()
+	inventory_right_panel.custom_minimum_size = Vector2(430, 0)
+	inventory_right_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_right_panel.add_theme_constant_override("separation", 10)
+	inventory_body.add_child(inventory_right_panel)
 
-	var preview_panel := PanelContainer.new()
-	preview_panel.custom_minimum_size = Vector2(430, 330)
-	preview_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.18), Color(0.87, 0.63, 0.19, 0.88), 1, 0))
-	right_panel.add_child(preview_panel)
+	inventory_preview_panel = PanelContainer.new()
+	inventory_preview_panel.custom_minimum_size = Vector2(430, 330)
+	inventory_preview_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.18), Color(0.87, 0.63, 0.19, 0.88), 1, 0))
+	inventory_right_panel.add_child(inventory_preview_panel)
 
 	var preview_area := MarginContainer.new()
 	preview_area.add_theme_constant_override("margin_left", 12)
 	preview_area.add_theme_constant_override("margin_top", 12)
 	preview_area.add_theme_constant_override("margin_right", 12)
 	preview_area.add_theme_constant_override("margin_bottom", 12)
-	preview_panel.add_child(preview_area)
+	inventory_preview_panel.add_child(preview_area)
 	preview_area.add_child(_build_paper_doll())
 
-	var details_panel := PanelContainer.new()
-	details_panel.custom_minimum_size = Vector2(430, 96)
-	details_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.32), Color(0.87, 0.63, 0.19, 0.85), 1, 0))
-	right_panel.add_child(details_panel)
+	inventory_details_panel = PanelContainer.new()
+	inventory_details_panel.custom_minimum_size = Vector2(430, 96)
+	inventory_details_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.32), Color(0.87, 0.63, 0.19, 0.85), 1, 0))
+	inventory_right_panel.add_child(inventory_details_panel)
 
 	var details_margin := MarginContainer.new()
 	details_margin.add_theme_constant_override("margin_left", 18)
 	details_margin.add_theme_constant_override("margin_top", 12)
 	details_margin.add_theme_constant_override("margin_right", 18)
 	details_margin.add_theme_constant_override("margin_bottom", 12)
-	details_panel.add_child(details_margin)
+	inventory_details_panel.add_child(details_margin)
 
 	hover_info_label = Label.new()
 	hover_info_label.name = "HoverInfoLabel"
@@ -762,16 +838,19 @@ func _build_inventory_ui() -> void:
 	inventory_label.add_theme_font_size_override("font_size", 13)
 	inventory_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	inventory_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	right_panel.add_child(inventory_label)
+	inventory_right_panel.add_child(inventory_label)
 
-	var footer := HBoxContainer.new()
-	footer.alignment = BoxContainer.ALIGNMENT_END
-	footer.add_theme_constant_override("separation", 16)
-	root.add_child(footer)
-	_add_footer_hint(footer, "Tab", "Category")
-	_add_footer_hint(footer, "Q", "Equip Next")
-	_add_footer_hint(footer, "Right Click", "Unequip")
-	_add_footer_hint(footer, "Esc / E", "Back")
+	settings_panel = _build_settings_panel()
+	inventory_content_root.add_child(settings_panel)
+
+	inventory_footer = HBoxContainer.new()
+	inventory_footer.alignment = BoxContainer.ALIGNMENT_END
+	inventory_footer.add_theme_constant_override("separation", 16)
+	inventory_content_root.add_child(inventory_footer)
+	_add_footer_hint(inventory_footer, "Click", "Category")
+	_add_footer_hint(inventory_footer, "Equip Key", "Equip Next")
+	_add_footer_hint(inventory_footer, "Right Click", "Unequip")
+	_add_footer_hint(inventory_footer, "Esc / Inventory", "Back")
 
 	clear_bone_info()
 
@@ -818,17 +897,18 @@ void fragment() {
 
 
 func _build_inventory_tabs(parent: VBoxContainer) -> void:
-	var tabs := HBoxContainer.new()
-	tabs.process_mode = Node.PROCESS_MODE_ALWAYS
-	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
-	tabs.add_theme_constant_override("separation", 42)
-	parent.add_child(tabs)
+	inventory_tabs_container = HBoxContainer.new()
+	inventory_tabs_container.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory_tabs_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	inventory_tabs_container.add_theme_constant_override("separation", 42)
+	parent.add_child(inventory_tabs_container)
 
-	_add_inventory_tab(tabs, "all", "All")
-	_add_inventory_tab(tabs, "right_arm", "Arms")
-	_add_inventory_tab(tabs, "legs", "Legs")
-	_add_inventory_tab(tabs, "body", "Torsos")
-	_add_inventory_tab(tabs, "head", "Heads")
+	_add_inventory_tab(inventory_tabs_container, "all", "All")
+	_add_inventory_tab(inventory_tabs_container, "right_arm", "Arms")
+	_add_inventory_tab(inventory_tabs_container, "legs", "Legs")
+	_add_inventory_tab(inventory_tabs_container, "body", "Torsos")
+	_add_inventory_tab(inventory_tabs_container, "head", "Heads")
+	_add_inventory_tab(inventory_tabs_container, "settings", "Settings")
 	_refresh_inventory_tabs()
 
 
@@ -851,12 +931,16 @@ func _add_inventory_tab(parent: HBoxContainer, category: String, text: String) -
 func _select_inventory_category(category: String) -> void:
 	inventory_category = category
 	_refresh_inventory_tabs()
-	_rebuild_item_tiles()
+	_refresh_inventory_mode()
+	if inventory_category != "settings":
+		_rebuild_item_tiles()
+	else:
+		_refresh_control_buttons()
 	_update_inventory_ui()
 
 
 func _cycle_inventory_category() -> void:
-	var categories: Array[String] = ["all", "right_arm", "legs", "body", "head"]
+	var categories: Array[String] = ["all", "right_arm", "legs", "body", "head", "settings"]
 	var index: int = categories.find(inventory_category)
 	if index < 0:
 		index = 0
@@ -877,6 +961,320 @@ func _refresh_inventory_tabs() -> void:
 		else:
 			button.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 			button.add_theme_stylebox_override("normal", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.0), Color(0.87, 0.63, 0.19, 0.0), 0, 0))
+
+
+func _refresh_inventory_mode() -> void:
+	var showing_settings := inventory_category == "settings"
+	if inventory_body != null:
+		inventory_body.visible = not showing_settings
+	if settings_panel != null:
+		settings_panel.visible = showing_settings
+
+
+func _apply_inventory_responsive_layout() -> void:
+	if inventory_root == null:
+		return
+
+	var viewport_size := get_viewport().get_visible_rect().size
+	var width := viewport_size.x
+	var height := viewport_size.y
+	var compact := width < 1160.0 or height < 620.0
+	var very_compact := width < 860.0 or height < 520.0
+
+	var outer_margin := 34
+	var inner_margin := 24
+	var tab_gap := 42
+	var tab_width := 108
+	var body_gap := 18
+	var left_width := 650
+	var right_width := 430
+	var preview_height := 330
+	var details_height := 96
+	var doll_scale := 1.0
+	var grid_columns := 6
+	var tile_gap := 12
+	var vertical_margin := 18
+
+	if compact:
+		outer_margin = 16
+		inner_margin = 16
+		vertical_margin = 10
+		tab_gap = 18
+		tab_width = 94
+		body_gap = 12
+		left_width = 430
+		right_width = 360
+		preview_height = 275
+		details_height = 84
+		doll_scale = 0.86
+		grid_columns = 4
+		tile_gap = 8
+
+	if very_compact:
+		outer_margin = 8
+		inner_margin = 10
+		vertical_margin = 6
+		tab_gap = 8
+		tab_width = 78
+		body_gap = 8
+		left_width = 300
+		right_width = 305
+		preview_height = 235
+		details_height = 78
+		doll_scale = 0.72
+		grid_columns = 3
+		tile_gap = 6
+
+	if width >= 1180.0 and height >= 680.0:
+		grid_columns = 6
+	elif width >= 980.0:
+		grid_columns = 5
+
+	var available_height: int = maxi(360, int(height) - (vertical_margin * 2))
+	var content_height: int = maxi(320, available_height - (maxi(8, inner_margin - 4) + maxi(8, inner_margin - 6)))
+	var body_height: int = maxi(220, content_height - (150 if compact else 170))
+	var body_width: int = maxi(620, int(width) - (outer_margin * 2) - (inner_margin * 2) - body_gap)
+	right_width = clampi(int(float(body_width) * 0.38), right_width, 540)
+	left_width = maxi(left_width, body_width - right_width)
+	preview_height = maxi(preview_height, body_height - details_height - 70)
+	doll_scale = clampf(minf(float(right_width) / 430.0, float(preview_height) / 330.0), doll_scale, 1.35)
+	var grid_height: int = maxi(180, body_height - 34)
+	var tile_width: float = floor(float(left_width - 28 - (tile_gap * (grid_columns - 1))) / float(grid_columns))
+	var tile_height: float = floor(float(grid_height - (tile_gap * 3)) / 4.0)
+	inventory_item_tile_size = Vector2(clampf(tile_width, 82.0, 150.0), clampf(tile_height, 74.0, 140.0))
+	inventory_empty_slot_size = inventory_item_tile_size
+
+	_set_margin(inventory_safe_area, outer_margin, vertical_margin, outer_margin, vertical_margin)
+	_set_margin(inventory_panel_margin, inner_margin, maxi(8, inner_margin - 4), inner_margin, maxi(8, inner_margin - 6))
+
+	if inventory_panel != null:
+		inventory_panel.custom_minimum_size = Vector2(0, available_height)
+	if inventory_scroll != null:
+		inventory_scroll.custom_minimum_size = Vector2(0, content_height)
+	if inventory_content_root != null:
+		inventory_content_root.custom_minimum_size = Vector2(0, content_height)
+		inventory_content_root.add_theme_constant_override("separation", 6 if very_compact else 9)
+	if inventory_tabs_container != null:
+		inventory_tabs_container.add_theme_constant_override("separation", tab_gap)
+	if inventory_body != null:
+		inventory_body.custom_minimum_size = Vector2(0, body_height)
+		inventory_body.add_theme_constant_override("separation", body_gap)
+	if inventory_footer != null:
+		inventory_footer.add_theme_constant_override("separation", 8 if compact else 16)
+
+	for category in inventory_tab_buttons:
+		var button := inventory_tab_buttons[String(category)] as Button
+		if button == null:
+			continue
+		button.custom_minimum_size = Vector2(tab_width, 42 if compact else 48)
+		button.add_theme_font_size_override("font_size", 15 if compact else 18)
+
+	if inventory_status_label != null:
+		inventory_status_label.custom_minimum_size = Vector2(92 if compact else 140, 40 if compact else 48)
+		inventory_status_label.add_theme_font_size_override("font_size", 16 if compact else 20)
+
+	if inventory_left_panel != null:
+		inventory_left_panel.custom_minimum_size = Vector2(left_width, 0)
+	if inventory_grid_panel != null:
+		inventory_grid_panel.custom_minimum_size = Vector2(left_width, grid_height)
+	if inventory_right_panel != null:
+		inventory_right_panel.custom_minimum_size = Vector2(right_width, body_height)
+	if inventory_preview_panel != null:
+		inventory_preview_panel.custom_minimum_size = Vector2(right_width, preview_height)
+	if inventory_details_panel != null:
+		inventory_details_panel.custom_minimum_size = Vector2(right_width, details_height)
+	if hover_info_label != null:
+		hover_info_label.custom_minimum_size = Vector2(maxi(240, right_width - 40), 56 if compact else 66)
+		hover_info_label.add_theme_font_size_override("font_size", 14 if compact else 16)
+	if inventory_label != null:
+		inventory_label.custom_minimum_size = Vector2(maxi(240, right_width), 44)
+		inventory_label.add_theme_font_size_override("font_size", 12 if compact else 13)
+
+	if items_grid != null:
+		items_grid.columns = grid_columns
+		items_grid.add_theme_constant_override("h_separation", tile_gap)
+		items_grid.add_theme_constant_override("v_separation", tile_gap)
+
+	if inventory_paper_doll != null:
+		inventory_paper_doll.scale = Vector2(doll_scale, doll_scale)
+		inventory_paper_doll.custom_minimum_size = Vector2(406, 306) * doll_scale
+	if inventory_preview_container != null:
+		inventory_preview_container.position = Vector2(98.0, 15.0)
+		inventory_preview_container.size = Vector2(210.0, 276.0)
+	if inventory_preview_viewport != null:
+		inventory_preview_viewport.size = Vector2i(int(210.0 * doll_scale), int(276.0 * doll_scale))
+
+	_apply_settings_responsive_layout(content_height, compact, very_compact)
+	_rebuild_item_tiles()
+	_refresh_inventory_tabs()
+
+
+func _apply_settings_responsive_layout(content_height: int, compact: bool, very_compact: bool) -> void:
+	var settings_width := 980
+	var label_width := 260
+	var button_width := 300
+	var row_height := 42
+	var box_margin := 22
+	var title_size := 28
+	var body_size := 15
+
+	if compact:
+		settings_width = 760
+		label_width = 210
+		button_width = 260
+		row_height = 38
+		box_margin = 16
+		title_size = 24
+		body_size = 14
+
+	if very_compact:
+		settings_width = 520
+		label_width = 150
+		button_width = 210
+		row_height = 34
+		box_margin = 10
+		title_size = 20
+		body_size = 12
+
+	if settings_panel != null:
+		settings_panel.custom_minimum_size = Vector2(settings_width, content_height)
+	if settings_box_panel != null:
+		settings_box_panel.custom_minimum_size = Vector2(settings_width, maxi(300, content_height - 16))
+	_set_margin(settings_box_margin, box_margin, box_margin, box_margin, box_margin)
+	if settings_controls_list != null:
+		settings_controls_list.add_theme_constant_override("separation", 7 if very_compact else 10)
+	if settings_title_label != null:
+		settings_title_label.add_theme_font_size_override("font_size", title_size)
+	if settings_status_label != null:
+		settings_status_label.add_theme_font_size_override("font_size", body_size)
+
+	for action in control_rows:
+		var row := control_rows[action] as HBoxContainer
+		if row != null:
+			row.custom_minimum_size = Vector2(0, row_height)
+			row.add_theme_constant_override("separation", 8 if very_compact else 14)
+		var label := control_labels[action] as Label
+		if label != null:
+			label.custom_minimum_size = Vector2(label_width, row_height)
+			label.add_theme_font_size_override("font_size", maxi(13, body_size + 1))
+		var button := control_buttons[action] as Button
+		if button != null:
+			button.custom_minimum_size = Vector2(button_width, row_height)
+			button.add_theme_font_size_override("font_size", body_size)
+
+	if settings_reset_button != null:
+		settings_reset_button.custom_minimum_size = Vector2(0, row_height)
+		settings_reset_button.add_theme_font_size_override("font_size", body_size)
+
+
+func _set_margin(container: MarginContainer, left: int, top: int, right: int, bottom: int) -> void:
+	if container == null:
+		return
+	container.add_theme_constant_override("margin_left", left)
+	container.add_theme_constant_override("margin_top", top)
+	container.add_theme_constant_override("margin_right", right)
+	container.add_theme_constant_override("margin_bottom", bottom)
+
+
+func _build_settings_panel() -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = "SettingsPanel"
+	scroll.process_mode = Node.PROCESS_MODE_ALWAYS
+	scroll.visible = false
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	settings_box_panel = PanelContainer.new()
+	settings_box_panel.name = "ControlsSettingsBox"
+	settings_box_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_box_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	settings_box_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.34), Color(0.87, 0.63, 0.19, 0.86), 2, 0))
+	scroll.add_child(settings_box_panel)
+
+	settings_box_margin = MarginContainer.new()
+	settings_box_margin.add_theme_constant_override("margin_left", 22)
+	settings_box_margin.add_theme_constant_override("margin_top", 18)
+	settings_box_margin.add_theme_constant_override("margin_right", 22)
+	settings_box_margin.add_theme_constant_override("margin_bottom", 18)
+	settings_box_panel.add_child(settings_box_margin)
+
+	settings_controls_list = VBoxContainer.new()
+	settings_controls_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_controls_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	settings_controls_list.add_theme_constant_override("separation", 10)
+	settings_box_margin.add_child(settings_controls_list)
+
+	settings_title_label = Label.new()
+	settings_title_label.text = "Control Settings"
+	settings_title_label.add_theme_font_size_override("font_size", 28)
+	settings_title_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	settings_controls_list.add_child(settings_title_label)
+
+	settings_status_label = Label.new()
+	settings_status_label.text = "Click a button, then press the new key or mouse button. Esc cancels."
+	settings_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	settings_status_label.add_theme_font_size_override("font_size", 15)
+	settings_status_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	settings_controls_list.add_child(settings_status_label)
+
+	var divider := ColorRect.new()
+	divider.color = Color(0.87, 0.63, 0.19, 0.58)
+	divider.custom_minimum_size = Vector2(0, 1)
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	settings_controls_list.add_child(divider)
+
+	for binding in CONTROL_BINDINGS:
+		var action := String(binding.get("action", ""))
+		var label := String(binding.get("label", action))
+		settings_controls_list.add_child(_build_control_binding_row(action, label))
+
+	settings_reset_button = Button.new()
+	settings_reset_button.text = "Reset Controls to Demo Defaults"
+	settings_reset_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	settings_reset_button.focus_mode = Control.FOCUS_NONE
+	settings_reset_button.custom_minimum_size = Vector2(0, 38)
+	settings_reset_button.add_theme_font_size_override("font_size", 16)
+	settings_reset_button.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	settings_reset_button.add_theme_stylebox_override("normal", _make_inventory_style(Color(1.0, 0.99, 0.95, 0.72), Color(0.87, 0.63, 0.19, 0.9), 1, 2))
+	settings_reset_button.add_theme_stylebox_override("hover", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.92), Color(0.0, 0.78, 0.78, 0.85), 1, 2))
+	settings_reset_button.pressed.connect(Callable(self, "_reset_control_defaults"))
+	settings_controls_list.add_child(settings_reset_button)
+
+	return scroll
+
+
+func _build_control_binding_row(action: String, label_text: String) -> Control:
+	var row := HBoxContainer.new()
+	row.name = "ControlRow_" + action
+	row.process_mode = Node.PROCESS_MODE_ALWAYS
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 14)
+
+	var label := Label.new()
+	label.text = label_text
+	label.custom_minimum_size = Vector2(260, 36)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	row.add_child(label)
+
+	var button := Button.new()
+	button.text = _binding_text(action)
+	button.process_mode = Node.PROCESS_MODE_ALWAYS
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(240, 36)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.add_theme_font_size_override("font_size", 16)
+	button.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	button.add_theme_stylebox_override("normal", _make_inventory_style(Color(1.0, 0.99, 0.95, 0.58), Color(0.87, 0.63, 0.19, 0.86), 1, 2))
+	button.add_theme_stylebox_override("hover", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.86), Color(0.0, 0.78, 0.78, 0.85), 1, 2))
+	button.pressed.connect(Callable(self, "_begin_rebinding").bind(action, button))
+	row.add_child(button)
+	control_rows[action] = row
+	control_labels[action] = label
+	control_buttons[action] = button
+
+	return row
 
 
 func _add_footer_hint(parent: HBoxContainer, key_text: String, action_text: String) -> void:
@@ -928,19 +1326,19 @@ func _make_inventory_style(bg: Color, border: Color, border_width: int = 1, radi
 
 func _make_empty_inventory_slot() -> Control:
 	var slot := Control.new()
-	slot.custom_minimum_size = Vector2(96, 86)
+	slot.custom_minimum_size = inventory_empty_slot_size
 	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var frame := PanelContainer.new()
 	frame.position = Vector2(0, 0)
-	frame.size = Vector2(96, 86)
+	frame.size = inventory_empty_slot_size
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.58), 1, 0))
 	slot.add_child(frame)
 
 	var diamond := ColorRect.new()
 	diamond.color = Color(0.87, 0.63, 0.19, 0.16)
-	diamond.position = Vector2(39, 31)
+	diamond.position = Vector2((inventory_empty_slot_size.x - 18.0) * 0.5, (inventory_empty_slot_size.y - 18.0) * 0.5)
 	diamond.size = Vector2(18, 18)
 	diamond.rotation = PI / 4.0
 	diamond.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -948,7 +1346,7 @@ func _make_empty_inventory_slot() -> Control:
 
 	var diamond_inner := ColorRect.new()
 	diamond_inner.color = Color(0.98, 0.975, 0.955, 0.92)
-	diamond_inner.position = Vector2(43, 35)
+	diamond_inner.position = Vector2((inventory_empty_slot_size.x - 10.0) * 0.5, (inventory_empty_slot_size.y - 10.0) * 0.5)
 	diamond_inner.size = Vector2(10, 10)
 	diamond_inner.rotation = PI / 4.0
 	diamond_inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -956,22 +1354,26 @@ func _make_empty_inventory_slot() -> Control:
 	return slot
 
 
-func _build_character_preview_panel() -> Control:
-	var container := SubViewportContainer.new()
-	container.name = "CharacterPreview"
-	container.position = Vector2(98.0, 15.0)
-	container.size = Vector2(210.0, 276.0)
-	container.stretch = true
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+func get_inventory_tile_size() -> Vector2:
+	return inventory_item_tile_size
 
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(210, 276)
-	viewport.transparent_bg = true
-	container.add_child(viewport)
+
+func _build_character_preview_panel() -> Control:
+	inventory_preview_container = SubViewportContainer.new()
+	inventory_preview_container.name = "CharacterPreview"
+	inventory_preview_container.position = Vector2(98.0, 15.0)
+	inventory_preview_container.size = Vector2(210.0, 276.0)
+	inventory_preview_container.stretch = true
+	inventory_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	inventory_preview_viewport = SubViewport.new()
+	inventory_preview_viewport.size = Vector2i(210, 276)
+	inventory_preview_viewport.transparent_bg = true
+	inventory_preview_container.add_child(inventory_preview_viewport)
 
 	var preview_scene := Node3D.new()
 	preview_scene.name = "PreviewScene"
-	viewport.add_child(preview_scene)
+	inventory_preview_viewport.add_child(preview_scene)
 	inventory_preview_root = preview_scene
 
 	var light := DirectionalLight3D.new()
@@ -999,7 +1401,7 @@ func _build_character_preview_panel() -> Control:
 	preview_scene.add_child(camera)
 
 	call_deferred("_sync_inventory_preview")
-	return container
+	return inventory_preview_container
 
 
 func _sync_inventory_preview() -> void:
@@ -1022,6 +1424,7 @@ func _sync_inventory_preview() -> void:
 # the functional slots around it still handle drag/drop and right-click unequip.
 func _build_paper_doll() -> Control:
 	var doll := Control.new()
+	inventory_paper_doll = doll
 	doll.custom_minimum_size = Vector2(406, 306)
 	doll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -1141,10 +1544,298 @@ func _set_stealth_prompt(text: String) -> void:
 	panel.visible = text != ""
 
 
+func _begin_rebinding(action: String, button: Button) -> void:
+	rebinding_action = action
+	rebinding_button = button
+	button.text = "Press a key..."
+	if settings_status_label != null:
+		settings_status_label.text = "Press the new button for " + _control_label(action) + ". Esc cancels."
+
+
+func _cancel_rebinding() -> void:
+	var action := rebinding_action
+	rebinding_action = ""
+	if rebinding_button != null and is_instance_valid(rebinding_button):
+		rebinding_button.text = _binding_text(action)
+	rebinding_button = null
+	if settings_status_label != null:
+		settings_status_label.text = "Canceled. Click a control to change it."
+
+
+func _apply_control_binding(action: String, raw_event: InputEvent) -> void:
+	var event := _clean_control_event(raw_event)
+	if event == null:
+		return
+
+	var conflicting_action := _find_control_event_owner(event, action)
+	if conflicting_action == "inventory" and action != "inventory":
+		rebinding_action = ""
+		if rebinding_button != null and is_instance_valid(rebinding_button):
+			rebinding_button.text = _binding_text(action)
+		rebinding_button = null
+		if settings_status_label != null:
+			settings_status_label.text = _event_text(event) + " opens Inventory. Change Inventory first, then reuse that button."
+		return
+
+	_remove_control_event_from_other_actions(action, event)
+	InputMap.action_erase_events(action)
+	InputMap.action_add_event(action, event)
+	_save_control_settings()
+
+	rebinding_action = ""
+	rebinding_button = null
+	_refresh_control_buttons()
+	if settings_status_label != null:
+		settings_status_label.text = _control_label(action) + " set to " + _event_text(event) + "."
+
+
+func _is_bindable_control_event(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		return key_event.pressed and not key_event.echo
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		return mouse_event.pressed
+	return false
+
+
+func _clean_control_event(raw_event: InputEvent) -> InputEvent:
+	if raw_event is InputEventKey:
+		var source := raw_event as InputEventKey
+		var cleaned_key := InputEventKey.new()
+		cleaned_key.keycode = source.keycode
+		cleaned_key.physical_keycode = source.physical_keycode
+		cleaned_key.key_label = source.key_label
+		cleaned_key.alt_pressed = source.alt_pressed
+		cleaned_key.shift_pressed = source.shift_pressed
+		cleaned_key.ctrl_pressed = source.ctrl_pressed
+		cleaned_key.meta_pressed = source.meta_pressed
+		return cleaned_key
+	if raw_event is InputEventMouseButton:
+		var source := raw_event as InputEventMouseButton
+		var cleaned_mouse := InputEventMouseButton.new()
+		cleaned_mouse.button_index = source.button_index
+		cleaned_mouse.alt_pressed = source.alt_pressed
+		cleaned_mouse.shift_pressed = source.shift_pressed
+		cleaned_mouse.ctrl_pressed = source.ctrl_pressed
+		cleaned_mouse.meta_pressed = source.meta_pressed
+		return cleaned_mouse
+	return null
+
+
+func _remove_control_event_from_other_actions(target_action: String, event: InputEvent) -> void:
+	for binding in CONTROL_BINDINGS:
+		var action := String(binding.get("action", ""))
+		if action == "" or action == target_action or not InputMap.has_action(action):
+			continue
+		for existing in InputMap.action_get_events(action):
+			if _control_events_match(existing, event):
+				InputMap.action_erase_event(action, existing)
+
+
+func _control_events_match(a: InputEvent, b: InputEvent) -> bool:
+	if a is InputEventKey and b is InputEventKey:
+		var key_a := a as InputEventKey
+		var key_b := b as InputEventKey
+		return key_a.keycode == key_b.keycode \
+			and key_a.alt_pressed == key_b.alt_pressed \
+			and key_a.shift_pressed == key_b.shift_pressed \
+			and key_a.ctrl_pressed == key_b.ctrl_pressed \
+			and key_a.meta_pressed == key_b.meta_pressed
+	if a is InputEventMouseButton and b is InputEventMouseButton:
+		var mouse_a := a as InputEventMouseButton
+		var mouse_b := b as InputEventMouseButton
+		return mouse_a.button_index == mouse_b.button_index \
+			and mouse_a.alt_pressed == mouse_b.alt_pressed \
+			and mouse_a.shift_pressed == mouse_b.shift_pressed \
+			and mouse_a.ctrl_pressed == mouse_b.ctrl_pressed \
+			and mouse_a.meta_pressed == mouse_b.meta_pressed
+	return false
+
+
+func _find_control_event_owner(event: InputEvent, target_action: String) -> String:
+	for binding in CONTROL_BINDINGS:
+		var action := String(binding.get("action", ""))
+		if action == "" or action == target_action or not InputMap.has_action(action):
+			continue
+		for existing in InputMap.action_get_events(action):
+			if _control_events_match(existing, event):
+				return action
+	return ""
+
+
+func _refresh_control_buttons() -> void:
+	for action in control_buttons:
+		var button := control_buttons[action] as Button
+		if button != null and is_instance_valid(button):
+			button.text = _binding_text(String(action))
+
+
+func _binding_text(action: String) -> String:
+	if not InputMap.has_action(action):
+		return "Unbound"
+	var events := InputMap.action_get_events(action)
+	if events.is_empty():
+		return "Unbound"
+	return _event_text(events[0])
+
+
+func _event_text(event: InputEvent) -> String:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		var parts: Array[String] = []
+		if key_event.ctrl_pressed:
+			parts.append("Ctrl")
+		if key_event.alt_pressed:
+			parts.append("Alt")
+		if key_event.shift_pressed and key_event.keycode != KEY_SHIFT:
+			parts.append("Shift")
+		if key_event.meta_pressed:
+			parts.append("Meta")
+		var key_name := OS.get_keycode_string(key_event.keycode)
+		if key_name == "":
+			key_name = "Key " + str(key_event.keycode)
+		parts.append(key_name)
+		return " + ".join(parts)
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		match mouse_event.button_index:
+			MOUSE_BUTTON_LEFT:
+				return "Left Click"
+			MOUSE_BUTTON_RIGHT:
+				return "Right Click"
+			MOUSE_BUTTON_MIDDLE:
+				return "Middle Click"
+			MOUSE_BUTTON_WHEEL_UP:
+				return "Wheel Up"
+			MOUSE_BUTTON_WHEEL_DOWN:
+				return "Wheel Down"
+			_:
+				return "Mouse " + str(mouse_event.button_index)
+	return "Unknown"
+
+
+func _control_label(action: String) -> String:
+	for binding in CONTROL_BINDINGS:
+		if String(binding.get("action", "")) == action:
+			return String(binding.get("label", action))
+	return action
+
+
+func _save_control_settings() -> void:
+	var config := ConfigFile.new()
+	for binding in CONTROL_BINDINGS:
+		var action := String(binding.get("action", ""))
+		if action == "" or not InputMap.has_action(action):
+			continue
+		var events := InputMap.action_get_events(action)
+		if events.is_empty():
+			continue
+		var event := events[0]
+		if event is InputEventKey:
+			var key_event := event as InputEventKey
+			config.set_value(action, "type", "key")
+			config.set_value(action, "keycode", key_event.keycode)
+			config.set_value(action, "physical_keycode", key_event.physical_keycode)
+			config.set_value(action, "key_label", key_event.key_label)
+			config.set_value(action, "alt", key_event.alt_pressed)
+			config.set_value(action, "shift", key_event.shift_pressed)
+			config.set_value(action, "ctrl", key_event.ctrl_pressed)
+			config.set_value(action, "meta", key_event.meta_pressed)
+		elif event is InputEventMouseButton:
+			var mouse_event := event as InputEventMouseButton
+			config.set_value(action, "type", "mouse")
+			config.set_value(action, "button_index", mouse_event.button_index)
+			config.set_value(action, "alt", mouse_event.alt_pressed)
+			config.set_value(action, "shift", mouse_event.shift_pressed)
+			config.set_value(action, "ctrl", mouse_event.ctrl_pressed)
+			config.set_value(action, "meta", mouse_event.meta_pressed)
+	config.save(CONTROL_SETTINGS_PATH)
+
+
+func _load_control_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(CONTROL_SETTINGS_PATH) != OK:
+		return
+	for binding in CONTROL_BINDINGS:
+		var action := String(binding.get("action", ""))
+		if action == "" or not InputMap.has_action(action) or not config.has_section(action):
+			continue
+		var event := _event_from_config(config, action)
+		if event == null:
+			continue
+		_remove_control_event_from_other_actions(action, event)
+		InputMap.action_erase_events(action)
+		InputMap.action_add_event(action, event)
+
+
+func _event_from_config(config: ConfigFile, action: String) -> InputEvent:
+	var event_type := String(config.get_value(action, "type", ""))
+	if event_type == "key":
+		var config_key_event := InputEventKey.new()
+		config_key_event.keycode = int(config.get_value(action, "keycode", 0))
+		config_key_event.physical_keycode = int(config.get_value(action, "physical_keycode", 0))
+		config_key_event.key_label = int(config.get_value(action, "key_label", 0))
+		config_key_event.alt_pressed = bool(config.get_value(action, "alt", false))
+		config_key_event.shift_pressed = bool(config.get_value(action, "shift", false))
+		config_key_event.ctrl_pressed = bool(config.get_value(action, "ctrl", false))
+		config_key_event.meta_pressed = bool(config.get_value(action, "meta", false))
+		return config_key_event
+	if event_type == "mouse":
+		var config_mouse_event := InputEventMouseButton.new()
+		config_mouse_event.button_index = int(config.get_value(action, "button_index", 0))
+		config_mouse_event.alt_pressed = bool(config.get_value(action, "alt", false))
+		config_mouse_event.shift_pressed = bool(config.get_value(action, "shift", false))
+		config_mouse_event.ctrl_pressed = bool(config.get_value(action, "ctrl", false))
+		config_mouse_event.meta_pressed = bool(config.get_value(action, "meta", false))
+		return config_mouse_event
+	return null
+
+
+func _reset_control_defaults() -> void:
+	_cancel_rebinding()
+	_set_default_control_key("move_forward", KEY_W)
+	_set_default_control_key("move_back", KEY_S)
+	_set_default_control_key("move_left", KEY_A)
+	_set_default_control_key("move_right", KEY_D)
+	_set_default_control_key("jump", KEY_SPACE)
+	_set_default_control_key("sprint", KEY_SHIFT)
+	_set_default_control_mouse("attack", MOUSE_BUTTON_LEFT)
+	_set_default_control_key("inventory", KEY_TAB)
+	_set_default_control_key("interact", KEY_E)
+	_set_default_control_key("equip", KEY_Q)
+	_set_default_control_key("stealth_finish", KEY_F)
+	_save_control_settings()
+	_refresh_control_buttons()
+	if settings_status_label != null:
+		settings_status_label.text = "Controls reset to the demo defaults."
+
+
+func _set_default_control_key(action: String, keycode: int) -> void:
+	if not InputMap.has_action(action):
+		return
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	InputMap.action_erase_events(action)
+	InputMap.action_add_event(action, event)
+
+
+func _set_default_control_mouse(action: String, button_index: int) -> void:
+	if not InputMap.has_action(action):
+		return
+	var event := InputEventMouseButton.new()
+	event.button_index = button_index
+	InputMap.action_erase_events(action)
+	InputMap.action_add_event(action, event)
+
+
 # Shows or hides the inventory screen — and pauses the whole game while it is open.
 func _toggle_inventory() -> void:
 	inventory_open = not inventory_open
 	if inventory_open:
+		_apply_inventory_responsive_layout()
+		_refresh_inventory_mode()
+		_refresh_control_buttons()
 		_update_inventory_ui()
 		_sync_inventory_preview()
 	inventory_root.visible = inventory_open
@@ -1172,7 +1863,7 @@ func _rebuild_item_tiles() -> void:
 		items_grid.add_child(tile)
 		shown += 1
 
-	var target_slots: int = 24
+	var target_slots: int = maxi(12, items_grid.columns * 4)
 	for i in range(shown, target_slots):
 		items_grid.add_child(_make_empty_inventory_slot())
 

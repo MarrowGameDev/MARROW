@@ -15,46 +15,51 @@ var _slot_label: Label = null
 func setup(id: String, player_ref: Node) -> void:
 	bone_id = id
 	player = player_ref
-	custom_minimum_size = Vector2(96, 86)
+	var tile_size := Vector2(96, 86)
+	if player != null and player.has_method("get_inventory_tile_size"):
+		tile_size = player.call("get_inventory_tile_size") as Vector2
+	var x_scale := tile_size.x / 96.0
+	var y_scale := tile_size.y / 86.0
+	custom_minimum_size = tile_size
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var frame := PanelContainer.new()
 	frame.position = Vector2(0, 0)
-	frame.size = Vector2(96, 86)
+	frame.size = tile_size
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_theme_stylebox_override("panel", _make_tile_style(Color(1.0, 1.0, 1.0, 0.58), Color(0.87, 0.63, 0.19, 0.78), 1))
 	add_child(frame)
 
 	var top_rule := ColorRect.new()
 	top_rule.color = Color(0.87, 0.63, 0.19, 0.36)
-	top_rule.position = Vector2(12, 10)
-	top_rule.size = Vector2(72, 1)
+	top_rule.position = Vector2(12.0 * x_scale, 10.0 * y_scale)
+	top_rule.size = Vector2(72.0 * x_scale, 1)
 	top_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_rule)
 
 	# The colored square (matches the bone's color).
 	var glow := ColorRect.new()
 	glow.color = BoneDatabase.color(id).lightened(0.18)
-	glow.position = Vector2(31, 17)
-	glow.size = Vector2(34, 34)
+	glow.position = Vector2(31.0 * x_scale, 17.0 * y_scale)
+	glow.size = Vector2(34.0 * x_scale, 34.0 * y_scale)
 	glow.rotation = PI / 4.0
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(glow)
 
 	var core := ColorRect.new()
 	core.color = BoneDatabase.color(id)
-	core.position = Vector2(35, 21)
-	core.size = Vector2(26, 26)
+	core.position = Vector2(35.0 * x_scale, 21.0 * y_scale)
+	core.size = Vector2(26.0 * x_scale, 26.0 * y_scale)
 	core.rotation = PI / 4.0
 	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(core)
 
 	# The bone name under it, with a "(worn)" tag when it's currently equipped.
 	_label = Label.new()
-	_label.position = Vector2(5, 50)
-	_label.size = Vector2(86, 22)
-	_label.add_theme_font_size_override("font_size", 10)
+	_label.position = Vector2(5.0 * x_scale, 50.0 * y_scale)
+	_label.size = Vector2(86.0 * x_scale, 22.0 * y_scale)
+	_label.add_theme_font_size_override("font_size", maxi(10, int(10.0 * minf(x_scale, y_scale))))
 	_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -62,10 +67,10 @@ func setup(id: String, player_ref: Node) -> void:
 	add_child(_label)
 
 	_slot_label = Label.new()
-	_slot_label.position = Vector2(5, 72)
-	_slot_label.size = Vector2(86, 12)
+	_slot_label.position = Vector2(5.0 * x_scale, 72.0 * y_scale)
+	_slot_label.size = Vector2(86.0 * x_scale, 12.0 * y_scale)
 	_slot_label.text = _slot_display_name(BoneDatabase.slot(id))
-	_slot_label.add_theme_font_size_override("font_size", 8)
+	_slot_label.add_theme_font_size_override("font_size", maxi(8, int(8.0 * minf(x_scale, y_scale))))
 	_slot_label.add_theme_color_override("font_color", Color(0.44, 0.32, 0.12, 0.95))
 	_slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

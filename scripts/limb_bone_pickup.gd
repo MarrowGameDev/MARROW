@@ -22,7 +22,7 @@ func _process(delta: float) -> void:
 	if collected or player_in_range == null:
 		return
 
-	if Input.is_action_pressed("inventory"):
+	if Input.is_action_pressed("interact"):
 		hold_progress += delta
 		_update_prompt()
 		if hold_progress >= pickup_hold_time:
@@ -88,7 +88,33 @@ func _update_prompt() -> void:
 		return
 
 	var percent := int((hold_progress / pickup_hold_time) * 100.0)
-	prompt_label.text = "Hold E: " + BoneDatabase.display_name(bone_id) + " " + str(percent) + "%"
+	prompt_label.text = "Hold " + _action_binding_text("interact") + ": " + BoneDatabase.display_name(bone_id) + " " + str(percent) + "%"
+
+
+func _action_binding_text(action: String) -> String:
+	if not InputMap.has_action(action):
+		return action
+	var events := InputMap.action_get_events(action)
+	if events.is_empty():
+		return action
+	var event := events[0]
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		var key_name := OS.get_keycode_string(key_event.keycode)
+		if key_name != "":
+			return key_name
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		match mouse_event.button_index:
+			MOUSE_BUTTON_LEFT:
+				return "Left Click"
+			MOUSE_BUTTON_RIGHT:
+				return "Right Click"
+			MOUSE_BUTTON_MIDDLE:
+				return "Middle Click"
+			_:
+				return "Mouse " + str(mouse_event.button_index)
+	return action
 
 
 func _update_prompt_color() -> void:
