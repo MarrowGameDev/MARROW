@@ -3,6 +3,7 @@ extends CharacterBody3D
 # preload loads the Bone scene once so this enemy can create one instantly when it dies.
 const BONE_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 const LIMB_BONE_PICKUP_SCRIPT: Script = preload("res://scripts/limb_bone_pickup.gd")
+const ROCK_PROJECTILE_SCRIPT: Script = preload("res://scripts/enemy_rock_projectile.gd")
 
 # --- Combat / AI tuning (all editable per-enemy in the Inspector) -------------
 @export var max_health: int = 3
@@ -41,6 +42,24 @@ const LIMB_BONE_PICKUP_SCRIPT: Script = preload("res://scripts/limb_bone_pickup.
 @export var gorilla_damage_bonus: int = 1
 @export var gorilla_attack_range_bonus: float = 0.25
 @export var gorilla_knockback_bonus: float = 1.5
+@export var gorilla_can_throw_rocks: bool = true
+@export var gorilla_rock_throw_min_range: float = 3.0
+@export var gorilla_rock_throw_range: float = 10.0
+@export var gorilla_rock_throw_cooldown: float = 3.5
+@export var gorilla_rock_throw_windup: float = 0.55
+@export var gorilla_rock_throw_speed: float = 10.5
+@export var gorilla_rock_throw_upward_boost: float = 2.6
+@export var gorilla_rock_gravity: float = 24.0
+@export var gorilla_rock_damage: int = 1
+@export_group("")
+@export_group("Bone Recovery")
+@export var bone_recovery_enabled: bool = true
+@export var bone_recovery_safe_delay: float = 10.0
+@export var bone_recovery_pickup_range: float = 1.15
+@export var bone_recovery_heal_per_part: int = 1
+@export var bone_recovery_move_speed_multiplier: float = 0.65
+@export var bone_recovery_safe_range: float = 0.0
+@export var bone_recovery_part_lifetime: float = 45.0
 @export_group("")
 @export var return_home_stop_distance: float = 0.8
 @export var obstacle_probe_distance: float = 1.25
@@ -97,6 +116,13 @@ var last_hit_from_position: Vector3 = Vector3.ZERO
 var limb_pickup_spawned: bool = false
 var crawling_due_to_leg_loss: bool = false
 var gorilla_profile_active: bool = false
+var rock_throw_timer: float = 0.0
+var rock_throw_windup_timer: float = 0.0
+var rock_throw_target_position: Vector3 = Vector3.ZERO
+var held_rock_visual: MeshInstance3D = null
+var bone_recovery_safe_timer: float = 0.0
+var recovering_limb_key: String = ""
+var detached_limb_bodies: Dictionary = {}
 
 # Tier 1D polish: one reusable tween so hit-squash, attack-lunge, and death-pop
 # never fight over the scale, plus a procedurally built placeholder "hit" sound.
@@ -183,6 +209,8 @@ func _physics_process(delta: float) -> void:
 
 	if attack_timer > 0.0:
 		attack_timer -= delta
+	if rock_throw_timer > 0.0:
+		rock_throw_timer = maxf(rock_throw_timer - delta, 0.0)
 
 	if vision_check_timer > 0.0:
 		vision_check_timer -= delta
@@ -222,6 +250,8 @@ func _physics_process(delta: float) -> void:
 		if not player_visible and _can_hear_player(player, dist):
 			_investigate_position(player.global_position, hearing_investigation_time)
 
+		_update_bone_recovery_safety(delta, player, dist)
+
 		if player_visible and dist > 0.01:
 			last_known_player_position = player.global_position
 			search_timer = search_duration
@@ -229,11 +259,17 @@ func _physics_process(delta: float) -> void:
 			returning_to_spawn = false
 			_turn_toward(to_player.normalized())
 
-		if fleeing_timer > 0.0:
+		if rock_throw_windup_timer > 0.0:
+			_update_rock_throw_windup(delta, player)
+		elif fleeing_timer > 0.0:
 			move = _get_flee_move(player, dist)
 		elif player_visible and dist <= attack_range:
 			# Close enough to strike: hold position and attack on cooldown.
 			_try_attack_player(player)
+		elif _can_start_rock_throw(player, dist):
+			_start_rock_throw(player)
+		elif _can_recover_bone_part():
+			move = _get_bone_recovery_move()
 		elif player_visible and dist <= detection_range and dist > 0.01:
 			# Chase: move toward the player, but steer around blocking walls.
 			move = _steer_around_obstacles(to_player.normalized()) * effective_move_speed
@@ -246,7 +282,12 @@ func _physics_process(delta: float) -> void:
 	else:
 		_set_player_visible(false)
 		search_timer = 0.0
-		if idle_wander_enabled:
+		rock_throw_windup_timer = 0.0
+		_cancel_held_rock()
+		_update_bone_recovery_safety(delta, null, INF)
+		if _can_recover_bone_part():
+			move = _get_bone_recovery_move()
+		elif idle_wander_enabled:
 			move = _get_idle_wander_move(delta)
 
 	velocity.x = move.x + knockback_velocity.x
@@ -279,6 +320,115 @@ func _try_attack_player(player: Node) -> void:
 		animator.trigger_attack()
 	if player.has_method("take_player_damage"):
 		player.take_player_damage(contact_damage, global_position)
+
+
+func _can_start_rock_throw(player: Node3D, distance_to_player: float) -> bool:
+	if not gorilla_profile_active or not gorilla_can_throw_rocks:
+		return false
+	if player == null or not player_visible:
+		return false
+	if rock_throw_timer > 0.0 or rock_throw_windup_timer > 0.0:
+		return false
+	if distance_to_player < gorilla_rock_throw_min_range or distance_to_player > gorilla_rock_throw_range:
+		return false
+	if detached_limb_keys.has("right_arm") and detached_limb_keys.has("left_arm"):
+		return false
+	return true
+
+
+func _start_rock_throw(player: Node3D) -> void:
+	rock_throw_timer = gorilla_rock_throw_cooldown
+	rock_throw_windup_timer = gorilla_rock_throw_windup
+	rock_throw_target_position = player.global_position
+	var to_player: Vector3 = player.global_position - global_position
+	to_player.y = 0.0
+	if to_player.length() > 0.01:
+		_turn_toward(to_player.normalized())
+	_show_held_rock()
+
+
+func _update_rock_throw_windup(delta: float, player: Node3D) -> void:
+	if player != null and not _player_is_dead(player):
+		rock_throw_target_position = player.global_position
+		var to_player: Vector3 = player.global_position - global_position
+		to_player.y = 0.0
+		if to_player.length() > 0.01:
+			_turn_toward(to_player.normalized())
+
+	rock_throw_windup_timer = maxf(rock_throw_windup_timer - delta, 0.0)
+	if rock_throw_windup_timer <= 0.0:
+		_throw_held_rock()
+
+
+func _throw_held_rock() -> void:
+	var world: Node = get_parent()
+	if world == null:
+		_cancel_held_rock()
+		return
+
+	var start_position: Vector3 = _get_held_rock_world_position()
+	_cancel_held_rock()
+
+	var target_position: Vector3 = rock_throw_target_position + Vector3.UP * 0.65
+	var to_target: Vector3 = target_position - start_position
+	var horizontal: Vector3 = Vector3(to_target.x, 0.0, to_target.z)
+	if horizontal.length() < 0.1:
+		return
+
+	var travel_time: float = horizontal.length() / maxf(gorilla_rock_throw_speed, 0.1)
+	var launch_velocity: Vector3 = horizontal.normalized() * gorilla_rock_throw_speed
+	launch_velocity.y = (to_target.y / maxf(travel_time, 0.1)) + gorilla_rock_throw_upward_boost + (gorilla_rock_gravity * 0.5 * travel_time)
+
+	var rock: Area3D = ROCK_PROJECTILE_SCRIPT.new() as Area3D
+	if rock == null:
+		return
+	if rock.has_method("configure"):
+		rock.call("configure", start_position, launch_velocity, maxi(gorilla_rock_damage, contact_damage), self, gorilla_rock_gravity)
+	world.add_child(rock)
+
+
+func _show_held_rock() -> void:
+	_cancel_held_rock()
+	held_rock_visual = MeshInstance3D.new()
+	held_rock_visual.name = "HeldRock"
+	var mesh: SphereMesh = SphereMesh.new()
+	mesh.radius = 0.18
+	mesh.height = 0.36
+	held_rock_visual.mesh = mesh
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = Color(0.32, 0.28, 0.24, 1.0)
+	material.roughness = 0.9
+	held_rock_visual.material_override = material
+
+	var socket: Node3D = _get_rock_throw_socket()
+	if socket != null:
+		socket.add_child(held_rock_visual)
+		held_rock_visual.position = Vector3(0.0, -0.18, 0.18)
+	else:
+		add_child(held_rock_visual)
+		held_rock_visual.position = Vector3(0.35, 0.9, 0.15)
+
+
+func _cancel_held_rock() -> void:
+	if held_rock_visual != null and is_instance_valid(held_rock_visual):
+		held_rock_visual.queue_free()
+	held_rock_visual = null
+
+
+func _get_held_rock_world_position() -> Vector3:
+	if held_rock_visual != null and is_instance_valid(held_rock_visual):
+		return held_rock_visual.global_position
+	return global_position + Vector3.UP * 0.8 + facing_direction.normalized() * 0.35
+
+
+func _get_rock_throw_socket() -> Node3D:
+	if rig == null:
+		return null
+	if not detached_limb_keys.has("right_arm"):
+		return rig.get_socket("right_arm")
+	if not detached_limb_keys.has("left_arm"):
+		return rig.get_socket("left_arm")
+	return null
 
 
 func can_be_stealth_finished_by(player: Node3D) -> bool:
@@ -529,6 +679,154 @@ func _get_flee_move(player: Node3D, dist: float) -> Vector3:
 	return move_direction * _get_effective_move_speed() * flee_speed_multiplier
 
 
+func _update_bone_recovery_safety(delta: float, player: Node3D, distance_to_player: float) -> void:
+	var was_recovery_ready: bool = bone_recovery_safe_timer >= bone_recovery_safe_delay
+	if not bone_recovery_enabled:
+		bone_recovery_safe_timer = 0.0
+		recovering_limb_key = ""
+		if was_recovery_ready:
+			_update_health_label()
+		return
+
+	var safe_range: float = bone_recovery_safe_range
+	if safe_range <= 0.0:
+		safe_range = detection_range
+
+	var player_too_close: bool = player != null and distance_to_player <= safe_range
+	if player_visible or player_too_close:
+		bone_recovery_safe_timer = 0.0
+		recovering_limb_key = ""
+		if was_recovery_ready:
+			_update_health_label()
+		return
+
+	bone_recovery_safe_timer += delta
+	if not was_recovery_ready and bone_recovery_safe_timer >= bone_recovery_safe_delay:
+		_update_health_label()
+
+
+func _can_recover_bone_part() -> bool:
+	if not bone_recovery_enabled or not alive:
+		return false
+	if player_visible or bone_recovery_safe_timer < bone_recovery_safe_delay:
+		return false
+	return _get_recovering_limb_key() != ""
+
+
+func _get_bone_recovery_move() -> Vector3:
+	var limb_key: String = _get_recovering_limb_key()
+	if limb_key == "":
+		return Vector3.ZERO
+
+	var limb_body: Node3D = detached_limb_bodies.get(limb_key) as Node3D
+	if limb_body == null or not is_instance_valid(limb_body):
+		_forget_detached_limb_body(limb_key)
+		return Vector3.ZERO
+
+	var to_limb: Vector3 = limb_body.global_position - global_position
+	to_limb.y = 0.0
+	if to_limb.length() <= bone_recovery_pickup_range:
+		_recover_detached_limb(limb_key)
+		return Vector3.ZERO
+
+	var move_direction: Vector3 = _steer_around_obstacles(to_limb.normalized())
+	if move_direction.length() <= 0.01:
+		return Vector3.ZERO
+
+	_turn_toward(move_direction)
+	return move_direction * _get_effective_move_speed() * bone_recovery_move_speed_multiplier
+
+
+func _get_recovering_limb_key() -> String:
+	if _is_detached_limb_body_valid(recovering_limb_key):
+		return recovering_limb_key
+
+	recovering_limb_key = ""
+	var best_key: String = ""
+	var best_distance: float = INF
+	for limb_key in detached_limb_bodies.keys():
+		var key_string: String = _recovery_group_key(str(limb_key))
+		if key_string == "" or key_string != str(limb_key):
+			continue
+		if not _is_detached_limb_body_valid(key_string):
+			_forget_detached_limb_body(key_string)
+			continue
+		var limb_body: Node3D = detached_limb_bodies[key_string] as Node3D
+		var distance: float = global_position.distance_squared_to(limb_body.global_position)
+		if distance < best_distance:
+			best_distance = distance
+			best_key = key_string
+
+	recovering_limb_key = best_key
+	return recovering_limb_key
+
+
+func _is_detached_limb_body_valid(limb_key: String) -> bool:
+	if limb_key == "" or not detached_limb_bodies.has(limb_key):
+		return false
+	var limb_body: Node3D = detached_limb_bodies[limb_key] as Node3D
+	return limb_body != null and is_instance_valid(limb_body)
+
+
+func _recover_detached_limb(limb_key: String) -> void:
+	limb_key = _recovery_group_key(limb_key)
+	if limb_key == "":
+		return
+
+	for key in _limb_recovery_group(limb_key):
+		var limb_body: Node3D = detached_limb_bodies.get(key) as Node3D
+		if limb_body != null and is_instance_valid(limb_body):
+			limb_body.queue_free()
+
+		_forget_detached_limb_body(key)
+		detached_limb_keys.erase(key)
+		_set_rig_limb_visible(key, true)
+
+	if not _has_active_limb_pickup():
+		limb_pickup_spawned = false
+	health = mini(max_health, health + bone_recovery_heal_per_part)
+	_update_crawl_state(true)
+	_update_health_label()
+
+
+func _recovery_group_key(limb_key: String) -> String:
+	match limb_key:
+		"right_foot":
+			return "right_leg"
+		"left_foot":
+			return "left_leg"
+		_:
+			return limb_key
+
+
+func _limb_recovery_group(limb_key: String) -> Array[String]:
+	match limb_key:
+		"right_leg":
+			return ["right_leg", "right_foot"]
+		"left_leg":
+			return ["left_leg", "left_foot"]
+		_:
+			return [limb_key]
+
+
+func _has_active_limb_pickup() -> bool:
+	for limb_key in detached_limb_bodies.keys():
+		var limb_body: Node = detached_limb_bodies[limb_key] as Node
+		if limb_body == null or not is_instance_valid(limb_body):
+			continue
+		if limb_body.get_node_or_null("LimbBonePickup") != null:
+			return true
+	return false
+
+
+func _forget_detached_limb_body(limb_key: String) -> void:
+	if limb_key == "":
+		return
+	detached_limb_bodies.erase(limb_key)
+	if recovering_limb_key == limb_key:
+		recovering_limb_key = ""
+
+
 func _steer_around_obstacles(desired_direction: Vector3) -> Vector3:
 	if desired_direction.length() <= 0.01:
 		return Vector3.ZERO
@@ -752,8 +1050,11 @@ func _spawn_detached_limb_piece(limb_key: String, force_pickup: bool = false) ->
 	var body := RigidBody3D.new()
 	body.name = "Detached_" + limb_key
 	body.mass = 0.35
+	body.collision_layer = 0
+	body.collision_mask = 1
 	body.global_transform = source.global_transform
 	world.add_child(body)
+	detached_limb_bodies[limb_key] = body
 
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.mesh = source.mesh.duplicate() as Mesh
@@ -782,9 +1083,13 @@ func _spawn_detached_limb_piece(limb_key: String, force_pickup: bool = false) ->
 		_attach_pickup_to_detached_limb(body)
 		limb_pickup_spawned = true
 	else:
+		var cleanup_delay: float = detached_limb_lifetime
+		if bone_recovery_enabled:
+			cleanup_delay = maxf(detached_limb_lifetime, bone_recovery_part_lifetime)
 		var cleanup := body.create_tween()
-		cleanup.tween_interval(detached_limb_lifetime)
+		cleanup.tween_interval(cleanup_delay)
 		cleanup.tween_property(body, "scale", Vector3.ZERO, 0.25)
+		cleanup.tween_callback(Callable(self, "_forget_detached_limb_body").bind(limb_key))
 		cleanup.tween_callback(Callable(body, "queue_free"))
 
 
@@ -824,6 +1129,14 @@ func _set_rig_limb_visible(limb_key: String, is_visible: bool) -> void:
 
 
 func _restore_attached_limbs() -> void:
+	for limb_key in detached_limb_bodies.keys():
+		var limb_body: Node3D = detached_limb_bodies[limb_key] as Node3D
+		if limb_body != null and is_instance_valid(limb_body):
+			limb_body.queue_free()
+	detached_limb_bodies.clear()
+	recovering_limb_key = ""
+	bone_recovery_safe_timer = 0.0
+
 	for limb_key in detached_limb_keys:
 		_set_rig_limb_visible(limb_key, true)
 	detached_limb_keys.clear()
@@ -856,6 +1169,8 @@ func die() -> void:
 	returning_to_spawn = false
 	avoidance_timer = 0.0
 	avoidance_direction = Vector3.ZERO
+	rock_throw_windup_timer = 0.0
+	_cancel_held_rock()
 	var respawn_delay := _get_respawn_delay()
 	# Leave the group right away so nothing counts a dying enemy as still alive.
 	remove_from_group("enemies")
@@ -866,6 +1181,8 @@ func die() -> void:
 	returning_to_spawn = false
 	avoidance_timer = 0.0
 	avoidance_direction = Vector3.ZERO
+	rock_throw_windup_timer = 0.0
+	_cancel_held_rock()
 	_drop_bone()
 	await _drop_remaining_limbs_on_death()
 	if not limb_pickup_spawned:
@@ -904,6 +1221,8 @@ func _hide_until_respawn() -> void:
 	avoidance_timer = 0.0
 	avoidance_direction = Vector3.ZERO
 	fleeing_timer = 0.0
+	rock_throw_windup_timer = 0.0
+	_cancel_held_rock()
 	set_physics_process(false)
 
 
@@ -932,6 +1251,9 @@ func _respawn() -> void:
 	avoidance_timer = 0.0
 	avoidance_direction = Vector3.ZERO
 	fleeing_timer = 0.0
+	rock_throw_timer = 0.0
+	rock_throw_windup_timer = 0.0
+	_cancel_held_rock()
 	has_fled_low_health = false
 	_roll_low_health_personality()
 	last_known_player_position = spawn_transform.origin
@@ -1107,6 +1429,8 @@ func _update_health_label() -> void:
 		state_text = "\nCRAWLING"
 	elif fleeing_timer > 0.0:
 		state_text = "\nFLEEING"
+	elif _can_recover_bone_part():
+		state_text = "\nRECOVERING"
 	health_label.text = BoneDatabase.quality(dropped_bone_id) + " " + BoneDatabase.display_name(dropped_bone_id) + "\nHP: " + str(health) + state_text
 
 
