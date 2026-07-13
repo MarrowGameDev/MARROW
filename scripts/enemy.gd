@@ -30,6 +30,18 @@ const LIMB_BONE_PICKUP_SCRIPT: Script = preload("res://scripts/limb_bone_pickup.
 @export var low_health_flee_duration: float = 4.0
 @export var flee_speed_multiplier: float = 1.35
 @export var flee_recover_distance: float = 8.0
+@export_range(0.1, 1.0, 0.05) var crawl_speed_multiplier: float = 0.38
+@export_group("Gorilla Profile")
+@export_enum("Auto", "Always", "Never") var gorilla_profile_mode: String = "Auto"
+@export var gorilla_profile_min_health: int = 5
+@export var gorilla_profile_min_damage: int = 2
+@export_range(0.3, 1.0, 0.05) var gorilla_move_speed_multiplier: float = 0.68
+@export_range(1.0, 2.5, 0.05) var gorilla_attack_cooldown_multiplier: float = 1.25
+@export var gorilla_health_bonus: int = 2
+@export var gorilla_damage_bonus: int = 1
+@export var gorilla_attack_range_bonus: float = 0.25
+@export var gorilla_knockback_bonus: float = 1.5
+@export_group("")
 @export var return_home_stop_distance: float = 0.8
 @export var obstacle_probe_distance: float = 1.25
 @export_range(15.0, 85.0, 1.0) var obstacle_side_probe_angle_degrees: float = 48.0
@@ -83,6 +95,8 @@ var spawn_facing_direction: Vector3 = Vector3.BACK
 var detached_limb_keys: Array[String] = []
 var last_hit_from_position: Vector3 = Vector3.ZERO
 var limb_pickup_spawned: bool = false
+var crawling_due_to_leg_loss: bool = false
+var gorilla_profile_active: bool = false
 
 # Tier 1D polish: one reusable tween so hit-squash, attack-lunge, and death-pop
 # never fight over the scale, plus a procedurally built placeholder "hit" sound.
@@ -112,6 +126,7 @@ func _ready() -> void:
 	spawn_facing_direction = _facing_from_rotation()
 	facing_direction = spawn_facing_direction
 	_apply_bone_identity()
+	_apply_gorilla_profile()
 	health = max_health
 	_roll_low_health_personality()
 	idle_wander_target = spawn_transform.origin
@@ -187,6 +202,7 @@ func _physics_process(delta: float) -> void:
 
 	# Decide where to move this frame.
 	var move := Vector3.ZERO
+	var effective_move_speed: float = _get_effective_move_speed()
 	var player := _get_player()
 	if player != null and not _player_is_dead(player):
 		var to_player: Vector3 = player.global_position - global_position
@@ -220,7 +236,7 @@ func _physics_process(delta: float) -> void:
 			_try_attack_player(player)
 		elif player_visible and dist <= detection_range and dist > 0.01:
 			# Chase: move toward the player, but steer around blocking walls.
-			move = _steer_around_obstacles(to_player.normalized()) * move_speed
+			move = _steer_around_obstacles(to_player.normalized()) * effective_move_speed
 		elif search_timer > 0.0:
 			move = _get_search_move(delta)
 		elif returning_to_spawn:
@@ -437,7 +453,7 @@ func _get_search_move(delta: float) -> Vector3:
 	var direction := to_last_known.normalized()
 	var move_direction := _steer_around_obstacles(direction)
 	_scan_while_searching(move_direction, delta)
-	return move_direction * move_speed
+	return move_direction * _get_effective_move_speed()
 
 
 func _scan_while_searching(base_direction: Vector3, delta: float) -> void:
@@ -465,7 +481,7 @@ func _get_return_home_move() -> Vector3:
 	var move_direction := _steer_around_obstacles(direction)
 	if move_direction.length() > 0.01:
 		_turn_toward(move_direction)
-	return move_direction * move_speed
+	return move_direction * _get_effective_move_speed()
 
 
 func _get_idle_wander_move(delta: float) -> Vector3:
@@ -488,7 +504,7 @@ func _get_idle_wander_move(delta: float) -> Vector3:
 	var move_direction := _steer_around_obstacles(to_target.normalized())
 	if move_direction.length() > 0.01:
 		_turn_toward(move_direction)
-	return move_direction * (move_speed * 0.45)
+	return move_direction * (_get_effective_move_speed() * 0.45)
 
 
 func _get_flee_move(player: Node3D, dist: float) -> Vector3:
@@ -510,7 +526,7 @@ func _get_flee_move(player: Node3D, dist: float) -> Vector3:
 	if move_direction.length() <= 0.01:
 		return Vector3.ZERO
 	_turn_toward(move_direction)
-	return move_direction * move_speed * flee_speed_multiplier
+	return move_direction * _get_effective_move_speed() * flee_speed_multiplier
 
 
 func _steer_around_obstacles(desired_direction: Vector3) -> Vector3:
@@ -639,6 +655,8 @@ func take_hit(damage: int) -> void:
 
 
 func _maybe_start_low_health_flee() -> void:
+	if crawling_due_to_leg_loss:
+		return
 	if has_fled_low_health or not flees_when_low_health:
 		return
 	if max_health <= 0:
@@ -714,6 +732,7 @@ func _detach_limb_group(limb_key: String, force_pickup: bool = false) -> void:
 		detached_limb_keys.append(key)
 		_spawn_detached_limb_piece(key, force_pickup and key == limb_key)
 		_set_rig_limb_visible(key, false)
+	_update_crawl_state()
 
 
 func _spawn_detached_limb_piece(limb_key: String, force_pickup: bool = false) -> void:
@@ -810,6 +829,21 @@ func _restore_attached_limbs() -> void:
 	detached_limb_keys.clear()
 	last_hit_from_position = Vector3.ZERO
 	limb_pickup_spawned = false
+	_update_crawl_state(true)
+
+
+func _update_crawl_state(force_refresh: bool = false) -> void:
+	var should_crawl: bool = detached_limb_keys.has("right_leg") and detached_limb_keys.has("left_leg")
+	if not force_refresh and should_crawl == crawling_due_to_leg_loss:
+		return
+
+	crawling_due_to_leg_loss = should_crawl
+	if animator != null and animator.has_method("set_crawl_mode"):
+		animator.set_crawl_mode(crawling_due_to_leg_loss)
+	if crawling_due_to_leg_loss:
+		fleeing_timer = 0.0
+		attack_timer = maxf(attack_timer, 0.35)
+	_update_health_label()
 
 
 func die() -> void:
@@ -1069,7 +1103,9 @@ func _update_health_label() -> void:
 		return
 
 	var state_text := ""
-	if fleeing_timer > 0.0:
+	if crawling_due_to_leg_loss:
+		state_text = "\nCRAWLING"
+	elif fleeing_timer > 0.0:
 		state_text = "\nFLEEING"
 	health_label.text = BoneDatabase.quality(dropped_bone_id) + " " + BoneDatabase.display_name(dropped_bone_id) + "\nHP: " + str(health) + state_text
 
@@ -1093,15 +1129,25 @@ func _setup_procedural_character() -> void:
 	if animator == null or rig == null:
 		return
 
+	if gorilla_profile_active and rig.has_method("apply_gorilla_proportions"):
+		rig.apply_gorilla_proportions()
 	animator.rig = rig
 	animator.turn_target = null
+	if animator.has_method("set_crawl_mode"):
+		animator.set_crawl_mode(crawling_due_to_leg_loss)
 
 
 func _update_procedural_animation(delta: float) -> void:
 	if animator == null or rig == null:
 		return
 
-	animator.update_from_player(delta, velocity, move_speed, facing_direction, [])
+	animator.update_from_player(delta, velocity, _get_effective_move_speed(), facing_direction, [])
+
+
+func _get_effective_move_speed() -> float:
+	if crawling_due_to_leg_loss:
+		return move_speed * crawl_speed_multiplier
+	return move_speed
 
 
 func _set_rig_color(new_color: Color) -> void:
@@ -1133,6 +1179,29 @@ func _apply_bone_identity() -> void:
 	var enemy_scale := BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_visual_scale", 1.0)
 	if visual_root != null:
 		visual_root.scale = Vector3.ONE * enemy_scale
+
+
+func _apply_gorilla_profile() -> void:
+	gorilla_profile_active = _should_use_gorilla_profile()
+	if not gorilla_profile_active:
+		return
+
+	move_speed *= gorilla_move_speed_multiplier
+	attack_cooldown *= gorilla_attack_cooldown_multiplier
+	max_health += gorilla_health_bonus
+	contact_damage += gorilla_damage_bonus
+	attack_range += gorilla_attack_range_bonus
+	knockback_strength += gorilla_knockback_bonus
+
+
+func _should_use_gorilla_profile() -> bool:
+	match gorilla_profile_mode:
+		"Always":
+			return true
+		"Never":
+			return false
+		_:
+			return max_health >= gorilla_profile_min_health or contact_damage >= gorilla_profile_min_damage
 
 
 func _roll_low_health_personality() -> void:

@@ -11,6 +11,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "generate_remaining_tiers_pdf.py"
     },
     {
@@ -21,6 +22,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_escape_pdf_text",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "escape_pdf_text()"
     },
     {
@@ -31,6 +33,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_simplepdf",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "simplepdf"
     },
     {
@@ -41,16 +44,18 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_simplepdf_init",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": ".__init__()"
     },
     {
       "label": "Path",
       "file_type": "code",
-      "source_file": "work/generate_remaining_tiers_pdf.py",
-      "source_location": "L185",
+      "source_file": "",
+      "source_location": "",
       "_origin": "ast",
       "id": "path",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "path"
     },
     {
@@ -61,6 +66,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": ".add_object()"
     },
     {
@@ -71,6 +77,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": ".add_page()"
     },
     {
@@ -81,6 +88,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_simplepdf_write",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": ".write()"
     },
     {
@@ -91,6 +99,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_wrap_paragraph",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "wrap_paragraph()"
     },
     {
@@ -101,6 +110,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_add_footer",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "add_footer()"
     },
     {
@@ -111,6 +121,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_build_pages",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "build_pages()"
     },
     {
@@ -121,6 +132,7 @@
       "_origin": "ast",
       "id": "work_generate_remaining_tiers_pdf_main",
       "community": 3,
+      "community_name": "Community 3",
       "norm_label": "main()"
     },
     {
@@ -131,6 +143,7 @@
       "_origin": "ast",
       "id": "readme",
       "community": 5,
+      "community_name": "Community 5",
       "norm_label": "readme.md"
     },
     {
@@ -141,6 +154,7 @@
       "_origin": "ast",
       "id": "readme_marrow",
       "community": 5,
+      "community_name": "Community 5",
       "norm_label": "marrow"
     },
     {
@@ -151,6 +165,7 @@
       "_origin": "ast",
       "id": "docs_godot_signal_guidelines",
       "community": 0,
+      "community_name": "Community 0",
       "norm_label": "godot_signal_guidelines.md"
     },
     {
@@ -161,6 +176,7 @@
       "_origin": "ast",
       "id": "docs_godot_signal_guidelines_godot_signal_guidelines",
       "community": 0,
+      "community_name": "Community 0",
       "norm_label": "godot signal guidelines"
     },
     {
@@ -171,6 +187,7 @@
       "_origin": "ast",
       "id": "docs_godot_signal_guidelines_prefer_event_names",
       "community": 0,
+      "community_name": "Community 0",
       "norm_label": "prefer event names"
     },
     {
@@ -181,6 +198,7 @@
       "_origin": "ast",
       "id": "docs_godot_signal_guidelines_signal_up_call_down",
       "community": 0,
+      "community_name": "Community 0",
       "norm_label": "signal up, call down"
     },
     {
@@ -191,6 +209,7 @@
       "_origin": "ast",
       "id": "docs_godot_signal_guidelines_pass_useful_data",
       "community": 0,
+      "community_name": "Community 0",
       "norm_label": "pass useful data"
     },
     {
@@ -201,6 +220,7 @@
       "_origin": "ast",
       "id": "docs_godot_signal_guidelines_keep_emitters_decoupled",
       "community": 0,
+      "community_name": "Community 0",
       "norm_label": "keep emitters decoupled"
     },
     {
@@ -211,6 +231,7 @@
       "_origin": "ast",
       "id": "docs_godot_signal_guidelines_use_gameevents_sparingly",
       "community": 0,
+      "community_name": "Community 0",
       "norm_label": "use `gameevents` sparingly"
     },
     {
@@ -221,6 +242,7 @@
       "_origin": "ast",
       "id": "docs_open_world_map_layout",
       "community": 1,
+      "community_name": "Community 1",
       "norm_label": "open_world_map_layout.md"
     },
     {
@@ -231,6 +253,7 @@
       "_origin": "ast",
       "id": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
       "community": 1,
+      "community_name": "Community 1",
       "norm_label": "marrow open-world map layout notes"
     },
     {
@@ -241,6 +264,7 @@
       "_origin": "ast",
       "id": "docs_open_world_map_layout_current_goal",
       "community": 1,
+      "community_name": "Community 1",
       "norm_label": "current goal"
     },
     {
@@ -251,6 +275,7 @@
       "_origin": "ast",
       "id": "docs_open_world_map_layout_mesh_swap_rule",
       "community": 1,
+      "community_name": "Community 1",
       "norm_label": "mesh-swap rule"
     },
     {
@@ -261,6 +286,7 @@
       "_origin": "ast",
       "id": "docs_open_world_map_layout_metadata",
       "community": 1,
+      "community_name": "Community 1",
       "norm_label": "metadata"
     },
     {
@@ -271,6 +297,7 @@
       "_origin": "ast",
       "id": "docs_open_world_map_layout_current_regions",
       "community": 1,
+      "community_name": "Community 1",
       "norm_label": "current regions"
     },
     {
@@ -281,6 +308,7 @@
       "_origin": "ast",
       "id": "docs_open_world_map_layout_next_coder_step",
       "community": 1,
+      "community_name": "Community 1",
       "norm_label": "next coder step"
     },
     {
@@ -291,6 +319,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "project_graph_map.md"
     },
     {
@@ -301,6 +330,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_marrow_project_graph_map",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "marrow project graph map"
     },
     {
@@ -311,6 +341,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_runtime_entry",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "runtime entry"
     },
     {
@@ -321,6 +352,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_gameevents",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "gameevents"
     },
     {
@@ -331,6 +363,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_player",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "player"
     },
     {
@@ -341,6 +374,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_player_camera",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "player camera"
     },
     {
@@ -351,6 +385,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_bonedatabase",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "bonedatabase"
     },
     {
@@ -361,6 +396,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_inventory_ui",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "inventory ui"
     },
     {
@@ -371,6 +407,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_pickups_and_rewards",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "pickups and rewards"
     },
     {
@@ -381,6 +418,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_arena_goals",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "arena goals"
     },
     {
@@ -391,6 +429,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_open_world_map",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "open world map"
     },
     {
@@ -401,6 +440,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_enemy_and_combat",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "enemy and combat"
     },
     {
@@ -411,6 +451,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_modular_rig",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "modular rig"
     },
     {
@@ -421,6 +462,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_generated_world",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "generated world"
     },
     {
@@ -431,6 +473,7 @@
       "_origin": "ast",
       "id": "docs_project_graph_map_guidance_docs",
       "community": 4,
+      "community_name": "Community 4",
       "norm_label": "guidance docs"
     },
     {
@@ -441,6 +484,7 @@
       "_origin": "ast",
       "id": "docs_rig_notes",
       "community": 2,
+      "community_name": "Community 2",
       "norm_label": "rig_notes.md"
     },
     {
@@ -451,6 +495,7 @@
       "_origin": "ast",
       "id": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
       "community": 2,
+      "community_name": "Community 2",
       "norm_label": "marrow \u2014 modular rig / procedural animation notes"
     },
     {
@@ -461,6 +506,7 @@
       "_origin": "ast",
       "id": "docs_rig_notes_how_to_test",
       "community": 2,
+      "community_name": "Community 2",
       "norm_label": "how to test"
     },
     {
@@ -471,6 +517,7 @@
       "_origin": "ast",
       "id": "docs_rig_notes_architecture_animate_sockets_not_meshes",
       "community": 2,
+      "community_name": "Community 2",
       "norm_label": "architecture (animate sockets, not meshes)"
     },
     {
@@ -481,6 +528,7 @@
       "_origin": "ast",
       "id": "docs_rig_notes_tuning_variables_exports_on_proceduralanimator",
       "community": 2,
+      "community_name": "Community 2",
       "norm_label": "tuning variables (exports on proceduralanimator)"
     },
     {
@@ -491,6 +539,7 @@
       "_origin": "ast",
       "id": "docs_rig_notes_phase_e_f_tuning_exports_on_proceduralanimator",
       "community": 2,
+      "community_name": "Community 2",
       "norm_label": "phase e/f tuning (exports on proceduralanimator)"
     },
     {
@@ -501,6 +550,7 @@
       "_origin": "ast",
       "id": "docs_rig_notes_known_limitations_todo",
       "community": 2,
+      "community_name": "Community 2",
       "norm_label": "known limitations / todo"
     }
   ],
@@ -511,9 +561,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L250",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_add_footer"
+      "target": "work_generate_remaining_tiers_pdf_add_footer",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -521,9 +571,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L254",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_build_pages"
+      "target": "work_generate_remaining_tiers_pdf_build_pages",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -531,9 +581,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L180",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text"
+      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -541,9 +591,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L314",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_main"
+      "target": "work_generate_remaining_tiers_pdf_main",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -551,9 +601,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L184",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -561,9 +611,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L246",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph"
+      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -572,9 +622,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L207",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
-      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text"
+      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -583,9 +633,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L316",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -593,9 +643,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L192",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -603,9 +653,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L196",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -613,9 +663,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L185",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_init"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_init",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -623,9 +673,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L216",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_write"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_write",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -634,9 +684,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L185",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_init",
-      "target": "path"
+      "target": "path",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -645,9 +695,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L189",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_init",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -656,9 +706,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L210",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -667,9 +717,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L218",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_write",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -678,9 +728,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L318",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -689,9 +739,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L319",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_write"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_write",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -700,9 +750,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L300",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_build_pages",
-      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph"
+      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -711,9 +761,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L279",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_build_pages",
-      "target": "work_generate_remaining_tiers_pdf_add_footer"
+      "target": "work_generate_remaining_tiers_pdf_add_footer",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -722,9 +772,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L317",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_build_pages"
+      "target": "work_generate_remaining_tiers_pdf_build_pages",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -732,9 +782,9 @@
       "source_file": "README.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "readme",
-      "target": "readme_marrow"
+      "target": "readme_marrow",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -742,9 +792,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_godot_signal_guidelines"
+      "target": "docs_godot_signal_guidelines_godot_signal_guidelines",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -752,9 +802,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L40",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_keep_emitters_decoupled"
+      "target": "docs_godot_signal_guidelines_keep_emitters_decoupled",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -762,9 +812,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L30",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_pass_useful_data"
+      "target": "docs_godot_signal_guidelines_pass_useful_data",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -772,9 +822,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_prefer_event_names"
+      "target": "docs_godot_signal_guidelines_prefer_event_names",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -782,9 +832,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L19",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_signal_up_call_down"
+      "target": "docs_godot_signal_guidelines_signal_up_call_down",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -792,9 +842,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L50",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_use_gameevents_sparingly"
+      "target": "docs_godot_signal_guidelines_use_gameevents_sparingly",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -802,9 +852,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout",
-      "target": "docs_open_world_map_layout_marrow_open_world_map_layout_notes"
+      "target": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -812,9 +862,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_current_goal"
+      "target": "docs_open_world_map_layout_current_goal",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -822,9 +872,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L40",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_current_regions"
+      "target": "docs_open_world_map_layout_current_regions",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -832,9 +882,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_mesh_swap_rule"
+      "target": "docs_open_world_map_layout_mesh_swap_rule",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -842,9 +892,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L26",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_metadata"
+      "target": "docs_open_world_map_layout_metadata",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -852,9 +902,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L50",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_next_coder_step"
+      "target": "docs_open_world_map_layout_next_coder_step",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -862,39 +912,39 @@
       "source_file": "docs/project_graph_map.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map",
-      "target": "docs_project_graph_map_marrow_project_graph_map"
+      "target": "docs_project_graph_map_marrow_project_graph_map",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/project_graph_map.md",
-      "source_location": "L138",
+      "source_location": "L165",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_arena_goals"
+      "target": "docs_project_graph_map_arena_goals",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/project_graph_map.md",
-      "source_location": "L71",
+      "source_location": "L90",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_bonedatabase"
+      "target": "docs_project_graph_map_bonedatabase",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/project_graph_map.md",
-      "source_location": "L178",
+      "source_location": "L205",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_enemy_and_combat"
+      "target": "docs_project_graph_map_enemy_and_combat",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -902,59 +952,29 @@
       "source_file": "docs/project_graph_map.md",
       "source_location": "L13",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_gameevents"
+      "target": "docs_project_graph_map_gameevents",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/project_graph_map.md",
-      "source_location": "L213",
+      "source_location": "L240",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_generated_world"
+      "target": "docs_project_graph_map_generated_world",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/project_graph_map.md",
-      "source_location": "L220",
+      "source_location": "L247",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_guidance_docs"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/project_graph_map.md",
-      "source_location": "L99",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_inventory_ui"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/project_graph_map.md",
-      "source_location": "L196",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_modular_rig"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/project_graph_map.md",
-      "source_location": "L162",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_open_world_map"
+      "target": "docs_project_graph_map_guidance_docs",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -962,9 +982,39 @@
       "source_file": "docs/project_graph_map.md",
       "source_location": "L118",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_pickups_and_rewards"
+      "target": "docs_project_graph_map_inventory_ui",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/project_graph_map.md",
+      "source_location": "L223",
+      "weight": 1.0,
+      "source": "docs_project_graph_map_marrow_project_graph_map",
+      "target": "docs_project_graph_map_modular_rig",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/project_graph_map.md",
+      "source_location": "L189",
+      "weight": 1.0,
+      "source": "docs_project_graph_map_marrow_project_graph_map",
+      "target": "docs_project_graph_map_open_world_map",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/project_graph_map.md",
+      "source_location": "L145",
+      "weight": 1.0,
+      "source": "docs_project_graph_map_marrow_project_graph_map",
+      "target": "docs_project_graph_map_pickups_and_rewards",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -972,9 +1022,9 @@
       "source_file": "docs/project_graph_map.md",
       "source_location": "L41",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_player"
+      "target": "docs_project_graph_map_player",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -992,9 +1042,9 @@
       "source_file": "docs/project_graph_map.md",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_project_graph_map_marrow_project_graph_map",
-      "target": "docs_project_graph_map_runtime_entry"
+      "target": "docs_project_graph_map_runtime_entry",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1002,9 +1052,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes",
-      "target": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes"
+      "target": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1012,9 +1062,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_architecture_animate_sockets_not_meshes"
+      "target": "docs_rig_notes_architecture_animate_sockets_not_meshes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1022,9 +1072,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_how_to_test"
+      "target": "docs_rig_notes_how_to_test",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1032,9 +1082,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L42",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_known_limitations_todo"
+      "target": "docs_rig_notes_known_limitations_todo",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1042,9 +1092,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L37",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_phase_e_f_tuning_exports_on_proceduralanimator"
+      "target": "docs_rig_notes_phase_e_f_tuning_exports_on_proceduralanimator",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1052,11 +1102,11 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_tuning_variables_exports_on_proceduralanimator"
+      "target": "docs_rig_notes_tuning_variables_exports_on_proceduralanimator",
+      "confidence_score": 1.0
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "23387a6cd5b3ea1d839606dacf8489d3fe92a284"
+  "built_at_commit": "b8d5c3dc6a7283b19ed8118035d273c48cdab0b7"
 }

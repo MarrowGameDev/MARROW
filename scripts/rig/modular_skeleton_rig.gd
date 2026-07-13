@@ -129,6 +129,48 @@ func _ready() -> void:
 		_apply_skeleton_model()
 
 
+func apply_gorilla_proportions() -> void:
+	_set_socket_position("body", Vector3(0.0, -0.06, 0.0))
+	_set_socket_position("head", Vector3(0.0, 0.48, -0.08))
+	_set_socket_position("right_arm", Vector3(0.44, 0.22, -0.04))
+	_set_socket_position("left_arm", Vector3(-0.44, 0.22, -0.04))
+	_set_socket_position("right_leg", Vector3(0.18, -0.30, 0.05))
+	_set_socket_position("left_leg", Vector3(-0.18, -0.30, 0.05))
+	_set_socket_position("right_foot", Vector3(0.0, -0.44, 0.10))
+	_set_socket_position("left_foot", Vector3(0.0, -0.44, 0.10))
+
+	_set_base_limb_shape("body", Vector3(0.74, 0.72, 0.42), Vector3(0.0, -0.02, 0.0))
+	_set_base_limb_shape("head", Vector3(0.38, 0.34, 0.38), Vector3(0.0, 0.0, 0.0))
+	_set_base_limb_shape("right_arm", Vector3(0.26, 0.88, 0.25), Vector3(0.0, -0.44, 0.02))
+	_set_base_limb_shape("left_arm", Vector3(0.26, 0.88, 0.25), Vector3(0.0, -0.44, 0.02))
+	_set_base_limb_shape("right_leg", Vector3(0.24, 0.44, 0.24), Vector3(0.0, -0.22, 0.0))
+	_set_base_limb_shape("left_leg", Vector3(0.24, 0.44, 0.24), Vector3(0.0, -0.22, 0.0))
+	_set_base_limb_shape("right_foot", Vector3(0.32, 0.14, 0.46), Vector3(0.0, 0.0, 0.08))
+	_set_base_limb_shape("left_foot", Vector3(0.32, 0.14, 0.46), Vector3(0.0, 0.0, 0.08))
+
+
+func _set_socket_position(socket_key: String, new_position: Vector3) -> void:
+	var socket: Node3D = sockets.get(socket_key) as Node3D
+	if socket == null:
+		return
+
+	socket.position = new_position
+
+
+func _set_base_limb_shape(limb_key: String, new_size: Vector3, new_offset: Vector3) -> void:
+	var limb: MeshInstance3D = base_visuals.get(limb_key) as MeshInstance3D
+	if limb == null:
+		return
+
+	var box: BoxMesh = limb.mesh as BoxMesh
+	if box == null:
+		return
+
+	box.size = new_size
+	limb.position = new_offset
+	limb.scale = Vector3.ONE
+
+
 # Hides the grey-box limbs and shows the real model as one body under the torso
 # socket, so it inherits the whole-body motion (bob / lean / sway / turn / attack).
 func _apply_skeleton_model() -> void:
