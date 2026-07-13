@@ -22,6 +22,10 @@ dist/
 *.log
 logs/
 
+# Graphify generated cache. Keep graphify-out artifacts if you want to commit
+# the project graph, but do not commit the rebuild cache.
+graphify-out/cache/
+
 # OS and editor noise.
 .DS_Store
 Thumbs.db
