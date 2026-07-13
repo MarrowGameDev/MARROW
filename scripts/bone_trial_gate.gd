@@ -50,9 +50,7 @@ func _try_complete_with(player: Node3D) -> void:
 	_update_label()
 	_set_gate_color(Color(0.35, 1.0, 0.35, 1.0))
 
-	for manager in get_tree().get_nodes_in_group("arena_goal_managers"):
-		if manager.has_method("register_trial_complete"):
-			manager.call("register_trial_complete", trial_id, trial_name)
+	GameEvents.trial_completed.emit(trial_id, trial_name)
 
 
 func _prepare_material() -> void:

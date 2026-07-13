@@ -1,0 +1,42 @@
+{
+  "work/generate_remaining_tiers_pdf.py": {
+    "mtime": 1783974053.6231537,
+    "ast_hash": "1a7e3ffeac734b1f288cfe0177fa342c",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1783974053.5841537,
+    "ast_hash": "a662bb267076b1259f5bb03adb44b904",
+    "semantic_hash": ""
+  },
+  "docs/godot_signal_guidelines.md": {
+    "mtime": 1783977726.955873,
+    "ast_hash": "b2e851e5b862ddbdd7046aaca02b81d9",
+    "semantic_hash": ""
+  },
+  "docs/open_world_map_layout.md": {
+    "mtime": 1783974053.598154,
+    "ast_hash": "ff8977ffd3a29dc911b64ac5171461fe",
+    "semantic_hash": ""
+  },
+  "docs/rig_notes.md": {
+    "mtime": 1783974053.598154,
+    "ast_hash": "630fd2f7f6d44fae88072aab44133e34",
+    "semantic_hash": ""
+  },
+  "outputs/marrow-remaining-tiers-coder-plan.pdf": {
+    "mtime": 1783974053.6001618,
+    "ast_hash": "71142c2ee8111b48cbad176421e4b50a",
+    "semantic_hash": ""
+  },
+  "assets/ui/inventory_demo_mockup.png": {
+    "mtime": 1783974053.59616,
+    "ast_hash": "1dec5b24319fbe84818499224f48863c",
+    "semantic_hash": ""
+  },
+  "docs/project_graph_map.md": {
+    "mtime": 1783978249.9973228,
+    "ast_hash": "dd1885edc674011aa174e027b33b82ec",
+    "semantic_hash": ""
+  }
+}
