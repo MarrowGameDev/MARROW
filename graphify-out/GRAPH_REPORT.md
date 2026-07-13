@@ -1,7 +1,7 @@
 # Graph Report - MARROW  (2026-07-13)
 
 ## Corpus Check
-- 6 files · ~45,546 words
+- 6 files · ~45,657 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,17 +10,17 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8cae2d5e`
+- Built from commit: `2f9dd75d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Community 0|Community 0]]
-- [[_COMMUNITY_Community 1|Community 1]]
-- [[_COMMUNITY_Community 2|Community 2]]
-- [[_COMMUNITY_Community 3|Community 3]]
-- [[_COMMUNITY_Community 4|Community 4]]
-- [[_COMMUNITY_Community 5|Community 5]]
+- Community 0
+- Community 1
+- Community 2
+- Community 3
+- Community 4
+- Community 5
 
 ## God Nodes (most connected - your core abstractions)
 1. `Marrow Project Graph Map` - 13 edges
@@ -63,14 +63,14 @@ Cohesion: 0.14
 Nodes (13): Arena Goals, BoneDatabase, Enemy and Combat, GameEvents, Generated World, Guidance Docs, Inventory UI, Marrow Project Graph Map (+5 more)
 
 ## Knowledge Gaps
-- **29 isolated node(s):** `Path`, `MARROW`, `Prefer Event Names`, `Signal Up, Call Down`, `Pass Useful Data` (+24 more)
+- **28 isolated node(s):** `MARROW`, `Prefer Event Names`, `Signal Up, Call Down`, `Pass Useful Data`, `Keep Emitters Decoupled` (+23 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **What connects `Path`, `MARROW`, `Prefer Event Names` to the rest of the system?**
-  _29 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `MARROW`, `Prefer Event Names`, `Signal Up, Call Down` to the rest of the system?**
+  _28 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 4` be split into smaller, more focused modules?**
   _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._

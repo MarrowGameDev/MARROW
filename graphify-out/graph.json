@@ -46,8 +46,8 @@
     {
       "label": "Path",
       "file_type": "code",
-      "source_file": "work/generate_remaining_tiers_pdf.py",
-      "source_location": "L185",
+      "source_file": "",
+      "source_location": "",
       "_origin": "ast",
       "id": "path",
       "community": 3,
@@ -501,9 +501,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L250",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_add_footer"
+      "target": "work_generate_remaining_tiers_pdf_add_footer",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -511,9 +511,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L254",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_build_pages"
+      "target": "work_generate_remaining_tiers_pdf_build_pages",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -521,9 +521,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L180",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text"
+      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -531,9 +531,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L314",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_main"
+      "target": "work_generate_remaining_tiers_pdf_main",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -541,9 +541,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L184",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -551,9 +551,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L246",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf",
-      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph"
+      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -562,9 +562,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L207",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
-      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text"
+      "target": "work_generate_remaining_tiers_pdf_escape_pdf_text",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -573,9 +573,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L316",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -583,9 +583,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L192",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -593,9 +593,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L196",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -603,9 +603,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L185",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_init"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_init",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -613,9 +613,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L216",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_write"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_write",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -624,9 +624,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L185",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_init",
-      "target": "path"
+      "target": "path",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -635,9 +635,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L189",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_init",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -646,9 +646,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L210",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -657,9 +657,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L218",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_simplepdf_write",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_object",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -668,9 +668,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L318",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_add_page",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -679,9 +679,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L319",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_simplepdf_write"
+      "target": "work_generate_remaining_tiers_pdf_simplepdf_write",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -690,9 +690,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L300",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_build_pages",
-      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph"
+      "target": "work_generate_remaining_tiers_pdf_wrap_paragraph",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -701,9 +701,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L279",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_build_pages",
-      "target": "work_generate_remaining_tiers_pdf_add_footer"
+      "target": "work_generate_remaining_tiers_pdf_add_footer",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -712,9 +712,9 @@
       "source_file": "work/generate_remaining_tiers_pdf.py",
       "source_location": "L317",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "work_generate_remaining_tiers_pdf_main",
-      "target": "work_generate_remaining_tiers_pdf_build_pages"
+      "target": "work_generate_remaining_tiers_pdf_build_pages",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -722,9 +722,9 @@
       "source_file": "README.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "readme",
-      "target": "readme_marrow"
+      "target": "readme_marrow",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -732,9 +732,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_godot_signal_guidelines"
+      "target": "docs_godot_signal_guidelines_godot_signal_guidelines",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -742,9 +742,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L40",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_keep_emitters_decoupled"
+      "target": "docs_godot_signal_guidelines_keep_emitters_decoupled",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -752,9 +752,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L30",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_pass_useful_data"
+      "target": "docs_godot_signal_guidelines_pass_useful_data",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -762,9 +762,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_prefer_event_names"
+      "target": "docs_godot_signal_guidelines_prefer_event_names",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -772,9 +772,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L19",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_signal_up_call_down"
+      "target": "docs_godot_signal_guidelines_signal_up_call_down",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -782,9 +782,9 @@
       "source_file": "docs/godot_signal_guidelines.md",
       "source_location": "L50",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_godot_signal_guidelines_godot_signal_guidelines",
-      "target": "docs_godot_signal_guidelines_use_gameevents_sparingly"
+      "target": "docs_godot_signal_guidelines_use_gameevents_sparingly",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -792,9 +792,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout",
-      "target": "docs_open_world_map_layout_marrow_open_world_map_layout_notes"
+      "target": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -802,9 +802,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_current_goal"
+      "target": "docs_open_world_map_layout_current_goal",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -812,9 +812,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L40",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_current_regions"
+      "target": "docs_open_world_map_layout_current_regions",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -822,9 +822,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_mesh_swap_rule"
+      "target": "docs_open_world_map_layout_mesh_swap_rule",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -832,9 +832,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L26",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_metadata"
+      "target": "docs_open_world_map_layout_metadata",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -842,9 +842,9 @@
       "source_file": "docs/open_world_map_layout.md",
       "source_location": "L50",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_open_world_map_layout_marrow_open_world_map_layout_notes",
-      "target": "docs_open_world_map_layout_next_coder_step"
+      "target": "docs_open_world_map_layout_next_coder_step",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -982,9 +982,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes",
-      "target": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes"
+      "target": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -992,9 +992,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_architecture_animate_sockets_not_meshes"
+      "target": "docs_rig_notes_architecture_animate_sockets_not_meshes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1002,9 +1002,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_how_to_test"
+      "target": "docs_rig_notes_how_to_test",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1012,9 +1012,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L42",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_known_limitations_todo"
+      "target": "docs_rig_notes_known_limitations_todo",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1022,9 +1022,9 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L37",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_phase_e_f_tuning_exports_on_proceduralanimator"
+      "target": "docs_rig_notes_phase_e_f_tuning_exports_on_proceduralanimator",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -1032,11 +1032,11 @@
       "source_file": "docs/rig_notes.md",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "docs_rig_notes_marrow_modular_rig_procedural_animation_notes",
-      "target": "docs_rig_notes_tuning_variables_exports_on_proceduralanimator"
+      "target": "docs_rig_notes_tuning_variables_exports_on_proceduralanimator",
+      "confidence_score": 1.0
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "8cae2d5e60ec8017938752e72622065bb448a4bd"
+  "built_at_commit": "2f9dd75dc474e9fd3483474a64b001364f51ac9c"
 }

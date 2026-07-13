@@ -1,0 +1,50 @@
+name: Update Graphify
+
+on:
+  push:
+    branches:
+      - "**"
+    paths-ignore:
+      - "graphify-out/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: graphify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-graphify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install Graphify
+        run: uv tool install graphifyy
+
+      - name: Update graph
+        run: graphify update .
+
+      - name: Remove generated cache
+        run: rm -rf graphify-out/cache
+
+      - name: Commit graph updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/project_graph_map.md graphify-out .gitignore
+          if git diff --cached --quiet; then
+            echo "Graphify is already up to date."
+            exit 0
+          fi
+          git commit -m "chore: actualiza graphify"
+          git push
