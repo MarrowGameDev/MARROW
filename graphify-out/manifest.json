@@ -1,46 +1,46 @@
 {
   "work/generate_remaining_tiers_pdf.py": {
-    "mtime": 1783984234.7280562,
+    "mtime": 1783984851.9658318,
     "ast_hash": "5984d1678bc946b40ffc3df9d25eee15",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1783984234.720145,
+    "mtime": 1783984851.959121,
     "ast_hash": "e70955501053f424242647c99cccee7d",
     "semantic_hash": ""
   },
   "docs/godot_signal_guidelines.md": {
-    "mtime": 1783984234.722614,
+    "mtime": 1783984851.961799,
     "ast_hash": "b2e851e5b862ddbdd7046aaca02b81d9",
     "semantic_hash": ""
   },
   "docs/open_world_map_layout.md": {
-    "mtime": 1783984234.7244716,
+    "mtime": 1783984851.962799,
     "ast_hash": "ce90289ef42ee64c3272c8e0b0b5f6b0",
     "semantic_hash": ""
   },
   "docs/rig_notes.md": {
-    "mtime": 1783984234.7244716,
+    "mtime": 1783984851.962799,
     "ast_hash": "7048bf32b9e78f142046926e6f646756",
     "semantic_hash": ""
   },
   "outputs/marrow-remaining-tiers-coder-plan.pdf": {
-    "mtime": 1783984234.725392,
+    "mtime": 1783984851.9639447,
     "ast_hash": "402fb35cdad8e1d855dec02cc8b6ff12",
     "semantic_hash": ""
   },
   "assets/ui/inventory_demo_mockup.png": {
-    "mtime": 1783984234.722614,
+    "mtime": 1783984851.961799,
     "ast_hash": "1dec5b24319fbe84818499224f48863c",
     "semantic_hash": ""
   },
   "docs/project_graph_map.md": {
-    "mtime": 1783984234.7244716,
+    "mtime": 1783984851.962799,
     "ast_hash": "3028e41404b22c4049021939869a1836",
     "semantic_hash": ""
   },
   ".github/workflows/update-graphify.yml": {
-    "mtime": 1783984234.720145,
+    "mtime": 1783984851.959121,
     "ast_hash": "3ca101e85d0a51daf4df0bfc89a0689b",
     "semantic_hash": ""
   }
