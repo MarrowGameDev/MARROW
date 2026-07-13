@@ -144,6 +144,39 @@ static func display_name(id: String) -> String:
 	return "Unknown Bone"
 
 
+static func display_name_with_slot(id: String) -> String:
+	var base_name := display_name(id)
+	var slot_label := slot_display_name(slot(id))
+	if slot_label == "":
+		return base_name
+
+	var clean_name := base_name
+	if clean_name.ends_with(" Bone"):
+		clean_name = clean_name.substr(0, clean_name.length() - " Bone".length())
+
+	var clean_lower := clean_name.to_lower()
+	var slot_lower := slot_label.to_lower()
+	if slot_lower.contains(clean_lower):
+		return slot_label + " Bone"
+	return clean_name + " " + slot_label
+
+
+static func slot_display_name(slot_id: String) -> String:
+	match slot_id:
+		"right_arm":
+			return "Right Arm"
+		"left_arm":
+			return "Left Arm"
+		"body":
+			return "Body"
+		"legs":
+			return "Legs"
+		"head":
+			return "Head"
+		_:
+			return ""
+
+
 # The bone's color. Callers that want a different miss color (e.g. an enemy's
 # natural red) can pass their own fallback for ids that are not defined.
 static func color(id: String, fallback: Color = UNKNOWN_COLOR) -> Color:

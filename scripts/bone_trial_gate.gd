@@ -75,7 +75,7 @@ func _update_label() -> void:
 		gate_label.text = trial_name + "\nComplete"
 		return
 
-	var required_name := BoneDatabase.display_name(required_bone_id)
+	var required_name := BoneDatabase.display_name_with_slot(required_bone_id)
 	if player_in_range == null:
 		gate_label.text = trial_name + "\nNeeds " + required_name
 	elif player_in_range.has_method("has_bone_equipped") and player_in_range.call("has_bone_equipped", required_bone_id):

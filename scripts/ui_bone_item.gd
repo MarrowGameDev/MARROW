@@ -71,7 +71,10 @@ func setup(id: String, player_ref: Node) -> void:
 	_slot_label = Label.new()
 	_slot_label.position = Vector2(5.0 * x_scale, 72.0 * y_scale)
 	_slot_label.size = Vector2(86.0 * x_scale, 12.0 * y_scale)
-	_slot_label.text = _slot_display_name(BoneDatabase.slot(id))
+	var slot_text := BoneDatabase.slot_display_name(BoneDatabase.slot(id))
+	if slot_text == "":
+		slot_text = "Piece"
+	_slot_label.text = slot_text
 	_slot_label.add_theme_font_size_override("font_size", maxi(8, int(8.0 * minf(x_scale, y_scale))))
 	_slot_label.add_theme_color_override("font_color", Color(0.44, 0.32, 0.12, 0.95))
 	_slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -94,14 +97,12 @@ func _on_mouse_exited() -> void:
 		player.clear_bone_info()
 
 
-# Updates the "(worn)" tag to match the current build (no rebuild needed).
+# Inventory tiles represent carried copies. Equipped copies are filtered out by
+# PlayerInventoryUI, so duplicate items can stay stackable without false labels.
 func refresh() -> void:
 	if _label == null:
 		return
-	var worn := ""
-	if player != null and player.has_method("has_bone_equipped") and player.has_bone_equipped(bone_id):
-		worn = "\n(worn)"
-	_label.text = BoneDatabase.display_name(bone_id) + worn
+	_label.text = BoneDatabase.display_name_with_slot(bone_id)
 
 
 # Godot calls this when a drag begins on the tile. Returning data starts the drag.
@@ -137,20 +138,6 @@ func _make_tile_style(bg: Color, border: Color, border_width: int) -> StyleBoxFl
 	style.shadow_size = 3
 	style.shadow_offset = Vector2(0, 2)
 	return style
-
-
-func _slot_display_name(slot: String) -> String:
-	match slot:
-		"right_arm", "left_arm":
-			return "Arms"
-		"legs":
-			return "Legs"
-		"body":
-			return "Torso"
-		"head":
-			return "Head"
-		_:
-			return "Piece"
 
 
 # Accept a bone dragged out of a slot, to unequip it.

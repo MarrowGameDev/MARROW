@@ -22,11 +22,15 @@ extends Node3D
 
 @export_group("Crawl")
 @export var crawl_mode := false
-@export var crawl_body_drop := 0.32
-@export var crawl_body_pitch := 0.95
-@export var crawl_pull_amount := 1.15
-@export var crawl_arm_drop := 0.36
-@export var crawl_head_lift := 0.35
+@export var crawl_body_drop := 0.46
+@export var crawl_body_pitch := 1.08
+@export var crawl_pull_amount := 1.35
+@export var crawl_arm_drop := 0.42
+@export var crawl_head_lift := 0.48
+@export var crawl_forward_offset := 0.18
+@export var crawl_arm_reach := 0.18
+@export var crawl_leg_tuck := 0.72
+@export var crawl_shoulder_roll := 0.42
 
 # Bend at the limb mid-joint (elbow/knee) so limbs flex instead of staying stiff.
 @export var joint_bend_base := 0.12    # radians always bent a little (never a stick)
@@ -185,18 +189,19 @@ func _animate_limbs() -> void:
 
 func _animate_crawl_body() -> void:
 	var pull := sin(walk_time)
-	var shove := absf(pull) * body_bob_amount * 0.45 * speed_ratio
+	var shove := absf(pull) * body_bob_amount * 0.65 * speed_ratio
 	var breath := sin(_time * 1.8) * idle_breath_amount * (1.0 - speed_ratio)
+	var forward_shove := absf(pull) * crawl_forward_offset * speed_ratio
 
 	var body := rig.get_socket("body")
 	if body != null and _rest_pos.has("body"):
-		body.position = _get_rest_pos("body") + Vector3(pull * body_sway_amount * 0.45 * speed_ratio, -crawl_body_drop + shove + breath, 0.0)
-		body.rotation = _get_rest_rot("body") + Vector3(crawl_body_pitch, 0.0, -pull * 0.08 * speed_ratio)
+		body.position = _get_rest_pos("body") + Vector3(pull * body_sway_amount * 0.65 * speed_ratio, -crawl_body_drop + shove + breath, -forward_shove)
+		body.rotation = _get_rest_rot("body") + Vector3(crawl_body_pitch, pull * 0.10 * speed_ratio, -pull * 0.16 * speed_ratio)
 
 	var head := rig.get_socket("head")
 	if head != null and _rest_pos.has("head"):
-		head.position = _get_rest_pos("head") + Vector3(0.0, -crawl_body_drop - 0.20 + breath, -0.12)
-		head.rotation = _get_rest_rot("head") + Vector3(-crawl_head_lift, 0.0, pull * 0.08 * speed_ratio)
+		head.position = _get_rest_pos("head") + Vector3(0.0, -crawl_body_drop - 0.12 + breath, -0.22 - forward_shove * 0.35)
+		head.rotation = _get_rest_rot("head") + Vector3(-crawl_head_lift, pull * 0.06 * speed_ratio, pull * 0.10 * speed_ratio)
 
 
 func _animate_crawl_limbs() -> void:
@@ -209,15 +214,29 @@ func _animate_crawl_limbs() -> void:
 
 	var right_arm := rig.get_socket("right_arm")
 	if right_arm != null:
-		right_arm.position = _get_rest_pos("right_arm") + Vector3(0.03 * right_pull, -crawl_arm_drop, 0.08)
-		right_arm.rotation.z += right_pull * 0.32 - left_pull * 0.12
+		right_arm.position = _get_rest_pos("right_arm") + Vector3(0.06 * right_pull, -crawl_arm_drop, 0.08 - right_pull * crawl_arm_reach)
+		right_arm.rotation.z += right_pull * crawl_shoulder_roll - left_pull * 0.18
 	var left_arm := rig.get_socket("left_arm")
 	if left_arm != null:
-		left_arm.position = _get_rest_pos("left_arm") + Vector3(-0.03 * left_pull, -crawl_arm_drop, 0.08)
-		left_arm.rotation.z -= left_pull * 0.32 - right_pull * 0.12
+		left_arm.position = _get_rest_pos("left_arm") + Vector3(-0.06 * left_pull, -crawl_arm_drop, 0.08 - left_pull * crawl_arm_reach)
+		left_arm.rotation.z -= left_pull * crawl_shoulder_roll - right_pull * 0.18
 
-	_swing("right_leg", 0.38)
-	_swing("left_leg", 0.38)
+	_swing("right_leg", crawl_leg_tuck)
+	_swing("left_leg", crawl_leg_tuck)
+	var right_leg := rig.get_socket("right_leg")
+	if right_leg != null:
+		right_leg.position = _get_rest_pos("right_leg") + Vector3(0.03, -0.10, 0.16)
+	var left_leg := rig.get_socket("left_leg")
+	if left_leg != null:
+		left_leg.position = _get_rest_pos("left_leg") + Vector3(-0.03, -0.10, 0.16)
+	var right_foot := rig.get_socket("right_foot")
+	if right_foot != null:
+		right_foot.position = _get_rest_pos("right_foot") + Vector3(0.0, 0.02, 0.12)
+		right_foot.rotation = _get_rest_rot("right_foot") + Vector3(crawl_leg_tuck * 0.5, 0.0, 0.0)
+	var left_foot := rig.get_socket("left_foot")
+	if left_foot != null:
+		left_foot.position = _get_rest_pos("left_foot") + Vector3(0.0, 0.02, 0.12)
+		left_foot.rotation = _get_rest_rot("left_foot") + Vector3(crawl_leg_tuck * 0.5, 0.0, 0.0)
 
 
 func _swing(key: String, angle: float) -> void:

@@ -57,4 +57,4 @@ func _cycle_equip() -> void:
 	rig.equip_bone(bone_id, BoneDatabase.get_def(bone_id))
 	if not equipped_ids.has(bone_id):
 		equipped_ids.append(bone_id)
-	print("Rig test equipped: ", BoneDatabase.display_name(bone_id))
+	print("Rig test equipped: ", BoneDatabase.display_name_with_slot(bone_id))

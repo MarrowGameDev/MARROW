@@ -93,7 +93,7 @@ func refresh() -> void:
 	var bone_id := _equipped_bone_id()
 	if bone_id != "":
 		_box.color = BoneDatabase.color(bone_id)
-		_label.text = BoneDatabase.display_name(bone_id)
+		_label.text = BoneDatabase.display_name_with_slot(bone_id)
 	else:
 		_box.color = Color(0.87, 0.63, 0.19, 0.28)
 		_label.text = "Empty"

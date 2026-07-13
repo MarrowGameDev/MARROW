@@ -55,6 +55,7 @@ const LIMB_BONE_PICKUP_SCRIPT: Script = preload("res://scripts/limb_bone_pickup.
 @export var guarantee_limb_pickup_on_death: bool = true
 @export var stealth_finish_max_health: int = 3
 @export var stealth_finish_range: float = 2.2
+@export_range(0.0, 1.0, 0.05) var stealth_behind_dot: float = 0.45
 @export var failed_stealth_damage_multiplier: int = 2
 @export var respawn_enabled: bool = true
 @export var near_respawn_delay: float = 120.0
@@ -286,18 +287,34 @@ func can_be_stealth_finished_by(player: Node3D) -> bool:
 		return false
 	if player_visible or search_timer > 0.0 or returning_to_spawn:
 		return false
-	return global_position.distance_to(player.global_position) <= stealth_finish_range
+	if global_position.distance_to(player.global_position) > stealth_finish_range:
+		return false
+	return _is_player_behind(player)
 
 
 func get_stealth_prompt_text() -> String:
-	var bone_name := BoneDatabase.display_name(dropped_bone_id)
+	var bone_name := BoneDatabase.display_name_with_slot(dropped_bone_id)
 	if health <= stealth_finish_max_health:
 		return "F: Finish " + bone_name + " enemy"
 	return "F: Ambush " + bone_name + " enemy"
 
 
 func get_drop_display_name() -> String:
-	return BoneDatabase.display_name(dropped_bone_id)
+	return BoneDatabase.display_name_with_slot(dropped_bone_id)
+
+
+func _is_player_behind(player: Node3D) -> bool:
+	var to_player := player.global_position - global_position
+	to_player.y = 0.0
+	if to_player.length() <= 0.01:
+		return false
+
+	var enemy_forward := facing_direction
+	enemy_forward.y = 0.0
+	if enemy_forward.length() <= 0.01:
+		enemy_forward = _facing_from_rotation()
+
+	return enemy_forward.normalized().dot(to_player.normalized()) <= -stealth_behind_dot
 
 
 func try_stealth_finish(player: Node3D, player_damage: int, hit_from: Vector3) -> bool:
@@ -805,7 +822,7 @@ func _attach_pickup_to_detached_limb(body: RigidBody3D) -> void:
 	var label := Label3D.new()
 	label.name = "PromptLabel"
 	label.position = Vector3(0.0, 1.25, 0.0)
-	label.text = BoneDatabase.display_name(dropped_bone_id)
+	label.text = BoneDatabase.display_name_with_slot(dropped_bone_id)
 	label.font_size = 42
 	label.outline_size = 8
 	label.outline_modulate = Color(0.08, 0.07, 0.02, 1.0)
@@ -1107,7 +1124,7 @@ func _update_health_label() -> void:
 		state_text = "\nCRAWLING"
 	elif fleeing_timer > 0.0:
 		state_text = "\nFLEEING"
-	health_label.text = BoneDatabase.quality(dropped_bone_id) + " " + BoneDatabase.display_name(dropped_bone_id) + "\nHP: " + str(health) + state_text
+	health_label.text = BoneDatabase.quality(dropped_bone_id) + " " + BoneDatabase.display_name_with_slot(dropped_bone_id) + "\nHP: " + str(health) + state_text
 
 
 # This gives a clear visual response every time the enemy is hit.

@@ -127,7 +127,7 @@ func _physics_process(delta: float) -> void:
 	elif Input.is_action_just_pressed("inventory") and nearby_bone_pickups == 0 and not is_dead:
 		_toggle_inventory()
 
-	if inventory_open and Input.is_action_just_pressed("ui_focus_next") and not is_dead:
+	if inventory_open and Input.is_action_just_pressed("ui_focus_next") and not Input.is_action_just_pressed("inventory") and not is_dead:
 		if inventory_ui != null:
 			inventory_ui.cycle_category()
 
@@ -280,7 +280,9 @@ func _try_stealth_finish() -> void:
 	if animator != null:
 		animator.trigger_attack()
 	_flash_player_attack()
-	stealth_target.call("try_stealth_finish", self, attack_damage, global_position)
+	var finished := bool(stealth_target.call("try_stealth_finish", self, attack_damage, global_position))
+	if not finished:
+		stealth_target = null
 	_set_stealth_prompt("")
 
 	await get_tree().create_timer(attack_cooldown).timeout
@@ -323,17 +325,11 @@ func _update_procedural_animation(delta: float, max_speed: float) -> void:
 
 # Bone pickups call this when the player walks into them.
 func collect_bone(bone_id: String) -> void:
-	# Tier 1E duplicate policy: collecting a bone you already own does nothing
-	# except say so — no duplicate entries pile up in the inventory.
-	if bone_inventory.has(bone_id):
-		print("Already have ", BoneDatabase.display_name(bone_id))
-		return
-
 	bone_inventory.append(bone_id)
 	if inventory_ui != null:
 		inventory_ui.notify_inventory_changed()
 	GameEvents.bone_collected.emit(bone_id, self)
-	print("Collected bone: ", BoneDatabase.display_name(bone_id))
+	print("Collected bone: ", BoneDatabase.display_name_with_slot(bone_id))
 
 
 # Kept so arena objects can still detect "this body is the player." With multi-slot
@@ -454,7 +450,8 @@ func _equip_next_bone() -> void:
 
 # Public: equip a specific bone into its slot. Used by Q and by drag-and-drop.
 func equip_bone(bone_id: String) -> void:
-	_equip_bone_in_slot(bone_id)
+	if not _equip_bone_in_slot(bone_id):
+		return
 	if rig != null:
 		rig.equip_bone(bone_id, BoneDatabase.get_def(bone_id))
 	equip_swaps += 1
@@ -462,7 +459,7 @@ func equip_bone(bone_id: String) -> void:
 	if inventory_ui != null:
 		inventory_ui.notify_equipment_changed()
 	GameEvents.bone_equipped.emit(bone_id, BoneDatabase.slot(bone_id), self)
-	print("Equipped ", BoneDatabase.display_name(bone_id), " in slot ", BoneDatabase.slot(bone_id))
+	print("Equipped ", BoneDatabase.display_name_with_slot(bone_id), " in slot ", BoneDatabase.slot(bone_id))
 
 
 # Public: clear a slot. Used by dragging a worn bone out, or right-clicking a slot.
@@ -498,20 +495,20 @@ func clear_bone_info() -> void:
 
 # Attaches one bone into the slot the database assigns it, replacing whatever
 # was already in that slot and rebuilding its visual.
-func _equip_bone_in_slot(bone_id: String) -> void:
+func _equip_bone_in_slot(bone_id: String) -> bool:
 	var slot := BoneDatabase.slot(bone_id)
 	if slot == "":
 		print("Bone has no slot: ", bone_id)
-		return
+		return false
 
 	var socket := _get_socket_for_slot(slot)
 	if socket == null:
 		print("No socket for slot: ", slot)
-		return
+		return false
 
 	# Already wearing this exact bone in that slot? Nothing to do.
 	if equipped.get(slot, "") == bone_id:
-		return
+		return false
 
 	equipped[slot] = bone_id
 
@@ -521,7 +518,7 @@ func _equip_bone_in_slot(bone_id: String) -> void:
 	equipped_visuals.erase(slot)
 
 	if rig != null:
-		return
+		return true
 
 	# Build and attach the new visual, tinted to the bone's color.
 	var visual := EQUIPPED_BONE_SCENE.instantiate() as Node3D
@@ -530,6 +527,7 @@ func _equip_bone_in_slot(bone_id: String) -> void:
 	visual.rotation = Vector3.ZERO
 	equipped_visuals[slot] = visual
 	_tint_visual(visual, BoneDatabase.color(bone_id))
+	return true
 
 
 # Maps a slot name to the socket node the bone attaches to.
@@ -594,8 +592,6 @@ func _find_stealth_target() -> Node3D:
 		to_enemy.y = 0.0
 		var distance := to_enemy.length()
 		if distance > best_distance:
-			continue
-		if to_enemy.length() > 0.01 and last_facing_direction.normalized().dot(to_enemy.normalized()) < -0.2:
 			continue
 
 		best = enemy_body

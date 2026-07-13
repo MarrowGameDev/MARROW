@@ -99,6 +99,8 @@ func set_open(open: bool) -> void:
 	if inventory_root == null:
 		return
 	if open:
+		if inventory_category != "all":
+			_select_inventory_category("all")
 		_apply_inventory_responsive_layout()
 		_refresh_inventory_mode()
 		_refresh_control_buttons()
@@ -152,7 +154,7 @@ func get_equipped_bone_for_slot(slot: String) -> String:
 func show_bone_info(bone_id: String) -> void:
 	if hover_info_label == null:
 		return
-	var text := BoneDatabase.quality(bone_id) + " " + BoneDatabase.display_name(bone_id) + "  [slot: " + BoneDatabase.slot(bone_id) + "]\n"
+	var text := BoneDatabase.quality(bone_id) + " " + BoneDatabase.display_name_with_slot(bone_id) + "  [slot: " + BoneDatabase.slot_display_name(BoneDatabase.slot(bone_id)) + "]\n"
 	text += BoneDatabase.effect_text(bone_id)
 	text += BoneDatabase.description(bone_id)
 	hover_info_label.text = text
@@ -1179,14 +1181,20 @@ func rebuild_item_tiles() -> void:
 	for child in items_grid.get_children():
 		child.free()
 
+	var equipped_counts := _equipped_bone_counts()
+	var skipped_equipped_counts: Dictionary = {}
 	var shown := 0
 	for bone_id in _bone_inventory():
-		if not _bone_matches_inventory_category(str(bone_id)):
+		var id := str(bone_id)
+		if not _bone_matches_inventory_category(id):
 			continue
-		if has_bone_equipped(str(bone_id)):
+		var equipped_count := int(equipped_counts.get(id, 0))
+		var skipped_count := int(skipped_equipped_counts.get(id, 0))
+		if skipped_count < equipped_count:
+			skipped_equipped_counts[id] = skipped_count + 1
 			continue
 		var tile := BoneItemTile.new()
-		tile.setup(str(bone_id), self)
+		tile.setup(id, self)
 		items_grid.add_child(tile)
 		shown += 1
 
@@ -1252,6 +1260,16 @@ func _equipment_state() -> Dictionary:
 	if typeof(value) == TYPE_DICTIONARY:
 		return value as Dictionary
 	return {}
+
+
+func _equipped_bone_counts() -> Dictionary:
+	var counts: Dictionary = {}
+	for bone_id in _equipment_state().values():
+		var id := str(bone_id)
+		if id == "":
+			continue
+		counts[id] = int(counts.get(id, 0)) + 1
+	return counts
 
 
 func _inventory_stats_snapshot() -> Dictionary:

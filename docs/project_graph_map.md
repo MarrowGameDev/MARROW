@@ -44,7 +44,7 @@ Event relationships:
 equipment state, health state, and the inventory UI.
 
 Important state:
-- `bone_inventory` stores collected bone ids.
+- `bone_inventory` stores collected bone ids and allows duplicate ids as separate carried copies.
 - `equipped` maps equipment slots to bone ids.
 - `slot_widgets` maps UI slot names to `BoneSlotWidget` instances.
 - `items_grid` contains `BoneItemTile` instances.
@@ -53,7 +53,7 @@ Important state:
 Important methods:
 - `_physics_process` handles movement, inventory toggle, category cycling, and Q equip.
 - `collect_bone` adds a bone to the inventory and emits `bone_collected`.
-- `equip_bone` equips a bone in its database slot, recalculates stats, syncs preview, and emits `bone_equipped`.
+- `equip_bone` equips a bone in its database slot, recalculates stats, syncs preview, and emits `bone_equipped` only when the equipped slot changes.
 - `unequip_slot` clears a slot, recalculates stats, syncs preview, and emits `bone_unequipped`.
 - `_recalculate_stats` applies all equipped bone bonuses.
 - `_build_inventory_ui` builds the full inventory screen.
@@ -92,6 +92,7 @@ Player relationships:
 - asks `PlayerCameraController` to capture/release mouse when inventory opens or closes.
 - uses camera-relative movement so WASD follows the camera direction.
 - uses camera forward for attacks while the player is standing still.
+- freezes camera look while the inventory is open by releasing the mouse through the camera controller.
 
 ## BoneDatabase
 
@@ -116,10 +117,10 @@ Each definition can include:
 
 Consumers:
 - `Player` uses stat bonuses and slot data.
-- `Bone` and `LimbBonePickup` use display names and colors.
-- `Enemy` uses enemy bonuses and drop data.
-- `BoneTrialGate` uses required bone display names and colors.
-- Inventory UI widgets use display names, colors, slot labels, and effect text.
+- `Bone` and `LimbBonePickup` use slot-aware display names and colors.
+- `Enemy` uses enemy bonuses, drop data, and slot-aware display names.
+- `BoneTrialGate` uses required bone slot-aware display names and colors.
+- Inventory UI widgets use slot-aware display names, colors, slot labels, and effect text.
 
 ## Inventory UI
 
@@ -146,6 +147,8 @@ Consumers:
 - owns inventory UI layout, tabs, responsive sizing, settings screen, item grid, paper doll, and preview rig.
 - receives inventory data through player snapshot methods instead of reaching into player state directly.
 - calls player commands such as `equip_bone` and `unequip_slot` only when the user performs equip actions.
+- filters equipped copies by count so duplicate bone ids can remain as separate inventory tiles.
+- resets the visible category to `all` when the inventory opens.
 - does not recalculate player stats; `Player` remains the owner of gameplay state.
 
 ## Pickups and Rewards
@@ -216,6 +219,7 @@ Consumers:
 - finds the player by group.
 - applies contact damage through `Player.take_player_damage`.
 - can receive alerts from other enemies.
+- validates stealth finishes by range, alert state, and whether the player is behind the enemy facing direction.
 - drops a bone pickup by setting `Bone.set_bone_id`.
 
 `scripts/attack_hitbox.gd` defines a short-lived attack area.
@@ -240,6 +244,7 @@ Consumers:
 
 `ProceduralPlayerAnimator`:
 - animates the rig sockets based on velocity, facing, speed, and equipped bone defs.
+- uses a lower body pose, stronger arm pulls, and tucked legs in crawl mode.
 - responds to attack events.
 - bends limb joints when rigged limb data exists.
 
