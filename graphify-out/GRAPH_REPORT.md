@@ -1,7 +1,7 @@
 # Graph Report - MARROW  (2026-07-13)
 
 ## Corpus Check
-- 6 files · ~45,826 words
+- 6 files · ~45,886 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b8d5c3dc`
+- Built from commit: `212aa4aa`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
