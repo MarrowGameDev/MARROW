@@ -11,52 +11,57 @@ var player: Node = null
 var _box: ColorRect
 var _label: Label
 var _slot_label: Label
+var _slot_size: Vector2 = Vector2(82, 80)
 
 
-func setup(slot: String, short: String, player_ref: Node) -> void:
+func setup(slot: String, short: String, player_ref: Node, requested_size: Vector2 = Vector2(96, 96)) -> void:
 	slot_name = slot
 	short_name = short
 	player = player_ref
-	custom_minimum_size = Vector2(82, 80)
+	_slot_size = requested_size
+	var x_scale := _slot_size.x / 82.0
+	var y_scale := _slot_size.y / 80.0
+	var min_scale := minf(x_scale, y_scale)
+	custom_minimum_size = _slot_size
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var frame := PanelContainer.new()
 	frame.position = Vector2(0, 0)
-	frame.size = Vector2(82, 80)
+	frame.size = _slot_size
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_theme_stylebox_override("panel", _make_slot_style(Color(1.0, 1.0, 1.0, 0.22), Color(0.87, 0.63, 0.19, 0.68), 1))
 	add_child(frame)
 
 	_slot_label = Label.new()
-	_slot_label.position = Vector2(4, 4)
-	_slot_label.size = Vector2(74, 16)
+	_slot_label.position = Vector2(4.0 * x_scale, 5.0 * y_scale)
+	_slot_label.size = Vector2(74.0 * x_scale, 17.0 * y_scale)
 	_slot_label.text = short_name
-	_slot_label.add_theme_font_size_override("font_size", 10)
+	_slot_label.add_theme_font_size_override("font_size", maxi(11, int(10.0 * min_scale)))
 	_slot_label.add_theme_color_override("font_color", Color(0.44, 0.32, 0.12, 1.0))
 	_slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_slot_label)
 
 	var diamond_back := ColorRect.new()
-	diamond_back.position = Vector2(30, 23)
-	diamond_back.size = Vector2(22, 22)
+	diamond_back.position = Vector2(30.0 * x_scale, 25.0 * y_scale)
+	diamond_back.size = Vector2(22.0 * min_scale, 22.0 * min_scale)
 	diamond_back.rotation = PI / 4.0
 	diamond_back.color = Color(0.87, 0.63, 0.19, 0.14)
 	diamond_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(diamond_back)
 
 	_box = ColorRect.new()
-	_box.position = Vector2(34, 27)
-	_box.size = Vector2(14, 14)
+	_box.position = Vector2(34.0 * x_scale, 29.0 * y_scale)
+	_box.size = Vector2(14.0 * min_scale, 14.0 * min_scale)
 	_box.rotation = PI / 4.0
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_box)
 
 	_label = Label.new()
-	_label.position = Vector2(5, 50)
-	_label.size = Vector2(72, 27)
-	_label.add_theme_font_size_override("font_size", 9)
+	_label.position = Vector2(6.0 * x_scale, 56.0 * y_scale)
+	_label.size = Vector2(70.0 * x_scale, 28.0 * y_scale)
+	_label.add_theme_font_size_override("font_size", maxi(10, int(9.0 * min_scale)))
 	_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -73,9 +78,9 @@ func setup(slot: String, short: String, player_ref: Node) -> void:
 func _on_mouse_entered() -> void:
 	if player == null or not player.has_method("show_bone_info"):
 		return
-	var equipped: Dictionary = player.equipped
-	if equipped.has(slot_name):
-		player.show_bone_info(equipped[slot_name])
+	var bone_id := _equipped_bone_id()
+	if bone_id != "":
+		player.show_bone_info(bone_id)
 
 
 func _on_mouse_exited() -> void:
@@ -85,12 +90,8 @@ func _on_mouse_exited() -> void:
 
 # Repaint the square to the worn bone's color, or dark grey when empty.
 func refresh() -> void:
-	var equipped: Dictionary = {}
-	if player != null:
-		equipped = player.equipped
-
-	if equipped.has(slot_name):
-		var bone_id: String = equipped[slot_name]
+	var bone_id := _equipped_bone_id()
+	if bone_id != "":
 		_box.color = BoneDatabase.color(bone_id)
 		_label.text = BoneDatabase.display_name(bone_id)
 	else:
@@ -102,16 +103,16 @@ func refresh() -> void:
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if player == null:
 		return null
-	var equipped: Dictionary = player.equipped
-	if not equipped.has(slot_name):
+	var bone_id := _equipped_bone_id()
+	if bone_id == "":
 		return null
 
-	var bone_id: String = equipped[slot_name]
 	var wrap := Control.new()
 	var rect := ColorRect.new()
 	rect.color = BoneDatabase.color(bone_id)
-	rect.size = Vector2(48, 48)
-	rect.position = Vector2(-24, -24)
+	var preview_size: float = clampf(minf(_slot_size.x, _slot_size.y) * 0.56, 48.0, 64.0)
+	rect.size = Vector2(preview_size, preview_size)
+	rect.position = Vector2(-preview_size * 0.5, -preview_size * 0.5)
 	rect.rotation = PI / 4.0
 	wrap.add_child(rect)
 	set_drag_preview(wrap)
@@ -153,3 +154,15 @@ func _make_slot_style(bg: Color, border: Color, border_width: int) -> StyleBoxFl
 	style.shadow_size = 3
 	style.shadow_offset = Vector2(0, 2)
 	return style
+
+
+func _equipped_bone_id() -> String:
+	if player == null:
+		return ""
+	if player.has_method("get_equipped_bone_for_slot"):
+		return str(player.get_equipped_bone_for_slot(slot_name))
+	var equipped_value: Variant = player.get("equipped")
+	if typeof(equipped_value) != TYPE_DICTIONARY:
+		return ""
+	var equipped: Dictionary = equipped_value as Dictionary
+	return str(equipped.get(slot_name, ""))

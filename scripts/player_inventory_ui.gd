@@ -1,6 +1,7 @@
 class_name PlayerInventoryUI
 extends Node
 
+const INVENTORY_EMPTY_SLOT_SCRIPT: Script = preload("res://scripts/ui_inventory_empty_slot.gd")
 const CONTROL_SETTINGS_PATH := "user://control_settings.cfg"
 const CONTROL_BINDINGS: Array = [
 	{"action": "move_forward", "label": "Move Forward"},
@@ -142,6 +143,10 @@ func equip_bone(bone_id: String) -> void:
 func unequip_slot(slot: String) -> void:
 	if player != null:
 		player.call("unequip_slot", slot)
+
+
+func get_equipped_bone_for_slot(slot: String) -> String:
+	return str(equipped.get(slot, ""))
 
 
 func show_bone_info(bone_id: String) -> void:
@@ -517,7 +522,7 @@ func _apply_inventory_responsive_layout() -> void:
 	var min_left_width: int = 190 if very_compact else 300
 	var min_right_width: int = 190 if very_compact else 300
 	var max_right_width: int = mini(560, maxi(min_right_width, body_width - min_left_width))
-	var right_width: int = clampi(int(float(body_width) * 0.36), min_right_width, max_right_width)
+	var right_width: int = clampi(int(float(body_width) * 0.33), min_right_width, max_right_width)
 	var left_width: int = maxi(min_left_width, body_width - right_width)
 	if left_width + right_width > body_width:
 		left_width = maxi(160, body_width - right_width)
@@ -781,24 +786,8 @@ func _make_inventory_style(bg: Color, border: Color, border_width: int = 1, radi
 
 
 func _make_empty_inventory_slot() -> Control:
-	var slot := Control.new()
-	slot.custom_minimum_size = inventory_empty_slot_size
-	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var frame := PanelContainer.new()
-	frame.position = Vector2.ZERO
-	frame.size = inventory_empty_slot_size
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.58), 1, 0))
-	slot.add_child(frame)
-
-	var diamond := ColorRect.new()
-	diamond.color = Color(0.87, 0.63, 0.19, 0.16)
-	diamond.position = Vector2((inventory_empty_slot_size.x - 18.0) * 0.5, (inventory_empty_slot_size.y - 18.0) * 0.5)
-	diamond.size = Vector2(18, 18)
-	diamond.rotation = PI / 4.0
-	diamond.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_child(diamond)
+	var slot := INVENTORY_EMPTY_SLOT_SCRIPT.new() as InventoryEmptySlot
+	slot.setup(self, inventory_empty_slot_size)
 	return slot
 
 
@@ -870,8 +859,8 @@ func _build_paper_doll() -> Control:
 	doll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var center_frame := PanelContainer.new()
-	center_frame.position = Vector2(88, 0)
-	center_frame.size = Vector2(230, 306)
+	center_frame.position = Vector2(104, 0)
+	center_frame.size = Vector2(198, 306)
 	center_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
 	doll.add_child(center_frame)
@@ -885,17 +874,18 @@ func _build_paper_doll() -> Control:
 	doll.add_child(ring)
 
 	doll.add_child(_build_character_preview_panel())
-	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 18))
-	_place_slot(doll, "right_arm", "R. Arm", Vector2(324, 18))
-	_place_slot(doll, "body", "Torso", Vector2(0, 116))
-	_place_slot(doll, "legs", "Legs", Vector2(324, 116))
+	var equip_slot_size := Vector2(96, 96)
+	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 12), equip_slot_size)
+	_place_slot(doll, "right_arm", "R. Arm", Vector2(310, 12), equip_slot_size)
+	_place_slot(doll, "body", "Torso", Vector2(0, 128), equip_slot_size)
+	_place_slot(doll, "legs", "Legs", Vector2(310, 128), equip_slot_size)
 	return doll
 
 
-func _place_slot(doll: Control, slot: String, short_name: String, pos: Vector2) -> void:
+func _place_slot(doll: Control, slot: String, short_name: String, pos: Vector2, slot_size: Vector2) -> void:
 	var widget := BoneSlotWidget.new()
 	widget.position = pos
-	widget.setup(slot, short_name, self)
+	widget.setup(slot, short_name, self, slot_size)
 	doll.add_child(widget)
 	slot_widgets[slot] = widget
 

@@ -17,7 +17,9 @@ func setup(id: String, player_ref: Node) -> void:
 	player = player_ref
 	var tile_size := Vector2(96, 86)
 	if player != null and player.has_method("get_inventory_tile_size"):
-		tile_size = player.call("get_inventory_tile_size") as Vector2
+		var requested_size: Variant = player.call("get_inventory_tile_size")
+		if typeof(requested_size) == TYPE_VECTOR2:
+			tile_size = requested_size
 	var x_scale := tile_size.x / 96.0
 	var y_scale := tile_size.y / 86.0
 	custom_minimum_size = tile_size
@@ -158,4 +160,4 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if player != null and player.has_method("unequip_slot"):
-		player.unequip_slot(data.get("slot", ""))
+		player.unequip_slot(str(data.get("slot", "")))
