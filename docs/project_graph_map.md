@@ -66,7 +66,26 @@ Player relationships:
 - `Player` uses `BoneSlotWidget` for droppable equipment slots.
 - `Player` uses `ModularSkeletonRig` for visual equipment.
 - `Player` uses `ProceduralPlayerAnimator` for socket animation.
+- `Player` uses `PlayerCameraController` for third-person mouse look.
+- `Player` owns inventory and equipment rules; `PlayerInventoryUI` owns inventory presentation.
 - `Player` spawns `AttackHitbox` for attacks.
+
+## Player Camera
+
+`scripts/player_camera_controller.gd` defines `PlayerCameraController`.
+
+`PlayerCameraController`:
+- lives on `Player/CameraPivot`.
+- captures and hides the mouse during gameplay.
+- releases and shows the mouse while inventory is open.
+- rotates camera yaw/pitch from `InputEventMouseMotion`.
+- clamps pitch between configurable min/max angles.
+- exposes flat camera forward/right vectors for camera-relative movement.
+
+`Player`:
+- asks `PlayerCameraController` to capture/release mouse when inventory opens or closes.
+- uses camera-relative movement so WASD follows the camera direction.
+- uses camera forward for attacks while the player is standing still.
 
 ## BoneDatabase
 
@@ -114,6 +133,14 @@ Consumers:
 - calls `Player.equip_bone` on drop.
 - calls `Player.unequip_slot` on right click.
 - shows worn bone details through `Player.show_bone_info`.
+
+`scripts/player_inventory_ui.gd` defines `PlayerInventoryUI`.
+
+`PlayerInventoryUI`:
+- owns inventory UI layout, tabs, responsive sizing, settings screen, item grid, paper doll, and preview rig.
+- receives inventory data through player snapshot methods instead of reaching into player state directly.
+- calls player commands such as `equip_bone` and `unequip_slot` only when the user performs equip actions.
+- does not recalculate player stats; `Player` remains the owner of gameplay state.
 
 ## Pickups and Rewards
 

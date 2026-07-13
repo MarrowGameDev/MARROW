@@ -65,6 +65,7 @@ var nearby_bone_pickups: int = 0
 # last_facing_direction remembers where to aim the swing when standing still.
 var can_attack: bool = true
 var last_facing_direction: Vector3 = Vector3.FORWARD
+var current_move_direction: Vector3 = Vector3.ZERO
 
 # Tier 1F: how many times a bone was equipped this run (shown on the win screen).
 var equip_swaps: int = 0
@@ -89,6 +90,7 @@ var sprinting_this_frame: bool = false
 @onready var visual_root: Node3D = $VisualRoot
 @onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
 @onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
+@onready var camera_controller: PlayerCameraController = $CameraPivot
 
 
 # _ready runs once when the player enters the running scene.
@@ -107,6 +109,7 @@ func _ready() -> void:
 	_build_stealth_ui()
 	inventory_ui.notify_inventory_changed()
 	_setup_procedural_character()
+	_update_mouse_mode()
 
 
 func _input(event: InputEvent) -> void:
@@ -165,9 +168,8 @@ func _physics_process(delta: float) -> void:
 	# W makes the y value negative, S makes it positive, A makes x negative, and D makes x positive.
 	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 
-	# Godot's 3D world uses X for left/right, Y for up/down, and Z for forward/back.
-	# Forward is negative Z, so the input vector can become a 3D ground direction directly.
-	var direction := Vector3(input_vector.x, 0.0, input_vector.y)
+	var direction := _get_camera_relative_move_direction(input_vector)
+	current_move_direction = direction
 
 	# Keep diagonal movement from being faster than straight movement.
 	if direction.length() > 1.0:
@@ -197,6 +199,25 @@ func _physics_process(delta: float) -> void:
 	_update_procedural_animation(delta, current_move_speed)
 
 
+func _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3:
+	if camera_controller == null:
+		return Vector3(input_vector.x, 0.0, input_vector.y)
+
+	var forward := camera_controller.get_flat_forward()
+	var right := camera_controller.get_flat_right()
+	var direction := right * input_vector.x + forward * -input_vector.y
+	direction.y = 0.0
+	if direction.length() > 1.0:
+		return direction.normalized()
+	return direction
+
+
+func _get_camera_forward_direction() -> Vector3:
+	if camera_controller == null:
+		return Vector3.FORWARD
+	return camera_controller.get_flat_forward()
+
+
 # Tier 1D combat: instead of instantly zapping the nearest enemy, we spawn a
 # short-lived, VISIBLE attack box in front of the player. Only enemies that
 # overlap that box take damage, so hits and misses are easy to read.
@@ -210,10 +231,10 @@ func _try_attack() -> void:
 		animator.trigger_attack()
 
 	# Aim the swing in the direction the player last moved.
-	var forward := last_facing_direction
-	forward.y = 0.0
+	var forward := current_move_direction
 	if forward.length() < 0.01:
-		forward = Vector3.FORWARD
+		forward = _get_camera_forward_direction()
+	forward.y = 0.0
 	forward = forward.normalized()
 
 	# Create the attack box and hand it this attack's damage. attack_damage
@@ -334,6 +355,24 @@ func get_run_stats() -> Dictionary:
 	}
 
 
+func get_inventory_items() -> Array:
+	return bone_inventory.duplicate()
+
+
+func get_equipment_state() -> Dictionary:
+	return equipped.duplicate()
+
+
+func get_inventory_stats_snapshot() -> Dictionary:
+	return {
+		"move_speed": move_speed,
+		"attack_range": attack_range,
+		"attack_damage": attack_damage,
+		"health": health,
+		"max_health": max_health,
+	}
+
+
 # Enemies call this when they land a contact hit on the player.
 func take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void:
 	if is_dead or invuln_timer > 0.0:
@@ -374,6 +413,7 @@ func _die_player() -> void:
 	is_dead = true
 	velocity = Vector3.ZERO
 	_update_health_ui()
+	_update_mouse_mode()
 	GameEvents.player_died.emit(self)
 
 
@@ -668,6 +708,13 @@ func _toggle_inventory() -> void:
 	if inventory_ui != null:
 		inventory_ui.set_open(inventory_open)
 	get_tree().paused = inventory_open
+	_update_mouse_mode()
+
+
+func _update_mouse_mode() -> void:
+	if camera_controller == null:
+		return
+	camera_controller.set_look_enabled(not inventory_open and not is_dead)
 
 
 # Tier 1E: bone names, colors, stat bonuses, and effect text used to live here as

@@ -19,12 +19,7 @@ const CONTROL_BINDINGS: Array = [
 var player: Node = null
 var equipped: Dictionary:
 	get:
-		if player == null:
-			return {}
-		var value = player.get("equipped")
-		if typeof(value) == TYPE_DICTIONARY:
-			return value as Dictionary
-		return {}
+		return _equipment_state()
 
 var inventory_root: Control = null
 var inventory_label: Label = null
@@ -1237,11 +1232,12 @@ func update_inventory_ui() -> void:
 	if inventory_status_label != null:
 		inventory_status_label.text = "Bones " + str(bones.size())
 
+	var stats := _inventory_stats_snapshot()
 	var text := "Stats: "
-	text += "Speed " + str(player.get("move_speed"))
-	text += "   Reach " + str(player.get("attack_range"))
-	text += "   Damage " + str(player.get("attack_damage"))
-	text += "   HP " + str(player.get("health")) + "/" + str(player.get("max_health")) + "\n"
+	text += "Speed " + str(stats.get("move_speed", 0.0))
+	text += "   Reach " + str(stats.get("attack_range", 0.0))
+	text += "   Damage " + str(stats.get("attack_damage", 0))
+	text += "   HP " + str(stats.get("health", 0)) + "/" + str(stats.get("max_health", 0)) + "\n"
 	text += "Drag a bone onto a matching slot. Right-click a worn bone slot to remove."
 	inventory_label.text = text
 
@@ -1249,7 +1245,34 @@ func update_inventory_ui() -> void:
 func _bone_inventory() -> Array:
 	if player == null:
 		return []
+	if player.has_method("get_inventory_items"):
+		return player.call("get_inventory_items") as Array
 	var value = player.get("bone_inventory")
 	if typeof(value) == TYPE_ARRAY:
 		return value as Array
 	return []
+
+
+func _equipment_state() -> Dictionary:
+	if player == null:
+		return {}
+	if player.has_method("get_equipment_state"):
+		return player.call("get_equipment_state") as Dictionary
+	var value = player.get("equipped")
+	if typeof(value) == TYPE_DICTIONARY:
+		return value as Dictionary
+	return {}
+
+
+func _inventory_stats_snapshot() -> Dictionary:
+	if player == null:
+		return {}
+	if player.has_method("get_inventory_stats_snapshot"):
+		return player.call("get_inventory_stats_snapshot") as Dictionary
+	return {
+		"move_speed": player.get("move_speed"),
+		"attack_range": player.get("attack_range"),
+		"attack_damage": player.get("attack_damage"),
+		"health": player.get("health"),
+		"max_health": player.get("max_health"),
+	}
