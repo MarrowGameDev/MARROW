@@ -20,6 +20,14 @@ extends Node3D
 @export var speed_smoothing := 12.0
 @export var heavy_weight_swing_slowdown := 0.65
 
+@export_group("Crawl")
+@export var crawl_mode := false
+@export var crawl_body_drop := 0.32
+@export var crawl_body_pitch := 0.95
+@export var crawl_pull_amount := 1.15
+@export var crawl_arm_drop := 0.36
+@export var crawl_head_lift := 0.35
+
 # Bend at the limb mid-joint (elbow/knee) so limbs flex instead of staying stiff.
 @export var joint_bend_base := 0.12    # radians always bent a little (never a stick)
 @export var joint_bend_swing := 0.7    # extra bend through the walk cycle
@@ -93,9 +101,13 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 
 	walk_time += delta * walk_cycle_speed * speed_ratio * weight_slowdown
 
-	_animate_body()
-	_animate_limbs()
-	_animate_joints()
+	if crawl_mode:
+		_animate_crawl_body()
+		_animate_crawl_limbs()
+	else:
+		_animate_body()
+		_animate_limbs()
+		_animate_joints()
 	_animate_wobble()
 	_update_attack_overlay(delta)
 	_apply_attack_overlay()
@@ -107,6 +119,10 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 # The player calls this when an attack fires (Phase E).
 func trigger_attack() -> void:
 	_attack_timer = attack_overlay_duration
+
+
+func set_crawl_mode(enabled: bool) -> void:
+	crawl_mode = enabled
 
 
 func _capture_rest() -> void:
@@ -165,6 +181,43 @@ func _animate_limbs() -> void:
 	_swing("left_arm", swing * arm_swing_amount)
 	_swing("right_leg", -swing * leg_swing_amount)
 	_swing("left_leg", swing * leg_swing_amount)
+
+
+func _animate_crawl_body() -> void:
+	var pull := sin(walk_time)
+	var shove := absf(pull) * body_bob_amount * 0.45 * speed_ratio
+	var breath := sin(_time * 1.8) * idle_breath_amount * (1.0 - speed_ratio)
+
+	var body := rig.get_socket("body")
+	if body != null and _rest_pos.has("body"):
+		body.position = _get_rest_pos("body") + Vector3(pull * body_sway_amount * 0.45 * speed_ratio, -crawl_body_drop + shove + breath, 0.0)
+		body.rotation = _get_rest_rot("body") + Vector3(crawl_body_pitch, 0.0, -pull * 0.08 * speed_ratio)
+
+	var head := rig.get_socket("head")
+	if head != null and _rest_pos.has("head"):
+		head.position = _get_rest_pos("head") + Vector3(0.0, -crawl_body_drop - 0.20 + breath, -0.12)
+		head.rotation = _get_rest_rot("head") + Vector3(-crawl_head_lift, 0.0, pull * 0.08 * speed_ratio)
+
+
+func _animate_crawl_limbs() -> void:
+	var pull := sin(walk_time) * speed_ratio
+	var right_pull := maxf(pull, 0.0)
+	var left_pull := maxf(-pull, 0.0)
+
+	_swing("right_arm", -0.45 - right_pull * crawl_pull_amount + left_pull * 0.35)
+	_swing("left_arm", -0.45 - left_pull * crawl_pull_amount + right_pull * 0.35)
+
+	var right_arm := rig.get_socket("right_arm")
+	if right_arm != null:
+		right_arm.position = _get_rest_pos("right_arm") + Vector3(0.03 * right_pull, -crawl_arm_drop, 0.08)
+		right_arm.rotation.z += right_pull * 0.32 - left_pull * 0.12
+	var left_arm := rig.get_socket("left_arm")
+	if left_arm != null:
+		left_arm.position = _get_rest_pos("left_arm") + Vector3(-0.03 * left_pull, -crawl_arm_drop, 0.08)
+		left_arm.rotation.z -= left_pull * 0.32 - right_pull * 0.12
+
+	_swing("right_leg", 0.38)
+	_swing("left_leg", 0.38)
 
 
 func _swing(key: String, angle: float) -> void:
@@ -226,12 +279,15 @@ func _animate_wobble() -> void:
 
 		# Slide the bone in and out along its outward direction from the body.
 		var rest_pos: Vector3 = _get_rest_pos(key)
+		var base_pos: Vector3 = rest_pos
+		if crawl_mode and (key == "head" or key == "right_arm" or key == "left_arm"):
+			base_pos = s.position
 		var out_dir: Vector3 = rest_pos
 		if out_dir.length() > 0.01:
 			out_dir = out_dir.normalized()
 		else:
 			out_dir = Vector3.DOWN
-		s.position = rest_pos + out_dir * (sin(_time * wobble_speed * 0.8 + ph) * wobble_slide)
+		s.position = base_pos + out_dir * (sin(_time * wobble_speed * 0.8 + ph) * wobble_slide)
 
 
 func _wobble_phase(key: String) -> float:
