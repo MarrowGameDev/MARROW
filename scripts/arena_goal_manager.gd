@@ -19,6 +19,9 @@ var win_label: Label
 func _ready() -> void:
 	add_to_group("arena_goal_managers")
 	run_start_ms = Time.get_ticks_msec()
+	GameEvents.trial_completed.connect(_on_trial_completed)
+	GameEvents.exit_reached.connect(_on_exit_reached)
+	GameEvents.player_died.connect(_on_player_died)
 	_build_goal_ui()
 	_build_help_ui()
 	_build_win_ui()
@@ -120,6 +123,18 @@ func game_over(_player: Node = null) -> void:
 	ended = true
 	win_label.text = "YOU DIED\n\nThe enemies got you.\n\nPress R to try again"
 	win_root.visible = true
+
+
+func _on_trial_completed(trial_id: String, trial_name: String) -> void:
+	register_trial_complete(trial_id, trial_name)
+
+
+func _on_exit_reached(player: Node) -> void:
+	complete_level(player)
+
+
+func _on_player_died(player: Node) -> void:
+	game_over(player)
 
 
 func _show_win_screen(player: Node, elapsed_ms: int) -> void:

@@ -91,6 +91,7 @@ func _open_chest() -> void:
 	if player_in_range != null and reward_bone_id != "" and player_in_range.has_method("collect_bone"):
 		player_in_range.call("collect_bone", reward_bone_id)
 
+	GameEvents.camp_chest_opened.emit(self, reward_bone_id, player_in_range)
 	_release_player_interact_lock()
 	_update_label()
 

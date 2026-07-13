@@ -45,18 +45,14 @@ func _on_body_entered(body: Node3D) -> void:
 	if not body.is_in_group("player"):
 		return
 
-	for manager in get_tree().get_nodes_in_group("world_map_managers"):
-		if manager.has_method("enter_stage"):
-			manager.call("enter_stage", self)
+	GameEvents.stage_entered.emit(self)
 
 
 func _on_body_exited(body: Node3D) -> void:
 	if not body.is_in_group("player"):
 		return
 
-	for manager in get_tree().get_nodes_in_group("world_map_managers"):
-		if manager.has_method("exit_stage"):
-			manager.call("exit_stage", self)
+	GameEvents.stage_exited.emit(self)
 
 
 func get_stage_summary() -> String:

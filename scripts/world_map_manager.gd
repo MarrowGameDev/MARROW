@@ -8,6 +8,8 @@ var map_label: Label
 
 func _ready() -> void:
 	add_to_group("world_map_managers")
+	GameEvents.stage_entered.connect(_on_stage_entered)
+	GameEvents.stage_exited.connect(_on_stage_exited)
 	_build_map_ui()
 	_update_map_ui()
 
@@ -21,6 +23,14 @@ func exit_stage(stage: Node) -> void:
 	if current_stage == stage:
 		current_stage = null
 		_update_map_ui()
+
+
+func _on_stage_entered(stage: Node) -> void:
+	enter_stage(stage)
+
+
+func _on_stage_exited(stage: Node) -> void:
+	exit_stage(stage)
 
 
 func _build_map_ui() -> void:

@@ -45,9 +45,7 @@ func _on_body_exited(body: Node3D) -> void:
 
 # Tier 1F: tell the goal manager the player finished the course.
 func _reach_exit(player: Node3D) -> void:
-	for manager in get_tree().get_nodes_in_group("arena_goal_managers"):
-		if manager.has_method("complete_level"):
-			manager.call("complete_level", player)
+	GameEvents.exit_reached.emit(player)
 
 
 func _prepare_material() -> void:

@@ -315,6 +315,7 @@ func collect_bone(bone_id: String) -> void:
 	bone_inventory.append(bone_id)
 	_rebuild_item_tiles()
 	_update_inventory_ui()
+	GameEvents.bone_collected.emit(bone_id, self)
 	print("Collected bone: ", BoneDatabase.display_name(bone_id))
 
 
@@ -377,11 +378,7 @@ func _die_player() -> void:
 	is_dead = true
 	velocity = Vector3.ZERO
 	_update_health_ui()
-
-	# Tell the arena to show the game-over screen.
-	var manager := get_tree().get_first_node_in_group("arena_goal_managers")
-	if manager != null and manager.has_method("game_over"):
-		manager.call("game_over", self)
+	GameEvents.player_died.emit(self)
 
 
 # A quick red flash on the player body when hurt.
@@ -431,6 +428,7 @@ func equip_bone(bone_id: String) -> void:
 	# The equipped bone's tile leaves the grid — rebuild AFTER the drop callback
 	# finishes (deferred), so we never free a tile that's mid-drop.
 	call_deferred("_rebuild_item_tiles")
+	GameEvents.bone_equipped.emit(bone_id, BoneDatabase.slot(bone_id), self)
 	print("Equipped ", BoneDatabase.display_name(bone_id), " in slot ", BoneDatabase.slot(bone_id))
 
 
@@ -439,6 +437,7 @@ func unequip_slot(slot: String) -> void:
 	if not equipped.has(slot):
 		return
 
+	var bone_id: String = equipped[slot]
 	equipped.erase(slot)
 	if rig != null:
 		rig.unequip_slot(slot)
@@ -451,6 +450,7 @@ func unequip_slot(slot: String) -> void:
 	_sync_inventory_preview()
 	# The bone's tile returns to the grid — deferred, so an in-progress drop is safe.
 	call_deferred("_rebuild_item_tiles")
+	GameEvents.bone_unequipped.emit(bone_id, slot, self)
 	print("Unequipped slot ", slot)
 
 
