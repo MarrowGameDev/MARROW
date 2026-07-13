@@ -1,0 +1,97 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/rig/rig_test_player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/rig/modular_skeleton_rig.gd" id="2_rig"]
+[ext_resource type="Script" path="res://scripts/rig/procedural_player_animator.gd" id="3_anim"]
+[ext_resource type="PackedScene" path="res://assets/skeleton_model.glb" id="4_skeleton"]
+[ext_resource type="PackedScene" path="res://assets/skeleton_rigged.glb" id="5_rigged"]
+
+[sub_resource type="Environment" id="Environment_rig"]
+background_mode = 1
+background_color = Color(0.5, 0.6, 0.75, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.6
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rig"]
+radius = 0.4
+height = 1.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(40, 0.2, 40)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.3, 0.42, 0.32, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(40, 0.2, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ramp"]
+size = Vector3(5, 0.3, 6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ramp"]
+albedo_color = Color(0.42, 0.38, 0.32, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ramp"]
+size = Vector3(5, 0.3, 6)
+
+[node name="RigTest" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_rig")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.9, 0.5, 0)
+light_energy = 2.0
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="."]
+position = Vector3(0, -0.1, 0)
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("BoxMesh_ground")
+surface_material_override/0 = SubResource("StandardMaterial3D_ground")
+
+[node name="GroundCollision" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Ramp" type="StaticBody3D" parent="."]
+position = Vector3(0, 0.55, -6)
+rotation = Vector3(0.26, 0, 0)
+
+[node name="RampMesh" type="MeshInstance3D" parent="Ramp"]
+mesh = SubResource("BoxMesh_ramp")
+surface_material_override/0 = SubResource("StandardMaterial3D_ramp")
+
+[node name="RampCollision" type="CollisionShape3D" parent="Ramp"]
+shape = SubResource("BoxShape3D_ramp")
+
+[node name="RigTestPlayer" type="CharacterBody3D" parent="."]
+position = Vector3(0, 1.05, 0)
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigTestPlayer"]
+shape = SubResource("CapsuleShape3D_rig")
+
+[node name="CameraPivot" type="Node3D" parent="RigTestPlayer"]
+position = Vector3(0, 0.55, 0)
+
+[node name="Camera3D" type="Camera3D" parent="RigTestPlayer/CameraPivot"]
+position = Vector3(0, 3.2, 6)
+rotation = Vector3(-0.45, 0, 0)
+current = true
+
+[node name="VisualRoot" type="Node3D" parent="RigTestPlayer"]
+
+[node name="ModularSkeletonRig" type="Node3D" parent="RigTestPlayer/VisualRoot"]
+position = Vector3(0, 0.22, 0)
+script = ExtResource("2_rig")
+use_skeleton_model = false
+show_torso = true
+show_head = false
+skeleton_model_scene = ExtResource("4_skeleton")
+use_rigged_limbs = true
+rigged_model_scene = ExtResource("5_rigged")
+
+[node name="ProceduralAnimator" type="Node3D" parent="RigTestPlayer/VisualRoot"]
+script = ExtResource("3_anim")

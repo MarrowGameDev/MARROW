@@ -1,0 +1,98 @@
+extends Area3D
+
+@export var bone_id: String = "dummy_bone"
+@export var pickup_hold_time: float = 0.8
+
+var collected: bool = false
+var player_in_range: Node3D = null
+var hold_progress: float = 0.0
+var prompt_label: Label3D = null
+
+
+func _ready() -> void:
+	add_to_group("bone_pickups")
+	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
+	prompt_label = get_node_or_null("PromptLabel") as Label3D
+	_update_prompt()
+	_update_prompt_color()
+
+
+func _process(delta: float) -> void:
+	if collected or player_in_range == null:
+		return
+
+	if Input.is_action_pressed("inventory"):
+		hold_progress += delta
+		_update_prompt()
+		if hold_progress >= pickup_hold_time:
+			_collect()
+	else:
+		if hold_progress > 0.0:
+			hold_progress = 0.0
+			_update_prompt()
+
+
+func set_bone_id(new_bone_id: String) -> void:
+	bone_id = new_bone_id
+	_update_prompt()
+	_update_prompt_color()
+
+
+func _on_body_entered(body: Node3D) -> void:
+	if collected:
+		return
+
+	if body.has_method("collect_bone"):
+		player_in_range = body
+		hold_progress = 0.0
+		body.call("enter_bone_pickup_range")
+		_update_prompt()
+
+
+func _on_body_exited(body: Node3D) -> void:
+	if body != player_in_range:
+		return
+
+	if body.has_method("exit_bone_pickup_range"):
+		body.call("exit_bone_pickup_range")
+
+	player_in_range = null
+	hold_progress = 0.0
+	_update_prompt()
+
+
+func _collect() -> void:
+	if collected or player_in_range == null:
+		return
+
+	collected = true
+	if player_in_range.has_method("collect_bone"):
+		player_in_range.call("collect_bone", bone_id)
+	if player_in_range.has_method("exit_bone_pickup_range"):
+		player_in_range.call("exit_bone_pickup_range")
+
+	var root := get_parent()
+	if root != null:
+		root.queue_free()
+	else:
+		queue_free()
+
+
+func _update_prompt() -> void:
+	if prompt_label == null:
+		return
+
+	if player_in_range == null:
+		prompt_label.text = BoneDatabase.display_name(bone_id)
+		return
+
+	var percent := int((hold_progress / pickup_hold_time) * 100.0)
+	prompt_label.text = "Hold E: " + BoneDatabase.display_name(bone_id) + " " + str(percent) + "%"
+
+
+func _update_prompt_color() -> void:
+	if prompt_label == null:
+		return
+
+	prompt_label.modulate = BoneDatabase.color(bone_id)

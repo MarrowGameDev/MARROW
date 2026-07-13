@@ -1,0 +1,1183 @@
+extends CharacterBody3D
+
+# preload loads the Bone scene once so this enemy can create one instantly when it dies.
+const BONE_SCENE: PackedScene = preload("res://scenes/bone.tscn")
+const LIMB_BONE_PICKUP_SCRIPT: Script = preload("res://scripts/limb_bone_pickup.gd")
+
+# --- Combat / AI tuning (all editable per-enemy in the Inspector) -------------
+@export var max_health: int = 3
+@export var move_speed: float = 3.0          # slower than the player, so you can kite
+@export var detection_range: float = 11.0    # how close before it starts chasing
+@export_range(20.0, 180.0, 1.0) var vision_angle_degrees: float = 90.0
+@export var use_line_of_sight: bool = true
+@export var vision_check_interval: float = 0.15
+@export_range(6, 24, 1) var vision_cone_segments: int = 12
+@export var attack_range: float = 1.7        # how close before it can hit you
+@export var contact_damage: int = 1
+@export var attack_cooldown: float = 1.1      # seconds between its hits
+@export var search_duration: float = 20.0
+@export var search_stop_distance: float = 0.75
+@export var search_turn_speed: float = 0.9
+@export var search_rotation_smoothing: float = 5.0
+@export_range(10.0, 120.0, 1.0) var search_sweep_angle_degrees: float = 28.0
+@export var idle_wander_enabled: bool = true
+@export var idle_wander_radius: float = 2.8
+@export var idle_wander_interval: float = 2.4
+@export var hearing_investigation_time: float = 5.0
+@export var ally_alert_range: float = 7.0
+@export_range(0.0, 1.0, 0.05) var low_health_flee_chance: float = 0.45
+@export_range(0.05, 0.75, 0.05) var low_health_flee_ratio: float = 0.35
+@export var low_health_flee_duration: float = 4.0
+@export var flee_speed_multiplier: float = 1.35
+@export var flee_recover_distance: float = 8.0
+@export var return_home_stop_distance: float = 0.8
+@export var obstacle_probe_distance: float = 1.25
+@export_range(15.0, 85.0, 1.0) var obstacle_side_probe_angle_degrees: float = 48.0
+@export var obstacle_avoidance_hold_time: float = 0.65
+@export var gravity: float = 24.0
+@export var knockback_strength: float = 6.0   # how hard OUR hit shoves it back
+@export var limb_detach_impulse: float = 4.5
+@export var detached_limb_lifetime: float = 8.0
+@export var death_limb_fall_spacing: float = 0.06
+@export_range(0.0, 1.0, 0.05) var limb_pickup_drop_chance: float = 0.35
+@export var guarantee_limb_pickup_on_death: bool = true
+@export var stealth_finish_max_health: int = 3
+@export var stealth_finish_range: float = 2.2
+@export var failed_stealth_damage_multiplier: int = 2
+@export var respawn_enabled: bool = true
+@export var near_respawn_delay: float = 120.0
+@export var far_respawn_delay: float = 30.0
+@export var near_respawn_distance: float = 18.0
+@export var respawn_visibility_check_interval: float = 1.0
+
+# This is the pickup label the player receives after collecting the dropped bone.
+@export var dropped_bone_id: String = "dummy_bone"
+
+# The enemy starts alive.
+var alive: bool = true
+var health: int = 0
+var attack_timer: float = 0.0                 # counts down; can attack when <= 0
+var hit_flash_time_remaining: float = 0.0
+var knockback_velocity: Vector3 = Vector3.ZERO
+var enemy_material: StandardMaterial3D = null
+var vision_material: StandardMaterial3D = null
+var normal_color: Color = Color(0.85, 0.18, 0.16, 1)
+var facing_direction: Vector3 = Vector3.BACK
+var player_visible: bool = false
+var vision_check_timer: float = 0.0
+var cached_player: Node3D = null
+var search_timer: float = 0.0
+var search_look_time: float = 0.0
+var returning_to_spawn: bool = false
+var avoidance_timer: float = 0.0
+var avoidance_direction: Vector3 = Vector3.ZERO
+var idle_wander_timer: float = 0.0
+var idle_wander_target: Vector3 = Vector3.ZERO
+var fleeing_timer: float = 0.0
+var flees_when_low_health: bool = false
+var has_fled_low_health: bool = false
+var last_known_player_position: Vector3 = Vector3.ZERO
+var spawn_transform: Transform3D
+var spawn_scale: Vector3 = Vector3.ONE
+var spawn_facing_direction: Vector3 = Vector3.BACK
+var detached_limb_keys: Array[String] = []
+var last_hit_from_position: Vector3 = Vector3.ZERO
+var limb_pickup_spawned: bool = false
+
+# Tier 1D polish: one reusable tween so hit-squash, attack-lunge, and death-pop
+# never fight over the scale, plus a procedurally built placeholder "hit" sound.
+var _scale_tween: Tween = null
+var _hit_sound: AudioStreamWAV = null
+
+const HIT_COLOR: Color = Color(1, 0.95, 0.45, 1)
+const DETACHABLE_LIMBS: Array[String] = ["right_arm", "left_arm", "right_leg", "left_leg", "body", "head"]
+const PICKUP_ELIGIBLE_LIMBS: Array[String] = ["right_arm", "left_arm", "right_leg", "left_leg", "body"]
+const CORE_FALL_ORDER: Array[String] = ["body", "head"]
+
+@onready var mesh_instance: MeshInstance3D = $MeshInstance3D
+@onready var collision_shape: CollisionShape3D = $CollisionShape3D
+@onready var health_label: Label3D = $HealthLabel
+@onready var vision_mesh: MeshInstance3D = $VisionMesh
+@onready var visual_root: Node3D = $VisualRoot
+@onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
+@onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
+
+
+# _ready runs once when this enemy enters the running scene.
+func _ready() -> void:
+	# Groups let other scripts find this enemy without needing an exact node path.
+	add_to_group("enemies")
+	spawn_transform = global_transform
+	spawn_scale = scale
+	spawn_facing_direction = _facing_from_rotation()
+	facing_direction = spawn_facing_direction
+	_apply_bone_identity()
+	health = max_health
+	_roll_low_health_personality()
+	idle_wander_target = spawn_transform.origin
+	idle_wander_timer = randf_range(0.2, idle_wander_interval)
+
+	# Duplicate the material so this enemy can flash without changing every enemy at once.
+	var raw_material := mesh_instance.get_surface_override_material(0)
+	if raw_material != null:
+		enemy_material = raw_material.duplicate() as StandardMaterial3D
+	if enemy_material == null:
+		enemy_material = StandardMaterial3D.new()
+	mesh_instance.set_surface_override_material(0, enemy_material)
+	_setup_procedural_character()
+
+	# Preview the dropped bone's color. Unknown drops fall back to the enemy's red.
+	normal_color = BoneDatabase.color(dropped_bone_id, Color(0.85, 0.18, 0.16, 1.0))
+	_set_enemy_color(normal_color)
+	_update_health_label()
+	_build_vision_cone()
+	_set_player_visible(false, true)
+	vision_check_timer = fposmod(float(get_instance_id()) * 0.017, maxf(0.01, vision_check_interval))
+
+	# Build the placeholder hit sound once, up front.
+	_hit_sound = _make_hit_blip()
+
+
+# _process runs every rendered frame. Here it only handles the short color flash.
+func _process(delta: float) -> void:
+	if hit_flash_time_remaining <= 0.0:
+		return
+
+	hit_flash_time_remaining -= delta
+	if hit_flash_time_remaining <= 0.0 and alive:
+		_set_enemy_color(normal_color)
+
+
+# _physics_process drives movement, chasing, and attacking on the physics clock.
+func _physics_process(delta: float) -> void:
+	# Gravity keeps the box resting on the ground instead of floating.
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	else:
+		velocity.y = 0.0
+
+	# Knockback from being hit fades out over a moment.
+	knockback_velocity = knockback_velocity.move_toward(Vector3.ZERO, knockback_strength * 4.0 * delta)
+
+	# While dying, stop hunting but still settle under gravity + any leftover shove.
+	if not alive:
+		velocity.x = knockback_velocity.x
+		velocity.z = knockback_velocity.z
+		move_and_slide()
+		return
+
+	if attack_timer > 0.0:
+		attack_timer -= delta
+
+	if vision_check_timer > 0.0:
+		vision_check_timer -= delta
+	if avoidance_timer > 0.0:
+		avoidance_timer = maxf(avoidance_timer - delta, 0.0)
+	var was_fleeing := fleeing_timer > 0.0
+	if fleeing_timer > 0.0:
+		fleeing_timer = maxf(fleeing_timer - delta, 0.0)
+	if was_fleeing and fleeing_timer <= 0.0:
+		_update_health_label()
+	var was_searching := search_timer > 0.0
+	if search_timer > 0.0:
+		search_timer = maxf(search_timer - delta, 0.0)
+		search_look_time += delta
+	if was_searching and search_timer <= 0.0:
+		returning_to_spawn = true
+
+	# Decide where to move this frame.
+	var move := Vector3.ZERO
+	var player := _get_player()
+	if player != null and not _player_is_dead(player):
+		var to_player: Vector3 = player.global_position - global_position
+		to_player.y = 0.0
+		var dist := to_player.length()
+
+		if dist > detection_range or dist <= 0.01:
+			_set_player_visible(false)
+			vision_check_timer = 0.0
+		elif vision_check_timer <= 0.0:
+			vision_check_timer = maxf(0.01, vision_check_interval)
+			var can_see := _can_see_player(player, to_player, dist)
+			if can_see and not player_visible:
+				_alert_nearby_allies(player.global_position)
+			_set_player_visible(can_see)
+
+		if not player_visible and _can_hear_player(player, dist):
+			_investigate_position(player.global_position, hearing_investigation_time)
+
+		if player_visible and dist > 0.01:
+			last_known_player_position = player.global_position
+			search_timer = search_duration
+			search_look_time = 0.0
+			returning_to_spawn = false
+			_turn_toward(to_player.normalized())
+
+		if fleeing_timer > 0.0:
+			move = _get_flee_move(player, dist)
+		elif player_visible and dist <= attack_range:
+			# Close enough to strike: hold position and attack on cooldown.
+			_try_attack_player(player)
+		elif player_visible and dist <= detection_range and dist > 0.01:
+			# Chase: move toward the player, but steer around blocking walls.
+			move = _steer_around_obstacles(to_player.normalized()) * move_speed
+		elif search_timer > 0.0:
+			move = _get_search_move(delta)
+		elif returning_to_spawn:
+			move = _get_return_home_move()
+		elif idle_wander_enabled:
+			move = _get_idle_wander_move(delta)
+	else:
+		_set_player_visible(false)
+		search_timer = 0.0
+		if idle_wander_enabled:
+			move = _get_idle_wander_move(delta)
+
+	velocity.x = move.x + knockback_velocity.x
+	velocity.z = move.z + knockback_velocity.z
+	move_and_slide()
+	_update_procedural_animation(delta)
+
+
+# Finds the player node (added to the "player" group in player.gd).
+func _get_player() -> Node3D:
+	if is_instance_valid(cached_player):
+		return cached_player
+
+	cached_player = get_tree().get_first_node_in_group("player") as Node3D
+	return cached_player
+
+
+func _player_is_dead(player: Node) -> bool:
+	return player.has_method("is_player_dead") and player.is_player_dead()
+
+
+# Damages the player when in range, on a cooldown, with a quick "chomp" tell.
+func _try_attack_player(player: Node) -> void:
+	if attack_timer > 0.0:
+		return
+
+	attack_timer = attack_cooldown
+	_lunge()
+	if animator != null:
+		animator.trigger_attack()
+	if player.has_method("take_player_damage"):
+		player.take_player_damage(contact_damage, global_position)
+
+
+func can_be_stealth_finished_by(player: Node3D) -> bool:
+	if not alive or player == null:
+		return false
+	if player_visible or search_timer > 0.0 or returning_to_spawn:
+		return false
+	return global_position.distance_to(player.global_position) <= stealth_finish_range
+
+
+func get_stealth_prompt_text() -> String:
+	var bone_name := BoneDatabase.display_name(dropped_bone_id)
+	if health <= stealth_finish_max_health:
+		return "F: Finish " + bone_name + " enemy"
+	return "F: Ambush " + bone_name + " enemy"
+
+
+func get_drop_display_name() -> String:
+	return BoneDatabase.display_name(dropped_bone_id)
+
+
+func try_stealth_finish(player: Node3D, player_damage: int, hit_from: Vector3) -> bool:
+	if not can_be_stealth_finished_by(player):
+		return false
+
+	last_hit_from_position = hit_from
+	if health <= stealth_finish_max_health:
+		health = 0
+		_update_health_label()
+		_play_hit_sound()
+		die()
+		return true
+
+	var ambush_damage := maxi(player_damage * failed_stealth_damage_multiplier, player_damage + 1)
+	_apply_knockback(hit_from)
+	take_hit(ambush_damage)
+	if alive:
+		last_known_player_position = player.global_position
+		search_timer = search_duration
+		search_look_time = 0.0
+		returning_to_spawn = false
+		_set_player_visible(true)
+		_turn_toward((player.global_position - global_position).normalized())
+		attack_timer = 0.0
+		_try_attack_player(player)
+	return false
+
+
+# Vision check: player must be inside the enemy's cone, inside detection range,
+# and not hidden behind world collision if line of sight is enabled.
+func _can_see_player(player: Node3D, to_player: Vector3, dist: float) -> bool:
+	if dist > detection_range or dist <= 0.01:
+		return false
+
+	var direction_to_player := to_player.normalized()
+	var half_angle := deg_to_rad(vision_angle_degrees * 0.5)
+	var minimum_dot := cos(half_angle)
+	if facing_direction.normalized().dot(direction_to_player) < minimum_dot:
+		return false
+
+	if not use_line_of_sight:
+		return true
+
+	var space_state := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		global_position + Vector3.UP * 0.65,
+		player.global_position + Vector3.UP * 0.65
+	)
+	query.exclude = [get_rid()]
+	var result := space_state.intersect_ray(query)
+	if result.is_empty():
+		return true
+
+	return result.get("collider") == player
+
+
+func _can_hear_player(player: Node, dist: float) -> bool:
+	if player_visible or search_timer > 0.0:
+		return false
+	if not player.has_method("get_noise_radius"):
+		return false
+
+	var noise_radius := float(player.call("get_noise_radius"))
+	return noise_radius > 0.0 and dist <= noise_radius
+
+
+func _investigate_position(position: Vector3, duration: float) -> void:
+	last_known_player_position = position
+	search_timer = maxf(search_timer, duration)
+	search_look_time = 0.0
+	returning_to_spawn = false
+
+
+func receive_alert(position: Vector3) -> void:
+	if not alive or player_visible:
+		return
+	_investigate_position(position, hearing_investigation_time)
+
+
+func _alert_nearby_allies(position: Vector3) -> void:
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy == self or not enemy.has_method("receive_alert"):
+			continue
+		var enemy_body := enemy as Node3D
+		if enemy_body == null:
+			continue
+		if global_position.distance_to(enemy_body.global_position) <= ally_alert_range:
+			enemy.call("receive_alert", position)
+
+
+# Face the enemy and its visual cone toward the active direction.
+func _turn_toward(direction: Vector3) -> void:
+	if direction.length() <= 0.01:
+		return
+
+	facing_direction = direction.normalized()
+	rotation.y = atan2(facing_direction.x, facing_direction.z)
+
+
+# Builds a flat triangular fan that previews the enemy's vision field.
+func _build_vision_cone() -> void:
+	if vision_mesh == null:
+		return
+
+	var mesh := ArrayMesh.new()
+	var vertices := PackedVector3Array()
+	var local_ground_y := -0.55
+	var half_angle := deg_to_rad(vision_angle_degrees * 0.5)
+	var segments := maxi(6, vision_cone_segments)
+
+	for i in range(segments):
+		var a0 := -half_angle + (float(i) / float(segments)) * vision_angle_degrees * PI / 180.0
+		var a1 := -half_angle + (float(i + 1) / float(segments)) * vision_angle_degrees * PI / 180.0
+		vertices.append(Vector3(0.0, local_ground_y, 0.0))
+		vertices.append(Vector3(sin(a0) * detection_range, local_ground_y, cos(a0) * detection_range))
+		vertices.append(Vector3(sin(a1) * detection_range, local_ground_y, cos(a1) * detection_range))
+
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	vision_mesh.mesh = mesh
+
+	vision_material = StandardMaterial3D.new()
+	vision_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	vision_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	vision_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	vision_mesh.set_surface_override_material(0, vision_material)
+
+
+func _set_player_visible(new_value: bool, force_visual: bool = false) -> void:
+	if player_visible == new_value and not force_visual:
+		return
+
+	var was_visible := player_visible
+	player_visible = new_value
+	if was_visible and not player_visible:
+		search_timer = search_duration
+		search_look_time = 0.0
+		returning_to_spawn = false
+	_update_vision_visual(player_visible)
+
+
+func _get_search_move(delta: float) -> Vector3:
+	var to_last_known := last_known_player_position - global_position
+	to_last_known.y = 0.0
+	var distance := to_last_known.length()
+	if distance <= search_stop_distance:
+		_scan_while_searching(facing_direction, delta)
+		return Vector3.ZERO
+
+	var direction := to_last_known.normalized()
+	var move_direction := _steer_around_obstacles(direction)
+	_scan_while_searching(move_direction, delta)
+	return move_direction * move_speed
+
+
+func _scan_while_searching(base_direction: Vector3, delta: float) -> void:
+	if base_direction.length() <= 0.01:
+		base_direction = _facing_from_rotation()
+
+	var base_yaw := atan2(base_direction.x, base_direction.z)
+	var sweep := sin(search_look_time * search_turn_speed) * deg_to_rad(search_sweep_angle_degrees)
+	var target_yaw := base_yaw + sweep
+	var turn_weight := 1.0 - exp(-search_rotation_smoothing * delta)
+	rotation.y = lerp_angle(rotation.y, target_yaw, turn_weight)
+	facing_direction = _facing_from_rotation()
+
+
+func _get_return_home_move() -> Vector3:
+	var to_spawn := spawn_transform.origin - global_position
+	to_spawn.y = 0.0
+	if to_spawn.length() <= return_home_stop_distance:
+		returning_to_spawn = false
+		rotation.y = spawn_transform.basis.get_euler().y
+		facing_direction = spawn_facing_direction
+		return Vector3.ZERO
+
+	var direction := to_spawn.normalized()
+	var move_direction := _steer_around_obstacles(direction)
+	if move_direction.length() > 0.01:
+		_turn_toward(move_direction)
+	return move_direction * move_speed
+
+
+func _get_idle_wander_move(delta: float) -> Vector3:
+	idle_wander_timer -= delta
+	var to_target := idle_wander_target - global_position
+	to_target.y = 0.0
+
+	if idle_wander_timer <= 0.0 or to_target.length() <= 0.4:
+		idle_wander_timer = idle_wander_interval + randf_range(-0.6, 0.8)
+		var angle := randf() * TAU
+		var distance := randf_range(0.4, idle_wander_radius)
+		idle_wander_target = spawn_transform.origin + Vector3(sin(angle) * distance, 0.0, cos(angle) * distance)
+		to_target = idle_wander_target - global_position
+		to_target.y = 0.0
+
+	if to_target.length() <= 0.4:
+		_scan_while_searching(facing_direction, delta)
+		return Vector3.ZERO
+
+	var move_direction := _steer_around_obstacles(to_target.normalized())
+	if move_direction.length() > 0.01:
+		_turn_toward(move_direction)
+	return move_direction * (move_speed * 0.45)
+
+
+func _get_flee_move(player: Node3D, dist: float) -> Vector3:
+	if player == null:
+		return Vector3.ZERO
+
+	if dist >= flee_recover_distance:
+		fleeing_timer = 0.0
+		returning_to_spawn = true
+		_update_health_label()
+		return Vector3.ZERO
+
+	var away := global_position - player.global_position
+	away.y = 0.0
+	if away.length() <= 0.01:
+		away = -facing_direction
+
+	var move_direction := _steer_around_obstacles(away.normalized())
+	if move_direction.length() <= 0.01:
+		return Vector3.ZERO
+	_turn_toward(move_direction)
+	return move_direction * move_speed * flee_speed_multiplier
+
+
+func _steer_around_obstacles(desired_direction: Vector3) -> Vector3:
+	if desired_direction.length() <= 0.01:
+		return Vector3.ZERO
+
+	desired_direction = desired_direction.normalized()
+	if avoidance_timer > 0.0 and avoidance_direction.length() > 0.01 and not _movement_blocked(avoidance_direction):
+		return avoidance_direction
+
+	if not _movement_blocked(desired_direction):
+		avoidance_timer = 0.0
+		avoidance_direction = Vector3.ZERO
+		return desired_direction
+
+	var slide_direction := _get_slide_around_obstacle(desired_direction)
+	if slide_direction.length() > 0.01 and not _movement_blocked(slide_direction):
+		avoidance_direction = slide_direction
+		avoidance_timer = obstacle_avoidance_hold_time
+		return avoidance_direction
+
+	var side_angle := deg_to_rad(obstacle_side_probe_angle_degrees)
+	var candidate_angles: Array[float] = [
+		side_angle,
+		-side_angle,
+		PI * 0.5,
+		-PI * 0.5,
+		PI * 0.75,
+		-PI * 0.75,
+		PI
+	]
+	var best_direction := Vector3.ZERO
+	var best_score := -10.0
+	for angle in candidate_angles:
+		var candidate: Vector3 = desired_direction.rotated(Vector3.UP, angle).normalized()
+		if _movement_blocked(candidate):
+			continue
+		var score := candidate.dot(desired_direction)
+		if score > best_score:
+			best_score = score
+			best_direction = candidate
+
+	if best_direction.length() > 0.01:
+		avoidance_direction = best_direction
+		avoidance_timer = obstacle_avoidance_hold_time
+		return avoidance_direction
+
+	return Vector3.ZERO
+
+
+func _movement_blocked(direction: Vector3) -> bool:
+	if direction.length() <= 0.01:
+		return true
+
+	var motion := direction.normalized() * obstacle_probe_distance
+	return test_move(global_transform, motion)
+
+
+func _get_slide_around_obstacle(desired_direction: Vector3) -> Vector3:
+	for i in range(get_slide_collision_count()):
+		var collision := get_slide_collision(i)
+		var slide_direction := desired_direction.slide(collision.get_normal())
+		slide_direction.y = 0.0
+		if slide_direction.length() > 0.01:
+			return slide_direction.normalized()
+
+	return Vector3.ZERO
+
+
+func _update_vision_visual(can_see_player: bool) -> void:
+	if vision_material == null:
+		return
+
+	if can_see_player:
+		vision_material.albedo_color = Color(1.0, 0.18, 0.12, 0.32)
+		vision_material.emission_enabled = true
+		vision_material.emission = Color(1.0, 0.18, 0.12, 1.0)
+		vision_material.emission_energy_multiplier = 0.35
+	else:
+		vision_material.albedo_color = Color(1.0, 0.9, 0.25, 0.18)
+		vision_material.emission_enabled = false
+
+
+# --- Taking damage from the player's attack -----------------------------------
+
+# Tier 1D: the attack hitbox calls this. It adds knockback on top of the normal
+# damage so a landed hit is obvious. hit_from is the attack box's world position.
+func take_damage(amount: int, hit_from: Vector3 = Vector3.ZERO, _attacker: Node = null) -> void:
+	if not alive:
+		return
+
+	last_hit_from_position = hit_from
+	_apply_knockback(hit_from)
+	take_hit(amount)
+
+
+# Turns a hit into a fading push instead of a teleport (works with move_and_slide).
+func _apply_knockback(hit_from: Vector3) -> void:
+	if hit_from == Vector3.ZERO:
+		return
+
+	var push_direction := global_position - hit_from
+	push_direction.y = 0.0
+	if push_direction.length() > 0.01:
+		knockback_velocity = push_direction.normalized() * knockback_strength
+
+
+# Applies damage, feedback, and death.
+func take_hit(damage: int) -> void:
+	if not alive:
+		return
+
+	var health_before := health
+	health = max(health - damage, 0)
+	_update_health_label()
+	_play_hit_sound()
+	_detach_limbs_for_damage(maxi(health_before - health, 1))
+
+	if health <= 0:
+		die()
+	else:
+		_maybe_start_low_health_flee()
+		# Only juice a surviving hit; a killing blow gets the death pop instead.
+		_flash_hit()
+		_punch_scale()
+
+
+func _maybe_start_low_health_flee() -> void:
+	if has_fled_low_health or not flees_when_low_health:
+		return
+	if max_health <= 0:
+		return
+
+	var health_ratio := float(health) / float(max_health)
+	if health_ratio > low_health_flee_ratio:
+		return
+
+	has_fled_low_health = true
+	fleeing_timer = low_health_flee_duration
+	search_timer = 0.0
+	search_look_time = 0.0
+	returning_to_spawn = false
+	attack_timer = maxf(attack_timer, 0.6)
+	_update_health_label()
+
+
+func _detach_limbs_for_damage(limbs_to_detach: int) -> void:
+	if rig == null:
+		return
+
+	for i in range(limbs_to_detach):
+		var limb_key := _next_attached_limb_key()
+		if limb_key == "":
+			return
+		_detach_limb_group(limb_key)
+
+
+func _next_attached_limb_key() -> String:
+	for limb_key in _preferred_detach_keys():
+		if not detached_limb_keys.has(limb_key):
+			return limb_key
+	return ""
+
+
+func _preferred_detach_keys() -> Array[String]:
+	var keys: Array[String] = []
+	match BoneDatabase.slot(dropped_bone_id):
+		"right_arm":
+			keys.append("right_arm")
+			keys.append("left_arm")
+		"left_arm":
+			keys.append("left_arm")
+			keys.append("right_arm")
+		"legs":
+			keys.append("right_leg")
+			keys.append("left_leg")
+
+	for limb_key in DETACHABLE_LIMBS:
+		if CORE_FALL_ORDER.has(limb_key):
+			continue
+		if not keys.has(limb_key):
+			keys.append(limb_key)
+
+	for limb_key in CORE_FALL_ORDER:
+		if not keys.has(limb_key):
+			keys.append(limb_key)
+	return keys
+
+
+func _detach_limb_group(limb_key: String, force_pickup: bool = false) -> void:
+	var keys: Array[String] = []
+	keys.append(limb_key)
+	if limb_key == "right_leg":
+		keys.append("right_foot")
+	elif limb_key == "left_leg":
+		keys.append("left_foot")
+
+	for key in keys:
+		if detached_limb_keys.has(key):
+			continue
+		detached_limb_keys.append(key)
+		_spawn_detached_limb_piece(key, force_pickup and key == limb_key)
+		_set_rig_limb_visible(key, false)
+
+
+func _spawn_detached_limb_piece(limb_key: String, force_pickup: bool = false) -> void:
+	if rig == null or not rig.base_visuals.has(limb_key):
+		return
+
+	var source := rig.base_visuals[limb_key] as MeshInstance3D
+	if source == null or source.mesh == null:
+		return
+
+	var world := get_tree().current_scene
+	if world == null:
+		world = get_parent()
+	if world == null:
+		return
+
+	var body := RigidBody3D.new()
+	body.name = "Detached_" + limb_key
+	body.mass = 0.35
+	body.global_transform = source.global_transform
+	world.add_child(body)
+
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.mesh = source.mesh.duplicate() as Mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = normal_color
+	material.roughness = 0.85
+	mesh_instance.material_override = material
+	body.add_child(mesh_instance)
+
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = source.mesh.get_aabb().size
+	collision.shape = shape
+	body.add_child(collision)
+
+	var knock_direction := global_position - last_hit_from_position
+	knock_direction.y = 0.2
+	if last_hit_from_position == Vector3.ZERO or knock_direction.length() <= 0.01:
+		knock_direction = -facing_direction + Vector3.UP * 0.25
+	body.apply_impulse(knock_direction.normalized() * limb_detach_impulse)
+	body.angular_velocity = Vector3(randf_range(-4.0, 4.0), randf_range(-6.0, 6.0), randf_range(-4.0, 4.0))
+
+	var can_be_pickup := PICKUP_ELIGIBLE_LIMBS.has(limb_key) and dropped_bone_id != ""
+	var should_be_pickup := force_pickup or randf() <= limb_pickup_drop_chance
+	if not limb_pickup_spawned and can_be_pickup and should_be_pickup:
+		_attach_pickup_to_detached_limb(body)
+		limb_pickup_spawned = true
+	else:
+		var cleanup := body.create_tween()
+		cleanup.tween_interval(detached_limb_lifetime)
+		cleanup.tween_property(body, "scale", Vector3.ZERO, 0.25)
+		cleanup.tween_callback(Callable(body, "queue_free"))
+
+
+func _attach_pickup_to_detached_limb(body: RigidBody3D) -> void:
+	var pickup_area := Area3D.new()
+	pickup_area.name = "LimbBonePickup"
+	pickup_area.collision_layer = 0
+	pickup_area.collision_mask = 1
+	pickup_area.set_script(LIMB_BONE_PICKUP_SCRIPT)
+	pickup_area.set("bone_id", dropped_bone_id)
+
+	var pickup_shape := CollisionShape3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 1.15
+	pickup_shape.shape = sphere
+	pickup_area.add_child(pickup_shape)
+
+	var label := Label3D.new()
+	label.name = "PromptLabel"
+	label.position = Vector3(0.0, 1.25, 0.0)
+	label.text = BoneDatabase.display_name(dropped_bone_id)
+	label.font_size = 42
+	label.outline_size = 8
+	label.outline_modulate = Color(0.08, 0.07, 0.02, 1.0)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	pickup_area.add_child(label)
+	body.add_child(pickup_area)
+
+
+func _set_rig_limb_visible(limb_key: String, is_visible: bool) -> void:
+	if rig == null or not rig.base_visuals.has(limb_key):
+		return
+
+	var limb := rig.base_visuals[limb_key] as MeshInstance3D
+	if limb != null:
+		limb.visible = is_visible
+
+
+func _restore_attached_limbs() -> void:
+	for limb_key in detached_limb_keys:
+		_set_rig_limb_visible(limb_key, true)
+	detached_limb_keys.clear()
+	last_hit_from_position = Vector3.ZERO
+	limb_pickup_spawned = false
+
+
+func die() -> void:
+	if not alive:
+		return
+
+	alive = false
+	search_timer = 0.0
+	search_look_time = 0.0
+	returning_to_spawn = false
+	avoidance_timer = 0.0
+	avoidance_direction = Vector3.ZERO
+	var respawn_delay := _get_respawn_delay()
+	# Leave the group right away so nothing counts a dying enemy as still alive.
+	remove_from_group("enemies")
+	_set_collision_enabled(false)
+	_set_player_visible(false)
+	search_timer = 0.0
+	search_look_time = 0.0
+	returning_to_spawn = false
+	avoidance_timer = 0.0
+	avoidance_direction = Vector3.ZERO
+	_drop_bone()
+	await _drop_remaining_limbs_on_death()
+	if not limb_pickup_spawned:
+		_drop_standard_bone_pickup()
+
+	# Polish: play a short death pop, then keep the enemy hidden until it respawns.
+	await _death_pop()
+	if respawn_enabled:
+		_hide_until_respawn()
+		await _respawn_after_delay(respawn_delay)
+	else:
+		queue_free()
+
+
+# Polish: flash, then shrink and spin the enemy out so its death is unmistakable.
+func _death_pop() -> void:
+	_set_enemy_color(HIT_COLOR)
+	if health_label != null:
+		health_label.visible = false
+
+	_kill_scale_tween()
+	_scale_tween = create_tween()
+	_scale_tween.set_parallel(true)
+	_scale_tween.tween_property(self, "scale", Vector3.ZERO, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	_scale_tween.tween_property(self, "rotation:y", rotation.y + PI, 0.16)
+	await _scale_tween.finished
+
+
+func _hide_until_respawn() -> void:
+	visible = false
+	velocity = Vector3.ZERO
+	knockback_velocity = Vector3.ZERO
+	search_timer = 0.0
+	search_look_time = 0.0
+	returning_to_spawn = false
+	avoidance_timer = 0.0
+	avoidance_direction = Vector3.ZERO
+	fleeing_timer = 0.0
+	set_physics_process(false)
+
+
+func _respawn_after_delay(delay_seconds: float) -> void:
+	await get_tree().create_timer(delay_seconds).timeout
+
+	while is_inside_tree() and not _spawn_is_out_of_perspective():
+		await get_tree().create_timer(respawn_visibility_check_interval).timeout
+
+	if is_inside_tree():
+		_respawn()
+
+
+func _respawn() -> void:
+	global_transform = spawn_transform
+	scale = spawn_scale
+	rotation = spawn_transform.basis.get_euler()
+	facing_direction = spawn_facing_direction
+	alive = true
+	health = max_health
+	attack_timer = 0.0
+	hit_flash_time_remaining = 0.0
+	search_timer = 0.0
+	search_look_time = 0.0
+	returning_to_spawn = false
+	avoidance_timer = 0.0
+	avoidance_direction = Vector3.ZERO
+	fleeing_timer = 0.0
+	has_fled_low_health = false
+	_roll_low_health_personality()
+	last_known_player_position = spawn_transform.origin
+	knockback_velocity = Vector3.ZERO
+	velocity = Vector3.ZERO
+	visible = true
+	set_physics_process(true)
+	_set_collision_enabled(true)
+	if not is_in_group("enemies"):
+		add_to_group("enemies")
+	if health_label != null:
+		health_label.visible = true
+	_update_health_label()
+	_restore_attached_limbs()
+	_set_enemy_color(normal_color)
+	_set_player_visible(false, true)
+	vision_check_timer = fposmod(float(get_instance_id()) * 0.017, maxf(0.01, vision_check_interval))
+
+
+func _get_respawn_delay() -> float:
+	var player := _get_player()
+	if player == null:
+		return far_respawn_delay
+
+	var distance_to_player := global_position.distance_to(player.global_position)
+	if distance_to_player <= near_respawn_distance:
+		return near_respawn_delay
+	return far_respawn_delay
+
+
+func _spawn_is_out_of_perspective() -> bool:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return true
+
+	var spawn_center := spawn_transform.origin + Vector3.UP * 0.65
+	return not camera.is_position_in_frustum(spawn_center)
+
+
+func _set_collision_enabled(enabled: bool) -> void:
+	if collision_shape == null:
+		return
+
+	collision_shape.set_deferred("disabled", not enabled)
+
+
+func _facing_from_rotation() -> Vector3:
+	return Vector3(sin(rotation.y), 0.0, cos(rotation.y)).normalized()
+
+
+# Polish: a quick squash-and-recover so a surviving hit has some weight.
+func _punch_scale() -> void:
+	_kill_scale_tween()
+	_scale_tween = create_tween()
+	_scale_tween.tween_property(self, "scale", Vector3(1.18, 0.86, 1.18), 0.06)
+	_scale_tween.tween_property(self, "scale", Vector3.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+# Polish: a forward "chomp" scale pop that reads as the enemy attacking.
+func _lunge() -> void:
+	_kill_scale_tween()
+	_scale_tween = create_tween()
+	_scale_tween.tween_property(self, "scale", Vector3(1.25, 0.8, 1.25), 0.08)
+	_scale_tween.tween_property(self, "scale", Vector3.ONE, 0.12)
+
+
+# Stop any running scale tween so squash / lunge / death-pop never fight over scale.
+func _kill_scale_tween() -> void:
+	if _scale_tween != null:
+		_scale_tween.kill()
+
+
+# This creates a bone pickup in the same parent scene as the enemy.
+func _drop_bone() -> void:
+	if limb_pickup_spawned:
+		return
+
+	var drop_slot := BoneDatabase.slot(dropped_bone_id)
+	if drop_slot == "body" and not detached_limb_keys.has("body"):
+		return
+
+	if guarantee_limb_pickup_on_death and _force_limb_pickup_drop():
+		return
+
+	_drop_standard_bone_pickup()
+
+
+func _drop_standard_bone_pickup() -> void:
+	if limb_pickup_spawned:
+		return
+
+	var world := get_parent()
+	if world == null:
+		return
+
+	var bone := BONE_SCENE.instantiate()
+	world.add_child(bone)
+
+	var bone_node := bone as Node3D
+	if bone_node != null:
+		# Drop the pickup at ground height under wherever the enemy died.
+		bone_node.global_position = Vector3(global_position.x, 0.05, global_position.z)
+
+	if bone.has_method("set_bone_id"):
+		bone.call("set_bone_id", dropped_bone_id)
+	limb_pickup_spawned = true
+
+
+func _force_limb_pickup_drop() -> bool:
+	var limb_key := _next_pickup_limb_key()
+	if limb_key == "":
+		return false
+
+	_detach_limb_group(limb_key, true)
+	return limb_pickup_spawned
+
+
+func _next_pickup_limb_key() -> String:
+	var candidates: Array[String] = []
+	match BoneDatabase.slot(dropped_bone_id):
+		"right_arm":
+			candidates.append("right_arm")
+			candidates.append("left_arm")
+		"left_arm":
+			candidates.append("left_arm")
+			candidates.append("right_arm")
+		"legs":
+			candidates.append("right_leg")
+			candidates.append("left_leg")
+		"body":
+			candidates.append("body")
+
+	for limb_key in candidates:
+		if not detached_limb_keys.has(limb_key):
+			return limb_key
+	return ""
+
+
+func _drop_remaining_limbs_on_death() -> void:
+	if rig == null:
+		return
+
+	for limb_key in _preferred_detach_keys():
+		if detached_limb_keys.has(limb_key):
+			continue
+		var should_force_pickup := guarantee_limb_pickup_on_death and not limb_pickup_spawned and _drop_slot_matches_limb(limb_key)
+		_detach_limb_group(limb_key, should_force_pickup)
+		if death_limb_fall_spacing > 0.0:
+			await get_tree().create_timer(death_limb_fall_spacing).timeout
+
+
+func _drop_slot_matches_limb(limb_key: String) -> bool:
+	match BoneDatabase.slot(dropped_bone_id):
+		"right_arm":
+			return limb_key == "right_arm" or limb_key == "left_arm"
+		"left_arm":
+			return limb_key == "left_arm" or limb_key == "right_arm"
+		"legs":
+			return limb_key == "right_leg" or limb_key == "left_leg"
+		"body":
+			return limb_key == "body"
+		_:
+			return false
+
+
+# This updates the floating HP text above the enemy.
+func _update_health_label() -> void:
+	if health_label == null:
+		return
+
+	var state_text := ""
+	if fleeing_timer > 0.0:
+		state_text = "\nFLEEING"
+	health_label.text = BoneDatabase.quality(dropped_bone_id) + " " + BoneDatabase.display_name(dropped_bone_id) + "\nHP: " + str(health) + state_text
+
+
+# This gives a clear visual response every time the enemy is hit.
+func _flash_hit() -> void:
+	hit_flash_time_remaining = 0.18
+	_set_enemy_color(HIT_COLOR)
+
+
+# This changes the enemy's material color.
+func _set_enemy_color(new_color: Color) -> void:
+	if enemy_material == null:
+		return
+
+	enemy_material.albedo_color = new_color
+	_set_rig_color(new_color)
+
+
+func _setup_procedural_character() -> void:
+	if animator == null or rig == null:
+		return
+
+	animator.rig = rig
+	animator.turn_target = null
+
+
+func _update_procedural_animation(delta: float) -> void:
+	if animator == null or rig == null:
+		return
+
+	animator.update_from_player(delta, velocity, move_speed, facing_direction, [])
+
+
+func _set_rig_color(new_color: Color) -> void:
+	if rig == null:
+		return
+
+	for key in rig.base_visuals:
+		var limb := rig.base_visuals[key] as MeshInstance3D
+		if limb == null:
+			continue
+		var material := limb.material_override as StandardMaterial3D
+		if material != null:
+			material.albedo_color = new_color
+
+
+func _apply_bone_identity() -> void:
+	var def := BoneDatabase.get_def(dropped_bone_id)
+	if def.is_empty():
+		return
+
+	move_speed += BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_move_speed_bonus")
+	attack_range += BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_attack_range_bonus")
+	contact_damage += BoneDatabase.enemy_int_bonus(dropped_bone_id, "enemy_contact_damage_bonus")
+	max_health += BoneDatabase.enemy_int_bonus(dropped_bone_id, "enemy_max_health_bonus")
+	detection_range += BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_detection_range_bonus")
+	low_health_flee_chance = BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_flee_chance", low_health_flee_chance)
+	stealth_finish_max_health = maxi(stealth_finish_max_health, max_health - 1)
+
+	var enemy_scale := BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_visual_scale", 1.0)
+	if visual_root != null:
+		visual_root.scale = Vector3.ONE * enemy_scale
+
+
+func _roll_low_health_personality() -> void:
+	flees_when_low_health = randf() <= low_health_flee_chance
+
+
+# Tier 1D: a tiny procedurally generated "thud" so a hit is audible. This is a
+# placeholder (no audio files needed) and can be swapped for a real sound later.
+func _make_hit_blip() -> AudioStreamWAV:
+	var mix_rate := 22050
+	var duration := 0.09
+	var sample_count := int(mix_rate * duration)
+
+	var data := PackedByteArray()
+	data.resize(sample_count * 2) # 16-bit samples take 2 bytes each.
+
+	for i in range(sample_count):
+		var t := float(i) / float(mix_rate)
+		var progress := float(i) / float(sample_count)
+		var envelope := pow(1.0 - progress, 2.0) # fast fade so it reads as a tap.
+		var wave := sin(TAU * 180.0 * t) * 0.7 + sin(TAU * 90.0 * t) * 0.3
+		var value := int(clamp(wave * envelope, -1.0, 1.0) * 32767.0)
+		data.encode_s16(i * 2, value)
+
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = mix_rate
+	stream.stereo = false
+	stream.data = data
+	return stream
+
+
+# Play the hit blip as a one-shot under the scene root, so it keeps playing even
+# if this enemy is removed by its death pop a moment later.
+func _play_hit_sound() -> void:
+	if _hit_sound == null:
+		return
+
+	var host := get_tree().current_scene
+	if host == null:
+		return
+
+	var sound_player := AudioStreamPlayer.new()
+	sound_player.stream = _hit_sound
+	sound_player.volume_db = -8.0
+	host.add_child(sound_player)
+	sound_player.play()
+	sound_player.finished.connect(Callable(sound_player, "queue_free"))

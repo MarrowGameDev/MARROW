@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/open_world_stage.gd" id="1_stage_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_stage"]
+size = Vector3(12, 0.25, 12)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stage"]
+albedo_color = Color(0.35, 0.55, 0.35, 1)
+roughness = 0.85
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(12, 4, 12)
+
+[node name="OpenWorldStage" type="Node3D"]
+script = ExtResource("1_stage_script")
+
+[node name="StageBody" type="StaticBody3D" parent="."]
+
+[node name="StageMesh" type="MeshInstance3D" parent="StageBody"]
+mesh = SubResource("BoxMesh_stage")
+surface_material_override/0 = SubResource("StandardMaterial3D_stage")
+
+[node name="StageCollision" type="CollisionShape3D" parent="StageBody"]
+
+[node name="StageTrigger" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="StageTriggerShape" type="CollisionShape3D" parent="StageTrigger"]
+position = Vector3(0, 1.5, 0)
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="StageLabel" type="Label3D" parent="."]
+position = Vector3(0, 2.4, 0)
+text = "Stage"
+font_size = 44
+outline_size = 8
+outline_modulate = Color(0.03, 0.03, 0.03, 1)
+billboard = 1

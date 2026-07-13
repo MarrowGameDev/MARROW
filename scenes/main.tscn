@@ -1,0 +1,213 @@
+[gd_scene format=3 uid="uid://dcbkbuks2hqc6"]
+
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/enemy.tscn" id="2_enemy"]
+[ext_resource type="Script" path="res://scripts/arena_goal_manager.gd" id="3_goal_manager"]
+[ext_resource type="PackedScene" path="res://scenes/bone_trial_gate.tscn" id="4_trial_gate"]
+[ext_resource type="PackedScene" path="res://scenes/exit_portal.tscn" id="5_exit_portal"]
+[ext_resource type="Script" path="res://scripts/world_map_manager.gd" id="6_world_map_manager"]
+[ext_resource type="PackedScene" path="res://scenes/open_world_stage.tscn" id="7_open_world_stage"]
+[ext_resource type="PackedScene" path="res://scenes/guide_wisp.tscn" id="8_guide_wisp"]
+[ext_resource type="Script" path="res://scripts/tutorial_island_builder.gd" id="9_tutorial_island"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+background_color = Color(0.54, 0.72, 0.95, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.55
+
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(100, 0.15, 100)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.28, 0.45, 0.32, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(100, 0.15, 100)
+
+[sub_resource type="BoxMesh" id="BoxMesh_sight_wall"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sight_wall"]
+albedo_color = Color(0.42, 0.45, 0.5, 1)
+roughness = 0.9
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_sight_wall"]
+size = Vector3(1, 1, 1)
+
+[node name="Main" type="Node3D" unique_id=176242980]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1079248362]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1629783351]
+transform = Transform3D(0.86602527, 0.3535535, -0.35355362, 0, 0.7071069, 0.70710665, 0.50000024, -0.6123722, 0.61237246, 0, 0, 0)
+light_energy = 2.5
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=2060205752]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1755857429]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.001005888, 0.003558278, -0.0018453598)
+mesh = SubResource("BoxMesh_ground")
+surface_material_override/0 = SubResource("StandardMaterial3D_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=104640575]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Player" parent="." unique_id=1066279563 instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+
+[node name="GuideWisp" parent="." instance=ExtResource("8_guide_wisp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 1.8, 1.8)
+
+[node name="ArenaGoalManager" type="Node" parent="."]
+script = ExtResource("3_goal_manager")
+
+[node name="WorldMapManager" type="Node" parent="."]
+script = ExtResource("6_world_map_manager")
+
+[node name="DemoIslandBuilder" type="Node3D" parent="."]
+script = ExtResource("9_tutorial_island")
+
+[node name="OpenWorldStages" type="Node3D" parent="."]
+
+[node name="BonefieldHub" parent="OpenWorldStages" instance=ExtResource("7_open_world_stage")]
+stage_id = "bonefield_hub"
+stage_name = "Bonefield Hub"
+difficulty = 1
+recommended_bone = "Any"
+description = "Safe center. Learn movement, combat, and bone swapping."
+stage_color = Color(0.34, 0.62, 0.38, 1)
+trigger_size = Vector3(18, 4, 18)
+
+[node name="FirstHuntField" parent="OpenWorldStages" instance=ExtResource("7_open_world_stage")]
+transform = Transform3D(1.35, 0, 0, 0, 1, 0, 0, 0, 1.1, 0, 0, -5.5)
+stage_id = "first_hunt_field"
+stage_name = "First Hunt Field"
+difficulty = 2
+recommended_bone = "Any"
+description = "Starter enemies drop the first build bones."
+stage_color = Color(0.78, 0.58, 0.25, 1)
+trigger_size = Vector3(20, 4, 16)
+
+[node name="ReachRidge" parent="OpenWorldStages" instance=ExtResource("7_open_world_stage")]
+transform = Transform3D(1.15, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, -8)
+stage_id = "reach_ridge"
+stage_name = "Reach Ridge"
+difficulty = 3
+recommended_bone = "Arm Bone"
+description = "Wide gaps and reach checks. Built for longer attacks."
+stage_color = Color(1, 0.82, 0.18, 1)
+trigger_size = Vector3(16, 4, 14)
+
+[node name="QuickrootRun" parent="OpenWorldStages" instance=ExtResource("7_open_world_stage")]
+transform = Transform3D(1.4, 0, 0, 0, 1, 0, 0, 0, 0.75, -18, 0, -8)
+stage_id = "quickroot_run"
+stage_name = "Quickroot Run"
+difficulty = 4
+recommended_bone = "Leg Bone"
+description = "Long paths and speed challenges. Movement matters here."
+stage_color = Color(0.25, 0.95, 0.55, 1)
+trigger_size = Vector3(20, 4, 12)
+
+[node name="HeavyRuin" parent="OpenWorldStages" instance=ExtResource("7_open_world_stage")]
+transform = Transform3D(1.2, 0, 0, 0, 1, 0, 0, 0, 1.2, 0, 0, -22)
+stage_id = "heavy_ruin"
+stage_name = "Heavy Ruin"
+difficulty = 5
+recommended_bone = "Heavy Bone"
+description = "Harder enemies and breakable-style gates. Power matters here."
+stage_color = Color(0.65, 0.35, 1, 1)
+trigger_size = Vector3(17, 4, 17)
+
+[node name="RibfenBonus" parent="OpenWorldStages" instance=ExtResource("7_open_world_stage")]
+transform = Transform3D(0.95, 0, 0, 0, 1, 0, 0, 0, 0.95, -13, 0, 5)
+stage_id = "ribfen_bonus"
+stage_name = "Ribfen Bonus"
+difficulty = 4
+recommended_bone = "Hybrid"
+description = "Optional side-stage for the Rib Bone."
+stage_color = Color(0.35, 0.85, 0.95, 1)
+trigger_size = Vector3(13, 4, 13)
+
+[node name="ElderMarrowGate" parent="OpenWorldStages" instance=ExtResource("7_open_world_stage")]
+transform = Transform3D(1.6, 0, 0, 0, 1, 0, 0, 0, 1.1, 22, 0, -25)
+stage_id = "elder_marrow_gate"
+stage_name = "Elder Marrow Gate"
+difficulty = 7
+recommended_bone = "All bones"
+description = "Future high-difficulty stage. Locked in design, open for grey-boxing."
+stage_color = Color(0.85, 0.22, 0.22, 1)
+trigger_size = Vector3(22, 4, 16)
+
+[node name="SightTestWalls" type="Node3D" parent="."]
+
+[node name="CenterHideWall" type="StaticBody3D" parent="SightTestWalls"]
+transform = Transform3D(5.5, 0, 0, 0, 2.7, 0, 0, 0, 0.35, 0, 1.25, -2.25)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SightTestWalls/CenterHideWall"]
+mesh = SubResource("BoxMesh_sight_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_sight_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SightTestWalls/CenterHideWall"]
+shape = SubResource("BoxShape3D_sight_wall")
+
+[node name="LeftHideWall" type="StaticBody3D" parent="SightTestWalls"]
+transform = Transform3D(0.35, 0, 0, 0, 2.7, 0, 0, 0, 3.6, -2.95, 1.25, -4.1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SightTestWalls/LeftHideWall"]
+mesh = SubResource("BoxMesh_sight_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_sight_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SightTestWalls/LeftHideWall"]
+shape = SubResource("BoxShape3D_sight_wall")
+
+[node name="RightHideWall" type="StaticBody3D" parent="SightTestWalls"]
+transform = Transform3D(0.35, 0, 0, 0, 2.7, 0, 0, 0, 3.6, 2.95, 1.25, -4.1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SightTestWalls/RightHideWall"]
+mesh = SubResource("BoxMesh_sight_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_sight_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SightTestWalls/RightHideWall"]
+shape = SubResource("BoxShape3D_sight_wall")
+
+[node name="EnemyCenter" parent="." instance=ExtResource("2_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -4)
+dropped_bone_id = "arm_bone"
+
+[node name="EnemyLeft" parent="." instance=ExtResource("2_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.6, -6)
+dropped_bone_id = "leg_bone"
+
+[node name="EnemyRight" parent="." instance=ExtResource("2_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.6, -6)
+dropped_bone_id = "heavy_bone"
+
+[node name="ArmTrialGate" parent="." instance=ExtResource("4_trial_gate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.5)
+trial_id = "arm_trial"
+trial_name = "Arm Trial"
+required_bone_id = "arm_bone"
+
+[node name="LegTrialGate" parent="." instance=ExtResource("4_trial_gate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0, -10.5)
+trial_id = "leg_trial"
+trial_name = "Leg Trial"
+required_bone_id = "leg_bone"
+
+[node name="HeavyTrialGate" parent="." instance=ExtResource("4_trial_gate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, -10.5)
+trial_id = "heavy_trial"
+trial_name = "Heavy Trial"
+required_bone_id = "heavy_bone"
+
+[node name="EnemyBonus" parent="." instance=ExtResource("2_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 2.5)
+dropped_bone_id = "rib_bone"
+
+[node name="ExitPortal" parent="." instance=ExtResource("5_exit_portal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)

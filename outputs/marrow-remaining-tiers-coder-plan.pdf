@@ -1,0 +1,866 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Length 442 >>
+stream
+BT
+/F2 22 Tf
+1 0 0 1 54 700 Tm
+(Project Marrow - Remaining Tier Build Plan) Tj
+/F1 14 Tf
+1 0 0 1 54 672 Tm
+(Coder-facing roadmap after Tier 1C) Tj
+/F1 10 Tf
+1 0 0 1 54 648 Tm
+(Generated 2026-07-08) Tj
+/F1 11 Tf
+1 0 0 1 54 612 Tm
+(Audience: coder implementing the remaining prototype/demo tiers.) Tj
+/F1 11 Tf
+1 0 0 1 54 594 Tm
+(Scope: after Tier 1C works in Godot.) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 1) Tj
+ET
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 3 0 R >>
+endobj
+5 0 obj
+<< /Length 1496 >>
+stream
+BT
+/F2 16 Tf
+1 0 0 1 54 742 Tm
+(Table of Contents) Tj
+/F1 10 Tf
+1 0 0 1 64 716 Tm
+(- Status Baseline) Tj
+/F1 10 Tf
+1 0 0 1 64 702 Tm
+(- Global Engineering Rules) Tj
+/F1 10 Tf
+1 0 0 1 64 688 Tm
+(- Recommended Near-Term Refactor) Tj
+/F1 10 Tf
+1 0 0 1 64 674 Tm
+(- Tier 1D - Combat Feel Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 660 Tm
+(- Tier 1E - Bone System Cleanup) Tj
+/F1 10 Tf
+1 0 0 1 64 646 Tm
+(- Tier 1F - Grey-Box Vertical Slice) Tj
+/F1 10 Tf
+1 0 0 1 64 632 Tm
+(- Tier 1G - Playtest And Decision Gate) Tj
+/F1 10 Tf
+1 0 0 1 64 618 Tm
+(- Tier 2A - Demo Architecture Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 604 Tm
+(- Tier 2B - First Real Demo Level) Tj
+/F1 10 Tf
+1 0 0 1 64 590 Tm
+(- Tier 2C - Enemy Types) Tj
+/F1 10 Tf
+1 0 0 1 64 576 Tm
+(- Tier 2D - Progression And Save/Load) Tj
+/F1 10 Tf
+1 0 0 1 64 562 Tm
+(- Tier 2E - UI And Controls Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 548 Tm
+(- Tier 2F - Art Direction Starter Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 534 Tm
+(- Tier 2G - Audio And Juice) Tj
+/F1 10 Tf
+1 0 0 1 64 520 Tm
+(- Tier 2H - Demo Packaging) Tj
+/F1 10 Tf
+1 0 0 1 64 506 Tm
+(- Tier 3A - Full Game Planning Gate) Tj
+/F1 10 Tf
+1 0 0 1 64 492 Tm
+(- Tier 3B - Content Pipeline) Tj
+/F1 10 Tf
+1 0 0 1 64 478 Tm
+(- Tier 3C - Production Areas) Tj
+/F1 10 Tf
+1 0 0 1 64 464 Tm
+(- Tier 3D - Bosses And Set Pieces) Tj
+/F1 10 Tf
+1 0 0 1 64 450 Tm
+(- Tier 3E - Polish, Accessibility, And Release) Tj
+/F1 10 Tf
+1 0 0 1 64 436 Tm
+(- Immediate Next Coding Task) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 2) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 3743 >>
+stream
+BT
+/F2 15 Tf
+1 0 0 1 54 742 Tm
+(Status Baseline) Tj
+/F1 10 Tf
+1 0 0 1 64 720 Tm
+(- Assumed current build: Godot 4.x, GDScript, grey-box prototype.) Tj
+/F1 10 Tf
+1 0 0 1 64 703 Tm
+(- Completed: Tier 0 core loop and Tier 1A-C prototype steps.) Tj
+/F1 10 Tf
+1 0 0 1 64 686 Tm
+(- Working loop: move -> fight enemies -> enemies drop named bones -> hold E to collect ->) Tj
+/F1 10 Tf
+1 0 0 1 64 672 Tm
+(  press Q to cycle equipped bones -> equipped bone changes stats -> complete bone-gated trials) Tj
+/F1 10 Tf
+1 0 0 1 64 658 Tm
+(  -> open exit.) Tj
+/F1 10 Tf
+1 0 0 1 64 641 Tm
+(- Existing important files: scripts/player.gd, scripts/enemy.gd, scripts/bone.gd,) Tj
+/F1 10 Tf
+1 0 0 1 64 627 Tm
+(  scripts/arena_goal_manager.gd, scripts/bone_trial_gate.gd, scripts/exit_portal.gd,) Tj
+/F1 10 Tf
+1 0 0 1 64 613 Tm
+(  scenes/main.tscn, scenes/player.tscn, scenes/enemy.tscn, scenes/bone.tscn,) Tj
+/F1 10 Tf
+1 0 0 1 64 599 Tm
+(  scenes/equipped_bone.tscn.) Tj
+/F1 10 Tf
+1 0 0 1 64 582 Tm
+(- Primary rule from here: do not expand content until the core loop is readable, repeatable,) Tj
+/F1 10 Tf
+1 0 0 1 64 568 Tm
+(  and easy to tune.) Tj
+/F2 15 Tf
+1 0 0 1 54 541 Tm
+(Global Engineering Rules) Tj
+/F1 10 Tf
+1 0 0 1 64 519 Tm
+(- Keep every tier playable. Do not leave the project in a half-working state for more than one) Tj
+/F1 10 Tf
+1 0 0 1 64 505 Tm
+(  task.) Tj
+/F1 10 Tf
+1 0 0 1 64 488 Tm
+(- Prefer small scenes and scripts per concept: player, enemy, pickup, trial gate, portal, UI,) Tj
+/F1 10 Tf
+1 0 0 1 64 474 Tm
+(  spawner, save system.) Tj
+/F1 10 Tf
+1 0 0 1 64 457 Tm
+(- When data starts repeating, move it into a data table or Resource-like structure before) Tj
+/F1 10 Tf
+1 0 0 1 64 443 Tm
+(  adding more content.) Tj
+/F1 10 Tf
+1 0 0 1 64 426 Tm
+(- Every mechanic needs a visible test in the grey-box arena before it is considered done.) Tj
+/F1 10 Tf
+1 0 0 1 64 409 Tm
+(- Every new feature needs a short acceptance test: what to press, what should happen, and what) Tj
+/F1 10 Tf
+1 0 0 1 64 395 Tm
+(  would count as a failure.) Tj
+/F1 10 Tf
+1 0 0 1 64 378 Tm
+(- Avoid animation, art, RPG progression, inventory screens, shops, lore, and real levels until) Tj
+/F1 10 Tf
+1 0 0 1 64 364 Tm
+(  the Tier 1 vertical slice is fun with ugly shapes.) Tj
+/F2 15 Tf
+1 0 0 1 54 337 Tm
+(Recommended Near-Term Refactor) Tj
+/F1 10 Tf
+1 0 0 1 64 315 Tm
+(- Before adding many more bones, extract bone definitions from scattered match statements.) Tj
+/F1 10 Tf
+1 0 0 1 64 298 Tm
+(- Suggested new file: scripts/bone_database.gd or scripts/bone_defs.gd.) Tj
+/F1 10 Tf
+1 0 0 1 64 281 Tm
+(- Each bone definition should include id, display_name, color, slot, move_speed_bonus,) Tj
+/F1 10 Tf
+1 0 0 1 64 267 Tm
+(  attack_range_bonus, attack_damage_bonus, optional tags, and short description.) Tj
+/F1 10 Tf
+1 0 0 1 64 250 Tm
+(- Player, pickup, enemy, and trial gate scripts should ask the same source for) Tj
+/F1 10 Tf
+1 0 0 1 64 236 Tm
+(  names/colors/effects.) Tj
+/F1 10 Tf
+1 0 0 1 64 219 Tm
+(- Done when: adding a new bone type requires changing one data table and assigning an enemy) Tj
+/F1 10 Tf
+1 0 0 1 64 205 Tm
+(  drop, not editing four different scripts.) Tj
+/F2 15 Tf
+1 0 0 1 54 178 Tm
+(Tier 1D - Combat Feel Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 156 Tm
+(- Goal: make the fight readable enough that bone bonuses can be felt.) Tj
+/F1 10 Tf
+1 0 0 1 64 139 Tm
+(- Build a visible attack indicator. Start with a quick translucent arc, cone, or short-lived) Tj
+/F1 10 Tf
+1 0 0 1 64 125 Tm
+(  Area3D in front of the player.) Tj
+/F1 10 Tf
+1 0 0 1 64 108 Tm
+(- Add attack cooldown, for example 0.35-0.6 seconds, so holding or mashing Space does not blur) Tj
+/F1 10 Tf
+1 0 0 1 64 94 Tm
+(  the test.) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 3) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 4055 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 64 742 Tm
+(- Add feedback: enemy hit flash, small knockback or bump, hit sound placeholder, and a short) Tj
+/F1 10 Tf
+1 0 0 1 64 728 Tm
+(  player attack flash.) Tj
+/F1 10 Tf
+1 0 0 1 64 711 Tm
+(- Add player facing or attack direction. The current range check is serviceable, but a Zelda-) Tj
+/F1 10 Tf
+1 0 0 1 64 697 Tm
+(  like game eventually needs directional intent.) Tj
+/F1 10 Tf
+1 0 0 1 64 680 Tm
+(- Add enemy contact danger only if the fight still feels too empty. If added, keep it simple:) Tj
+/F1 10 Tf
+1 0 0 1 64 666 Tm
+(  touching enemy reduces player HP or pushes player back.) Tj
+/F1 10 Tf
+1 0 0 1 64 649 Tm
+(- Suggested files: scripts/player_attack.gd or keep in player.gd for one more pass;) Tj
+/F1 10 Tf
+1 0 0 1 64 635 Tm
+(  scripts/enemy.gd; optional scenes/attack_hitbox.tscn.) Tj
+/F1 10 Tf
+1 0 0 1 64 618 Tm
+(- Done when: a new tester can tell when they attacked, whether it hit, which enemy was hit,) Tj
+/F1 10 Tf
+1 0 0 1 64 604 Tm
+(  and why the enemy died.) Tj
+/F2 15 Tf
+1 0 0 1 54 577 Tm
+(Tier 1E - Bone System Cleanup) Tj
+/F1 10 Tf
+1 0 0 1 64 555 Tm
+(- Goal: turn the prototype bone logic into a small system that can survive more content.) Tj
+/F1 10 Tf
+1 0 0 1 64 538 Tm
+(- Create a shared bone definition source. Remove duplicated display names, colors, and stat) Tj
+/F1 10 Tf
+1 0 0 1 64 524 Tm
+(  effects from player.gd, bone.gd, enemy.gd, and bone_trial_gate.gd.) Tj
+/F1 10 Tf
+1 0 0 1 64 507 Tm
+(- Support at least one slot explicitly, e.g. right_arm. Keep left_arm, legs, and heavy/body) Tj
+/F1 10 Tf
+1 0 0 1 64 493 Tm
+(  slots as planned but not fully implemented unless needed.) Tj
+/F1 10 Tf
+1 0 0 1 64 476 Tm
+(- Define equip replacement rules: equipping another right_arm bone replaces the previous) Tj
+/F1 10 Tf
+1 0 0 1 64 462 Tm
+(  right_arm bone; later slots can coexist.) Tj
+/F1 10 Tf
+1 0 0 1 64 445 Tm
+(- Update inventory UI so it shows collected bones and currently equipped slot\(s\). It can) Tj
+/F1 10 Tf
+1 0 0 1 64 431 Tm
+(  remain text-based.) Tj
+/F1 10 Tf
+1 0 0 1 64 414 Tm
+(- Allow duplicate pickup policy to be explicit. Recommended for now: collecting an already-) Tj
+/F1 10 Tf
+1 0 0 1 64 400 Tm
+(  owned bone does not duplicate; it updates or ignores with a message.) Tj
+/F1 10 Tf
+1 0 0 1 64 383 Tm
+(- Done when: Arm Bone, Leg Bone, and Heavy Bone are all defined in one place and Q/equip) Tj
+/F1 10 Tf
+1 0 0 1 64 369 Tm
+(  behavior is predictable.) Tj
+/F2 15 Tf
+1 0 0 1 54 342 Tm
+(Tier 1F - Grey-Box Vertical Slice) Tj
+/F1 10 Tf
+1 0 0 1 64 320 Tm
+(- Goal: one complete 5-minute grey-box arena that proves the game idea has play value.) Tj
+/F1 10 Tf
+1 0 0 1 64 303 Tm
+(- Build a simple start -> fight -> harvest -> swap -> solve trials -> exit flow.) Tj
+/F1 10 Tf
+1 0 0 1 64 286 Tm
+(- Place enemies and trials so the player naturally learns: gold/arm means reach, green/leg) Tj
+/F1 10 Tf
+1 0 0 1 64 272 Tm
+(  means speed, purple/heavy means power with a speed tradeoff.) Tj
+/F1 10 Tf
+1 0 0 1 64 255 Tm
+(- Add a restart/reset key or button after completion so repeated testing is fast.) Tj
+/F1 10 Tf
+1 0 0 1 64 238 Tm
+(- Add a basic win state screen or label: Tier 1 complete / time / bones used.) Tj
+/F1 10 Tf
+1 0 0 1 64 221 Tm
+(- Add one optional alternate route that rewards experimenting, but do not create a full level) Tj
+/F1 10 Tf
+1 0 0 1 64 207 Tm
+(  yet.) Tj
+/F1 10 Tf
+1 0 0 1 64 190 Tm
+(- Done when: someone unfamiliar can play from spawn to exit without developer explanation,) Tj
+/F1 10 Tf
+1 0 0 1 64 176 Tm
+(  using only on-screen labels.) Tj
+/F2 15 Tf
+1 0 0 1 54 149 Tm
+(Tier 1G - Playtest And Decision Gate) Tj
+/F1 10 Tf
+1 0 0 1 64 127 Tm
+(- Goal: decide whether the core loop is fun enough to justify Tier 2.) Tj
+/F1 10 Tf
+1 0 0 1 64 110 Tm
+(- Run at least 5 playtests with people who did not build it.) Tj
+/F1 10 Tf
+1 0 0 1 64 93 Tm
+(- Observe without explaining. Track confusion points, unused bones, boring moments, and) Tj
+/F1 10 Tf
+1 0 0 1 64 79 Tm
+(  whether players voluntarily swap bones.) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 4) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 9 0 R >>
+endobj
+11 0 obj
+<< /Length 3729 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 64 742 Tm
+(- Questions to answer: Did they understand kill -> harvest -> equip? Did they swap because) Tj
+/F1 10 Tf
+1 0 0 1 64 728 Tm
+(  they wanted to or because the gate forced them? Which bone felt best? Which felt pointless?) Tj
+/F1 10 Tf
+1 0 0 1 64 714 Tm
+(  Did combat feel fair?) Tj
+/F1 10 Tf
+1 0 0 1 64 697 Tm
+(- Make a short playtest notes file: docs/tier1_playtest_notes.md.) Tj
+/F1 10 Tf
+1 0 0 1 64 680 Tm
+(- Decision gate: continue only if swapping bones creates at least one genuinely interesting) Tj
+/F1 10 Tf
+1 0 0 1 64 666 Tm
+(  choice. If not, redesign bone effects before Tier 2.) Tj
+/F2 15 Tf
+1 0 0 1 54 639 Tm
+(Tier 2A - Demo Architecture Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 617 Tm
+(- Goal: prepare the codebase for a small playable demo without overengineering.) Tj
+/F1 10 Tf
+1 0 0 1 64 600 Tm
+(- Introduce folders if not already present: scripts/player, scripts/enemies, scripts/bones,) Tj
+/F1 10 Tf
+1 0 0 1 64 586 Tm
+(  scripts/ui, scripts/level, scripts/save.) Tj
+/F1 10 Tf
+1 0 0 1 64 569 Tm
+(- Separate player movement, combat, inventory/equipment, and stats if player.gd becomes hard) Tj
+/F1 10 Tf
+1 0 0 1 64 555 Tm
+(  to read.) Tj
+/F1 10 Tf
+1 0 0 1 64 538 Tm
+(- Introduce signals for major events: bone_collected, bone_equipped, enemy_died,) Tj
+/F1 10 Tf
+1 0 0 1 64 524 Tm
+(  trial_completed, level_completed.) Tj
+/F1 10 Tf
+1 0 0 1 64 507 Tm
+(- Replace direct get_tree group calls only where they start hiding bugs. Groups are fine for) Tj
+/F1 10 Tf
+1 0 0 1 64 493 Tm
+(  prototypes; signals are better for demo-scale systems.) Tj
+/F1 10 Tf
+1 0 0 1 64 476 Tm
+(- Done when: a coder can add a new enemy, bone, or gate without reading the whole project.) Tj
+/F2 15 Tf
+1 0 0 1 54 449 Tm
+(Tier 2B - First Real Demo Level) Tj
+/F1 10 Tf
+1 0 0 1 64 427 Tm
+(- Goal: one small real level, still simple, that lasts about 10-15 minutes.) Tj
+/F1 10 Tf
+1 0 0 1 64 410 Tm
+(- Layout: spawn area, first enemy/tutorial, branching bone challenges, one climax encounter,) Tj
+/F1 10 Tf
+1 0 0 1 64 396 Tm
+(  exit/goal.) Tj
+/F1 10 Tf
+1 0 0 1 64 379 Tm
+(- Use grey-box first. Only add art after the level is playable from beginning to end.) Tj
+/F1 10 Tf
+1 0 0 1 64 362 Tm
+(- Use reusable level pieces: floor tiles, walls, ramps, doors/gates, trial props, enemy spawn) Tj
+/F1 10 Tf
+1 0 0 1 64 348 Tm
+(  markers.) Tj
+/F1 10 Tf
+1 0 0 1 64 331 Tm
+(- Add a simple camera polish pass so visibility is reliable in the level.) Tj
+/F1 10 Tf
+1 0 0 1 64 314 Tm
+(- Done when: a friend can complete the level in one sitting and understand why each bone) Tj
+/F1 10 Tf
+1 0 0 1 64 300 Tm
+(  matters.) Tj
+/F2 15 Tf
+1 0 0 1 54 273 Tm
+(Tier 2C - Enemy Types) Tj
+/F1 10 Tf
+1 0 0 1 64 251 Tm
+(- Goal: enemies are no longer identical boxes with different drops.) Tj
+/F1 10 Tf
+1 0 0 1 64 234 Tm
+(- Add 3 enemy archetypes tied to bone rewards: reach enemy drops Arm Bone, runner enemy drops) Tj
+/F1 10 Tf
+1 0 0 1 64 220 Tm
+(  Leg Bone, bruiser enemy drops Heavy Bone.) Tj
+/F1 10 Tf
+1 0 0 1 64 203 Tm
+(- Each enemy should have one readable behavior. Examples: reach enemy keeps distance, runner) Tj
+/F1 10 Tf
+1 0 0 1 64 189 Tm
+(  circles or dashes, bruiser moves slowly but hits harder.) Tj
+/F1 10 Tf
+1 0 0 1 64 172 Tm
+(- Keep AI primitive. Use simple states: idle, chase, attack, dead.) Tj
+/F1 10 Tf
+1 0 0 1 64 155 Tm
+(- Add clear silhouettes/colors while still grey-boxing.) Tj
+/F1 10 Tf
+1 0 0 1 64 138 Tm
+(- Done when: players can guess what a creature might drop from how it looks and behaves.) Tj
+/F2 15 Tf
+1 0 0 1 54 111 Tm
+(Tier 2D - Progression And Save/Load) Tj
+/F1 10 Tf
+1 0 0 1 64 89 Tm
+(- Goal: make the demo persistent enough to feel like a game.) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 5) Tj
+ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 11 0 R >>
+endobj
+13 0 obj
+<< /Length 3610 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 64 742 Tm
+(- Save: collected bones, equipped bones, completed level flags, player position if needed.) Tj
+/F1 10 Tf
+1 0 0 1 64 725 Tm
+(- Keep save data small and human-readable if possible, such as a Dictionary serialized to) Tj
+/F1 10 Tf
+1 0 0 1 64 711 Tm
+(  user://save.json.) Tj
+/F1 10 Tf
+1 0 0 1 64 694 Tm
+(- Add a reset save option for testing.) Tj
+/F1 10 Tf
+1 0 0 1 64 677 Tm
+(- Progression should be minimal: bones unlock paths, not stat menus or XP trees yet.) Tj
+/F1 10 Tf
+1 0 0 1 64 660 Tm
+(- Done when: closing and reopening the game preserves bones and completed demo progress.) Tj
+/F2 15 Tf
+1 0 0 1 54 633 Tm
+(Tier 2E - UI And Controls Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 611 Tm
+(- Goal: make the prototype understandable without Codex explaining it.) Tj
+/F1 10 Tf
+1 0 0 1 64 594 Tm
+(- Replace raw text panels with simple but readable HUD elements: current bone, stats/effects,) Tj
+/F1 10 Tf
+1 0 0 1 64 580 Tm
+(  pickup prompt, objective tracker.) Tj
+/F1 10 Tf
+1 0 0 1 64 563 Tm
+(- Add a controls panel or pause overlay: WASD move, Space attack, E pickup/inventory, Q equip) Tj
+/F1 10 Tf
+1 0 0 1 64 549 Tm
+(  next bone.) Tj
+/F1 10 Tf
+1 0 0 1 64 532 Tm
+(- Make prompts contextual: Hold E to pick up Arm Bone, Press Q to equip next bone, Needs Heavy) Tj
+/F1 10 Tf
+1 0 0 1 64 518 Tm
+(  Bone.) Tj
+/F1 10 Tf
+1 0 0 1 64 501 Tm
+(- Done when: a first-time player can discover controls and objectives inside the game.) Tj
+/F2 15 Tf
+1 0 0 1 54 474 Tm
+(Tier 2F - Art Direction Starter Pass) Tj
+/F1 10 Tf
+1 0 0 1 64 452 Tm
+(- Goal: establish visual consistency without drowning in asset production.) Tj
+/F1 10 Tf
+1 0 0 1 64 435 Tm
+(- Pick a simple stylized look: clean shapes, readable colors, strong silhouettes, good) Tj
+/F1 10 Tf
+1 0 0 1 64 421 Tm
+(  lighting.) Tj
+/F1 10 Tf
+1 0 0 1 64 404 Tm
+(- Replace only the most important grey boxes first: player, three enemies, three bone pickups,) Tj
+/F1 10 Tf
+1 0 0 1 64 390 Tm
+(  one level kit.) Tj
+/F1 10 Tf
+1 0 0 1 64 373 Tm
+(- Avoid mixing mismatched asset packs. Consistency beats fidelity.) Tj
+/F1 10 Tf
+1 0 0 1 64 356 Tm
+(- Keep prototype colors meaningful: bone type color should remain readable even after art) Tj
+/F1 10 Tf
+1 0 0 1 64 342 Tm
+(  improves.) Tj
+/F1 10 Tf
+1 0 0 1 64 325 Tm
+(- Done when: screenshots look intentionally stylized rather than like unstyled debug shapes.) Tj
+/F2 15 Tf
+1 0 0 1 54 298 Tm
+(Tier 2G - Audio And Juice) Tj
+/F1 10 Tf
+1 0 0 1 64 276 Tm
+(- Goal: make actions feel satisfying at low cost.) Tj
+/F1 10 Tf
+1 0 0 1 64 259 Tm
+(- Add placeholder sounds: attack swing, hit, enemy death, bone drop, pickup, equip, gate) Tj
+/F1 10 Tf
+1 0 0 1 64 245 Tm
+(  complete, exit open.) Tj
+/F1 10 Tf
+1 0 0 1 64 228 Tm
+(- Add small particles or simple visual effects for hit, pickup, equip, and gate completion.) Tj
+/F1 10 Tf
+1 0 0 1 64 211 Tm
+(- Do not chase cinematic polish. Each effect should clarify game state.) Tj
+/F1 10 Tf
+1 0 0 1 64 194 Tm
+(- Done when: the game is understandable with the HUD hidden for a few seconds.) Tj
+/F2 15 Tf
+1 0 0 1 54 167 Tm
+(Tier 2H - Demo Packaging) Tj
+/F1 10 Tf
+1 0 0 1 64 145 Tm
+(- Goal: make a build someone else can run.) Tj
+/F1 10 Tf
+1 0 0 1 64 128 Tm
+(- Create export presets for the target desktop platform first.) Tj
+/F1 10 Tf
+1 0 0 1 64 111 Tm
+(- Test a clean export outside the editor.) Tj
+/F1 10 Tf
+1 0 0 1 64 94 Tm
+(- Create a short README with controls, known issues, and feedback questions.) Tj
+/F1 10 Tf
+1 0 0 1 64 77 Tm
+(- Make a playtest build folder and version names, e.g. MarrowDemo_0_1_0.) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 6) Tj
+ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 13 0 R >>
+endobj
+15 0 obj
+<< /Length 3442 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 64 742 Tm
+(- Done when: someone can download/run the build and play the 10-15 minute demo without opening) Tj
+/F1 10 Tf
+1 0 0 1 64 728 Tm
+(  Godot.) Tj
+/F2 15 Tf
+1 0 0 1 54 701 Tm
+(Tier 3A - Full Game Planning Gate) Tj
+/F1 10 Tf
+1 0 0 1 64 679 Tm
+(- Goal: only plan the full game after Tier 2 proves the loop.) Tj
+/F1 10 Tf
+1 0 0 1 64 662 Tm
+(- Use Tier 2 playtest results to choose final scope. Do not assume the current bone list,) Tj
+/F1 10 Tf
+1 0 0 1 64 648 Tm
+(  controls, or combat are final.) Tj
+/F1 10 Tf
+1 0 0 1 64 631 Tm
+(- Define production pillars: number of areas, number of enemy families, number of bone slots,) Tj
+/F1 10 Tf
+1 0 0 1 64 617 Tm
+(  target playtime, target platform.) Tj
+/F1 10 Tf
+1 0 0 1 64 600 Tm
+(- Create a content budget. Example: 4 areas, 12 enemies, 12 bones, 4 bosses is already) Tj
+/F1 10 Tf
+1 0 0 1 64 586 Tm
+(  ambitious for solo development.) Tj
+/F1 10 Tf
+1 0 0 1 64 569 Tm
+(- Done when: the full game plan is based on evidence from the demo, not the original fantasy) Tj
+/F1 10 Tf
+1 0 0 1 64 555 Tm
+(  alone.) Tj
+/F2 15 Tf
+1 0 0 1 54 528 Tm
+(Tier 3B - Content Pipeline) Tj
+/F1 10 Tf
+1 0 0 1 64 506 Tm
+(- Goal: make adding content boring and reliable.) Tj
+/F1 10 Tf
+1 0 0 1 64 489 Tm
+(- New bone pipeline: create bone definition -> pickup visual -> equipped visual -> enemy drop) Tj
+/F1 10 Tf
+1 0 0 1 64 475 Tm
+(  -> optional gate/use case -> test scene.) Tj
+/F1 10 Tf
+1 0 0 1 64 458 Tm
+(- New enemy pipeline: create enemy scene -> stats -> behavior script -> drop table -> test) Tj
+/F1 10 Tf
+1 0 0 1 64 444 Tm
+(  encounter.) Tj
+/F1 10 Tf
+1 0 0 1 64 427 Tm
+(- New level pipeline: grey-box -> route test -> encounter pass -> bone gates -> art pass ->) Tj
+/F1 10 Tf
+1 0 0 1 64 413 Tm
+(  audio pass -> playtest.) Tj
+/F1 10 Tf
+1 0 0 1 64 396 Tm
+(- Create test scenes for isolated systems so every change does not require playing the whole) Tj
+/F1 10 Tf
+1 0 0 1 64 382 Tm
+(  game.) Tj
+/F1 10 Tf
+1 0 0 1 64 365 Tm
+(- Done when: content creation follows checklists instead of improvisation.) Tj
+/F2 15 Tf
+1 0 0 1 54 338 Tm
+(Tier 3C - Production Areas) Tj
+/F1 10 Tf
+1 0 0 1 64 316 Tm
+(- Goal: build the full game's areas one at a time.) Tj
+/F1 10 Tf
+1 0 0 1 64 299 Tm
+(- Each area should introduce one new bone idea, one new enemy behavior, and one) Tj
+/F1 10 Tf
+1 0 0 1 64 285 Tm
+(  traversal/combat wrinkle.) Tj
+/F1 10 Tf
+1 0 0 1 64 268 Tm
+(- Finish areas vertically rather than roughing out the whole world. A finished small area) Tj
+/F1 10 Tf
+1 0 0 1 64 254 Tm
+(  teaches more than five empty biomes.) Tj
+/F1 10 Tf
+1 0 0 1 64 237 Tm
+(- Keep revisiting the design pillar: your body is your build. If an area does not use bone) Tj
+/F1 10 Tf
+1 0 0 1 64 223 Tm
+(  swapping, redesign or cut it.) Tj
+/F1 10 Tf
+1 0 0 1 64 206 Tm
+(- Done when: each area has a start, core encounter loop, bone reward, use case for that bone,) Tj
+/F1 10 Tf
+1 0 0 1 64 192 Tm
+(  and exit/progression beat.) Tj
+/F2 15 Tf
+1 0 0 1 54 165 Tm
+(Tier 3D - Bosses And Set Pieces) Tj
+/F1 10 Tf
+1 0 0 1 64 143 Tm
+(- Goal: create memorable tests of bone mastery.) Tj
+/F1 10 Tf
+1 0 0 1 64 126 Tm
+(- Bosses should reward swapping, not just high stats.) Tj
+/F1 10 Tf
+1 0 0 1 64 109 Tm
+(- Example boss pattern: phase requires Arm Bone reach, phase requires Leg Bone dodging, phase) Tj
+/F1 10 Tf
+1 0 0 1 64 95 Tm
+(  requires Heavy Bone damage window.) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 7) Tj
+ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 15 0 R >>
+endobj
+17 0 obj
+<< /Length 1905 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 64 742 Tm
+(- Build boss prototypes with boxes first. Add art and animation only after patterns are) Tj
+/F1 10 Tf
+1 0 0 1 64 728 Tm
+(  readable.) Tj
+/F1 10 Tf
+1 0 0 1 64 711 Tm
+(- Done when: bosses test the core system instead of ignoring it.) Tj
+/F2 15 Tf
+1 0 0 1 54 684 Tm
+(Tier 3E - Polish, Accessibility, And Release) Tj
+/F1 10 Tf
+1 0 0 1 64 662 Tm
+(- Goal: prepare for a real public release.) Tj
+/F1 10 Tf
+1 0 0 1 64 645 Tm
+(- Polish controls, camera, UI, save safety, settings, input remapping, volume controls, and) Tj
+/F1 10 Tf
+1 0 0 1 64 631 Tm
+(  readable text.) Tj
+/F1 10 Tf
+1 0 0 1 64 614 Tm
+(- Accessibility basics: subtitles/text clarity, color-blind-safe cues beyond color, adjustable) Tj
+/F1 10 Tf
+1 0 0 1 64 600 Tm
+(  camera sensitivity if camera control is added.) Tj
+/F1 10 Tf
+1 0 0 1 64 583 Tm
+(- Steam/release basics: build automation, crash notes, store capsule art, trailer footage,) Tj
+/F1 10 Tf
+1 0 0 1 64 569 Tm
+(  demo page if needed.) Tj
+/F1 10 Tf
+1 0 0 1 64 552 Tm
+(- Done when: the game can be played by strangers repeatedly without you standing nearby to) Tj
+/F1 10 Tf
+1 0 0 1 64 538 Tm
+(  interpret it.) Tj
+/F2 15 Tf
+1 0 0 1 54 511 Tm
+(Immediate Next Coding Task) Tj
+/F1 10 Tf
+1 0 0 1 64 489 Tm
+(- After Tier 1C works, build Tier 1D: combat feel pass.) Tj
+/F1 10 Tf
+1 0 0 1 64 472 Tm
+(- Most valuable first task: replace pure distance attack with a short-lived visible attack) Tj
+/F1 10 Tf
+1 0 0 1 64 458 Tm
+(  area in front of the player.) Tj
+/F1 10 Tf
+1 0 0 1 64 441 Tm
+(- Acceptance test: Space creates a visible attack flash; only enemies inside the flash take) Tj
+/F1 10 Tf
+1 0 0 1 64 427 Tm
+(  damage; the enemy HP label updates; misses are visually understandable.) Tj
+/F1 10 Tf
+1 0 0 1 64 410 Tm
+(- Do not start Tier 2 art or save/load until Tier 1D-G are playtested.) Tj
+/F1 8 Tf
+1 0 0 1 54 30 Tm
+(Project Marrow remaining tiers - page 8) Tj
+ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 19 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 17 0 R >>
+endobj
+19 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R] /Count 8 >>
+endobj
+20 0 obj
+<< /Type /Catalog /Pages 19 0 R >>
+endobj
+xref
+0 21
+0000000000 65535 f 
+0000000015 00000 n 
+0000000085 00000 n 
+0000000160 00000 n 
+0000000653 00000 n 
+0000000790 00000 n 
+0000002338 00000 n 
+0000002475 00000 n 
+0000006270 00000 n 
+0000006407 00000 n 
+0000010514 00000 n 
+0000010652 00000 n 
+0000014434 00000 n 
+0000014573 00000 n 
+0000018236 00000 n 
+0000018375 00000 n 
+0000021870 00000 n 
+0000022009 00000 n 
+0000023967 00000 n 
+0000024106 00000 n 
+0000024211 00000 n 
+trailer
+<< /Size 21 /Root 20 0 R >>
+startxref
+24262
+%%EOF

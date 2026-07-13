@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/guide_wisp.gd" id="1_wisp"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_wisp"]
+radius = 0.18
+height = 0.36
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wisp"]
+albedo_color = Color(0.35, 0.85, 1, 0.78)
+emission_enabled = true
+emission = Color(0.35, 0.85, 1, 1)
+emission_energy_multiplier = 1.2
+transparency = 1
+
+[node name="GuideWisp" type="Node3D"]
+script = ExtResource("1_wisp")
+
+[node name="Orb" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_wisp")
+material_override = SubResource("StandardMaterial3D_wisp")
+
+[node name="Label3D" type="Label3D" parent="."]
+position = Vector3(0, 0.42, 0)
+text = "Wisp"
+font_size = 30
+outline_size = 6
+outline_modulate = Color(0.02, 0.04, 0.06, 1)
+billboard = 1
