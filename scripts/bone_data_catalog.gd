@@ -19,8 +19,8 @@ const DEFINITIONS := {
 	"arm_bone": {
 		"identity": {
 			"display_name": "Arm Bone",
-			"quality": "Normal",
-			"quality_rank": 1,
+			"quality": "comun",
+			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
 			"quality_color": Color(1.0, 0.94, 0.68, 1.0),
@@ -78,8 +78,8 @@ const DEFINITIONS := {
 	"leg_bone": {
 		"identity": {
 			"display_name": "Leg Bone",
-			"quality": "Normal",
-			"quality_rank": 1,
+			"quality": "comun",
+			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
 			"quality_color": Color(1.0, 0.94, 0.68, 1.0),
@@ -137,11 +137,11 @@ const DEFINITIONS := {
 	"heavy_bone": {
 		"identity": {
 			"display_name": "Heavy Bone",
-			"quality": "Strong",
+			"quality": "fuerte",
 			"quality_rank": 3,
-			"quality_score": 1.35,
+			"quality_score": 1.3,
 			"quality_multiplier": 1.15,
-			"quality_color": Color(0.65, 0.35, 1.0, 1.0),
+			"quality_color": Color(0.35, 0.85, 0.95, 1.0),
 			"quality_damage_percent": 0.12,
 			"quality_speed_percent": -0.05,
 			"quality_health_percent": 0.1,
@@ -201,7 +201,7 @@ const DEFINITIONS := {
 	"dummy_bone": {
 		"identity": {
 			"display_name": "Training Bone",
-			"quality": "Cracked",
+			"quality": "chatarra",
 			"quality_rank": 0,
 			"quality_score": 0.75,
 			"quality_multiplier": 0.9,
@@ -251,7 +251,7 @@ const DEFINITIONS := {
 	"rib_bone": {
 		"identity": {
 			"display_name": "Rib Bone",
-			"quality": "Strong",
+			"quality": "fuerte",
 			"quality_rank": 3,
 			"quality_score": 1.3,
 			"quality_multiplier": 1.12,

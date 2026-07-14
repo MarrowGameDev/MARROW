@@ -149,6 +149,8 @@ Each definition can include:
 - `BoneDefinition.quality_*` fields: quality rank, score, multiplier, quality
   color and granular percent modifiers for damage, speed, health, drops and
   weight. These describe part quality/condition, not loot rarity.
+  Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
+  `legendario`.
 - `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and

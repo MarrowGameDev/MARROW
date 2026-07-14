@@ -126,6 +126,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
   `quality_weight_percent`) son metadata granular. Pueden alimentar balance
   futuro, pero equipamiento no los aplica automaticamente todavia.
+- Las calidades canonicas son ids en minuscula y sin acentos para datos:
+  `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
+  acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
@@ -179,3 +182,5 @@ En `TESTING ENVIRONMENT`:
   futuras reglas de combinacion.
 - 2026-07-14: Se agregaron modificadores porcentuales por calidad separados de
   `quality_multiplier` para preparar balance granular.
+- 2026-07-14: Se definieron calidades canonicas (`chatarra`, `fragil`,
+  `comun`, `fuerte`, `legendario`) y se migraron los huesos base a esos ids.

@@ -194,35 +194,23 @@ static func _parse_generated_limb_bone_id(bone_id: String) -> Dictionary:
 static func _generated_limb_quality(source_profile: String) -> String:
 	match source_profile:
 		"gorilla":
-			return "Heavy"
+			return BoneDefinition.QUALITY_STRONG
 		"lizard":
-			return "Strange"
+			return BoneDefinition.QUALITY_FRAGILE
 		_:
-			return "Normal"
+			return BoneDefinition.QUALITY_COMMON
 
 
 static func _generated_limb_quality_rank(source_profile: String) -> int:
-	match source_profile:
-		"gorilla":
-			return 3
-		"lizard":
-			return 2
-		_:
-			return 1
+	return BoneDefinition.default_quality_rank(_generated_limb_quality(source_profile))
 
 
 static func _generated_limb_quality_score(source_profile: String) -> float:
-	match source_profile:
-		"gorilla":
-			return 1.35
-		"lizard":
-			return 1.2
-		_:
-			return 1.0
+	return BoneDefinition.default_quality_score(_generated_limb_quality(source_profile))
 
 
 static func _generated_limb_quality_multiplier(source_profile: String) -> float:
-	return _generated_limb_quality_score(source_profile)
+	return BoneDefinition.default_quality_multiplier(_generated_limb_quality(source_profile))
 
 
 static func _generated_limb_quality_damage_percent(source_profile: String) -> float:
@@ -272,13 +260,7 @@ static func _generated_limb_quality_weight_percent(source_profile: String) -> fl
 
 
 static func _generated_limb_quality_color(source_profile: String) -> Color:
-	match source_profile:
-		"gorilla":
-			return Color(0.65, 0.42, 0.22, 1.0)
-		"lizard":
-			return Color(0.23, 0.78, 0.34, 1.0)
-		_:
-			return UNKNOWN_COLOR
+	return BoneDefinition.default_quality_color(_generated_limb_quality(source_profile))
 
 
 static func _generated_limb_rarity(source_profile: String) -> String:

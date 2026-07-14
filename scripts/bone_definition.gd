@@ -8,11 +8,16 @@ extends Resource
 # progress.
 
 const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
+const QUALITY_SCRAP := "chatarra"
+const QUALITY_FRAGILE := "fragil"
+const QUALITY_COMMON := "comun"
+const QUALITY_STRONG := "fuerte"
+const QUALITY_LEGENDARY := "legendario"
 
 @export_group("Identity")
 @export var bone_id: String = ""
 @export var display_name: String = "Unknown Bone"
-@export var quality: String = "Normal"
+@export var quality: String = QUALITY_COMMON
 @export var quality_rank: int = 1
 @export var quality_score: float = 1.0
 @export var quality_multiplier: float = 1.0
@@ -314,6 +319,80 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.visual_rotation = _vector3(visual.get("visual_rotation", definition.visual_rotation), definition.visual_rotation)
 
 	return definition
+
+
+static func defined_qualities() -> Array[String]:
+	return [
+		QUALITY_SCRAP,
+		QUALITY_FRAGILE,
+		QUALITY_COMMON,
+		QUALITY_STRONG,
+		QUALITY_LEGENDARY,
+	]
+
+
+static func default_quality_rank(quality_id: String) -> int:
+	match quality_id:
+		QUALITY_SCRAP:
+			return 0
+		QUALITY_FRAGILE:
+			return 1
+		QUALITY_COMMON:
+			return 2
+		QUALITY_STRONG:
+			return 3
+		QUALITY_LEGENDARY:
+			return 4
+		_:
+			return 2
+
+
+static func default_quality_score(quality_id: String) -> float:
+	match quality_id:
+		QUALITY_SCRAP:
+			return 0.75
+		QUALITY_FRAGILE:
+			return 0.9
+		QUALITY_COMMON:
+			return 1.0
+		QUALITY_STRONG:
+			return 1.3
+		QUALITY_LEGENDARY:
+			return 1.75
+		_:
+			return 1.0
+
+
+static func default_quality_multiplier(quality_id: String) -> float:
+	match quality_id:
+		QUALITY_SCRAP:
+			return 0.9
+		QUALITY_FRAGILE:
+			return 0.95
+		QUALITY_COMMON:
+			return 1.0
+		QUALITY_STRONG:
+			return 1.15
+		QUALITY_LEGENDARY:
+			return 1.5
+		_:
+			return 1.0
+
+
+static func default_quality_color(quality_id: String) -> Color:
+	match quality_id:
+		QUALITY_SCRAP:
+			return Color(0.7, 0.68, 0.58, 1.0)
+		QUALITY_FRAGILE:
+			return Color(0.6, 0.82, 0.9, 1.0)
+		QUALITY_COMMON:
+			return DEFAULT_COLOR
+		QUALITY_STRONG:
+			return Color(0.35, 0.85, 0.95, 1.0)
+		QUALITY_LEGENDARY:
+			return Color(1.0, 0.7, 0.15, 1.0)
+		_:
+			return DEFAULT_COLOR
 
 
 static func _dictionary(source: Dictionary, key: String) -> Dictionary:

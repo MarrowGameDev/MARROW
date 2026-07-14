@@ -34,7 +34,7 @@ static func display_name_with_slot(bone_id: String) -> String:
 static func quality_for(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
-		return str(definition.get("quality", "Normal"))
+		return str(definition.get("quality", BoneDefinition.QUALITY_COMMON))
 	return BoneDatabase.quality(bone_id)
 
 

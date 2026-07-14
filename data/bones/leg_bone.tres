@@ -6,8 +6,8 @@
 script = ExtResource("1_bonedef")
 bone_id = "leg_bone"
 display_name = "Leg Bone"
-quality = "Normal"
-quality_rank = 1
+quality = "comun"
+quality_rank = 2
 quality_score = 1.0
 quality_multiplier = 1.0
 quality_color = Color(1, 0.94, 0.68, 1)

@@ -110,8 +110,9 @@ Campos de calidad:
   `quality_health_percent`, `quality_drop_percent` y
   `quality_weight_percent` permiten mostrar o comparar intenciones de balance
   por calidad sin aplicar reglas automaticas.
-- Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
-  separado como `rarity`/`rarity_rank` en otro cambio.
+- Calidades canonicas: `chatarra`, `fragil`, `comun`, `fuerte`,
+  `legendario`.
+- Calidad no es rareza. Rareza de loot vive en `rarity`/`rarity_rank`.
 
 Campos de rareza:
 - `rarity` describe rareza de loot/obtencion, separada de la calidad fisica o

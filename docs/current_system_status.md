@@ -54,6 +54,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
+- Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
+  `legendario`; UI can localize display text separately.
 - Quality percentage modifiers are stored as passive metadata for damage, speed,
   health, drop and weight tuning; no automatic formula consumes them yet.
 - Bone attack/combo fields are present as passive metadata for future combat

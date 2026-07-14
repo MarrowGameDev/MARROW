@@ -6,7 +6,7 @@
 script = ExtResource("1_bonedef")
 bone_id = "rib_bone"
 display_name = "Rib Bone"
-quality = "Strong"
+quality = "fuerte"
 quality_rank = 3
 quality_score = 1.3
 quality_multiplier = 1.12

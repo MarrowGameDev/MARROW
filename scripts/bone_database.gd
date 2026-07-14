@@ -134,7 +134,7 @@ static func max_health_bonus(id: String) -> int:
 
 static func quality(id: String) -> String:
 	if _bones().has(id):
-		return _bones()[id].get("quality", "Normal")
+		return _bones()[id].get("quality", BoneDefinition.QUALITY_COMMON)
 	return "Unknown"
 
 
