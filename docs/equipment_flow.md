@@ -17,6 +17,8 @@ dependan directamente del componente.
   por limbs y escalas visuales.
 - `scripts/bone_rules_service.gd`: definiciones, bonuses y textos visibles.
 - `scripts/bone_database.gd`: API compatible para definiciones planas.
+- `scripts/bone_definition.gd`: `Resource` editable que representa un hueso
+  hecho a mano.
 - `scripts/bone_data_catalog.gd`: fuente limpia de datos para huesos hechos a
   mano.
 - `scripts/rig/modular_skeleton_rig.gd`: sockets y piezas visuales del cuerpo.
@@ -76,11 +78,12 @@ Cada id generado contiene:
 - escala visual
 - bonuses de jugador
 
-Los huesos hechos a mano (`arm_bone`, `leg_bone`, `heavy_bone`, etc.) se
-authorizan en `BoneDataCatalog` con bloques `identity`, `player_stats`,
-`enemy_stats` y `visual`. `BoneDatabase` transforma esos bloques al formato
-plano que todavia consumen `BoneRulesService`, `EquipmentRulesService`, stats,
-rig e inventario.
+Los huesos hechos a mano (`arm_bone`, `leg_bone`, `heavy_bone`, etc.) se pueden
+representar como `BoneDefinition` Resources con identidad, stats de jugador,
+stats de enemigo y datos visuales. Durante esta etapa, `BoneDataCatalog` crea
+esos Resources desde sus datos internos y `BoneDatabase` los transforma al
+formato plano que todavia consumen `BoneRulesService`, `EquipmentRulesService`,
+stats, rig e inventario.
 
 ## Responsabilidades
 
@@ -110,8 +113,9 @@ rig e inventario.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
-- Al editar datos de huesos hechos a mano, cambiar `BoneDataCatalog`. Solo tocar
-  `BoneDatabase` si se necesita cambiar la conversion o compatibilidad.
+- Al editar datos de huesos hechos a mano ahora se debe respetar la forma de
+  `BoneDefinition`. Solo tocar `BoneDatabase` si se necesita cambiar la
+  conversion o compatibilidad.
 
 ## Como probar
 
@@ -130,3 +134,5 @@ En `TESTING ENVIRONMENT`:
   `GameEvents.bone_equipped`, `bone_unequipped` e `inventory_changed`.
 - 2026-07-14: Se preparo la migracion de `BoneDatabase` a datos limpios con
   `BoneDataCatalog`, manteniendo intactos los consumidores actuales.
+- 2026-07-14: Se agrego `BoneDefinition` como `Resource` de Godot y
+  `BoneDataCatalog` ahora puede convertir cada definicion a ese tipo.

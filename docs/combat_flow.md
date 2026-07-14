@@ -22,8 +22,9 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/player_camera_controller.gd`: aim point para disparos.
 - `scripts/rig/procedural_player_animator.gd`: animaciones de ataque, aim,
   crawl y climb blend.
-- `scripts/bone_database.gd` + `scripts/bone_data_catalog.gd`: stats de huesos
-  que modifican perfiles de combate del jugador y enemigos.
+- `scripts/bone_definition.gd`, `scripts/bone_database.gd` y
+  `scripts/bone_data_catalog.gd`: stats de huesos que modifican perfiles de
+  combate del jugador y enemigos.
 
 ## Eventos usados
 
@@ -91,7 +92,9 @@ Vision:
 - Line of sight salvo lizards que pueden ver a traves de paredes si esta activo.
 
 Stats por hueso:
-- Los valores editables viven en `BoneDataCatalog.enemy_stats`.
+- La forma editable nueva es `BoneDefinition.enemy_*`.
+- Durante la migracion, `BoneDataCatalog` crea `BoneDefinition` desde sus datos
+  internos.
 - `BoneDatabase` los normaliza a campos planos como
   `enemy_move_speed_bonus`, `enemy_contact_damage_bonus`,
   `enemy_max_health_bonus`, `enemy_detection_range_bonus`,
@@ -117,7 +120,7 @@ Lizard wall climb:
 - Si el ataque afecta camera/aim, actualizar tambien `camera_flow.md`.
 - Si el ataque crea drops o limbs, actualizar tambien `drops_flow.md`.
 - Si un cambio de combate necesita ajustar stats de huesos hechos a mano,
-  editar `BoneDataCatalog` y mantener `BoneRulesService` como punto de lectura.
+  respetar `BoneDefinition` y mantener `BoneRulesService` como punto de lectura.
 
 ## Como probar
 
@@ -139,3 +142,5 @@ En `TESTING ENVIRONMENT`:
   detectar pared, en vez de atravesar usando posicion global.
 - 2026-07-14: Se documento la preparacion de datos limpios para stats de huesos
   usados por combate y perfiles enemigos.
+- 2026-07-14: Se agrego `BoneDefinition` como `Resource`; combate sigue leyendo
+  perfiles normalizados mediante `BoneRulesService`.

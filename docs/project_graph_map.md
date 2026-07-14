@@ -109,8 +109,11 @@ Player relationships:
 
 ## Bone Data
 
-`scripts/bone_data_catalog.gd` is the clean authoring source for hand-authored
-bone definitions.
+`scripts/bone_definition.gd` defines `BoneDefinition`, the Godot `Resource`
+type for one hand-authored bone.
+
+`scripts/bone_data_catalog.gd` is the current clean in-code source for
+hand-authored bone definitions. It can create `BoneDefinition` objects by id.
 
 `scripts/bone_database.gd` is the compatibility API. It normalizes catalog data
 into the flat fields current gameplay systems still expect.
@@ -123,10 +126,11 @@ Current bone ids:
 - `rib_bone`
 
 Each definition can include:
-- `identity`: display name, quality, color, slot, tags, description.
-- `player_stats`: player-facing stat bonuses.
-- `enemy_stats`: enemy profile bonuses.
-- `visual`: optional scale/weight visual data.
+- `BoneDefinition.identity` fields: display name, quality, color, slot, tags,
+  description.
+- `BoneDefinition.player_*` fields: player-facing stat bonuses.
+- `BoneDefinition.enemy_*` fields: enemy profile bonuses.
+- `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.
 
 Consumers:
 - `Player` uses stat bonuses and slot data through services/components.
@@ -135,9 +139,10 @@ Consumers:
 - `BoneTrialGate` uses required bone slot-aware display names and colors.
 - Inventory UI widgets use slot-aware display names, colors, slot labels, and effect text.
 
-Rule: gameplay and UI should not read `BoneDataCatalog` directly yet. Use
-`BoneRulesService`, `EquipmentRulesService`, `DropPickupRulesService` or
-`BoneDatabase` so generated limb bones and hand-authored bones stay compatible.
+Rule: gameplay and UI should not read `BoneDefinition` or `BoneDataCatalog`
+directly yet. Use `BoneRulesService`, `EquipmentRulesService`,
+`DropPickupRulesService` or `BoneDatabase` so generated limb bones and
+hand-authored bones stay compatible.
 
 ## Inventory UI
 

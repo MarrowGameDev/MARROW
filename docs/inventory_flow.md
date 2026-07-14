@@ -27,6 +27,8 @@ modificar controles desde la seccion de settings.
 - `scripts/equipment_rules_service.gd`: slot de cada hueso y reglas de slots.
 - `scripts/bone_database.gd`: fachada compatible para leer definiciones de
   huesos.
+- `scripts/bone_definition.gd`: `Resource` editable de Godot para un hueso
+  hecho a mano.
 - `scripts/bone_data_catalog.gd`: datos limpios de autoria para huesos
   hechos a mano.
 
@@ -76,16 +78,18 @@ modificar controles desde la seccion de settings.
 ## Datos de huesos
 
 El inventario debe seguir leyendo nombres, colores, descripciones y textos de
-stats mediante `BoneRulesService`. Internamente, `BoneDatabase` normaliza datos
-desde `BoneDataCatalog`, que usa una estructura mas limpia:
+stats mediante `BoneRulesService`. Internamente, `BoneDatabase` normaliza
+`BoneDefinition` Resources creados desde `BoneDataCatalog`, que usa una
+estructura mas limpia:
 
 - `identity`: nombre, rareza, color, slot, tags y descripcion.
 - `player_stats`: bonuses que ve el jugador al equipar.
 - `enemy_stats`: bonuses que usan enemigos y perfiles de combate.
 - `visual`: datos opcionales para escala/peso visual.
 
-No conectar la UI directamente a `BoneDataCatalog` todavia. Esa capa existe para
-preparar una migracion futura a JSON, Resources o una tabla exportada.
+No conectar la UI directamente a `BoneDefinition` ni `BoneDataCatalog` todavia.
+Esa capa existe para preparar una migracion futura a `.tres`, JSON o una tabla
+exportada.
 
 ## Puntos delicados
 
@@ -114,3 +118,5 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se preparo la migracion de datos de huesos. La UI sigue usando
   `BoneRulesService`, mientras `BoneDatabase` convierte `BoneDataCatalog` al
   formato compatible.
+- 2026-07-14: Se creo `BoneDefinition` como `Resource` de Godot para que los
+  huesos puedan convertirse luego a assets editables sin cambiar la UI.

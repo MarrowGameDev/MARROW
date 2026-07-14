@@ -3,25 +3,9 @@ class_name BoneDataCatalog
 # Clean authoring schema for hand-authored bones.
 #
 # Keep gameplay code reading through BoneDatabase/BoneRulesService. This catalog
-# is intentionally data-only so it can later move to JSON, Resources, or a
-# spreadsheet export without changing inventory, equipment, combat, drops, or UI.
-
-const DEFAULT_PLAYER_STATS := {
-	"move_speed": 0.0,
-	"attack_range": 0.0,
-	"attack_damage": 0,
-	"max_health": 0,
-}
-
-const DEFAULT_ENEMY_STATS := {
-	"move_speed": 0.0,
-	"attack_range": 0.0,
-	"contact_damage": 0,
-	"max_health": 0,
-	"detection_range": 0.0,
-	"visual_scale": 1.0,
-	"flee_chance": 0.45,
-}
+# still stores temporary in-code data, but each entry is now converted through
+# BoneDefinition so the next step can move authoring to .tres assets without
+# changing inventory, equipment, combat, drops, or UI.
 
 const DEFINITIONS := {
 	"arm_bone": {
@@ -134,10 +118,17 @@ static func has_bone(id: String) -> bool:
 
 
 static func clean_definition_for(id: String) -> Dictionary:
-	if not DEFINITIONS.has(id):
+	var resource: BoneDefinition = resource_for(id)
+	if resource == null:
 		return {}
+	return resource.to_clean_dictionary()
+
+
+static func resource_for(id: String) -> BoneDefinition:
+	if not DEFINITIONS.has(id):
+		return null
 	var definition: Dictionary = DEFINITIONS[id]
-	return _deep_duplicate_dictionary(definition)
+	return BoneDefinition.from_clean_dictionary(id, definition)
 
 
 static func legacy_definitions() -> Dictionary:
@@ -148,71 +139,7 @@ static func legacy_definitions() -> Dictionary:
 
 
 static func legacy_definition_for(id: String) -> Dictionary:
-	var clean: Dictionary = clean_definition_for(id)
-	if clean.is_empty():
+	var resource: BoneDefinition = resource_for(id)
+	if resource == null:
 		return {}
-
-	var identity: Dictionary = _dictionary(clean, "identity")
-	var visual: Dictionary = _dictionary(clean, "visual")
-	var player_stats: Dictionary = _merged_stats(DEFAULT_PLAYER_STATS, _dictionary(clean, "player_stats"))
-	var enemy_stats: Dictionary = _merged_stats(DEFAULT_ENEMY_STATS, _dictionary(clean, "enemy_stats"))
-
-	var legacy: Dictionary = {
-		"display_name": str(identity.get("display_name", "Unknown Bone")),
-		"quality": str(identity.get("quality", "Normal")),
-		"color": identity.get("color", Color(1.0, 0.94, 0.68, 1.0)),
-		"slot": str(identity.get("slot", "")),
-		"move_speed_bonus": float(player_stats.get("move_speed", 0.0)),
-		"attack_range_bonus": float(player_stats.get("attack_range", 0.0)),
-		"attack_damage_bonus": int(player_stats.get("attack_damage", 0)),
-		"max_health_bonus": int(player_stats.get("max_health", 0)),
-		"enemy_move_speed_bonus": float(enemy_stats.get("move_speed", 0.0)),
-		"enemy_attack_range_bonus": float(enemy_stats.get("attack_range", 0.0)),
-		"enemy_contact_damage_bonus": int(enemy_stats.get("contact_damage", 0)),
-		"enemy_max_health_bonus": int(enemy_stats.get("max_health", 0)),
-		"enemy_detection_range_bonus": float(enemy_stats.get("detection_range", 0.0)),
-		"enemy_visual_scale": float(enemy_stats.get("visual_scale", 1.0)),
-		"enemy_flee_chance": float(enemy_stats.get("flee_chance", 0.45)),
-		"tags": _array(identity, "tags"),
-		"description": str(identity.get("description", "")),
-	}
-
-	for key in visual.keys():
-		legacy[key] = visual[key]
-	return legacy
-
-
-static func _dictionary(source: Dictionary, key: String) -> Dictionary:
-	var value: Variant = source.get(key, {})
-	if value is Dictionary:
-		var dictionary_value: Dictionary = value
-		return dictionary_value
-	return {}
-
-
-static func _array(source: Dictionary, key: String) -> Array:
-	var value: Variant = source.get(key, [])
-	if value is Array:
-		var array_value: Array = value
-		return array_value.duplicate()
-	return []
-
-
-static func _merged_stats(defaults: Dictionary, overrides: Dictionary) -> Dictionary:
-	var result: Dictionary = defaults.duplicate()
-	for key in overrides.keys():
-		result[key] = overrides[key]
-	return result
-
-
-static func _deep_duplicate_dictionary(source: Dictionary) -> Dictionary:
-	var copy: Dictionary = {}
-	for key in source.keys():
-		var value: Variant = source[key]
-		if value is Dictionary:
-			copy[key] = _deep_duplicate_dictionary(value)
-		elif value is Array:
-			copy[key] = value.duplicate()
-		else:
-			copy[key] = value
-	return copy
+	return resource.to_legacy_dictionary()

@@ -17,8 +17,9 @@ y el jugador recoge manteniendo interact.
   cuales pueden ser pickups, prioridad, prompt y hold-to-pickup.
 - `scripts/equipment_rules_service.gd`: genera ids de huesos por limb/source.
 - `scripts/bone_rules_service.gd`: nombres, colores y descripcion visible.
-- `scripts/bone_database.gd` + `scripts/bone_data_catalog.gd`: datos de huesos
-  hechos a mano y conversion al formato compatible.
+- `scripts/bone_definition.gd`, `scripts/bone_database.gd` y
+  `scripts/bone_data_catalog.gd`: datos de huesos hechos a mano y conversion al
+  formato compatible.
 - `scenes/bone.tscn` + `scripts/bone.gd`: pickup standard.
 - `scripts/limb_bone_pickup.gd`: pickup que vive sobre un limb desprendido.
 - `scripts/demo_enemy_camp.gd`: camp chest que da reward al limpiar enemigos.
@@ -57,8 +58,9 @@ Reglas actuales:
 - El source profile puede ser `normal`, `gorilla` o `lizard`.
 
 Los drops hechos a mano siguen usando ids como `arm_bone` o `heavy_bone`.
-Esos ids deben existir en `BoneDataCatalog`; `BoneDatabase` los convierte al
-formato plano que leen pickups, labels, camp chests e inventario.
+Esos ids deben poder resolverse como `BoneDefinition` mediante
+`BoneDataCatalog`; `BoneDatabase` los convierte al formato plano que leen
+pickups, labels, camp chests e inventario.
 
 ## Flujo de muerte
 
@@ -95,7 +97,7 @@ formato plano que leen pickups, labels, camp chests e inventario.
   `DropPickupRulesService`.
 - No duplicar reglas de hold prompt en `bone.gd`, `limb_bone_pickup.gd` o
   `demo_enemy_camp.gd`; usar el servicio.
-- No leer `BoneDataCatalog` directamente desde pickups. Usar
+- No leer `BoneDefinition` ni `BoneDataCatalog` directamente desde pickups. Usar
   `BoneRulesService` o `DropPickupRulesService`, para que los drops generados y
   los huesos hechos a mano sigan una sola ruta.
 - Si se agrega un nuevo enemy profile, actualizar:
@@ -123,3 +125,5 @@ En `TESTING ENVIRONMENT`:
   `DropPickupRulesService` y eventos globales de pickup/drop.
 - 2026-07-14: Se preparo `BoneDataCatalog` como datos limpios para drops hechos
   a mano, manteniendo `BoneDatabase` como compatibilidad para pickups actuales.
+- 2026-07-14: Se agrego `BoneDefinition` como tipo Resource para que los drops
+  hechos a mano puedan migrar a assets editables.

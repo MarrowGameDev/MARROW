@@ -34,6 +34,10 @@ static func get_clean_def(id: String) -> Dictionary:
 	return BoneDataCatalog.clean_definition_for(id)
 
 
+static func get_resource(id: String) -> BoneDefinition:
+	return BoneDataCatalog.resource_for(id)
+
+
 static func reload_from_catalog() -> void:
 	BONES = BoneDataCatalog.legacy_definitions()
 
