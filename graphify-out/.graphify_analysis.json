@@ -243,24 +243,24 @@
     "6": [
       "architecture_player",
       "architecture_player_gd_func_build_bow_visual",
-      "architecture_player_gd_func_find_stealth_target",
-      "architecture_player_gd_func_fire_player_projectile",
+      "architecture_player_gd_func_cancel_bow_aim",
       "architecture_player_gd_func_get_bow_charge_ratio",
-      "architecture_player_gd_func_make_reticle_rect",
+      "architecture_player_gd_func_get_bow_visual_parent",
       "architecture_player_gd_func_recalculate_inventory_stats",
       "architecture_player_gd_func_recalculate_player_stats",
       "architecture_player_gd_func_recalculate_stats",
-      "architecture_player_gd_func_take_player_damage",
-      "architecture_player_gd_func_update_stealth_finish_prompt",
+      "architecture_player_gd_func_set_aim_reticle_visible",
+      "architecture_player_gd_func_try_bow_shot",
+      "architecture_player_gd_func_try_stealth_finish",
       "architecture_playerequipmentcomponent_gd_func_recalculate_owner_stats",
-      "architecture_rationale_1259",
+      "architecture_rationale_1239",
+      "architecture_rationale_1251",
+      "architecture_rationale_1267",
       "architecture_rationale_1279",
-      "architecture_rationale_1291",
+      "architecture_rationale_1283",
+      "architecture_rationale_1295",
       "architecture_rationale_1303",
-      "architecture_rationale_1351",
       "architecture_rationale_1395",
-      "architecture_rationale_1407",
-      "architecture_rationale_1411",
       "architecture_rationale_428"
     ],
     "7": [
@@ -1183,16 +1183,16 @@
       "architecture_rationale_667"
     ],
     "155": [
-      "architecture_player_gd_func_cancel_bow_aim",
-      "architecture_rationale_1251"
+      "architecture_player_gd_func_find_stealth_target",
+      "architecture_rationale_1411"
     ],
     "156": [
-      "architecture_player_gd_func_get_bow_charge_multiplier",
-      "architecture_rationale_1307"
+      "architecture_player_gd_func_fire_player_projectile",
+      "architecture_rationale_1259"
     ],
     "157": [
-      "architecture_player_gd_func_get_bow_visual_parent",
-      "architecture_rationale_1283"
+      "architecture_player_gd_func_get_bow_charge_multiplier",
+      "architecture_rationale_1307"
     ],
     "158": [
       "architecture_player_gd_func_get_camera_forward_direction",
@@ -1215,24 +1215,24 @@
       "architecture_rationale_1355"
     ],
     "163": [
-      "architecture_player_gd_func_set_aim_reticle_visible",
-      "architecture_rationale_1295"
+      "architecture_player_gd_func_make_reticle_rect",
+      "architecture_rationale_1291"
     ],
     "164": [
+      "architecture_player_gd_func_take_player_damage",
+      "architecture_rationale_1351"
+    ],
+    "165": [
       "architecture_player_gd_func_toggle_bow_equipped",
       "architecture_rationale_1255"
     ],
-    "165": [
-      "architecture_player_gd_func_try_bow_shot",
-      "architecture_rationale_1239"
-    ],
     "166": [
-      "architecture_player_gd_func_try_stealth_finish",
-      "architecture_rationale_1267"
-    ],
-    "167": [
       "architecture_player_gd_func_update_procedural_animation",
       "architecture_rationale_1315"
+    ],
+    "167": [
+      "architecture_player_gd_func_update_stealth_finish_prompt",
+      "architecture_rationale_1407"
     ],
     "168": [
       "architecture_playerinventoryui_gd_func_add_footer_hint",

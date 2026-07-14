@@ -2760,7 +2760,7 @@
       "source_location": "L1238",
       "_origin": "ast",
       "id": "architecture_player_gd_func_try_bow_shot",
-      "community": 165,
+      "community": 6,
       "norm_label": ".gd_func__try_bow_shot()"
     },
     {
@@ -2790,7 +2790,7 @@
       "source_location": "L1250",
       "_origin": "ast",
       "id": "architecture_player_gd_func_cancel_bow_aim",
-      "community": 155,
+      "community": 6,
       "norm_label": ".gd_func__cancel_bow_aim()"
     },
     {
@@ -2800,7 +2800,7 @@
       "source_location": "L1254",
       "_origin": "ast",
       "id": "architecture_player_gd_func_toggle_bow_equipped",
-      "community": 164,
+      "community": 165,
       "norm_label": ".gd_func__toggle_bow_equipped()"
     },
     {
@@ -2810,7 +2810,7 @@
       "source_location": "L1258",
       "_origin": "ast",
       "id": "architecture_player_gd_func_fire_player_projectile",
-      "community": 6,
+      "community": 156,
       "norm_label": ".gd_func__fire_player_projectile()"
     },
     {
@@ -2830,7 +2830,7 @@
       "source_location": "L1266",
       "_origin": "ast",
       "id": "architecture_player_gd_func_try_stealth_finish",
-      "community": 166,
+      "community": 6,
       "norm_label": ".gd_func__try_stealth_finish()"
     },
     {
@@ -2870,7 +2870,7 @@
       "source_location": "L1282",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_bow_visual_parent",
-      "community": 157,
+      "community": 6,
       "norm_label": ".gd_func__get_bow_visual_parent()"
     },
     {
@@ -2890,7 +2890,7 @@
       "source_location": "L1290",
       "_origin": "ast",
       "id": "architecture_player_gd_func_make_reticle_rect",
-      "community": 6,
+      "community": 163,
       "norm_label": ".gd_func__make_reticle_rect()"
     },
     {
@@ -2900,7 +2900,7 @@
       "source_location": "L1294",
       "_origin": "ast",
       "id": "architecture_player_gd_func_set_aim_reticle_visible",
-      "community": 163,
+      "community": 6,
       "norm_label": ".gd_func__set_aim_reticle_visible()"
     },
     {
@@ -2930,7 +2930,7 @@
       "source_location": "L1306",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_bow_charge_multiplier",
-      "community": 156,
+      "community": 157,
       "norm_label": ".gd_func__get_bow_charge_multiplier()"
     },
     {
@@ -2950,7 +2950,7 @@
       "source_location": "L1314",
       "_origin": "ast",
       "id": "architecture_player_gd_func_update_procedural_animation",
-      "community": 167,
+      "community": 166,
       "norm_label": ".gd_func__update_procedural_animation()"
     },
     {
@@ -3040,7 +3040,7 @@
       "source_location": "L1350",
       "_origin": "ast",
       "id": "architecture_player_gd_func_take_player_damage",
-      "community": 6,
+      "community": 164,
       "norm_label": ".gd_func_take_player_damage()"
     },
     {
@@ -3180,7 +3180,7 @@
       "source_location": "L1406",
       "_origin": "ast",
       "id": "architecture_player_gd_func_update_stealth_finish_prompt",
-      "community": 6,
+      "community": 167,
       "norm_label": ".gd_func__update_stealth_finish_prompt()"
     },
     {
@@ -3190,7 +3190,7 @@
       "source_location": "L1410",
       "_origin": "ast",
       "id": "architecture_player_gd_func_find_stealth_target",
-      "community": 6,
+      "community": 155,
       "norm_label": ".gd_func__find_stealth_target()"
     },
     {
@@ -8100,7 +8100,7 @@
       "source_location": "L1239",
       "_origin": "ast",
       "id": "architecture_rationale_1239",
-      "community": 165,
+      "community": 6,
       "norm_label": "gdscript function: _try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: f"
     },
     {
@@ -8120,7 +8120,7 @@
       "source_location": "L1251",
       "_origin": "ast",
       "id": "architecture_rationale_1251",
-      "community": 155,
+      "community": 6,
       "norm_label": "gdscript function: _cancel_bow_aim() -> void"
     },
     {
@@ -8130,7 +8130,7 @@
       "source_location": "L1255",
       "_origin": "ast",
       "id": "architecture_rationale_1255",
-      "community": 164,
+      "community": 165,
       "norm_label": "gdscript function: _toggle_bow_equipped() -> void"
     },
     {
@@ -8140,7 +8140,7 @@
       "source_location": "L1259",
       "_origin": "ast",
       "id": "architecture_rationale_1259",
-      "community": 6,
+      "community": 156,
       "norm_label": "gdscript function: _fire_player_projectile(forward: vector3, projectile_damage:"
     },
     {
@@ -8160,7 +8160,7 @@
       "source_location": "L1267",
       "_origin": "ast",
       "id": "architecture_rationale_1267",
-      "community": 166,
+      "community": 6,
       "norm_label": "gdscript function: _try_stealth_finish() -> void"
     },
     {
@@ -8190,7 +8190,7 @@
       "source_location": "L1283",
       "_origin": "ast",
       "id": "architecture_rationale_1283",
-      "community": 157,
+      "community": 6,
       "norm_label": "gdscript function: _get_bow_visual_parent() -> node3d"
     },
     {
@@ -8200,7 +8200,7 @@
       "source_location": "L1291",
       "_origin": "ast",
       "id": "architecture_rationale_1291",
-      "community": 6,
+      "community": 163,
       "norm_label": "gdscript function: _make_reticle_rect(rect_name: string, left: float, top: float"
     },
     {
@@ -8210,7 +8210,7 @@
       "source_location": "L1295",
       "_origin": "ast",
       "id": "architecture_rationale_1295",
-      "community": 163,
+      "community": 6,
       "norm_label": "gdscript function: _set_aim_reticle_visible(visible: bool) -> void"
     },
     {
@@ -8230,7 +8230,7 @@
       "source_location": "L1307",
       "_origin": "ast",
       "id": "architecture_rationale_1307",
-      "community": 156,
+      "community": 157,
       "norm_label": "gdscript function: _get_bow_charge_multiplier() -> float"
     },
     {
@@ -8240,7 +8240,7 @@
       "source_location": "L1315",
       "_origin": "ast",
       "id": "architecture_rationale_1315",
-      "community": 167,
+      "community": 166,
       "norm_label": "gdscript function: _update_procedural_animation(delta: float, max_speed: float)"
     },
     {
@@ -8320,7 +8320,7 @@
       "source_location": "L1351",
       "_origin": "ast",
       "id": "architecture_rationale_1351",
-      "community": 6,
+      "community": 164,
       "norm_label": "gdscript function: take_player_damage(amount: int, from_position: vector3 = vect"
     },
     {
@@ -8410,7 +8410,7 @@
       "source_location": "L1407",
       "_origin": "ast",
       "id": "architecture_rationale_1407",
-      "community": 6,
+      "community": 167,
       "norm_label": "gdscript function: _update_stealth_finish_prompt() -> void"
     },
     {
@@ -8420,7 +8420,7 @@
       "source_location": "L1411",
       "_origin": "ast",
       "id": "architecture_rationale_1411",
-      "community": 6,
+      "community": 155,
       "norm_label": "gdscript function: _find_stealth_target() -> node3d"
     },
     {
@@ -23481,5 +23481,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "2bd77dee45098d1fa6c01ba45eea181b07e73012"
+  "built_at_commit": "f9396322d98dd31380f15718ad3ada1d15db564d"
 }
