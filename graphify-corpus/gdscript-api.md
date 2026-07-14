@@ -392,6 +392,10 @@
 - `enemy_visual_scale`
 - `enemy_flee_chance`
 - `weight`
+- `weight_class`
+- `physical_weight`
+- `equipment_weight`
+- `inventory_weight`
 - `visual_scale`
 - `visual_offset`
 - `visual_rotation`
@@ -1025,6 +1029,8 @@
 - `color`
 - `bonus`
 - `prefix`
+- `equipment_weight`
+- `base_weight`
 
 ### Functions
 - none

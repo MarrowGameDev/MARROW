@@ -614,6 +614,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
+- Bone weight fields now distinguish animation weight, physical weight,
+  equipment load and inventory weight while keeping legacy `weight`.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -911,6 +913,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
   regla de equipamiento que los consuma.
+- Los campos de peso (`weight`, `weight_class`, `physical_weight`,
+  `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
+  equipar e impacto de inventario. `weight` queda como campo legacy para la
+  animacion procedural actual.
 
 ## Como probar
 
@@ -941,6 +947,8 @@ En `TESTING ENVIRONMENT`:
   campos no representan rareza de loot.
 - 2026-07-14: Se agregaron campos de mutacion para preparar variantes visuales,
   cuerpo hibrido y respuestas especiales sin acoplarlas todavia al rig.
+- 2026-07-14: Se agregaron campos de peso granulares manteniendo `weight` como
+  compatibilidad para animacion.
 
 ## docs/flow_index.md
 
@@ -1155,6 +1163,13 @@ Campos de rareza:
 - `rarity_color` permite mostrar rareza sin cambiar el color fisico del hueso.
 - `rarity_drop_weight` queda disponible para futuras reglas de drops.
 
+Campos de peso:
+- `weight` se mantiene como campo legacy para animacion procedural.
+- `weight_class` permite mostrar o filtrar piezas como light/medium/heavy.
+- `physical_weight` describe peso fisico de la pieza en mundo.
+- `equipment_weight` queda disponible para carga al equipar.
+- `inventory_weight` queda disponible para limites o coste de inventario.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -1193,6 +1208,8 @@ En `TESTING ENVIRONMENT`:
   legacy: rank, score, multiplier y color.
 - 2026-07-14: Se agregaron campos de rareza separados de calidad:
   `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`.
+- 2026-07-14: Se agregaron campos de peso para inventario/equipamiento sin
+  cambiar todavia limites de carga.
 
 ## docs/open_world_map_layout.md
 
@@ -1405,6 +1422,8 @@ Each definition can include:
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
   tags for future visual, rig, AI or combat hooks.
+- `BoneDefinition.weight*` fields: legacy animation weight plus weight class,
+  physical weight, equipment weight and inventory weight.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.
@@ -1599,8 +1618,10 @@ Open `scenes/rig_test.tscn` in Godot and run it (F6 / "Run Current Scene").
   the sockets from the ACTUAL velocity (so slopes/knockback/speed bonuses all read
   correctly). Layers: idle breathing, walk bob, torso lean/sway, arm+leg swing,
   turn smoothing, weight response.
-- `scripts/bone_database.gd` — single source of bone data; added `weight` (and
-  `visual_scale` on Heavy).
+- `scripts/bone_database.gd` — compatibility layer for bone data; `weight`
+  remains the legacy animation weight while `physical_weight`,
+  `equipment_weight`, `inventory_weight` and `weight_class` are available for
+  future rig/inventory rules.
 - `scripts/rig/rig_test_player.gd` — sandbox movement controller (no combat/inventory).
 
 ## Tuning variables (exports on ProceduralAnimator)

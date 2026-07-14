@@ -930,7 +930,7 @@
       "source_location": "L441",
       "_origin": "ast",
       "id": "architecture_demoenemycamp",
-      "community": 11,
+      "community": 10,
       "norm_label": "demoenemycamp"
     },
     {
@@ -950,7 +950,7 @@
       "source_location": "L456",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_register_enemy",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func_register_enemy()"
     },
     {
@@ -990,7 +990,7 @@
       "source_location": "L472",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_emit_camp_state_changed",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__emit_camp_state_changed()"
     },
     {
@@ -1030,7 +1030,7 @@
       "source_location": "L488",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_reserve_player_interact_lock",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__reserve_player_interact_lock()"
     },
     {
@@ -1040,7 +1040,7 @@
       "source_location": "L492",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_release_player_interact_lock",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__release_player_interact_lock()"
     },
     {
@@ -1060,7 +1060,7 @@
       "source_location": "L500",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_build_campfire",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__build_campfire()"
     },
     {
@@ -1070,7 +1070,7 @@
       "source_location": "L504",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_build_chest",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__build_chest()"
     },
     {
@@ -1100,7 +1100,7 @@
       "source_location": "L516",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_remaining_enemy_count",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__remaining_enemy_count()"
     },
     {
@@ -1110,7 +1110,7 @@
       "source_location": "L520",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_gd_func_make_material",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__make_material()"
     },
     {
@@ -1140,7 +1140,7 @@
       "source_location": "L532",
       "_origin": "ast",
       "id": "architecture_demoenemycamp_uses_game_event_camp_chest_opened",
-      "community": 11,
+      "community": 10,
       "norm_label": ".uses_game_event_camp_chest_opened()"
     },
     {
@@ -1190,7 +1190,7 @@
       "source_location": "L559",
       "_origin": "ast",
       "id": "architecture_enemy",
-      "community": 10,
+      "community": 11,
       "norm_label": "enemy"
     },
     {
@@ -1230,7 +1230,7 @@
       "source_location": "L582",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_player",
-      "community": 98,
+      "community": 96,
       "norm_label": ".gd_func__get_player()"
     },
     {
@@ -1250,7 +1250,7 @@
       "source_location": "L590",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_apply_enemy_movement",
-      "community": 71,
+      "community": 70,
       "norm_label": ".gd_func__apply_enemy_movement()"
     },
     {
@@ -1280,7 +1280,7 @@
       "source_location": "L602",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_lizard_wall_climb_blend",
-      "community": 147,
+      "community": 11,
       "norm_label": ".gd_func__update_lizard_wall_climb_blend()"
     },
     {
@@ -1300,7 +1300,7 @@
       "source_location": "L610",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_try_attack_player",
-      "community": 143,
+      "community": 145,
       "norm_label": ".gd_func__try_attack_player()"
     },
     {
@@ -1310,7 +1310,7 @@
       "source_location": "L614",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_can_start_saliva_spit",
-      "community": 81,
+      "community": 80,
       "norm_label": ".gd_func__can_start_saliva_spit()"
     },
     {
@@ -1320,7 +1320,7 @@
       "source_location": "L618",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_start_saliva_spit",
-      "community": 10,
+      "community": 141,
       "norm_label": ".gd_func__start_saliva_spit()"
     },
     {
@@ -1330,7 +1330,7 @@
       "source_location": "L622",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_saliva_spit_windup",
-      "community": 150,
+      "community": 11,
       "norm_label": ".gd_func__update_saliva_spit_windup()"
     },
     {
@@ -1340,7 +1340,7 @@
       "source_location": "L626",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_fire_saliva_spit",
-      "community": 89,
+      "community": 88,
       "norm_label": ".gd_func__fire_saliva_spit()"
     },
     {
@@ -1350,7 +1350,7 @@
       "source_location": "L630",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_can_start_ranged_attack",
-      "community": 79,
+      "community": 78,
       "norm_label": ".gd_func__can_start_ranged_attack()"
     },
     {
@@ -1360,7 +1360,7 @@
       "source_location": "L634",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_start_ranged_attack",
-      "community": 10,
+      "community": 139,
       "norm_label": ".gd_func__start_ranged_attack()"
     },
     {
@@ -1370,7 +1370,7 @@
       "source_location": "L638",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_ranged_attack_windup",
-      "community": 10,
+      "community": 150,
       "norm_label": ".gd_func__update_ranged_attack_windup()"
     },
     {
@@ -1380,7 +1380,7 @@
       "source_location": "L642",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_fire_enemy_arrow",
-      "community": 10,
+      "community": 87,
       "norm_label": ".gd_func__fire_enemy_arrow()"
     },
     {
@@ -1390,7 +1390,7 @@
       "source_location": "L646",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_can_start_rock_throw",
-      "community": 80,
+      "community": 79,
       "norm_label": ".gd_func__can_start_rock_throw()"
     },
     {
@@ -1400,7 +1400,7 @@
       "source_location": "L650",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_start_rock_throw",
-      "community": 139,
+      "community": 140,
       "norm_label": ".gd_func__start_rock_throw()"
     },
     {
@@ -1410,7 +1410,7 @@
       "source_location": "L654",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_rock_throw_windup",
-      "community": 149,
+      "community": 151,
       "norm_label": ".gd_func__update_rock_throw_windup()"
     },
     {
@@ -1420,7 +1420,7 @@
       "source_location": "L658",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_throw_held_rock",
-      "community": 55,
+      "community": 54,
       "norm_label": ".gd_func__throw_held_rock()"
     },
     {
@@ -1430,7 +1430,7 @@
       "source_location": "L662",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_show_held_rock",
-      "community": 55,
+      "community": 54,
       "norm_label": ".gd_func__show_held_rock()"
     },
     {
@@ -1440,7 +1440,7 @@
       "source_location": "L666",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_cancel_held_rock",
-      "community": 82,
+      "community": 81,
       "norm_label": ".gd_func__cancel_held_rock()"
     },
     {
@@ -1450,7 +1450,7 @@
       "source_location": "L670",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_held_rock_world_position",
-      "community": 96,
+      "community": 11,
       "norm_label": ".gd_func__get_held_rock_world_position()"
     },
     {
@@ -1460,7 +1460,7 @@
       "source_location": "L674",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_rock_throw_socket",
-      "community": 101,
+      "community": 100,
       "norm_label": ".gd_func__get_rock_throw_socket()"
     },
     {
@@ -1470,7 +1470,7 @@
       "source_location": "L678",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_can_be_stealth_finished_by",
-      "community": 75,
+      "community": 74,
       "norm_label": ".gd_func_can_be_stealth_finished_by()"
     },
     {
@@ -1490,7 +1490,7 @@
       "source_location": "L686",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_drop_display_name",
-      "community": 10,
+      "community": 92,
       "norm_label": ".gd_func_get_drop_display_name()"
     },
     {
@@ -1510,7 +1510,7 @@
       "source_location": "L694",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_try_stealth_finish",
-      "community": 144,
+      "community": 146,
       "norm_label": ".gd_func_try_stealth_finish()"
     },
     {
@@ -1520,7 +1520,7 @@
       "source_location": "L698",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_can_see_player",
-      "community": 78,
+      "community": 77,
       "norm_label": ".gd_func__can_see_player()"
     },
     {
@@ -1530,7 +1530,7 @@
       "source_location": "L702",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_can_hear_player",
-      "community": 76,
+      "community": 75,
       "norm_label": ".gd_func__can_hear_player()"
     },
     {
@@ -1550,7 +1550,7 @@
       "source_location": "L710",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_receive_alert",
-      "community": 10,
+      "community": 11,
       "norm_label": ".gd_func_receive_alert()"
     },
     {
@@ -1560,7 +1560,7 @@
       "source_location": "L714",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_alert_nearby_allies",
-      "community": 10,
+      "community": 11,
       "norm_label": ".gd_func__alert_nearby_allies()"
     },
     {
@@ -1570,7 +1570,7 @@
       "source_location": "L718",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_turn_toward",
-      "community": 10,
+      "community": 11,
       "norm_label": ".gd_func__turn_toward()"
     },
     {
@@ -1580,7 +1580,7 @@
       "source_location": "L722",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_build_vision_cone",
-      "community": 74,
+      "community": 73,
       "norm_label": ".gd_func__build_vision_cone()"
     },
     {
@@ -1590,7 +1590,7 @@
       "source_location": "L726",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_set_player_visible",
-      "community": 134,
+      "community": 135,
       "norm_label": ".gd_func__set_player_visible()"
     },
     {
@@ -1600,7 +1600,7 @@
       "source_location": "L730",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_search_move",
-      "community": 102,
+      "community": 101,
       "norm_label": ".gd_func__get_search_move()"
     },
     {
@@ -1620,7 +1620,7 @@
       "source_location": "L738",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_return_home_move",
-      "community": 100,
+      "community": 99,
       "norm_label": ".gd_func__get_return_home_move()"
     },
     {
@@ -1630,7 +1630,7 @@
       "source_location": "L742",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_idle_wander_move",
-      "community": 97,
+      "community": 95,
       "norm_label": ".gd_func__get_idle_wander_move()"
     },
     {
@@ -1640,7 +1640,7 @@
       "source_location": "L746",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_flee_move",
-      "community": 95,
+      "community": 94,
       "norm_label": ".gd_func__get_flee_move()"
     },
     {
@@ -1650,7 +1650,7 @@
       "source_location": "L750",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_bone_recovery_safety",
-      "community": 145,
+      "community": 147,
       "norm_label": ".gd_func__update_bone_recovery_safety()"
     },
     {
@@ -1660,7 +1660,7 @@
       "source_location": "L754",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_can_recover_bone_part",
-      "community": 77,
+      "community": 76,
       "norm_label": ".gd_func__can_recover_bone_part()"
     },
     {
@@ -1670,7 +1670,7 @@
       "source_location": "L758",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_bone_recovery_move",
-      "community": 93,
+      "community": 11,
       "norm_label": ".gd_func__get_bone_recovery_move()"
     },
     {
@@ -1680,7 +1680,7 @@
       "source_location": "L762",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_recovering_limb_key",
-      "community": 10,
+      "community": 97,
       "norm_label": ".gd_func__get_recovering_limb_key()"
     },
     {
@@ -1730,7 +1730,7 @@
       "source_location": "L782",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_has_active_limb_pickup",
-      "community": 104,
+      "community": 103,
       "norm_label": ".gd_func__has_active_limb_pickup()"
     },
     {
@@ -1740,7 +1740,7 @@
       "source_location": "L786",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_forget_detached_limb_body",
-      "community": 92,
+      "community": 91,
       "norm_label": ".gd_func__forget_detached_limb_body()"
     },
     {
@@ -1750,7 +1750,7 @@
       "source_location": "L790",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_steer_around_obstacles",
-      "community": 140,
+      "community": 142,
       "norm_label": ".gd_func__steer_around_obstacles()"
     },
     {
@@ -1770,7 +1770,7 @@
       "source_location": "L798",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_slide_around_obstacle",
-      "community": 103,
+      "community": 102,
       "norm_label": ".gd_func__get_slide_around_obstacle()"
     },
     {
@@ -1780,7 +1780,7 @@
       "source_location": "L802",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_vision_visual",
-      "community": 151,
+      "community": 152,
       "norm_label": ".gd_func__update_vision_visual()"
     },
     {
@@ -1790,7 +1790,7 @@
       "source_location": "L806",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_take_damage",
-      "community": 141,
+      "community": 143,
       "norm_label": ".gd_func_take_damage()"
     },
     {
@@ -1810,7 +1810,7 @@
       "source_location": "L814",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_apply_knockback",
-      "community": 72,
+      "community": 71,
       "norm_label": ".gd_func__apply_knockback()"
     },
     {
@@ -1820,7 +1820,7 @@
       "source_location": "L818",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_take_hit",
-      "community": 142,
+      "community": 144,
       "norm_label": ".gd_func_take_hit()"
     },
     {
@@ -1840,7 +1840,7 @@
       "source_location": "L826",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_detach_limbs_for_damage",
-      "community": 86,
+      "community": 11,
       "norm_label": ".gd_func__detach_limbs_for_damage()"
     },
     {
@@ -1880,7 +1880,7 @@
       "source_location": "L842",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_detach_limb_group",
-      "community": 85,
+      "community": 84,
       "norm_label": ".gd_func__detach_limb_group()"
     },
     {
@@ -1890,7 +1890,7 @@
       "source_location": "L846",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_spawn_detached_limb_piece",
-      "community": 137,
+      "community": 138,
       "norm_label": ".gd_func__spawn_detached_limb_piece()"
     },
     {
@@ -1900,7 +1900,7 @@
       "source_location": "L850",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_attach_pickup_to_detached_limb",
-      "community": 73,
+      "community": 72,
       "norm_label": ".gd_func__attach_pickup_to_detached_limb()"
     },
     {
@@ -1930,7 +1930,7 @@
       "source_location": "L862",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_set_rig_limb_visible",
-      "community": 135,
+      "community": 136,
       "norm_label": ".gd_func__set_rig_limb_visible()"
     },
     {
@@ -1940,7 +1940,7 @@
       "source_location": "L866",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_has_lizard_torso_blocks",
-      "community": 10,
+      "community": 104,
       "norm_label": ".gd_func__has_lizard_torso_blocks()"
     },
     {
@@ -1950,7 +1950,7 @@
       "source_location": "L870",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_set_lizard_torso_blocks_visible",
-      "community": 10,
+      "community": 134,
       "norm_label": ".gd_func__set_lizard_torso_blocks_visible()"
     },
     {
@@ -1970,7 +1970,7 @@
       "source_location": "L878",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_crawl_state",
-      "community": 146,
+      "community": 148,
       "norm_label": ".gd_func__update_crawl_state()"
     },
     {
@@ -1980,7 +1980,7 @@
       "source_location": "L882",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_die",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func_die()"
     },
     {
@@ -1990,7 +1990,7 @@
       "source_location": "L886",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_death_pop",
-      "community": 84,
+      "community": 83,
       "norm_label": ".gd_func__death_pop()"
     },
     {
@@ -2030,7 +2030,7 @@
       "source_location": "L902",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_respawn_delay",
-      "community": 99,
+      "community": 98,
       "norm_label": ".gd_func__get_respawn_delay()"
     },
     {
@@ -2040,7 +2040,7 @@
       "source_location": "L906",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_spawn_is_out_of_perspective",
-      "community": 138,
+      "community": 11,
       "norm_label": ".gd_func__spawn_is_out_of_perspective()"
     },
     {
@@ -2060,7 +2060,7 @@
       "source_location": "L914",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_facing_from_rotation",
-      "community": 88,
+      "community": 86,
       "norm_label": ".gd_func__facing_from_rotation()"
     },
     {
@@ -2110,7 +2110,7 @@
       "source_location": "L934",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_drop_standard_bone_pickup",
-      "community": 87,
+      "community": 85,
       "norm_label": ".gd_func__drop_standard_bone_pickup()"
     },
     {
@@ -2120,7 +2120,7 @@
       "source_location": "L938",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_force_limb_pickup_drop",
-      "community": 91,
+      "community": 90,
       "norm_label": ".gd_func__force_limb_pickup_drop()"
     },
     {
@@ -2140,7 +2140,7 @@
       "source_location": "L946",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_drop_remaining_limbs_on_death",
-      "community": 10,
+      "community": 11,
       "norm_label": ".gd_func__drop_remaining_limbs_on_death()"
     },
     {
@@ -2150,7 +2150,7 @@
       "source_location": "L950",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_choose_death_pickup_limb_key",
-      "community": 83,
+      "community": 82,
       "norm_label": ".gd_func__choose_death_pickup_limb_key()"
     },
     {
@@ -2170,7 +2170,7 @@
       "source_location": "L958",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_flash_hit",
-      "community": 90,
+      "community": 89,
       "norm_label": ".gd_func__flash_hit()"
     },
     {
@@ -2180,7 +2180,7 @@
       "source_location": "L962",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_set_enemy_color",
-      "community": 52,
+      "community": 11,
       "norm_label": ".gd_func__set_enemy_color()"
     },
     {
@@ -2190,7 +2190,7 @@
       "source_location": "L966",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_setup_procedural_character",
-      "community": 53,
+      "community": 52,
       "norm_label": ".gd_func__setup_procedural_character()"
     },
     {
@@ -2200,7 +2200,7 @@
       "source_location": "L970",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_update_procedural_animation",
-      "community": 148,
+      "community": 149,
       "norm_label": ".gd_func__update_procedural_animation()"
     },
     {
@@ -2210,7 +2210,7 @@
       "source_location": "L974",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_effective_move_speed",
-      "community": 94,
+      "community": 93,
       "norm_label": ".gd_func__get_effective_move_speed()"
     },
     {
@@ -2220,7 +2220,7 @@
       "source_location": "L978",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_setup_ranged_bow_visual",
-      "community": 136,
+      "community": 137,
       "norm_label": ".gd_func__setup_ranged_bow_visual()"
     },
     {
@@ -2240,7 +2240,7 @@
       "source_location": "L986",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_set_rig_color",
-      "community": 52,
+      "community": 11,
       "norm_label": ".gd_func__set_rig_color()"
     },
     {
@@ -2250,7 +2250,7 @@
       "source_location": "L990",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_apply_bone_identity",
-      "community": 70,
+      "community": 69,
       "norm_label": ".gd_func__apply_bone_identity()"
     },
     {
@@ -2280,7 +2280,7 @@
       "source_location": "L1002",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_should_use_gorilla_profile",
-      "community": 54,
+      "community": 53,
       "norm_label": ".gd_func__should_use_gorilla_profile()"
     },
     {
@@ -2290,7 +2290,7 @@
       "source_location": "L1006",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_should_use_lizard_profile",
-      "community": 54,
+      "community": 53,
       "norm_label": ".gd_func__should_use_lizard_profile()"
     },
     {
@@ -2330,7 +2330,7 @@
       "source_location": "L1022",
       "_origin": "ast",
       "id": "architecture_enemy_uses_game_event_drop_spawned",
-      "community": 152,
+      "community": 153,
       "norm_label": ".uses_game_event_drop_spawned()"
     },
     {
@@ -3230,7 +3230,7 @@
       "source_location": "L1445",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_camera_relative_move_direction",
-      "community": 157,
+      "community": 158,
       "norm_label": ".gd_func__get_camera_relative_move_direction()"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1453",
       "_origin": "ast",
       "id": "architecture_player_gd_func_try_attack",
-      "community": 63,
+      "community": 62,
       "norm_label": ".gd_func__try_attack()"
     },
     {
@@ -3260,7 +3260,7 @@
       "source_location": "L1457",
       "_origin": "ast",
       "id": "architecture_player_gd_func_try_bow_shot",
-      "community": 163,
+      "community": 164,
       "norm_label": ".gd_func__try_bow_shot()"
     },
     {
@@ -3300,7 +3300,7 @@
       "source_location": "L1473",
       "_origin": "ast",
       "id": "architecture_player_gd_func_toggle_bow_equipped",
-      "community": 162,
+      "community": 163,
       "norm_label": ".gd_func__toggle_bow_equipped()"
     },
     {
@@ -3310,7 +3310,7 @@
       "source_location": "L1477",
       "_origin": "ast",
       "id": "architecture_player_gd_func_fire_player_projectile",
-      "community": 154,
+      "community": 155,
       "norm_label": ".gd_func__fire_player_projectile()"
     },
     {
@@ -3320,7 +3320,7 @@
       "source_location": "L1481",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_pointer_aim_direction",
-      "community": 159,
+      "community": 160,
       "norm_label": ".gd_func__get_pointer_aim_direction()"
     },
     {
@@ -3350,7 +3350,7 @@
       "source_location": "L1493",
       "_origin": "ast",
       "id": "architecture_player_gd_func_setup_procedural_character",
-      "community": 53,
+      "community": 52,
       "norm_label": ".gd_func__setup_procedural_character()"
     },
     {
@@ -3370,7 +3370,7 @@
       "source_location": "L1501",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_bow_visual_parent",
-      "community": 156,
+      "community": 157,
       "norm_label": ".gd_func__get_bow_visual_parent()"
     },
     {
@@ -3400,7 +3400,7 @@
       "source_location": "L1513",
       "_origin": "ast",
       "id": "architecture_player_gd_func_set_aim_reticle_visible",
-      "community": 160,
+      "community": 161,
       "norm_label": ".gd_func__set_aim_reticle_visible()"
     },
     {
@@ -3420,7 +3420,7 @@
       "source_location": "L1521",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_bow_charge_ratio",
-      "community": 155,
+      "community": 156,
       "norm_label": ".gd_func__get_bow_charge_ratio()"
     },
     {
@@ -3450,7 +3450,7 @@
       "source_location": "L1533",
       "_origin": "ast",
       "id": "architecture_player_gd_func_update_procedural_animation",
-      "community": 164,
+      "community": 165,
       "norm_label": ".gd_func__update_procedural_animation()"
     },
     {
@@ -3530,7 +3530,7 @@
       "source_location": "L1565",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_inventory_stats_snapshot",
-      "community": 59,
+      "community": 58,
       "norm_label": ".gd_func_get_inventory_stats_snapshot()"
     },
     {
@@ -3540,7 +3540,7 @@
       "source_location": "L1569",
       "_origin": "ast",
       "id": "architecture_player_gd_func_take_player_damage",
-      "community": 161,
+      "community": 162,
       "norm_label": ".gd_func_take_player_damage()"
     },
     {
@@ -3560,7 +3560,7 @@
       "source_location": "L1577",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_noise_radius",
-      "community": 158,
+      "community": 159,
       "norm_label": ".gd_func_get_noise_radius()"
     },
     {
@@ -3570,7 +3570,7 @@
       "source_location": "L1581",
       "_origin": "ast",
       "id": "architecture_player_gd_func_die_player",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__die_player()"
     },
     {
@@ -3620,7 +3620,7 @@
       "source_location": "L1601",
       "_origin": "ast",
       "id": "architecture_player_gd_func_show_bone_info",
-      "community": 61,
+      "community": 60,
       "norm_label": ".gd_func_show_bone_info()"
     },
     {
@@ -3640,7 +3640,7 @@
       "source_location": "L1609",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_equipment_socket_for_slot",
-      "community": 58,
+      "community": 57,
       "norm_label": ".gd_func_get_equipment_socket_for_slot()"
     },
     {
@@ -3690,7 +3690,7 @@
       "source_location": "L1629",
       "_origin": "ast",
       "id": "architecture_player_gd_func_find_stealth_target",
-      "community": 153,
+      "community": 154,
       "norm_label": ".gd_func__find_stealth_target()"
     },
     {
@@ -3700,7 +3700,7 @@
       "source_location": "L1633",
       "_origin": "ast",
       "id": "architecture_player_gd_func_enter_interact_range",
-      "community": 57,
+      "community": 56,
       "norm_label": ".gd_func_enter_interact_range()"
     },
     {
@@ -3710,7 +3710,7 @@
       "source_location": "L1637",
       "_origin": "ast",
       "id": "architecture_player_gd_func_exit_interact_range",
-      "community": 57,
+      "community": 56,
       "norm_label": ".gd_func_exit_interact_range()"
     },
     {
@@ -3720,7 +3720,7 @@
       "source_location": "L1641",
       "_origin": "ast",
       "id": "architecture_player_gd_func_enter_bone_pickup_range",
-      "community": 56,
+      "community": 55,
       "norm_label": ".gd_func_enter_bone_pickup_range()"
     },
     {
@@ -3730,7 +3730,7 @@
       "source_location": "L1645",
       "_origin": "ast",
       "id": "architecture_player_gd_func_exit_bone_pickup_range",
-      "community": 56,
+      "community": 55,
       "norm_label": ".gd_func_exit_bone_pickup_range()"
     },
     {
@@ -3740,7 +3740,7 @@
       "source_location": "L1649",
       "_origin": "ast",
       "id": "architecture_player_gd_func_get_inventory_tile_size",
-      "community": 60,
+      "community": 59,
       "norm_label": ".gd_func_get_inventory_tile_size()"
     },
     {
@@ -3750,7 +3750,7 @@
       "source_location": "L1653",
       "_origin": "ast",
       "id": "architecture_player_gd_func_build_health_ui",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__build_health_ui()"
     },
     {
@@ -3770,7 +3770,7 @@
       "source_location": "L1661",
       "_origin": "ast",
       "id": "architecture_player_gd_func_build_stealth_ui",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func__build_stealth_ui()"
     },
     {
@@ -3790,7 +3790,7 @@
       "source_location": "L1669",
       "_origin": "ast",
       "id": "architecture_player_gd_func_toggle_inventory",
-      "community": 62,
+      "community": 61,
       "norm_label": ".gd_func__toggle_inventory()"
     },
     {
@@ -4090,7 +4090,7 @@
       "source_location": "L1803",
       "_origin": "ast",
       "id": "architecture_playerequipmentcomponent_gd_func_setup",
-      "community": 65,
+      "community": 64,
       "norm_label": ".gd_func_setup()"
     },
     {
@@ -4190,7 +4190,7 @@
       "source_location": "L1843",
       "_origin": "ast",
       "id": "architecture_playerequipmentcomponent_gd_func_get_socket_for_slot",
-      "community": 58,
+      "community": 57,
       "norm_label": ".gd_func__get_socket_for_slot()"
     },
     {
@@ -4220,7 +4220,7 @@
       "source_location": "L1855",
       "_origin": "ast",
       "id": "architecture_playerequipmentcomponent_gd_func_notify_equipment_changed",
-      "community": 64,
+      "community": 63,
       "norm_label": ".gd_func__notify_equipment_changed()"
     },
     {
@@ -4470,7 +4470,7 @@
       "source_location": "L1969",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_setup",
-      "community": 65,
+      "community": 64,
       "norm_label": ".gd_func_setup()"
     },
     {
@@ -4490,7 +4490,7 @@
       "source_location": "L1977",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_set_open",
-      "community": 202,
+      "community": 203,
       "norm_label": ".gd_func_set_open()"
     },
     {
@@ -4500,7 +4500,7 @@
       "source_location": "L1981",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_cycle_category",
-      "community": 11,
+      "community": 10,
       "norm_label": ".gd_func_cycle_category()"
     },
     {
@@ -4520,7 +4520,7 @@
       "source_location": "L1989",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_notify_equipment_changed",
-      "community": 64,
+      "community": 63,
       "norm_label": ".gd_func_notify_equipment_changed()"
     },
     {
@@ -4560,7 +4560,7 @@
       "source_location": "L2005",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_get_inventory_tile_size",
-      "community": 60,
+      "community": 59,
       "norm_label": ".gd_func_get_inventory_tile_size()"
     },
     {
@@ -4610,7 +4610,7 @@
       "source_location": "L2025",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_show_bone_info",
-      "community": 61,
+      "community": 60,
       "norm_label": ".gd_func_show_bone_info()"
     },
     {
@@ -4630,7 +4630,7 @@
       "source_location": "L2033",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_build_inventory_ui",
-      "community": 178,
+      "community": 179,
       "norm_label": ".gd_func__build_inventory_ui()"
     },
     {
@@ -4640,7 +4640,7 @@
       "source_location": "L2037",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_build_right_inventory_panel",
-      "community": 180,
+      "community": 181,
       "norm_label": ".gd_func__build_right_inventory_panel()"
     },
     {
@@ -4650,7 +4650,7 @@
       "source_location": "L2041",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_build_inventory_blur_layer",
-      "community": 176,
+      "community": 177,
       "norm_label": ".gd_func__build_inventory_blur_layer()"
     },
     {
@@ -4660,7 +4660,7 @@
       "source_location": "L2045",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_build_inventory_tabs",
-      "community": 177,
+      "community": 178,
       "norm_label": ".gd_func__build_inventory_tabs()"
     },
     {
@@ -4670,7 +4670,7 @@
       "source_location": "L2049",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_add_inventory_tab",
-      "community": 166,
+      "community": 167,
       "norm_label": ".gd_func__add_inventory_tab()"
     },
     {
@@ -4680,7 +4680,7 @@
       "source_location": "L2053",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_select_inventory_category",
-      "community": 198,
+      "community": 199,
       "norm_label": ".gd_func__select_inventory_category()"
     },
     {
@@ -4690,7 +4690,7 @@
       "source_location": "L2057",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_refresh_inventory_tabs",
-      "community": 67,
+      "community": 66,
       "norm_label": ".gd_func__refresh_inventory_tabs()"
     },
     {
@@ -4700,7 +4700,7 @@
       "source_location": "L2061",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_refresh_inventory_mode",
-      "community": 67,
+      "community": 66,
       "norm_label": ".gd_func__refresh_inventory_mode()"
     },
     {
@@ -4710,7 +4710,7 @@
       "source_location": "L2065",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_queue_inventory_responsive_layout",
-      "community": 193,
+      "community": 194,
       "norm_label": ".gd_func__queue_inventory_responsive_layout()"
     },
     {
@@ -4720,7 +4720,7 @@
       "source_location": "L2069",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_apply_inventory_responsive_layout",
-      "community": 169,
+      "community": 170,
       "norm_label": ".gd_func__apply_inventory_responsive_layout()"
     },
     {
@@ -4740,7 +4740,7 @@
       "source_location": "L2077",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_apply_paper_doll_responsive_layout",
-      "community": 170,
+      "community": 171,
       "norm_label": ".gd_func__apply_paper_doll_responsive_layout()"
     },
     {
@@ -4750,7 +4750,7 @@
       "source_location": "L2081",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_apply_footer_responsive_layout",
-      "community": 168,
+      "community": 169,
       "norm_label": ".gd_func__apply_footer_responsive_layout()"
     },
     {
@@ -4760,7 +4760,7 @@
       "source_location": "L2085",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_set_margin",
-      "community": 201,
+      "community": 202,
       "norm_label": ".gd_func__set_margin()"
     },
     {
@@ -4770,7 +4770,7 @@
       "source_location": "L2089",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_build_settings_panel",
-      "community": 181,
+      "community": 182,
       "norm_label": ".gd_func__build_settings_panel()"
     },
     {
@@ -4780,7 +4780,7 @@
       "source_location": "L2093",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_build_control_binding_row",
-      "community": 175,
+      "community": 176,
       "norm_label": ".gd_func__build_control_binding_row()"
     },
     {
@@ -4790,7 +4790,7 @@
       "source_location": "L2097",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_add_footer_hint",
-      "community": 165,
+      "community": 166,
       "norm_label": ".gd_func__add_footer_hint()"
     },
     {
@@ -4800,7 +4800,7 @@
       "source_location": "L2101",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_make_rule",
-      "community": 191,
+      "community": 192,
       "norm_label": ".gd_func__make_rule()"
     },
     {
@@ -4810,7 +4810,7 @@
       "source_location": "L2105",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_make_inventory_style",
-      "community": 189,
+      "community": 190,
       "norm_label": ".gd_func__make_inventory_style()"
     },
     {
@@ -4820,7 +4820,7 @@
       "source_location": "L2109",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_make_empty_inventory_slot",
-      "community": 188,
+      "community": 189,
       "norm_label": ".gd_func__make_empty_inventory_slot()"
     },
     {
@@ -4850,7 +4850,7 @@
       "source_location": "L2121",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_make_preview_room_box",
-      "community": 190,
+      "community": 191,
       "norm_label": ".gd_func__make_preview_room_box()"
     },
     {
@@ -4860,7 +4860,7 @@
       "source_location": "L2125",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_sync_preview",
-      "community": 203,
+      "community": 204,
       "norm_label": ".gd_func_sync_preview()"
     },
     {
@@ -4870,7 +4870,7 @@
       "source_location": "L2129",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_build_paper_doll",
-      "community": 179,
+      "community": 180,
       "norm_label": ".gd_func__build_paper_doll()"
     },
     {
@@ -4880,7 +4880,7 @@
       "source_location": "L2133",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_place_slot",
-      "community": 192,
+      "community": 193,
       "norm_label": ".gd_func__place_slot()"
     },
     {
@@ -4890,7 +4890,7 @@
       "source_location": "L2137",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_begin_rebinding",
-      "community": 171,
+      "community": 172,
       "norm_label": ".gd_func__begin_rebinding()"
     },
     {
@@ -4910,7 +4910,7 @@
       "source_location": "L2145",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_apply_control_binding",
-      "community": 167,
+      "community": 168,
       "norm_label": ".gd_func__apply_control_binding()"
     },
     {
@@ -4920,7 +4920,7 @@
       "source_location": "L2149",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_is_bindable_control_event",
-      "community": 187,
+      "community": 188,
       "norm_label": ".gd_func__is_bindable_control_event()"
     },
     {
@@ -4930,7 +4930,7 @@
       "source_location": "L2153",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_clean_control_event",
-      "community": 182,
+      "community": 183,
       "norm_label": ".gd_func__clean_control_event()"
     },
     {
@@ -4940,7 +4940,7 @@
       "source_location": "L2157",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_remove_control_event_from_other_actions",
-      "community": 196,
+      "community": 197,
       "norm_label": ".gd_func__remove_control_event_from_other_actions()"
     },
     {
@@ -4950,7 +4950,7 @@
       "source_location": "L2161",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_control_events_match",
-      "community": 183,
+      "community": 184,
       "norm_label": ".gd_func__control_events_match()"
     },
     {
@@ -4960,7 +4960,7 @@
       "source_location": "L2165",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_find_control_event_owner",
-      "community": 186,
+      "community": 187,
       "norm_label": ".gd_func__find_control_event_owner()"
     },
     {
@@ -4970,7 +4970,7 @@
       "source_location": "L2169",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_refresh_control_buttons",
-      "community": 195,
+      "community": 196,
       "norm_label": ".gd_func__refresh_control_buttons()"
     },
     {
@@ -4980,7 +4980,7 @@
       "source_location": "L2173",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_binding_text",
-      "community": 172,
+      "community": 173,
       "norm_label": ".gd_func__binding_text()"
     },
     {
@@ -5000,7 +5000,7 @@
       "source_location": "L2181",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_control_label",
-      "community": 184,
+      "community": 185,
       "norm_label": ".gd_func__control_label()"
     },
     {
@@ -5010,7 +5010,7 @@
       "source_location": "L2185",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_save_control_settings",
-      "community": 66,
+      "community": 65,
       "norm_label": ".gd_func__save_control_settings()"
     },
     {
@@ -5020,7 +5020,7 @@
       "source_location": "L2189",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_load_control_settings",
-      "community": 66,
+      "community": 65,
       "norm_label": ".gd_func__load_control_settings()"
     },
     {
@@ -5030,7 +5030,7 @@
       "source_location": "L2193",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_event_from_config",
-      "community": 185,
+      "community": 186,
       "norm_label": ".gd_func__event_from_config()"
     },
     {
@@ -5040,7 +5040,7 @@
       "source_location": "L2197",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_reset_control_defaults",
-      "community": 197,
+      "community": 198,
       "norm_label": ".gd_func__reset_control_defaults()"
     },
     {
@@ -5050,7 +5050,7 @@
       "source_location": "L2201",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_set_default_control_key",
-      "community": 199,
+      "community": 200,
       "norm_label": ".gd_func__set_default_control_key()"
     },
     {
@@ -5060,7 +5060,7 @@
       "source_location": "L2205",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_set_default_control_mouse",
-      "community": 200,
+      "community": 201,
       "norm_label": ".gd_func__set_default_control_mouse()"
     },
     {
@@ -5070,7 +5070,7 @@
       "source_location": "L2209",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_rebuild_item_tiles",
-      "community": 194,
+      "community": 195,
       "norm_label": ".gd_func_rebuild_item_tiles()"
     },
     {
@@ -5080,7 +5080,7 @@
       "source_location": "L2213",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_bone_matches_inventory_category",
-      "community": 174,
+      "community": 175,
       "norm_label": ".gd_func__bone_matches_inventory_category()"
     },
     {
@@ -5090,7 +5090,7 @@
       "source_location": "L2217",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_update_inventory_ui",
-      "community": 62,
+      "community": 61,
       "norm_label": ".gd_func_update_inventory_ui()"
     },
     {
@@ -5100,7 +5100,7 @@
       "source_location": "L2221",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_bone_inventory",
-      "community": 173,
+      "community": 174,
       "norm_label": ".gd_func__bone_inventory()"
     },
     {
@@ -5130,7 +5130,7 @@
       "source_location": "L2233",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_gd_func_inventory_stats_snapshot",
-      "community": 59,
+      "community": 58,
       "norm_label": ".gd_func__inventory_stats_snapshot()"
     },
     {
@@ -5480,7 +5480,7 @@
       "source_location": "L2394",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_update_from_player",
-      "community": 220,
+      "community": 221,
       "norm_label": ".gd_func_update_from_player()"
     },
     {
@@ -5490,7 +5490,7 @@
       "source_location": "L2398",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_trigger_attack",
-      "community": 63,
+      "community": 62,
       "norm_label": ".gd_func_trigger_attack()"
     },
     {
@@ -5500,7 +5500,7 @@
       "source_location": "L2402",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_set_aiming",
-      "community": 216,
+      "community": 217,
       "norm_label": ".gd_func_set_aiming()"
     },
     {
@@ -5510,7 +5510,7 @@
       "source_location": "L2406",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_set_crawl_mode",
-      "community": 217,
+      "community": 218,
       "norm_label": ".gd_func_set_crawl_mode()"
     },
     {
@@ -5520,7 +5520,7 @@
       "source_location": "L2410",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_set_lizard_wall_climb_blend",
-      "community": 218,
+      "community": 219,
       "norm_label": ".gd_func_set_lizard_wall_climb_blend()"
     },
     {
@@ -5530,7 +5530,7 @@
       "source_location": "L2414",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_capture_rest",
-      "community": 212,
+      "community": 213,
       "norm_label": ".gd_func__capture_rest()"
     },
     {
@@ -5540,7 +5540,7 @@
       "source_location": "L2418",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_get_rest_pos",
-      "community": 68,
+      "community": 67,
       "norm_label": ".gd_func__get_rest_pos()"
     },
     {
@@ -5550,7 +5550,7 @@
       "source_location": "L2422",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_get_rest_rot",
-      "community": 68,
+      "community": 67,
       "norm_label": ".gd_func__get_rest_rot()"
     },
     {
@@ -5560,7 +5560,7 @@
       "source_location": "L2426",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_calculate_weight",
-      "community": 211,
+      "community": 212,
       "norm_label": ".gd_func__calculate_weight()"
     },
     {
@@ -5590,7 +5590,7 @@
       "source_location": "L2438",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_crawl_body",
-      "community": 204,
+      "community": 205,
       "norm_label": ".gd_func__animate_crawl_body()"
     },
     {
@@ -5600,7 +5600,7 @@
       "source_location": "L2442",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_crawl_limbs",
-      "community": 205,
+      "community": 206,
       "norm_label": ".gd_func__animate_crawl_limbs()"
     },
     {
@@ -5620,7 +5620,7 @@
       "source_location": "L2450",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_lizard_torso_blocks",
-      "community": 208,
+      "community": 209,
       "norm_label": ".gd_func__animate_lizard_torso_blocks()"
     },
     {
@@ -5630,7 +5630,7 @@
       "source_location": "L2454",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_swing",
-      "community": 219,
+      "community": 220,
       "norm_label": ".gd_func__swing()"
     },
     {
@@ -5650,7 +5650,7 @@
       "source_location": "L2462",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_joint_phase",
-      "community": 214,
+      "community": 215,
       "norm_label": ".gd_func__joint_phase()"
     },
     {
@@ -5670,7 +5670,7 @@
       "source_location": "L2470",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_wobble_phase",
-      "community": 221,
+      "community": 222,
       "norm_label": ".gd_func__wobble_phase()"
     },
     {
@@ -5680,7 +5680,7 @@
       "source_location": "L2474",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_update_aim_overlay",
-      "community": 69,
+      "community": 68,
       "norm_label": ".gd_func__update_aim_overlay()"
     },
     {
@@ -5690,7 +5690,7 @@
       "source_location": "L2478",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_apply_aim_overlay",
-      "community": 209,
+      "community": 210,
       "norm_label": ".gd_func__apply_aim_overlay()"
     },
     {
@@ -5700,7 +5700,7 @@
       "source_location": "L2482",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_update_attack_overlay",
-      "community": 69,
+      "community": 68,
       "norm_label": ".gd_func__update_attack_overlay()"
     },
     {
@@ -5710,7 +5710,7 @@
       "source_location": "L2486",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_apply_attack_overlay",
-      "community": 210,
+      "community": 211,
       "norm_label": ".gd_func__apply_attack_overlay()"
     },
     {
@@ -5720,7 +5720,7 @@
       "source_location": "L2490",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_feet",
-      "community": 207,
+      "community": 208,
       "norm_label": ".gd_func__animate_feet()"
     },
     {
@@ -5730,7 +5730,7 @@
       "source_location": "L2494",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_place_foot",
-      "community": 215,
+      "community": 216,
       "norm_label": ".gd_func__place_foot()"
     },
     {
@@ -5740,7 +5740,7 @@
       "source_location": "L2498",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_find_body",
-      "community": 213,
+      "community": 214,
       "norm_label": ".gd_func__find_body()"
     },
     {
@@ -5750,7 +5750,7 @@
       "source_location": "L2502",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_facing",
-      "community": 206,
+      "community": 207,
       "norm_label": ".gd_func__animate_facing()"
     },
     {
@@ -7440,7 +7440,7 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "architecture_rationale_118",
-      "community": 11,
+      "community": 10,
       "norm_label": "gdscript function: _build_help_ui() -> void"
     },
     {
@@ -7860,7 +7860,7 @@
       "source_location": "L442",
       "_origin": "ast",
       "id": "architecture_rationale_442",
-      "community": 11,
+      "community": 10,
       "norm_label": "godot script: scripts/demo_enemy_camp.gd     class_name: demoenemycamp     exten"
     },
     {
@@ -7870,7 +7870,7 @@
       "source_location": "L457",
       "_origin": "ast",
       "id": "architecture_rationale_457",
-      "community": 11,
+      "community": 10,
       "norm_label": "gdscript function: register_enemy(enemy: node) -> void"
     },
     {
@@ -7890,7 +7890,7 @@
       "source_location": "L473",
       "_origin": "ast",
       "id": "architecture_rationale_473",
-      "community": 11,
+      "community": 10,
       "norm_label": "gdscript function: _emit_camp_state_changed() -> void"
     },
     {
@@ -7910,7 +7910,7 @@
       "source_location": "L489",
       "_origin": "ast",
       "id": "architecture_rationale_489",
-      "community": 11,
+      "community": 10,
       "norm_label": "gdscript function: _reserve_player_interact_lock() -> void"
     },
     {
@@ -7920,7 +7920,7 @@
       "source_location": "L517",
       "_origin": "ast",
       "id": "architecture_rationale_517",
-      "community": 11,
+      "community": 10,
       "norm_label": "gdscript function: _remaining_enemy_count() -> int"
     },
     {
@@ -7930,7 +7930,7 @@
       "source_location": "L521",
       "_origin": "ast",
       "id": "architecture_rationale_521",
-      "community": 11,
+      "community": 10,
       "norm_label": "gdscript function: _make_material(color: color, glowing: bool = false) -> standa"
     },
     {
@@ -7950,7 +7950,7 @@
       "source_location": "L533",
       "_origin": "ast",
       "id": "architecture_rationale_533",
-      "community": 11,
+      "community": 10,
       "norm_label": "uses gameevents.camp_chest_opened."
     },
     {
@@ -7980,7 +7980,7 @@
       "source_location": "L583",
       "_origin": "ast",
       "id": "architecture_rationale_583",
-      "community": 98,
+      "community": 96,
       "norm_label": "gdscript function: _get_player() -> node3d"
     },
     {
@@ -8000,7 +8000,7 @@
       "source_location": "L591",
       "_origin": "ast",
       "id": "architecture_rationale_591",
-      "community": 71,
+      "community": 70,
       "norm_label": "gdscript function: _apply_enemy_movement() -> void"
     },
     {
@@ -8030,7 +8030,7 @@
       "source_location": "L603",
       "_origin": "ast",
       "id": "architecture_rationale_603",
-      "community": 147,
+      "community": 11,
       "norm_label": "gdscript function: _update_lizard_wall_climb_blend(delta: float) -> void"
     },
     {
@@ -8050,7 +8050,7 @@
       "source_location": "L611",
       "_origin": "ast",
       "id": "architecture_rationale_611",
-      "community": 143,
+      "community": 145,
       "norm_label": "gdscript function: _try_attack_player(player: node) -> void"
     },
     {
@@ -8060,7 +8060,7 @@
       "source_location": "L615",
       "_origin": "ast",
       "id": "architecture_rationale_615",
-      "community": 81,
+      "community": 80,
       "norm_label": "gdscript function: _can_start_saliva_spit(player: node3d, distance_to_player: fl"
     },
     {
@@ -8070,7 +8070,7 @@
       "source_location": "L619",
       "_origin": "ast",
       "id": "architecture_rationale_619",
-      "community": 10,
+      "community": 141,
       "norm_label": "gdscript function: _start_saliva_spit(player: node3d) -> void"
     },
     {
@@ -8080,7 +8080,7 @@
       "source_location": "L623",
       "_origin": "ast",
       "id": "architecture_rationale_623",
-      "community": 150,
+      "community": 11,
       "norm_label": "gdscript function: _update_saliva_spit_windup(delta: float, player: node3d) -> v"
     },
     {
@@ -8090,7 +8090,7 @@
       "source_location": "L627",
       "_origin": "ast",
       "id": "architecture_rationale_627",
-      "community": 89,
+      "community": 88,
       "norm_label": "gdscript function: _fire_saliva_spit() -> void"
     },
     {
@@ -8100,7 +8100,7 @@
       "source_location": "L631",
       "_origin": "ast",
       "id": "architecture_rationale_631",
-      "community": 79,
+      "community": 78,
       "norm_label": "gdscript function: _can_start_ranged_attack(player: node3d, distance_to_player:"
     },
     {
@@ -8110,7 +8110,7 @@
       "source_location": "L635",
       "_origin": "ast",
       "id": "architecture_rationale_635",
-      "community": 10,
+      "community": 139,
       "norm_label": "gdscript function: _start_ranged_attack(player: node3d) -> void"
     },
     {
@@ -8120,7 +8120,7 @@
       "source_location": "L639",
       "_origin": "ast",
       "id": "architecture_rationale_639",
-      "community": 10,
+      "community": 150,
       "norm_label": "gdscript function: _update_ranged_attack_windup(delta: float, player: node3d) ->"
     },
     {
@@ -8130,7 +8130,7 @@
       "source_location": "L643",
       "_origin": "ast",
       "id": "architecture_rationale_643",
-      "community": 10,
+      "community": 87,
       "norm_label": "gdscript function: _fire_enemy_arrow() -> void"
     },
     {
@@ -8140,7 +8140,7 @@
       "source_location": "L647",
       "_origin": "ast",
       "id": "architecture_rationale_647",
-      "community": 80,
+      "community": 79,
       "norm_label": "gdscript function: _can_start_rock_throw(player: node3d, distance_to_player: flo"
     },
     {
@@ -8150,7 +8150,7 @@
       "source_location": "L651",
       "_origin": "ast",
       "id": "architecture_rationale_651",
-      "community": 139,
+      "community": 140,
       "norm_label": "gdscript function: _start_rock_throw(player: node3d) -> void"
     },
     {
@@ -8160,7 +8160,7 @@
       "source_location": "L655",
       "_origin": "ast",
       "id": "architecture_rationale_655",
-      "community": 149,
+      "community": 151,
       "norm_label": "gdscript function: _update_rock_throw_windup(delta: float, player: node3d) -> vo"
     },
     {
@@ -8170,7 +8170,7 @@
       "source_location": "L659",
       "_origin": "ast",
       "id": "architecture_rationale_659",
-      "community": 55,
+      "community": 54,
       "norm_label": "gdscript function: _throw_held_rock() -> void"
     },
     {
@@ -8180,7 +8180,7 @@
       "source_location": "L667",
       "_origin": "ast",
       "id": "architecture_rationale_667",
-      "community": 82,
+      "community": 81,
       "norm_label": "gdscript function: _cancel_held_rock() -> void"
     },
     {
@@ -8190,7 +8190,7 @@
       "source_location": "L671",
       "_origin": "ast",
       "id": "architecture_rationale_671",
-      "community": 96,
+      "community": 11,
       "norm_label": "gdscript function: _get_held_rock_world_position() -> vector3"
     },
     {
@@ -8200,7 +8200,7 @@
       "source_location": "L675",
       "_origin": "ast",
       "id": "architecture_rationale_675",
-      "community": 101,
+      "community": 100,
       "norm_label": "gdscript function: _get_rock_throw_socket() -> node3d"
     },
     {
@@ -8210,7 +8210,7 @@
       "source_location": "L679",
       "_origin": "ast",
       "id": "architecture_rationale_679",
-      "community": 75,
+      "community": 74,
       "norm_label": "gdscript function: can_be_stealth_finished_by(player: node3d) -> bool"
     },
     {
@@ -8230,7 +8230,7 @@
       "source_location": "L687",
       "_origin": "ast",
       "id": "architecture_rationale_687",
-      "community": 10,
+      "community": 92,
       "norm_label": "gdscript function: get_drop_display_name() -> string"
     },
     {
@@ -8250,7 +8250,7 @@
       "source_location": "L695",
       "_origin": "ast",
       "id": "architecture_rationale_695",
-      "community": 144,
+      "community": 146,
       "norm_label": "gdscript function: try_stealth_finish(player: node3d, player_damage: int, hit_fr"
     },
     {
@@ -8260,7 +8260,7 @@
       "source_location": "L699",
       "_origin": "ast",
       "id": "architecture_rationale_699",
-      "community": 78,
+      "community": 77,
       "norm_label": "gdscript function: _can_see_player(player: node3d, to_player: vector3, dist: flo"
     },
     {
@@ -8270,7 +8270,7 @@
       "source_location": "L703",
       "_origin": "ast",
       "id": "architecture_rationale_703",
-      "community": 76,
+      "community": 75,
       "norm_label": "gdscript function: _can_hear_player(player: node, dist: float) -> bool"
     },
     {
@@ -8290,7 +8290,7 @@
       "source_location": "L711",
       "_origin": "ast",
       "id": "architecture_rationale_711",
-      "community": 10,
+      "community": 11,
       "norm_label": "gdscript function: receive_alert(position: vector3) -> void"
     },
     {
@@ -8300,7 +8300,7 @@
       "source_location": "L719",
       "_origin": "ast",
       "id": "architecture_rationale_719",
-      "community": 10,
+      "community": 11,
       "norm_label": "gdscript function: _turn_toward(direction: vector3) -> void"
     },
     {
@@ -8310,7 +8310,7 @@
       "source_location": "L723",
       "_origin": "ast",
       "id": "architecture_rationale_723",
-      "community": 74,
+      "community": 73,
       "norm_label": "gdscript function: _build_vision_cone() -> void"
     },
     {
@@ -8320,7 +8320,7 @@
       "source_location": "L727",
       "_origin": "ast",
       "id": "architecture_rationale_727",
-      "community": 134,
+      "community": 135,
       "norm_label": "gdscript function: _set_player_visible(new_value: bool, force_visual: bool = fal"
     },
     {
@@ -8330,7 +8330,7 @@
       "source_location": "L731",
       "_origin": "ast",
       "id": "architecture_rationale_731",
-      "community": 102,
+      "community": 101,
       "norm_label": "gdscript function: _get_search_move(delta: float) -> vector3"
     },
     {
@@ -8350,7 +8350,7 @@
       "source_location": "L739",
       "_origin": "ast",
       "id": "architecture_rationale_739",
-      "community": 100,
+      "community": 99,
       "norm_label": "gdscript function: _get_return_home_move() -> vector3"
     },
     {
@@ -8360,7 +8360,7 @@
       "source_location": "L743",
       "_origin": "ast",
       "id": "architecture_rationale_743",
-      "community": 97,
+      "community": 95,
       "norm_label": "gdscript function: _get_idle_wander_move(delta: float) -> vector3"
     },
     {
@@ -8370,7 +8370,7 @@
       "source_location": "L747",
       "_origin": "ast",
       "id": "architecture_rationale_747",
-      "community": 95,
+      "community": 94,
       "norm_label": "gdscript function: _get_flee_move(player: node3d, dist: float) -> vector3"
     },
     {
@@ -8380,7 +8380,7 @@
       "source_location": "L751",
       "_origin": "ast",
       "id": "architecture_rationale_751",
-      "community": 145,
+      "community": 147,
       "norm_label": "gdscript function: _update_bone_recovery_safety(delta: float, player: node3d, di"
     },
     {
@@ -8390,7 +8390,7 @@
       "source_location": "L755",
       "_origin": "ast",
       "id": "architecture_rationale_755",
-      "community": 77,
+      "community": 76,
       "norm_label": "gdscript function: _can_recover_bone_part() -> bool"
     },
     {
@@ -8400,7 +8400,7 @@
       "source_location": "L759",
       "_origin": "ast",
       "id": "architecture_rationale_759",
-      "community": 93,
+      "community": 11,
       "norm_label": "gdscript function: _get_bone_recovery_move() -> vector3"
     },
     {
@@ -8410,7 +8410,7 @@
       "source_location": "L763",
       "_origin": "ast",
       "id": "architecture_rationale_763",
-      "community": 10,
+      "community": 97,
       "norm_label": "gdscript function: _get_recovering_limb_key() -> string"
     },
     {
@@ -8460,7 +8460,7 @@
       "source_location": "L783",
       "_origin": "ast",
       "id": "architecture_rationale_783",
-      "community": 104,
+      "community": 103,
       "norm_label": "gdscript function: _has_active_limb_pickup() -> bool"
     },
     {
@@ -8470,7 +8470,7 @@
       "source_location": "L787",
       "_origin": "ast",
       "id": "architecture_rationale_787",
-      "community": 92,
+      "community": 91,
       "norm_label": "gdscript function: _forget_detached_limb_body(limb_key: string) -> void"
     },
     {
@@ -8480,7 +8480,7 @@
       "source_location": "L791",
       "_origin": "ast",
       "id": "architecture_rationale_791",
-      "community": 140,
+      "community": 142,
       "norm_label": "gdscript function: _steer_around_obstacles(desired_direction: vector3) -> vector"
     },
     {
@@ -8500,7 +8500,7 @@
       "source_location": "L799",
       "_origin": "ast",
       "id": "architecture_rationale_799",
-      "community": 103,
+      "community": 102,
       "norm_label": "gdscript function: _get_slide_around_obstacle(desired_direction: vector3) -> vec"
     },
     {
@@ -8510,7 +8510,7 @@
       "source_location": "L803",
       "_origin": "ast",
       "id": "architecture_rationale_803",
-      "community": 151,
+      "community": 152,
       "norm_label": "gdscript function: _update_vision_visual(can_see_player: bool) -> void"
     },
     {
@@ -8520,7 +8520,7 @@
       "source_location": "L807",
       "_origin": "ast",
       "id": "architecture_rationale_807",
-      "community": 141,
+      "community": 143,
       "norm_label": "gdscript function: take_damage(amount: int, hit_from: vector3 = vector3.zero, at"
     },
     {
@@ -8540,7 +8540,7 @@
       "source_location": "L815",
       "_origin": "ast",
       "id": "architecture_rationale_815",
-      "community": 72,
+      "community": 71,
       "norm_label": "gdscript function: _apply_knockback(hit_from: vector3) -> void"
     },
     {
@@ -8550,7 +8550,7 @@
       "source_location": "L819",
       "_origin": "ast",
       "id": "architecture_rationale_819",
-      "community": 142,
+      "community": 144,
       "norm_label": "gdscript function: take_hit(damage: int) -> void"
     },
     {
@@ -8570,7 +8570,7 @@
       "source_location": "L827",
       "_origin": "ast",
       "id": "architecture_rationale_827",
-      "community": 86,
+      "community": 11,
       "norm_label": "gdscript function: _detach_limbs_for_damage(damage_taken: int, killing_hit: bool"
     },
     {
@@ -8610,7 +8610,7 @@
       "source_location": "L843",
       "_origin": "ast",
       "id": "architecture_rationale_843",
-      "community": 85,
+      "community": 84,
       "norm_label": "gdscript function: _detach_limb_group(limb_key: string, force_pickup: bool = fal"
     },
     {
@@ -8620,7 +8620,7 @@
       "source_location": "L847",
       "_origin": "ast",
       "id": "architecture_rationale_847",
-      "community": 137,
+      "community": 138,
       "norm_label": "gdscript function: _spawn_detached_limb_piece(limb_key: string, force_pickup: bo"
     },
     {
@@ -8630,7 +8630,7 @@
       "source_location": "L851",
       "_origin": "ast",
       "id": "architecture_rationale_851",
-      "community": 73,
+      "community": 72,
       "norm_label": "gdscript function: _attach_pickup_to_detached_limb(body: rigidbody3d, pickup_bon"
     },
     {
@@ -8660,7 +8660,7 @@
       "source_location": "L863",
       "_origin": "ast",
       "id": "architecture_rationale_863",
-      "community": 135,
+      "community": 136,
       "norm_label": "gdscript function: _set_rig_limb_visible(limb_key: string, is_visible: bool) ->"
     },
     {
@@ -8670,7 +8670,7 @@
       "source_location": "L867",
       "_origin": "ast",
       "id": "architecture_rationale_867",
-      "community": 10,
+      "community": 104,
       "norm_label": "gdscript function: _has_lizard_torso_blocks() -> bool"
     },
     {
@@ -8680,7 +8680,7 @@
       "source_location": "L871",
       "_origin": "ast",
       "id": "architecture_rationale_871",
-      "community": 10,
+      "community": 134,
       "norm_label": "gdscript function: _set_lizard_torso_blocks_visible(is_visible: bool) -> void"
     },
     {
@@ -8700,7 +8700,7 @@
       "source_location": "L879",
       "_origin": "ast",
       "id": "architecture_rationale_879",
-      "community": 146,
+      "community": 148,
       "norm_label": "gdscript function: _update_crawl_state(force_refresh: bool = false) -> void"
     },
     {
@@ -8710,7 +8710,7 @@
       "source_location": "L887",
       "_origin": "ast",
       "id": "architecture_rationale_887",
-      "community": 84,
+      "community": 83,
       "norm_label": "gdscript function: _death_pop() -> void"
     },
     {
@@ -8740,7 +8740,7 @@
       "source_location": "L903",
       "_origin": "ast",
       "id": "architecture_rationale_903",
-      "community": 99,
+      "community": 98,
       "norm_label": "gdscript function: _get_respawn_delay() -> float"
     },
     {
@@ -8750,7 +8750,7 @@
       "source_location": "L907",
       "_origin": "ast",
       "id": "architecture_rationale_907",
-      "community": 138,
+      "community": 11,
       "norm_label": "gdscript function: _spawn_is_out_of_perspective() -> bool"
     },
     {
@@ -8770,7 +8770,7 @@
       "source_location": "L915",
       "_origin": "ast",
       "id": "architecture_rationale_915",
-      "community": 88,
+      "community": 86,
       "norm_label": "gdscript function: _facing_from_rotation() -> vector3"
     },
     {
@@ -8820,7 +8820,7 @@
       "source_location": "L935",
       "_origin": "ast",
       "id": "architecture_rationale_935",
-      "community": 87,
+      "community": 85,
       "norm_label": "gdscript function: _drop_standard_bone_pickup() -> void"
     },
     {
@@ -8830,7 +8830,7 @@
       "source_location": "L939",
       "_origin": "ast",
       "id": "architecture_rationale_939",
-      "community": 91,
+      "community": 90,
       "norm_label": "gdscript function: _force_limb_pickup_drop() -> bool"
     },
     {
@@ -8850,7 +8850,7 @@
       "source_location": "L947",
       "_origin": "ast",
       "id": "architecture_rationale_947",
-      "community": 10,
+      "community": 11,
       "norm_label": "gdscript function: _drop_remaining_limbs_on_death() -> void"
     },
     {
@@ -8860,7 +8860,7 @@
       "source_location": "L951",
       "_origin": "ast",
       "id": "architecture_rationale_951",
-      "community": 83,
+      "community": 82,
       "norm_label": "gdscript function: _choose_death_pickup_limb_key() -> string"
     },
     {
@@ -8870,7 +8870,7 @@
       "source_location": "L959",
       "_origin": "ast",
       "id": "architecture_rationale_959",
-      "community": 90,
+      "community": 89,
       "norm_label": "gdscript function: _flash_hit() -> void"
     },
     {
@@ -8880,7 +8880,7 @@
       "source_location": "L963",
       "_origin": "ast",
       "id": "architecture_rationale_963",
-      "community": 52,
+      "community": 11,
       "norm_label": "gdscript function: _set_enemy_color(new_color: color) -> void"
     },
     {
@@ -8890,7 +8890,7 @@
       "source_location": "L967",
       "_origin": "ast",
       "id": "architecture_rationale_967",
-      "community": 53,
+      "community": 52,
       "norm_label": "gdscript function: _setup_procedural_character() -> void"
     },
     {
@@ -8900,7 +8900,7 @@
       "source_location": "L971",
       "_origin": "ast",
       "id": "architecture_rationale_971",
-      "community": 148,
+      "community": 149,
       "norm_label": "gdscript function: _update_procedural_animation(delta: float) -> void"
     },
     {
@@ -8910,7 +8910,7 @@
       "source_location": "L975",
       "_origin": "ast",
       "id": "architecture_rationale_975",
-      "community": 94,
+      "community": 93,
       "norm_label": "gdscript function: _get_effective_move_speed() -> float"
     },
     {
@@ -8920,7 +8920,7 @@
       "source_location": "L979",
       "_origin": "ast",
       "id": "architecture_rationale_979",
-      "community": 136,
+      "community": 137,
       "norm_label": "gdscript function: _setup_ranged_bow_visual() -> void"
     },
     {
@@ -8940,7 +8940,7 @@
       "source_location": "L991",
       "_origin": "ast",
       "id": "architecture_rationale_991",
-      "community": 70,
+      "community": 69,
       "norm_label": "gdscript function: _apply_bone_identity() -> void"
     },
     {
@@ -8960,7 +8960,7 @@
       "source_location": "L1003",
       "_origin": "ast",
       "id": "architecture_rationale_1003",
-      "community": 54,
+      "community": 53,
       "norm_label": "gdscript function: _should_use_gorilla_profile() -> bool"
     },
     {
@@ -9000,7 +9000,7 @@
       "source_location": "L1023",
       "_origin": "ast",
       "id": "architecture_rationale_1023",
-      "community": 152,
+      "community": 153,
       "norm_label": "uses gameevents.drop_spawned."
     },
     {
@@ -9360,7 +9360,7 @@
       "source_location": "L1446",
       "_origin": "ast",
       "id": "architecture_rationale_1446",
-      "community": 157,
+      "community": 158,
       "norm_label": "gdscript function: _get_camera_relative_move_direction(input_vector: vector2) ->"
     },
     {
@@ -9380,7 +9380,7 @@
       "source_location": "L1454",
       "_origin": "ast",
       "id": "architecture_rationale_1454",
-      "community": 63,
+      "community": 62,
       "norm_label": "gdscript function: _try_attack() -> void"
     },
     {
@@ -9390,7 +9390,7 @@
       "source_location": "L1458",
       "_origin": "ast",
       "id": "architecture_rationale_1458",
-      "community": 163,
+      "community": 164,
       "norm_label": "gdscript function: _try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: f"
     },
     {
@@ -9420,7 +9420,7 @@
       "source_location": "L1474",
       "_origin": "ast",
       "id": "architecture_rationale_1474",
-      "community": 162,
+      "community": 163,
       "norm_label": "gdscript function: _toggle_bow_equipped() -> void"
     },
     {
@@ -9430,7 +9430,7 @@
       "source_location": "L1478",
       "_origin": "ast",
       "id": "architecture_rationale_1478",
-      "community": 154,
+      "community": 155,
       "norm_label": "gdscript function: _fire_player_projectile(forward: vector3, projectile_damage:"
     },
     {
@@ -9440,7 +9440,7 @@
       "source_location": "L1482",
       "_origin": "ast",
       "id": "architecture_rationale_1482",
-      "community": 159,
+      "community": 160,
       "norm_label": "gdscript function: _get_pointer_aim_direction(start_position: vector3, fallback_"
     },
     {
@@ -9480,7 +9480,7 @@
       "source_location": "L1502",
       "_origin": "ast",
       "id": "architecture_rationale_1502",
-      "community": 156,
+      "community": 157,
       "norm_label": "gdscript function: _get_bow_visual_parent() -> node3d"
     },
     {
@@ -9500,7 +9500,7 @@
       "source_location": "L1514",
       "_origin": "ast",
       "id": "architecture_rationale_1514",
-      "community": 160,
+      "community": 161,
       "norm_label": "gdscript function: _set_aim_reticle_visible(visible: bool) -> void"
     },
     {
@@ -9510,7 +9510,7 @@
       "source_location": "L1522",
       "_origin": "ast",
       "id": "architecture_rationale_1522",
-      "community": 155,
+      "community": 156,
       "norm_label": "gdscript function: _get_bow_charge_ratio() -> float"
     },
     {
@@ -9530,7 +9530,7 @@
       "source_location": "L1534",
       "_origin": "ast",
       "id": "architecture_rationale_1534",
-      "community": 164,
+      "community": 165,
       "norm_label": "gdscript function: _update_procedural_animation(delta: float, max_speed: float)"
     },
     {
@@ -9600,7 +9600,7 @@
       "source_location": "L1566",
       "_origin": "ast",
       "id": "architecture_rationale_1566",
-      "community": 59,
+      "community": 58,
       "norm_label": "gdscript function: get_inventory_stats_snapshot() -> dictionary"
     },
     {
@@ -9610,7 +9610,7 @@
       "source_location": "L1570",
       "_origin": "ast",
       "id": "architecture_rationale_1570",
-      "community": 161,
+      "community": 162,
       "norm_label": "gdscript function: take_player_damage(amount: int, from_position: vector3 = vect"
     },
     {
@@ -9630,7 +9630,7 @@
       "source_location": "L1578",
       "_origin": "ast",
       "id": "architecture_rationale_1578",
-      "community": 158,
+      "community": 159,
       "norm_label": "gdscript function: get_noise_radius() -> float"
     },
     {
@@ -9670,7 +9670,7 @@
       "source_location": "L1602",
       "_origin": "ast",
       "id": "architecture_rationale_1602",
-      "community": 61,
+      "community": 60,
       "norm_label": "gdscript function: show_bone_info(bone_id: string) -> void"
     },
     {
@@ -9680,7 +9680,7 @@
       "source_location": "L1610",
       "_origin": "ast",
       "id": "architecture_rationale_1610",
-      "community": 58,
+      "community": 57,
       "norm_label": "gdscript function: get_equipment_socket_for_slot(slot: string) -> node3d"
     },
     {
@@ -9710,7 +9710,7 @@
       "source_location": "L1630",
       "_origin": "ast",
       "id": "architecture_rationale_1630",
-      "community": 153,
+      "community": 154,
       "norm_label": "gdscript function: _find_stealth_target() -> node3d"
     },
     {
@@ -9720,7 +9720,7 @@
       "source_location": "L1634",
       "_origin": "ast",
       "id": "architecture_rationale_1634",
-      "community": 57,
+      "community": 56,
       "norm_label": "gdscript function: enter_interact_range() -> void"
     },
     {
@@ -9730,7 +9730,7 @@
       "source_location": "L1642",
       "_origin": "ast",
       "id": "architecture_rationale_1642",
-      "community": 56,
+      "community": 55,
       "norm_label": "gdscript function: enter_bone_pickup_range() -> void"
     },
     {
@@ -9740,7 +9740,7 @@
       "source_location": "L1650",
       "_origin": "ast",
       "id": "architecture_rationale_1650",
-      "community": 60,
+      "community": 59,
       "norm_label": "gdscript function: get_inventory_tile_size() -> vector2"
     },
     {
@@ -9750,7 +9750,7 @@
       "source_location": "L1670",
       "_origin": "ast",
       "id": "architecture_rationale_1670",
-      "community": 62,
+      "community": 61,
       "norm_label": "gdscript function: _toggle_inventory() -> void"
     },
     {
@@ -9920,7 +9920,7 @@
       "source_location": "L1804",
       "_origin": "ast",
       "id": "architecture_rationale_1804",
-      "community": 65,
+      "community": 64,
       "norm_label": "gdscript function: setup(player: node) -> void"
     },
     {
@@ -9970,7 +9970,7 @@
       "source_location": "L1856",
       "_origin": "ast",
       "id": "architecture_rationale_1856",
-      "community": 64,
+      "community": 63,
       "norm_label": "gdscript function: _notify_equipment_changed() -> void"
     },
     {
@@ -10040,7 +10040,7 @@
       "source_location": "L1978",
       "_origin": "ast",
       "id": "architecture_rationale_1978",
-      "community": 202,
+      "community": 203,
       "norm_label": "gdscript function: set_open(open: bool) -> void"
     },
     {
@@ -10070,7 +10070,7 @@
       "source_location": "L2034",
       "_origin": "ast",
       "id": "architecture_rationale_2034",
-      "community": 178,
+      "community": 179,
       "norm_label": "gdscript function: _build_inventory_ui() -> void"
     },
     {
@@ -10080,7 +10080,7 @@
       "source_location": "L2038",
       "_origin": "ast",
       "id": "architecture_rationale_2038",
-      "community": 180,
+      "community": 181,
       "norm_label": "gdscript function: _build_right_inventory_panel() -> void"
     },
     {
@@ -10090,7 +10090,7 @@
       "source_location": "L2042",
       "_origin": "ast",
       "id": "architecture_rationale_2042",
-      "community": 176,
+      "community": 177,
       "norm_label": "gdscript function: _build_inventory_blur_layer() -> colorrect"
     },
     {
@@ -10100,7 +10100,7 @@
       "source_location": "L2046",
       "_origin": "ast",
       "id": "architecture_rationale_2046",
-      "community": 177,
+      "community": 178,
       "norm_label": "gdscript function: _build_inventory_tabs(parent: vboxcontainer) -> void"
     },
     {
@@ -10110,7 +10110,7 @@
       "source_location": "L2050",
       "_origin": "ast",
       "id": "architecture_rationale_2050",
-      "community": 166,
+      "community": 167,
       "norm_label": "gdscript function: _add_inventory_tab(parent: hboxcontainer, category: string, t"
     },
     {
@@ -10120,7 +10120,7 @@
       "source_location": "L2054",
       "_origin": "ast",
       "id": "architecture_rationale_2054",
-      "community": 198,
+      "community": 199,
       "norm_label": "gdscript function: _select_inventory_category(category: string) -> void"
     },
     {
@@ -10130,7 +10130,7 @@
       "source_location": "L2058",
       "_origin": "ast",
       "id": "architecture_rationale_2058",
-      "community": 67,
+      "community": 66,
       "norm_label": "gdscript function: _refresh_inventory_tabs() -> void"
     },
     {
@@ -10140,7 +10140,7 @@
       "source_location": "L2066",
       "_origin": "ast",
       "id": "architecture_rationale_2066",
-      "community": 193,
+      "community": 194,
       "norm_label": "gdscript function: _queue_inventory_responsive_layout() -> void"
     },
     {
@@ -10150,7 +10150,7 @@
       "source_location": "L2070",
       "_origin": "ast",
       "id": "architecture_rationale_2070",
-      "community": 169,
+      "community": 170,
       "norm_label": "gdscript function: _apply_inventory_responsive_layout() -> void"
     },
     {
@@ -10170,7 +10170,7 @@
       "source_location": "L2078",
       "_origin": "ast",
       "id": "architecture_rationale_2078",
-      "community": 170,
+      "community": 171,
       "norm_label": "gdscript function: _apply_paper_doll_responsive_layout(doll_scale: float) -> voi"
     },
     {
@@ -10180,7 +10180,7 @@
       "source_location": "L2082",
       "_origin": "ast",
       "id": "architecture_rationale_2082",
-      "community": 168,
+      "community": 169,
       "norm_label": "gdscript function: _apply_footer_responsive_layout(content_width: int, very_comp"
     },
     {
@@ -10190,7 +10190,7 @@
       "source_location": "L2086",
       "_origin": "ast",
       "id": "architecture_rationale_2086",
-      "community": 201,
+      "community": 202,
       "norm_label": "gdscript function: _set_margin(container: margincontainer, left: int, top: int,"
     },
     {
@@ -10200,7 +10200,7 @@
       "source_location": "L2090",
       "_origin": "ast",
       "id": "architecture_rationale_2090",
-      "community": 181,
+      "community": 182,
       "norm_label": "gdscript function: _build_settings_panel() -> scrollcontainer"
     },
     {
@@ -10210,7 +10210,7 @@
       "source_location": "L2094",
       "_origin": "ast",
       "id": "architecture_rationale_2094",
-      "community": 175,
+      "community": 176,
       "norm_label": "gdscript function: _build_control_binding_row(action: string, label_text: string"
     },
     {
@@ -10220,7 +10220,7 @@
       "source_location": "L2098",
       "_origin": "ast",
       "id": "architecture_rationale_2098",
-      "community": 165,
+      "community": 166,
       "norm_label": "gdscript function: _add_footer_hint(parent: hboxcontainer, key_text: string, act"
     },
     {
@@ -10230,7 +10230,7 @@
       "source_location": "L2102",
       "_origin": "ast",
       "id": "architecture_rationale_2102",
-      "community": 191,
+      "community": 192,
       "norm_label": "gdscript function: _make_rule() -> colorrect"
     },
     {
@@ -10240,7 +10240,7 @@
       "source_location": "L2106",
       "_origin": "ast",
       "id": "architecture_rationale_2106",
-      "community": 189,
+      "community": 190,
       "norm_label": "gdscript function: _make_inventory_style(bg: color, border: color, border_width:"
     },
     {
@@ -10250,7 +10250,7 @@
       "source_location": "L2110",
       "_origin": "ast",
       "id": "architecture_rationale_2110",
-      "community": 188,
+      "community": 189,
       "norm_label": "gdscript function: _make_empty_inventory_slot() -> control"
     },
     {
@@ -10280,7 +10280,7 @@
       "source_location": "L2122",
       "_origin": "ast",
       "id": "architecture_rationale_2122",
-      "community": 190,
+      "community": 191,
       "norm_label": "gdscript function: _make_preview_room_box(name: string, size: vector3, position:"
     },
     {
@@ -10290,7 +10290,7 @@
       "source_location": "L2126",
       "_origin": "ast",
       "id": "architecture_rationale_2126",
-      "community": 203,
+      "community": 204,
       "norm_label": "gdscript function: sync_preview() -> void"
     },
     {
@@ -10300,7 +10300,7 @@
       "source_location": "L2130",
       "_origin": "ast",
       "id": "architecture_rationale_2130",
-      "community": 179,
+      "community": 180,
       "norm_label": "gdscript function: _build_paper_doll() -> control"
     },
     {
@@ -10310,7 +10310,7 @@
       "source_location": "L2134",
       "_origin": "ast",
       "id": "architecture_rationale_2134",
-      "community": 192,
+      "community": 193,
       "norm_label": "gdscript function: _place_slot(doll: control, slot: string, short_name: string,"
     },
     {
@@ -10320,7 +10320,7 @@
       "source_location": "L2138",
       "_origin": "ast",
       "id": "architecture_rationale_2138",
-      "community": 171,
+      "community": 172,
       "norm_label": "gdscript function: _begin_rebinding(action: string, button: button) -> void"
     },
     {
@@ -10340,7 +10340,7 @@
       "source_location": "L2146",
       "_origin": "ast",
       "id": "architecture_rationale_2146",
-      "community": 167,
+      "community": 168,
       "norm_label": "gdscript function: _apply_control_binding(action: string, raw_event: inputevent)"
     },
     {
@@ -10350,7 +10350,7 @@
       "source_location": "L2150",
       "_origin": "ast",
       "id": "architecture_rationale_2150",
-      "community": 187,
+      "community": 188,
       "norm_label": "gdscript function: _is_bindable_control_event(event: inputevent) -> bool"
     },
     {
@@ -10360,7 +10360,7 @@
       "source_location": "L2154",
       "_origin": "ast",
       "id": "architecture_rationale_2154",
-      "community": 182,
+      "community": 183,
       "norm_label": "gdscript function: _clean_control_event(raw_event: inputevent) -> inputevent"
     },
     {
@@ -10370,7 +10370,7 @@
       "source_location": "L2158",
       "_origin": "ast",
       "id": "architecture_rationale_2158",
-      "community": 196,
+      "community": 197,
       "norm_label": "gdscript function: _remove_control_event_from_other_actions(target_action: strin"
     },
     {
@@ -10380,7 +10380,7 @@
       "source_location": "L2162",
       "_origin": "ast",
       "id": "architecture_rationale_2162",
-      "community": 183,
+      "community": 184,
       "norm_label": "gdscript function: _control_events_match(a: inputevent, b: inputevent) -> bool"
     },
     {
@@ -10390,7 +10390,7 @@
       "source_location": "L2166",
       "_origin": "ast",
       "id": "architecture_rationale_2166",
-      "community": 186,
+      "community": 187,
       "norm_label": "gdscript function: _find_control_event_owner(event: inputevent, target_action: s"
     },
     {
@@ -10400,7 +10400,7 @@
       "source_location": "L2170",
       "_origin": "ast",
       "id": "architecture_rationale_2170",
-      "community": 195,
+      "community": 196,
       "norm_label": "gdscript function: _refresh_control_buttons() -> void"
     },
     {
@@ -10410,7 +10410,7 @@
       "source_location": "L2174",
       "_origin": "ast",
       "id": "architecture_rationale_2174",
-      "community": 172,
+      "community": 173,
       "norm_label": "gdscript function: _binding_text(action: string) -> string"
     },
     {
@@ -10430,7 +10430,7 @@
       "source_location": "L2182",
       "_origin": "ast",
       "id": "architecture_rationale_2182",
-      "community": 184,
+      "community": 185,
       "norm_label": "gdscript function: _control_label(action: string) -> string"
     },
     {
@@ -10440,7 +10440,7 @@
       "source_location": "L2186",
       "_origin": "ast",
       "id": "architecture_rationale_2186",
-      "community": 66,
+      "community": 65,
       "norm_label": "gdscript function: _save_control_settings() -> void"
     },
     {
@@ -10450,7 +10450,7 @@
       "source_location": "L2194",
       "_origin": "ast",
       "id": "architecture_rationale_2194",
-      "community": 185,
+      "community": 186,
       "norm_label": "gdscript function: _event_from_config(config: configfile, action: string) -> inp"
     },
     {
@@ -10460,7 +10460,7 @@
       "source_location": "L2198",
       "_origin": "ast",
       "id": "architecture_rationale_2198",
-      "community": 197,
+      "community": 198,
       "norm_label": "gdscript function: _reset_control_defaults() -> void"
     },
     {
@@ -10470,7 +10470,7 @@
       "source_location": "L2202",
       "_origin": "ast",
       "id": "architecture_rationale_2202",
-      "community": 199,
+      "community": 200,
       "norm_label": "gdscript function: _set_default_control_key(action: string, keycode: int) -> voi"
     },
     {
@@ -10480,7 +10480,7 @@
       "source_location": "L2206",
       "_origin": "ast",
       "id": "architecture_rationale_2206",
-      "community": 200,
+      "community": 201,
       "norm_label": "gdscript function: _set_default_control_mouse(action: string, button_index: int)"
     },
     {
@@ -10490,7 +10490,7 @@
       "source_location": "L2210",
       "_origin": "ast",
       "id": "architecture_rationale_2210",
-      "community": 194,
+      "community": 195,
       "norm_label": "gdscript function: rebuild_item_tiles() -> void"
     },
     {
@@ -10500,7 +10500,7 @@
       "source_location": "L2214",
       "_origin": "ast",
       "id": "architecture_rationale_2214",
-      "community": 174,
+      "community": 175,
       "norm_label": "gdscript function: _bone_matches_inventory_category(bone_id: string) -> bool"
     },
     {
@@ -10510,7 +10510,7 @@
       "source_location": "L2222",
       "_origin": "ast",
       "id": "architecture_rationale_2222",
-      "community": 173,
+      "community": 174,
       "norm_label": "gdscript function: _bone_inventory() -> array"
     },
     {
@@ -10700,7 +10700,7 @@
       "source_location": "L2395",
       "_origin": "ast",
       "id": "architecture_rationale_2395",
-      "community": 220,
+      "community": 221,
       "norm_label": "gdscript function: update_from_player(delta: float, velocity: vector3, max_speed"
     },
     {
@@ -10710,7 +10710,7 @@
       "source_location": "L2403",
       "_origin": "ast",
       "id": "architecture_rationale_2403",
-      "community": 216,
+      "community": 217,
       "norm_label": "gdscript function: set_aiming(enabled: bool) -> void"
     },
     {
@@ -10720,7 +10720,7 @@
       "source_location": "L2407",
       "_origin": "ast",
       "id": "architecture_rationale_2407",
-      "community": 217,
+      "community": 218,
       "norm_label": "gdscript function: set_crawl_mode(enabled: bool) -> void"
     },
     {
@@ -10730,7 +10730,7 @@
       "source_location": "L2411",
       "_origin": "ast",
       "id": "architecture_rationale_2411",
-      "community": 218,
+      "community": 219,
       "norm_label": "gdscript function: set_lizard_wall_climb_blend(blend: float) -> void"
     },
     {
@@ -10740,7 +10740,7 @@
       "source_location": "L2415",
       "_origin": "ast",
       "id": "architecture_rationale_2415",
-      "community": 212,
+      "community": 213,
       "norm_label": "gdscript function: _capture_rest() -> void"
     },
     {
@@ -10750,7 +10750,7 @@
       "source_location": "L2419",
       "_origin": "ast",
       "id": "architecture_rationale_2419",
-      "community": 68,
+      "community": 67,
       "norm_label": "gdscript function: _get_rest_pos(key: string) -> vector3"
     },
     {
@@ -10760,7 +10760,7 @@
       "source_location": "L2427",
       "_origin": "ast",
       "id": "architecture_rationale_2427",
-      "community": 211,
+      "community": 212,
       "norm_label": "gdscript function: _calculate_weight(equipped_defs: array) -> float"
     },
     {
@@ -10780,7 +10780,7 @@
       "source_location": "L2439",
       "_origin": "ast",
       "id": "architecture_rationale_2439",
-      "community": 204,
+      "community": 205,
       "norm_label": "gdscript function: _animate_crawl_body() -> void"
     },
     {
@@ -10790,7 +10790,7 @@
       "source_location": "L2443",
       "_origin": "ast",
       "id": "architecture_rationale_2443",
-      "community": 205,
+      "community": 206,
       "norm_label": "gdscript function: _animate_crawl_limbs() -> void"
     },
     {
@@ -10800,7 +10800,7 @@
       "source_location": "L2451",
       "_origin": "ast",
       "id": "architecture_rationale_2451",
-      "community": 208,
+      "community": 209,
       "norm_label": "gdscript function: _animate_lizard_torso_blocks(sway: float, breath: float, base"
     },
     {
@@ -10810,7 +10810,7 @@
       "source_location": "L2455",
       "_origin": "ast",
       "id": "architecture_rationale_2455",
-      "community": 219,
+      "community": 220,
       "norm_label": "gdscript function: _swing(key: string, angle: float) -> void"
     },
     {
@@ -10820,7 +10820,7 @@
       "source_location": "L2463",
       "_origin": "ast",
       "id": "architecture_rationale_2463",
-      "community": 214,
+      "community": 215,
       "norm_label": "gdscript function: _joint_phase(key: string) -> float"
     },
     {
@@ -10830,7 +10830,7 @@
       "source_location": "L2471",
       "_origin": "ast",
       "id": "architecture_rationale_2471",
-      "community": 221,
+      "community": 222,
       "norm_label": "gdscript function: _wobble_phase(key: string) -> float"
     },
     {
@@ -10840,7 +10840,7 @@
       "source_location": "L2475",
       "_origin": "ast",
       "id": "architecture_rationale_2475",
-      "community": 69,
+      "community": 68,
       "norm_label": "gdscript function: _update_aim_overlay(delta: float) -> void"
     },
     {
@@ -10850,7 +10850,7 @@
       "source_location": "L2479",
       "_origin": "ast",
       "id": "architecture_rationale_2479",
-      "community": 209,
+      "community": 210,
       "norm_label": "gdscript function: _apply_aim_overlay() -> void"
     },
     {
@@ -10860,7 +10860,7 @@
       "source_location": "L2487",
       "_origin": "ast",
       "id": "architecture_rationale_2487",
-      "community": 210,
+      "community": 211,
       "norm_label": "gdscript function: _apply_attack_overlay() -> void"
     },
     {
@@ -10870,7 +10870,7 @@
       "source_location": "L2491",
       "_origin": "ast",
       "id": "architecture_rationale_2491",
-      "community": 207,
+      "community": 208,
       "norm_label": "gdscript function: _animate_feet(delta: float) -> void"
     },
     {
@@ -10880,7 +10880,7 @@
       "source_location": "L2495",
       "_origin": "ast",
       "id": "architecture_rationale_2495",
-      "community": 215,
+      "community": 216,
       "norm_label": "gdscript function: _place_foot(space: physicsdirectspacestate3d, key: string, de"
     },
     {
@@ -10890,7 +10890,7 @@
       "source_location": "L2499",
       "_origin": "ast",
       "id": "architecture_rationale_2499",
-      "community": 213,
+      "community": 214,
       "norm_label": "gdscript function: _find_body() -> node3d"
     },
     {
@@ -10900,7 +10900,7 @@
       "source_location": "L2503",
       "_origin": "ast",
       "id": "architecture_rationale_2503",
-      "community": 206,
+      "community": 207,
       "norm_label": "gdscript function: _animate_facing(delta: float, facing_direction: vector3) -> v"
     },
     {
@@ -27025,5 +27025,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "e8c0902cfd89df15eff3dba17c59f5a5269eb0ec"
+  "built_at_commit": "2fe6188e88983e4ee0e7799229848d9d378d5b6a"
 }
