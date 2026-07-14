@@ -145,7 +145,7 @@ Consumers:
 
 `PlayerInventoryUI`:
 - owns inventory UI layout, tabs, responsive sizing, settings screen, item grid, paper doll, and preview rig.
-- renders the character preview inside an isolated `SubViewport` world, separate from the playable world.
+- renders the character preview inside an isolated `SubViewport` world with a dedicated room backdrop, separate from the playable world.
 - receives inventory data through player snapshot methods instead of reaching into player state directly.
 - calls player commands such as `equip_bone` and `unequip_slot` only when the user performs equip actions.
 - filters equipped copies by count so duplicate bone ids can remain as separate inventory tiles.

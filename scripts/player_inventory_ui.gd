@@ -805,7 +805,7 @@ func _build_character_preview_panel() -> Control:
 
 	inventory_preview_viewport = SubViewport.new()
 	inventory_preview_viewport.size = Vector2i(210, 276)
-	inventory_preview_viewport.transparent_bg = true
+	inventory_preview_viewport.transparent_bg = false
 	inventory_preview_viewport.world_3d = World3D.new()
 	inventory_preview_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	inventory_preview_container.add_child(inventory_preview_viewport)
@@ -815,24 +815,26 @@ func _build_character_preview_panel() -> Control:
 	inventory_preview_viewport.add_child(preview_scene)
 	inventory_preview_root = preview_scene
 
+	_build_preview_room(preview_scene)
+
 	var light := DirectionalLight3D.new()
 	light.name = "PreviewLight"
-	light.rotation_degrees = Vector3(-38.0, 28.0, 0.0)
-	light.light_energy = 1.9
+	light.rotation_degrees = Vector3(-44.0, 30.0, 0.0)
+	light.light_energy = 2.1
 	preview_scene.add_child(light)
 
 	var fill_light := OmniLight3D.new()
 	fill_light.name = "PreviewFillLight"
-	fill_light.position = Vector3(0.0, 0.9, 1.4)
-	fill_light.light_energy = 0.45
-	fill_light.omni_range = 3.0
+	fill_light.position = Vector3(0.0, 1.25, 1.6)
+	fill_light.light_energy = 0.65
+	fill_light.omni_range = 4.0
 	preview_scene.add_child(fill_light)
 
 	var rig_holder := Node3D.new()
 	rig_holder.name = "PreviewRigHolder"
-	rig_holder.position = Vector3(0.0, -0.34, 0.0)
+	rig_holder.position = Vector3(0.0, 0.0, 0.0)
 	rig_holder.rotation_degrees = Vector3(0.0, 180.0, 0.0)
-	rig_holder.scale = Vector3.ONE * 1.58
+	rig_holder.scale = Vector3.ONE * 1.08
 	preview_scene.add_child(rig_holder)
 
 	inventory_preview_rig = ModularSkeletonRig.new()
@@ -841,14 +843,41 @@ func _build_character_preview_panel() -> Control:
 
 	var camera := Camera3D.new()
 	camera.name = "PreviewCamera"
-	camera.position = Vector3(0.0, 0.72, 3.05)
-	camera.fov = 34.0
-	camera.look_at(Vector3(0.0, 0.10, 0.0), Vector3.UP)
+	camera.position = Vector3(0.0, 0.10, 4.15)
+	camera.fov = 36.0
+	camera.look_at(Vector3(0.0, -0.08, 0.0), Vector3.UP)
 	camera.current = true
 	preview_scene.add_child(camera)
 
 	call_deferred("sync_preview")
 	return inventory_preview_container
+
+
+func _build_preview_room(parent: Node3D) -> void:
+	var room_root := Node3D.new()
+	room_root.name = "PreviewRoom"
+	parent.add_child(room_root)
+
+	room_root.add_child(_make_preview_room_box("PreviewFloor", Vector3(3.2, 0.05, 3.4), Vector3(0.0, -1.08, -0.10), Color(0.78, 0.70, 0.55, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewBackWall", Vector3(3.2, 2.7, 0.06), Vector3(0.0, 0.12, -1.45), Color(0.93, 0.90, 0.80, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewLeftWall", Vector3(0.06, 2.7, 3.2), Vector3(-1.62, 0.12, -0.05), Color(0.88, 0.84, 0.73, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewRightWall", Vector3(0.06, 2.7, 3.2), Vector3(1.62, 0.12, -0.05), Color(0.88, 0.84, 0.73, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewBaseLine", Vector3(2.3, 0.035, 0.035), Vector3(0.0, -1.02, -1.38), Color(0.64, 0.45, 0.18, 1.0)))
+
+
+func _make_preview_room_box(name: String, size: Vector3, position: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = name
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mesh_instance.mesh = mesh
+	mesh_instance.position = position
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.82
+	mesh_instance.material_override = material
+	return mesh_instance
 
 
 func sync_preview() -> void:

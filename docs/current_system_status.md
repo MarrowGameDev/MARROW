@@ -11,8 +11,9 @@ refactor pass.
   `equipped`.
 - Equipped copies are filtered out of the carried item grid, while duplicate
   bone ids can remain as separate inventory copies.
-- The character preview is rendered in an isolated `SubViewport` world so the
-  preview clone stays outside the playable world.
+- The character preview is rendered in an isolated `SubViewport` world with its
+  own small room backdrop, so the preview clone stays outside the playable
+  world and can be framed independently.
 
 ## Combat
 
