@@ -150,6 +150,17 @@
 - `EnemyBonus`
 - `ExitPortal`
 
+## scenes/main_menu.tscn
+
+### Attached Scripts
+- `scripts/main_menu.gd`
+
+### Instanced Scenes
+- none
+
+### Nodes
+- `MainMenu`
+
 ## scenes/open_world_stage.tscn
 
 ### Attached Scripts
@@ -221,4 +232,20 @@
 - `VisualRoot`
 - `ModularSkeletonRig`
 - `ProceduralAnimator`
+
+## scenes/testing_environment.tscn
+
+### Attached Scripts
+- `scripts/testing_environment.gd`
+
+### Instanced Scenes
+- none
+
+### Nodes
+- `TestingEnvironment`
+- `EnemySpawnPoints`
+- `NormalSpawn`
+- `GorillaSpawn`
+- `LizardSpawn`
+- `RangedSpawn`
 

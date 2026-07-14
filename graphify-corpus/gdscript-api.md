@@ -62,6 +62,7 @@
 - `help_label`
 - `win_root`
 - `win_label`
+- `current_tutorial_priority`
 - `canvas`
 - `panel`
 - `margin`
@@ -72,7 +73,6 @@
 - `swaps`
 - `stats`
 - `names_text`
-- `t`
 - `backdrop`
 - `center`
 
@@ -84,13 +84,20 @@
 - `_open_exit() -> void`
 - `_build_goal_ui() -> void`
 - `_update_goal_ui() -> void`
+- `_emit_objective_updated() -> void`
+- `_objective_body() -> String`
 - `complete_level(player: Node) -> void`
 - `game_over(_player: Node = null) -> void`
 - `_on_trial_completed(trial_id: String, trial_name: String) -> void`
 - `_on_exit_reached(player: Node) -> void`
 - `_on_player_died(player: Node) -> void`
+- `_on_objective_updated(source: Node, _objective_id: String, title: String, body: String) -> void`
+- `_on_tutorial_hint_requested(_source: Node, _hint_id: String, text: String, _priority: int) -> void`
+- `_on_bone_collected(bone_id: String, _collector: Node) -> void`
+- `_on_camp_state_changed(camp: Node, unlocked: bool, opened: bool, _remaining_enemies: int) -> void`
 - `_show_win_screen(player: Node, elapsed_ms: int) -> void`
 - `_build_help_ui() -> void`
+- `_default_help_text() -> String`
 - `_build_win_ui() -> void`
 
 ### Resource Dependencies
@@ -100,6 +107,10 @@
 - `trial_completed`
 - `exit_reached`
 - `player_died`
+- `objective_updated`
+- `tutorial_hint_requested`
+- `bone_collected`
+- `camp_state_changed`
 
 ### Input Actions
 - none
@@ -245,7 +256,8 @@
 - none
 
 ### GameEvents Usage
-- none
+- `pickup_focus_changed`
+- `pickup_collected`
 
 ### Input Actions
 - none
@@ -430,11 +442,6 @@
 - `sphere`
 - `percent`
 - `count`
-- `events`
-- `event`
-- `key_event`
-- `key_name`
-- `mouse_event`
 - `material`
 
 ### Functions
@@ -442,6 +449,8 @@
 - `register_enemy(enemy: Node) -> void`
 - `_process(delta: float) -> void`
 - `_update_state() -> void`
+- `_on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void`
+- `_emit_camp_state_changed() -> void`
 - `_open_chest() -> void`
 - `_on_chest_body_entered(body: Node3D) -> void`
 - `_on_chest_body_exited(body: Node3D) -> void`
@@ -453,17 +462,18 @@
 - `_update_chest_visual() -> void`
 - `_update_label() -> void`
 - `_remaining_enemy_count() -> int`
-- `_action_binding_text(action: String) -> String`
 - `_make_material(color: Color, glowing: bool = false) -> StandardMaterial3D`
 
 ### Resource Dependencies
 - none
 
 ### GameEvents Usage
+- `enemy_defeated`
+- `camp_state_changed`
 - `camp_chest_opened`
 
 ### Input Actions
-- `interact`
+- none
 
 ### Node Path Lookups
 - none
@@ -592,6 +602,7 @@
 - `lizard_saliva_speed`
 - `lizard_saliva_gravity`
 - `lizard_wall_climb_probe_distance`
+- `lizard_wall_climb_speed`
 - `lizard_wall_climb_blend_speed`
 - `bone_recovery_enabled`
 - `bone_recovery_safe_delay`
@@ -678,8 +689,9 @@
 - `_physics_process(delta: float) -> void`
 - `_get_player() -> Node3D`
 - `_player_is_dead(player: Node) -> bool`
-- `_apply_enemy_movement(delta: float) -> void`
-- `_is_wall_phasing_lizard() -> bool`
+- `_apply_enemy_movement() -> void`
+- `_is_lizard_wall_climb_enabled() -> bool`
+- `_apply_lizard_wall_climb_velocity() -> void`
 - `_update_lizard_wall_climb_blend(delta: float) -> void`
 - `_lizard_wall_probe_blocked() -> bool`
 - `_try_attack_player(player: Node) -> void`
@@ -793,7 +805,8 @@
 - `scripts/arrow_projectile.gd`
 
 ### GameEvents Usage
-- none
+- `drop_spawned`
+- `enemy_defeated`
 
 ### Input Actions
 - none
@@ -957,11 +970,20 @@
 - `bone_collected(bone_id: String, collector: Node)`
 - `bone_equipped(bone_id: String, slot: String, player: Node)`
 - `bone_unequipped(bone_id: String, slot: String, player: Node)`
+- `inventory_changed(player: Node, items: Array, stats: Dictionary)`
+- `inventory_open_changed(player: Node, is_open: bool)`
+- `pickup_focus_changed(pickup: Node, bone_id: String, player: Node, in_range: bool)`
+- `pickup_collected(bone_id: String, pickup: Node, collector: Node)`
+- `drop_spawned(bone_id: String, pickup: Node, source: Node)`
+- `enemy_defeated(enemy: Node, dropped_bone_id: String)`
 - `player_died(player: Node)`
 - `trial_completed(trial_id: String, trial_name: String)`
 - `exit_reached(player: Node)`
 - `stage_entered(stage: Node)`
 - `stage_exited(stage: Node)`
+- `objective_updated(source: Node, objective_id: String, title: String, body: String)`
+- `tutorial_hint_requested(source: Node, hint_id: String, text: String, priority: int)`
+- `camp_state_changed(camp: Node, unlocked: bool, opened: bool, remaining_enemies: int)`
 - `camp_chest_opened(camp: Node, reward_bone_id: String, player: Node)`
 
 ### Exported Tuning
@@ -1083,13 +1105,59 @@
 - none
 
 ### GameEvents Usage
-- none
+- `pickup_focus_changed`
+- `pickup_collected`
 
 ### Input Actions
 - none
 
 ### Node Path Lookups
 - `PromptLabel`
+
+## main_menu
+
+- Source file: `scripts/main_menu.gd`
+- Extends: `Control`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `DEMO_SCENE_PATH`
+- `TESTING_SCENE_PATH`
+
+### Key Variables
+- `backdrop`
+- `panel`
+- `margin`
+- `layout`
+- `title`
+- `subtitle`
+- `hint`
+- `button`
+
+### Functions
+- `_ready() -> void`
+- `_build_menu() -> void`
+- `_make_menu_button(text: String, callback: Callable) -> Button`
+- `_open_demo() -> void`
+- `_open_testing_environment() -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
 
 ## open_world_stage
 
@@ -1297,7 +1365,9 @@
 - `scripts/arrow_projectile.gd`
 
 ### GameEvents Usage
+- `inventory_changed`
 - `player_died`
+- `inventory_open_changed`
 
 ### Input Actions
 - `ui_cancel`
@@ -1430,8 +1500,6 @@
 - `socket`
 - `visual`
 - `rig_value`
-- `inventory_ui_value`
-- `inventory_ui`
 - `mesh`
 - `material`
 - `raw_material`
@@ -1451,6 +1519,8 @@
 - `_get_player_rig() -> ModularSkeletonRig`
 - `_recalculate_owner_stats() -> void`
 - `_notify_equipment_changed() -> void`
+- `_get_inventory_items() -> Array`
+- `_get_run_stats() -> Dictionary`
 - `_tint_visual(visual: Node3D, color: Color) -> void`
 - `_tint_visual_mesh(visual: Node3D, mesh_name: String, color: Color) -> void`
 
@@ -1460,6 +1530,7 @@
 ### GameEvents Usage
 - `bone_equipped`
 - `bone_unequipped`
+- `inventory_changed`
 
 ### Input Actions
 - none
@@ -1488,8 +1559,6 @@
 - `bone_inventory`
 - `equip_cursor`
 - `bone_id`
-- `inventory_ui_value`
-- `inventory_ui`
 
 ### Functions
 - `setup(player: Node, equipment: PlayerEquipmentComponent = null) -> void`
@@ -1505,6 +1574,7 @@
 
 ### GameEvents Usage
 - `bone_collected`
+- `inventory_changed`
 
 ### Input Actions
 - none
@@ -1578,6 +1648,9 @@
 - `cycle_category() -> void`
 - `notify_inventory_changed() -> void`
 - `notify_equipment_changed() -> void`
+- `_on_inventory_changed(event_player: Node, _items: Array, _stats: Dictionary) -> void`
+- `_on_bone_equipped(_bone_id: String, _slot: String, event_player: Node) -> void`
+- `_on_bone_unequipped(_bone_id: String, _slot: String, event_player: Node) -> void`
 - `get_inventory_tile_size() -> Vector2`
 - `has_bone_equipped(bone_id: String) -> bool`
 - `equip_bone(bone_id: String) -> void`
@@ -1641,7 +1714,9 @@
 - `scripts/ui_inventory_empty_slot.gd`
 
 ### GameEvents Usage
-- none
+- `inventory_changed`
+- `bone_equipped`
+- `bone_unequipped`
 
 ### Input Actions
 - none
@@ -1987,6 +2062,86 @@
 ### Node Path Lookups
 - none
 
+## testing_environment
+
+- Source file: `scripts/testing_environment.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `spawn_player_on_ready`
+- `spawn_initial_enemies`
+- `keep_enemy_respawn_disabled`
+
+### Constants
+- `MAIN_MENU_PATH`
+- `PLAYER_SCENE`
+- `ENEMY_SCENE`
+
+### Key Variables
+- `player`
+- `enemy_spawn_root`
+- `live_enemies`
+- `spawn_cursor`
+- `enemy_serial`
+- `status_label`
+- `environment`
+- `env`
+- `sun`
+- `body`
+- `mesh_instance`
+- `mesh`
+- `collision`
+- `shape`
+- `material`
+- `marker`
+- `profile`
+- `markers`
+- `spawn_position`
+- `enemy`
+- `enemy_body`
+- `canvas`
+- `panel`
+- `margin`
+- `alive_count`
+
+### Functions
+- `_ready() -> void`
+- `_unhandled_input(event: InputEvent) -> void`
+- `_build_world() -> void`
+- `_make_box(box_name: String, pos: Vector3, size: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> StaticBody3D`
+- `_make_material(color: Color) -> StandardMaterial3D`
+- `_find_or_create_spawn_root() -> void`
+- `_add_spawn_marker(marker_name: String, pos: Vector3, profile: String) -> void`
+- `_spawn_player() -> void`
+- `_seed_testing_inventory() -> void`
+- `_spawn_initial_enemy_set() -> void`
+- `_spawn_enemy_at_next_marker(profile: String) -> void`
+- `_spawn_markers() -> Array[Marker3D]`
+- `_spawn_enemy(profile: String, pos: Vector3) -> void`
+- `_apply_profile(enemy: Node, profile: String) -> void`
+- `_bone_for_profile(profile: String) -> String`
+- `_remove_latest_enemy() -> void`
+- `_on_enemy_defeated(_enemy: Node, _dropped_bone_id: String) -> void`
+- `_build_ui() -> void`
+- `_update_status() -> void`
+
+### Resource Dependencies
+- `scenes/player.tscn`
+- `scenes/enemy.tscn`
+
+### GameEvents Usage
+- `enemy_defeated`
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- `EnemySpawnPoints`
+
 ## tutorial_island_builder
 
 - Source file: `scripts/tutorial_island_builder.gd`
@@ -2277,8 +2432,11 @@
 - `exit_stage(stage: Node) -> void`
 - `_on_stage_entered(stage: Node) -> void`
 - `_on_stage_exited(stage: Node) -> void`
+- `_on_objective_updated(source: Node, objective_id: String, title: String, body: String) -> void`
 - `_build_map_ui() -> void`
 - `_update_map_ui() -> void`
+- `_emit_region_objective() -> void`
+- `_region_body() -> String`
 
 ### Resource Dependencies
 - none
@@ -2286,6 +2444,8 @@
 ### GameEvents Usage
 - `stage_entered`
 - `stage_exited`
+- `objective_updated`
+- `tutorial_hint_requested`
 
 ### Input Actions
 - none

@@ -66,6 +66,14 @@ class ArenaGoalManager:
         """GDScript function: _update_goal_ui() -> void"""
         pass
 
+    def gd_func__emit_objective_updated(self):
+        """GDScript function: _emit_objective_updated() -> void"""
+        pass
+
+    def gd_func__objective_body(self):
+        """GDScript function: _objective_body() -> String"""
+        pass
+
     def gd_func_complete_level(self):
         """GDScript function: complete_level(player: Node) -> void"""
         pass
@@ -86,12 +94,32 @@ class ArenaGoalManager:
         """GDScript function: _on_player_died(player: Node) -> void"""
         pass
 
+    def gd_func__on_objective_updated(self):
+        """GDScript function: _on_objective_updated(source: Node, _objective_id: String, title: String, body: String) -> void"""
+        pass
+
+    def gd_func__on_tutorial_hint_requested(self):
+        """GDScript function: _on_tutorial_hint_requested(_source: Node, _hint_id: String, text: String, _priority: int) -> void"""
+        pass
+
+    def gd_func__on_bone_collected(self):
+        """GDScript function: _on_bone_collected(bone_id: String, _collector: Node) -> void"""
+        pass
+
+    def gd_func__on_camp_state_changed(self):
+        """GDScript function: _on_camp_state_changed(camp: Node, unlocked: bool, opened: bool, _remaining_enemies: int) -> void"""
+        pass
+
     def gd_func__show_win_screen(self):
         """GDScript function: _show_win_screen(player: Node, elapsed_ms: int) -> void"""
         pass
 
     def gd_func__build_help_ui(self):
         """GDScript function: _build_help_ui() -> void"""
+        pass
+
+    def gd_func__default_help_text(self):
+        """GDScript function: _default_help_text() -> String"""
         pass
 
     def gd_func__build_win_ui(self):
@@ -110,9 +138,29 @@ class ArenaGoalManager:
         """Uses GameEvents.player_died."""
         pass
 
+    def uses_game_event_objective_updated(self):
+        """Uses GameEvents.objective_updated."""
+        pass
+
+    def uses_game_event_tutorial_hint_requested(self):
+        """Uses GameEvents.tutorial_hint_requested."""
+        pass
+
+    def uses_game_event_bone_collected(self):
+        """Uses GameEvents.bone_collected."""
+        pass
+
+    def uses_game_event_camp_state_changed(self):
+        """Uses GameEvents.camp_state_changed."""
+        pass
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
+
+    def depends_on_DropPickupRulesService(self):
+        """Relationship: references class DropPickupRulesService."""
+        return DropPickupRulesService
 
 class ArrowProjectile:
     """Godot script: scripts/arrow_projectile.gd
@@ -221,6 +269,14 @@ class Bone:
 
     def gd_func__update_appearance(self):
         """GDScript function: _update_appearance() -> void"""
+        pass
+
+    def uses_game_event_pickup_focus_changed(self):
+        """Uses GameEvents.pickup_focus_changed."""
+        pass
+
+    def uses_game_event_pickup_collected(self):
+        """Uses GameEvents.pickup_collected."""
         pass
 
     def depends_on_BoneRulesService(self):
@@ -349,6 +405,14 @@ class DemoEnemyCamp:
         """GDScript function: _update_state() -> void"""
         pass
 
+    def gd_func__on_enemy_defeated(self):
+        """GDScript function: _on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void"""
+        pass
+
+    def gd_func__emit_camp_state_changed(self):
+        """GDScript function: _emit_camp_state_changed() -> void"""
+        pass
+
     def gd_func__open_chest(self):
         """GDScript function: _open_chest() -> void"""
         pass
@@ -393,17 +457,25 @@ class DemoEnemyCamp:
         """GDScript function: _remaining_enemy_count() -> int"""
         pass
 
-    def gd_func__action_binding_text(self):
-        """GDScript function: _action_binding_text(action: String) -> String"""
-        pass
-
     def gd_func__make_material(self):
         """GDScript function: _make_material(color: Color, glowing: bool = false) -> StandardMaterial3D"""
+        pass
+
+    def uses_game_event_enemy_defeated(self):
+        """Uses GameEvents.enemy_defeated."""
+        pass
+
+    def uses_game_event_camp_state_changed(self):
+        """Uses GameEvents.camp_state_changed."""
         pass
 
     def uses_game_event_camp_chest_opened(self):
         """Uses GameEvents.camp_chest_opened."""
         pass
+
+    def depends_on_DropPickupRulesService(self):
+        """Relationship: references class DropPickupRulesService."""
+        return DropPickupRulesService
 
 class DropPickupRulesService:
     """Godot script: scripts/drop_pickup_rules_service.gd
@@ -456,11 +528,15 @@ class Enemy:
         pass
 
     def gd_func__apply_enemy_movement(self):
-        """GDScript function: _apply_enemy_movement(delta: float) -> void"""
+        """GDScript function: _apply_enemy_movement() -> void"""
         pass
 
-    def gd_func__is_wall_phasing_lizard(self):
-        """GDScript function: _is_wall_phasing_lizard() -> bool"""
+    def gd_func__is_lizard_wall_climb_enabled(self):
+        """GDScript function: _is_lizard_wall_climb_enabled() -> bool"""
+        pass
+
+    def gd_func__apply_lizard_wall_climb_velocity(self):
+        """GDScript function: _apply_lizard_wall_climb_velocity() -> void"""
         pass
 
     def gd_func__update_lizard_wall_climb_blend(self):
@@ -883,6 +959,14 @@ class Enemy:
         """GDScript function: _play_hit_sound() -> void"""
         pass
 
+    def uses_game_event_drop_spawned(self):
+        """Uses GameEvents.drop_spawned."""
+        pass
+
+    def uses_game_event_enemy_defeated(self):
+        """Uses GameEvents.enemy_defeated."""
+        pass
+
     def depends_on_SceneBone(self):
         """Relationship: loads resource."""
         return SceneBone
@@ -1039,6 +1123,30 @@ class GameEvents:
         """Godot signal: bone_unequipped(bone_id: String, slot: String, player: Node)"""
         pass
 
+    def signal_inventory_changed(self):
+        """Godot signal: inventory_changed(player: Node, items: Array, stats: Dictionary)"""
+        pass
+
+    def signal_inventory_open_changed(self):
+        """Godot signal: inventory_open_changed(player: Node, is_open: bool)"""
+        pass
+
+    def signal_pickup_focus_changed(self):
+        """Godot signal: pickup_focus_changed(pickup: Node, bone_id: String, player: Node, in_range: bool)"""
+        pass
+
+    def signal_pickup_collected(self):
+        """Godot signal: pickup_collected(bone_id: String, pickup: Node, collector: Node)"""
+        pass
+
+    def signal_drop_spawned(self):
+        """Godot signal: drop_spawned(bone_id: String, pickup: Node, source: Node)"""
+        pass
+
+    def signal_enemy_defeated(self):
+        """Godot signal: enemy_defeated(enemy: Node, dropped_bone_id: String)"""
+        pass
+
     def signal_player_died(self):
         """Godot signal: player_died(player: Node)"""
         pass
@@ -1057,6 +1165,18 @@ class GameEvents:
 
     def signal_stage_exited(self):
         """Godot signal: stage_exited(stage: Node)"""
+        pass
+
+    def signal_objective_updated(self):
+        """Godot signal: objective_updated(source: Node, objective_id: String, title: String, body: String)"""
+        pass
+
+    def signal_tutorial_hint_requested(self):
+        """Godot signal: tutorial_hint_requested(source: Node, hint_id: String, text: String, priority: int)"""
+        pass
+
+    def signal_camp_state_changed(self):
+        """Godot signal: camp_state_changed(camp: Node, unlocked: bool, opened: bool, remaining_enemies: int)"""
         pass
 
     def signal_camp_chest_opened(self):
@@ -1141,6 +1261,14 @@ class LimbBonePickup:
         """GDScript function: _update_prompt_color() -> void"""
         pass
 
+    def uses_game_event_pickup_focus_changed(self):
+        """Uses GameEvents.pickup_focus_changed."""
+        pass
+
+    def uses_game_event_pickup_collected(self):
+        """Uses GameEvents.pickup_collected."""
+        pass
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -1148,6 +1276,37 @@ class LimbBonePickup:
     def depends_on_DropPickupRulesService(self):
         """Relationship: references class DropPickupRulesService."""
         return DropPickupRulesService
+
+class MainMenu:
+    """Godot script: scripts/main_menu.gd
+    class_name: none
+    extends: Control
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/main_menu.gd'
+    godot_class_name = ''
+    godot_extends = 'Control'
+    gameplay_system = 'Supporting gameplay'
+
+    def gd_func__ready(self):
+        """GDScript function: _ready() -> void"""
+        pass
+
+    def gd_func__build_menu(self):
+        """GDScript function: _build_menu() -> void"""
+        pass
+
+    def gd_func__make_menu_button(self):
+        """GDScript function: _make_menu_button(text: String, callback: Callable) -> Button"""
+        pass
+
+    def gd_func__open_demo(self):
+        """GDScript function: _open_demo() -> void"""
+        pass
+
+    def gd_func__open_testing_environment(self):
+        """GDScript function: _open_testing_environment() -> void"""
+        pass
 
 class OpenWorldStage:
     """Godot script: scripts/open_world_stage.gd
@@ -1455,8 +1614,16 @@ class Player:
         """GDScript function: _update_mouse_mode() -> void"""
         pass
 
+    def uses_game_event_inventory_changed(self):
+        """Uses GameEvents.inventory_changed."""
+        pass
+
     def uses_game_event_player_died(self):
         """Uses GameEvents.player_died."""
+        pass
+
+    def uses_game_event_inventory_open_changed(self):
+        """Uses GameEvents.inventory_open_changed."""
         pass
 
     def depends_on_SceneAttackHitbox(self):
@@ -1629,6 +1796,14 @@ class PlayerEquipmentComponent:
         """GDScript function: _notify_equipment_changed() -> void"""
         pass
 
+    def gd_func__get_inventory_items(self):
+        """GDScript function: _get_inventory_items() -> Array"""
+        pass
+
+    def gd_func__get_run_stats(self):
+        """GDScript function: _get_run_stats() -> Dictionary"""
+        pass
+
     def gd_func__tint_visual(self):
         """GDScript function: _tint_visual(visual: Node3D, color: Color) -> void"""
         pass
@@ -1643,6 +1818,10 @@ class PlayerEquipmentComponent:
 
     def uses_game_event_bone_unequipped(self):
         """Uses GameEvents.bone_unequipped."""
+        pass
+
+    def uses_game_event_inventory_changed(self):
+        """Uses GameEvents.inventory_changed."""
         pass
 
     def depends_on_SceneEquippedBone(self):
@@ -1704,6 +1883,10 @@ class PlayerInventoryComponent:
         """Uses GameEvents.bone_collected."""
         pass
 
+    def uses_game_event_inventory_changed(self):
+        """Uses GameEvents.inventory_changed."""
+        pass
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -1745,6 +1928,18 @@ class PlayerInventoryUI:
 
     def gd_func_notify_equipment_changed(self):
         """GDScript function: notify_equipment_changed() -> void"""
+        pass
+
+    def gd_func__on_inventory_changed(self):
+        """GDScript function: _on_inventory_changed(event_player: Node, _items: Array, _stats: Dictionary) -> void"""
+        pass
+
+    def gd_func__on_bone_equipped(self):
+        """GDScript function: _on_bone_equipped(_bone_id: String, _slot: String, event_player: Node) -> void"""
+        pass
+
+    def gd_func__on_bone_unequipped(self):
+        """GDScript function: _on_bone_unequipped(_bone_id: String, _slot: String, event_player: Node) -> void"""
         pass
 
     def gd_func_get_inventory_tile_size(self):
@@ -1977,6 +2172,18 @@ class PlayerInventoryUI:
 
     def gd_func__inventory_stats_snapshot(self):
         """GDScript function: _inventory_stats_snapshot() -> Dictionary"""
+        pass
+
+    def uses_game_event_inventory_changed(self):
+        """Uses GameEvents.inventory_changed."""
+        pass
+
+    def uses_game_event_bone_equipped(self):
+        """Uses GameEvents.bone_equipped."""
+        pass
+
+    def uses_game_event_bone_unequipped(self):
+        """Uses GameEvents.bone_unequipped."""
         pass
 
     def depends_on_InventoryEmptySlot(self):
@@ -2275,6 +2482,105 @@ class RigTestPlayer:
         """Relationship: references class ProceduralPlayerAnimator."""
         return ProceduralPlayerAnimator
 
+class TestingEnvironment:
+    """Godot script: scripts/testing_environment.gd
+    class_name: none
+    extends: Node3D
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/testing_environment.gd'
+    godot_class_name = ''
+    godot_extends = 'Node3D'
+    gameplay_system = 'Supporting gameplay'
+
+    def gd_func__ready(self):
+        """GDScript function: _ready() -> void"""
+        pass
+
+    def gd_func__unhandled_input(self):
+        """GDScript function: _unhandled_input(event: InputEvent) -> void"""
+        pass
+
+    def gd_func__build_world(self):
+        """GDScript function: _build_world() -> void"""
+        pass
+
+    def gd_func__make_box(self):
+        """GDScript function: _make_box(box_name: String, pos: Vector3, size: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> StaticBody3D"""
+        pass
+
+    def gd_func__make_material(self):
+        """GDScript function: _make_material(color: Color) -> StandardMaterial3D"""
+        pass
+
+    def gd_func__find_or_create_spawn_root(self):
+        """GDScript function: _find_or_create_spawn_root() -> void"""
+        pass
+
+    def gd_func__add_spawn_marker(self):
+        """GDScript function: _add_spawn_marker(marker_name: String, pos: Vector3, profile: String) -> void"""
+        pass
+
+    def gd_func__spawn_player(self):
+        """GDScript function: _spawn_player() -> void"""
+        pass
+
+    def gd_func__seed_testing_inventory(self):
+        """GDScript function: _seed_testing_inventory() -> void"""
+        pass
+
+    def gd_func__spawn_initial_enemy_set(self):
+        """GDScript function: _spawn_initial_enemy_set() -> void"""
+        pass
+
+    def gd_func__spawn_enemy_at_next_marker(self):
+        """GDScript function: _spawn_enemy_at_next_marker(profile: String) -> void"""
+        pass
+
+    def gd_func__spawn_markers(self):
+        """GDScript function: _spawn_markers() -> Array[Marker3D]"""
+        pass
+
+    def gd_func__spawn_enemy(self):
+        """GDScript function: _spawn_enemy(profile: String, pos: Vector3) -> void"""
+        pass
+
+    def gd_func__apply_profile(self):
+        """GDScript function: _apply_profile(enemy: Node, profile: String) -> void"""
+        pass
+
+    def gd_func__bone_for_profile(self):
+        """GDScript function: _bone_for_profile(profile: String) -> String"""
+        pass
+
+    def gd_func__remove_latest_enemy(self):
+        """GDScript function: _remove_latest_enemy() -> void"""
+        pass
+
+    def gd_func__on_enemy_defeated(self):
+        """GDScript function: _on_enemy_defeated(_enemy: Node, _dropped_bone_id: String) -> void"""
+        pass
+
+    def gd_func__build_ui(self):
+        """GDScript function: _build_ui() -> void"""
+        pass
+
+    def gd_func__update_status(self):
+        """GDScript function: _update_status() -> void"""
+        pass
+
+    def uses_game_event_enemy_defeated(self):
+        """Uses GameEvents.enemy_defeated."""
+        pass
+
+    def depends_on_ScenePlayer(self):
+        """Relationship: loads resource."""
+        return ScenePlayer
+
+    def depends_on_SceneEnemy(self):
+        """Relationship: loads resource."""
+        return SceneEnemy
+
 class TutorialIslandBuilder:
     """Godot script: scripts/tutorial_island_builder.gd
     class_name: none
@@ -2562,6 +2868,10 @@ class WorldMapManager:
         """GDScript function: _on_stage_exited(stage: Node) -> void"""
         pass
 
+    def gd_func__on_objective_updated(self):
+        """GDScript function: _on_objective_updated(source: Node, objective_id: String, title: String, body: String) -> void"""
+        pass
+
     def gd_func__build_map_ui(self):
         """GDScript function: _build_map_ui() -> void"""
         pass
@@ -2570,12 +2880,28 @@ class WorldMapManager:
         """GDScript function: _update_map_ui() -> void"""
         pass
 
+    def gd_func__emit_region_objective(self):
+        """GDScript function: _emit_region_objective() -> void"""
+        pass
+
+    def gd_func__region_body(self):
+        """GDScript function: _region_body() -> String"""
+        pass
+
     def uses_game_event_stage_entered(self):
         """Uses GameEvents.stage_entered."""
         pass
 
     def uses_game_event_stage_exited(self):
         """Uses GameEvents.stage_exited."""
+        pass
+
+    def uses_game_event_objective_updated(self):
+        """Uses GameEvents.objective_updated."""
+        pass
+
+    def uses_game_event_tutorial_hint_requested(self):
+        """Uses GameEvents.tutorial_hint_requested."""
         pass
 
 class SceneAttackHitbox:
@@ -2688,6 +3014,15 @@ class SceneMain:
         """Scene relationship: instantiates scene."""
         return SceneGuideWisp
 
+class SceneMainMenu:
+    """Godot scene: scenes/main_menu.tscn"""
+    source_file = 'scenes/main_menu.tscn'
+    nodes = ['MainMenu']
+
+    def contains_MainMenu(self):
+        """Scene relationship: uses script."""
+        return MainMenu
+
 class SceneOpenWorldStage:
     """Godot scene: scenes/open_world_stage.tscn"""
     source_file = 'scenes/open_world_stage.tscn'
@@ -2734,4 +3069,13 @@ class SceneRigTest:
     def contains_ProceduralPlayerAnimator(self):
         """Scene relationship: uses script."""
         return ProceduralPlayerAnimator
+
+class SceneTestingEnvironment:
+    """Godot scene: scenes/testing_environment.tscn"""
+    source_file = 'scenes/testing_environment.tscn'
+    nodes = ['TestingEnvironment', 'EnemySpawnPoints', 'NormalSpawn', 'GorillaSpawn', 'LizardSpawn', 'RangedSpawn']
+
+    def contains_TestingEnvironment(self):
+        """Scene relationship: uses script."""
+        return TestingEnvironment
 

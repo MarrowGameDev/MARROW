@@ -42,7 +42,9 @@
 - `scripts/_rt6.gd`
 - `scripts/drop_pickup_rules_service.gd`
 - `scripts/game_events.gd`
+- `scripts/main_menu.gd`
 - `scripts/player_stats_component.gd`
+- `scripts/testing_environment.gd`
 
 ## UI and guidance
 
@@ -65,6 +67,8 @@
 - `scenes/exit_portal.tscn` composes `scripts/exit_portal.gd`.
 - `scenes/guide_wisp.tscn` composes `scripts/guide_wisp.gd`.
 - `scenes/main.tscn` composes `scripts/arena_goal_manager.gd`, `scripts/world_map_manager.gd`, `scripts/tutorial_island_builder.gd`.
+- `scenes/main_menu.tscn` composes `scripts/main_menu.gd`.
 - `scenes/open_world_stage.tscn` composes `scripts/open_world_stage.gd`.
 - `scenes/player.tscn` composes `scripts/player.gd`, `scripts/rig/modular_skeleton_rig.gd`, `scripts/rig/procedural_player_animator.gd`, `scripts/player_camera_controller.gd`.
 - `scenes/rig_test.tscn` composes `scripts/rig/rig_test_player.gd`, `scripts/rig/modular_skeleton_rig.gd`, `scripts/rig/procedural_player_animator.gd`.
+- `scenes/testing_environment.tscn` composes `scripts/testing_environment.gd`.

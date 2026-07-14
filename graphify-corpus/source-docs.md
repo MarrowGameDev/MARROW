@@ -15,7 +15,7 @@ config_version=5
 [application]
 
 config/name="Marrow Tier 0 Prototype"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7")
 
 [autoload]

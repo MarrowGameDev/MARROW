@@ -5,12 +5,14 @@
 - `scripts/_rt6.gd` depends on `scenes/rig_test.tscn` because it loads resource.
 - `scripts/_rt6.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/arena_goal_manager.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/arena_goal_manager.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/bone.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/bone.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/bone_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/bone_rules_service.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/bone_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/bone_trial_gate.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/demo_enemy_camp.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/enemy.gd` depends on `scenes/bone.tscn` because it loads resource.
@@ -54,6 +56,8 @@
 - `scripts/rig/rig_test_player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/rig_test_player.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/rig/rig_test_player.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
+- `scripts/testing_environment.gd` depends on `scenes/player.tscn` because it loads resource.
+- `scripts/testing_environment.gd` depends on `scenes/enemy.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scenes/enemy.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scripts/demo_enemy_camp.gd` because it loads resource.
 - `scripts/ui_bone_item.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
@@ -81,6 +85,7 @@
 - `scenes/main.tscn` instantiates scene `scenes/exit_portal.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/open_world_stage.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/guide_wisp.tscn`.
+- `scenes/main_menu.tscn` uses script `scripts/main_menu.gd`.
 - `scenes/open_world_stage.tscn` uses script `scripts/open_world_stage.gd`.
 - `scenes/player.tscn` uses script `scripts/player.gd`.
 - `scenes/player.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
@@ -91,3 +96,4 @@
 - `scenes/rig_test.tscn` uses script `scripts/rig/procedural_player_animator.gd`.
 - `scenes/rig_test.tscn` instantiates scene `assets/skeleton_model.glb`.
 - `scenes/rig_test.tscn` instantiates scene `assets/skeleton_rigged.glb`.
+- `scenes/testing_environment.tscn` uses script `scripts/testing_environment.gd`.
