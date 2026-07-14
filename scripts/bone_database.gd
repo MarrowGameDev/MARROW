@@ -223,6 +223,36 @@ static func mutation_tags(id: String) -> Array:
 	return []
 
 
+static func weight(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("weight", 1.0))
+	return 1.0
+
+
+static func weight_class(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("weight_class", "light"))
+	return ""
+
+
+static func physical_weight(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("physical_weight", weight(id)))
+	return 0.0
+
+
+static func equipment_weight(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("equipment_weight", weight(id)))
+	return 0.0
+
+
+static func inventory_weight(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("inventory_weight", weight(id)))
+	return 0.0
+
+
 static func enemy_float_bonus(id: String, key: String, fallback: float = 0.0) -> float:
 	if _bones().has(id):
 		return float(_bones()[id].get(key, fallback))

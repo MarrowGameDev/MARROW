@@ -136,6 +136,31 @@ static func mutation_tags_for(bone_id: String) -> Array:
 	return BoneDatabase.mutation_tags(bone_id)
 
 
+static func weight_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("weight", 1.0))
+
+
+static func weight_class_for(bone_id: String) -> String:
+	var definition: Dictionary = definition_for(bone_id)
+	return str(definition.get("weight_class", "light"))
+
+
+static func physical_weight_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("physical_weight", definition.get("weight", 1.0)))
+
+
+static func equipment_weight_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("equipment_weight", definition.get("weight", 1.0)))
+
+
+static func inventory_weight_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("inventory_weight", definition.get("weight", 1.0)))
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():

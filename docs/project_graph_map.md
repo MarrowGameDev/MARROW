@@ -152,6 +152,8 @@ Each definition can include:
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
   tags for future visual, rig, AI or combat hooks.
+- `BoneDefinition.weight*` fields: legacy animation weight plus weight class,
+  physical weight, equipment weight and inventory weight.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.

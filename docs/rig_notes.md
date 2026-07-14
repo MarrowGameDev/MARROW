@@ -25,8 +25,10 @@ Open `scenes/rig_test.tscn` in Godot and run it (F6 / "Run Current Scene").
   the sockets from the ACTUAL velocity (so slopes/knockback/speed bonuses all read
   correctly). Layers: idle breathing, walk bob, torso lean/sway, arm+leg swing,
   turn smoothing, weight response.
-- `scripts/bone_database.gd` — single source of bone data; added `weight` (and
-  `visual_scale` on Heavy).
+- `scripts/bone_database.gd` — compatibility layer for bone data; `weight`
+  remains the legacy animation weight while `physical_weight`,
+  `equipment_weight`, `inventory_weight` and `weight_class` are available for
+  future rig/inventory rules.
 - `scripts/rig/rig_test_player.gd` — sandbox movement controller (no combat/inventory).
 
 ## Tuning variables (exports on ProceduralAnimator)

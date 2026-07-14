@@ -116,6 +116,13 @@ Campos de rareza:
 - `rarity_color` permite mostrar rareza sin cambiar el color fisico del hueso.
 - `rarity_drop_weight` queda disponible para futuras reglas de drops.
 
+Campos de peso:
+- `weight` se mantiene como campo legacy para animacion procedural.
+- `weight_class` permite mostrar o filtrar piezas como light/medium/heavy.
+- `physical_weight` describe peso fisico de la pieza en mundo.
+- `equipment_weight` queda disponible para carga al equipar.
+- `inventory_weight` queda disponible para limites o coste de inventario.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -154,3 +161,5 @@ En `TESTING ENVIRONMENT`:
   legacy: rank, score, multiplier y color.
 - 2026-07-14: Se agregaron campos de rareza separados de calidad:
   `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`.
+- 2026-07-14: Se agregaron campos de peso para inventario/equipamiento sin
+  cambiar todavia limites de carga.

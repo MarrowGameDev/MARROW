@@ -126,6 +126,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
   regla de equipamiento que los consuma.
+- Los campos de peso (`weight`, `weight_class`, `physical_weight`,
+  `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
+  equipar e impacto de inventario. `weight` queda como campo legacy para la
+  animacion procedural actual.
 
 ## Como probar
 
@@ -156,3 +160,5 @@ En `TESTING ENVIRONMENT`:
   campos no representan rareza de loot.
 - 2026-07-14: Se agregaron campos de mutacion para preparar variantes visuales,
   cuerpo hibrido y respuestas especiales sin acoplarlas todavia al rig.
+- 2026-07-14: Se agregaron campos de peso granulares manteniendo `weight` como
+  compatibilidad para animacion.

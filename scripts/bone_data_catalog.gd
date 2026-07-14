@@ -33,6 +33,13 @@ const DEFINITIONS := {
 			"tags": ["reach"],
 			"description": "Longer reach on your swing.",
 		},
+		"visual": {
+			"weight": 1.0,
+			"weight_class": "light",
+			"physical_weight": 1.0,
+			"equipment_weight": 1.0,
+			"inventory_weight": 0.8,
+		},
 		"player_stats": {
 			"attack_range": 2.5,
 		},
@@ -59,6 +66,13 @@ const DEFINITIONS := {
 			"slot": "legs",
 			"tags": ["speed"],
 			"description": "Faster movement.",
+		},
+		"visual": {
+			"weight": 1.1,
+			"weight_class": "medium",
+			"physical_weight": 1.1,
+			"equipment_weight": 1.1,
+			"inventory_weight": 0.9,
 		},
 		"player_stats": {
 			"move_speed": 3.0,
@@ -89,6 +103,10 @@ const DEFINITIONS := {
 		},
 		"visual": {
 			"weight": 2.0,
+			"weight_class": "heavy",
+			"physical_weight": 2.0,
+			"equipment_weight": 2.0,
+			"inventory_weight": 2.2,
 			"visual_scale": Vector3(1.3, 1.3, 1.3),
 		},
 		"player_stats": {
@@ -122,6 +140,13 @@ const DEFINITIONS := {
 			"tags": [],
 			"description": "A plain practice bone with no special effect.",
 		},
+		"visual": {
+			"weight": 0.6,
+			"weight_class": "light",
+			"physical_weight": 0.6,
+			"equipment_weight": 0.6,
+			"inventory_weight": 0.5,
+		},
 	},
 	"rib_bone": {
 		"identity": {
@@ -151,6 +176,13 @@ const DEFINITIONS := {
 			"stage": 1,
 			"intensity": 0.25,
 			"tags": ["hybrid", "adaptive"],
+		},
+		"visual": {
+			"weight": 1.4,
+			"weight_class": "medium",
+			"physical_weight": 1.4,
+			"equipment_weight": 1.4,
+			"inventory_weight": 1.1,
 		},
 		"enemy_stats": {
 			"move_speed": 0.7,

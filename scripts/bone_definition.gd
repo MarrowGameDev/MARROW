@@ -50,6 +50,10 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
 @export_group("Visual")
 @export var weight: float = 1.0
+@export var weight_class: String = "light"
+@export var physical_weight: float = 1.0
+@export var equipment_weight: float = 1.0
+@export var inventory_weight: float = 1.0
 @export var visual_scale: Vector3 = Vector3.ONE
 @export var visual_offset: Vector3 = Vector3.ZERO
 @export var visual_rotation: Vector3 = Vector3.ZERO
@@ -58,6 +62,10 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 func to_clean_dictionary() -> Dictionary:
 	var visual: Dictionary = {
 		"weight": weight,
+		"weight_class": weight_class,
+		"physical_weight": physical_weight,
+		"equipment_weight": equipment_weight,
+		"inventory_weight": inventory_weight,
 		"visual_scale": visual_scale,
 	}
 	if visual_offset != Vector3.ZERO:
@@ -140,6 +148,10 @@ func to_legacy_dictionary() -> Dictionary:
 		"enemy_flee_chance": enemy_flee_chance,
 		"tags": tags.duplicate(),
 		"description": description,
+		"weight_class": weight_class,
+		"physical_weight": physical_weight,
+		"equipment_weight": equipment_weight,
+		"inventory_weight": inventory_weight,
 	}
 
 	if weight != 1.0:
@@ -199,6 +211,10 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.enemy_flee_chance = float(enemy_stats.get("flee_chance", definition.enemy_flee_chance))
 
 	definition.weight = float(visual.get("weight", definition.weight))
+	definition.weight_class = str(visual.get("weight_class", definition.weight_class))
+	definition.physical_weight = float(visual.get("physical_weight", visual.get("weight", definition.physical_weight)))
+	definition.equipment_weight = float(visual.get("equipment_weight", visual.get("weight", definition.equipment_weight)))
+	definition.inventory_weight = float(visual.get("inventory_weight", visual.get("weight", definition.inventory_weight)))
 	definition.visual_scale = _vector3(visual.get("visual_scale", definition.visual_scale), definition.visual_scale)
 	definition.visual_offset = _vector3(visual.get("visual_offset", definition.visual_offset), definition.visual_offset)
 	definition.visual_rotation = _vector3(visual.get("visual_rotation", definition.visual_rotation), definition.visual_rotation)

@@ -130,6 +130,11 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"mutation_stage": _generated_limb_mutation_stage(source_profile),
 		"mutation_intensity": _generated_limb_mutation_intensity(source_profile),
 		"mutation_tags": _generated_limb_mutation_tags(source_profile, limb_key),
+		"weight": _generated_limb_weight(source_profile, limb_key),
+		"weight_class": _generated_limb_weight_class(source_profile, limb_key),
+		"physical_weight": _generated_limb_physical_weight(source_profile, limb_key),
+		"equipment_weight": _generated_limb_equipment_weight(source_profile, limb_key),
+		"inventory_weight": _generated_limb_inventory_weight(source_profile, limb_key),
 		"color": color,
 		"slot": slot_id,
 		"source_profile": source_profile,
@@ -283,6 +288,45 @@ static func _generated_limb_mutation_tags(source_profile: String, limb_key: Stri
 	if source_profile == "normal":
 		return []
 	return [source_profile, limb_key]
+
+
+static func _generated_limb_weight(source_profile: String, limb_key: String) -> float:
+	return _generated_limb_equipment_weight(source_profile, limb_key)
+
+
+static func _generated_limb_weight_class(source_profile: String, limb_key: String) -> String:
+	var equipment_weight: float = _generated_limb_equipment_weight(source_profile, limb_key)
+	if equipment_weight >= 1.5:
+		return "heavy"
+	if equipment_weight >= 1.15:
+		return "medium"
+	return "light"
+
+
+static func _generated_limb_physical_weight(source_profile: String, limb_key: String) -> float:
+	var base_weight := 1.0
+	match limb_key:
+		"body":
+			base_weight = 1.4
+		"head":
+			base_weight = 0.8
+		"right_leg", "left_leg":
+			base_weight = 1.1
+
+	match source_profile:
+		"gorilla":
+			base_weight *= 1.45
+		"lizard":
+			base_weight *= 0.82
+	return base_weight
+
+
+static func _generated_limb_equipment_weight(source_profile: String, limb_key: String) -> float:
+	return _generated_limb_physical_weight(source_profile, limb_key)
+
+
+static func _generated_limb_inventory_weight(source_profile: String, limb_key: String) -> float:
+	return _generated_limb_physical_weight(source_profile, limb_key) * 0.85
 
 
 static func _generated_limb_bonus(source_profile: String, limb_key: String) -> Dictionary:
