@@ -365,6 +365,10 @@
 - `quality_score`
 - `quality_multiplier`
 - `quality_color`
+- `rarity`
+- `rarity_rank`
+- `rarity_color`
+- `rarity_drop_weight`
 - `color`
 - `slot`
 - `tags`

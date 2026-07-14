@@ -692,6 +692,14 @@ Esos ids deben poder resolverse como `BoneDefinition` mediante
 los convierte al formato plano que leen pickups, labels, camp chests e
 inventario.
 
+Rareza:
+- Los campos `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`
+  viven en `BoneDefinition` y pasan por `BoneDatabase`.
+- `rarity_drop_weight` no cambia drops automaticamente todavia; queda listo
+  para cuando se defina una tabla de drops ponderada.
+- Rareza no debe mezclarse con calidad. Calidad describe condicion/valor de la
+  pieza; rareza describe probabilidad o categoria de obtencion.
+
 ## Flujo de muerte
 
 1. `Enemy.die` emite `enemy_defeated`.
@@ -759,6 +767,8 @@ En `TESTING ENVIRONMENT`:
   hechos a mano puedan migrar a assets editables.
 - 2026-07-14: Los drops hechos a mano iniciales (`arm_bone`, `leg_bone`,
   `heavy_bone`, `dummy_bone`, `rib_bone`) ya tienen Resources en `data/bones/`.
+- 2026-07-14: Se agregaron campos de rareza y peso de drop por rareza sin
+  activar todavia reglas ponderadas de loot.
 
 ## docs/equipment_flow.md
 
@@ -1121,6 +1131,13 @@ Campos de calidad:
 - Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
   separado como `rarity`/`rarity_rank` en otro cambio.
 
+Campos de rareza:
+- `rarity` describe rareza de loot/obtencion, separada de la calidad fisica o
+  funcional de la pieza.
+- `rarity_rank` permite ordenar o filtrar por rareza.
+- `rarity_color` permite mostrar rareza sin cambiar el color fisico del hueso.
+- `rarity_drop_weight` queda disponible para futuras reglas de drops.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -1157,6 +1174,8 @@ En `TESTING ENVIRONMENT`:
   poblarse al cargar la clase y existen `definitions`/`reset_cache`.
 - 2026-07-14: Se agregaron campos de calidad a `BoneDefinition` y al formato
   legacy: rank, score, multiplier y color.
+- 2026-07-14: Se agregaron campos de rareza separados de calidad:
+  `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`.
 
 ## docs/open_world_map_layout.md
 
@@ -1345,6 +1364,8 @@ Compatibility contract:
 - Quality helpers such as `quality_rank`, `quality_score`,
   `quality_multiplier` and `quality_color` are additive and do not replace the
   existing `quality` text.
+- Rarity helpers such as `rarity`, `rarity_rank`, `rarity_color` and
+  `rarity_drop_weight` are additive and separate from quality.
 - `BoneDatabase.BONES` remains a populated legacy dictionary cache for direct
   reads by older tools/scripts.
 - `definitions()` returns the same legacy dictionary cache.
@@ -1363,6 +1384,8 @@ Each definition can include:
   description.
 - `BoneDefinition.quality_*` fields: quality rank, score, multiplier and
   quality color. These describe part quality/condition, not loot rarity.
+- `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
+  weighting.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.
