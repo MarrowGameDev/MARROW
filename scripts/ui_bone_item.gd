@@ -71,7 +71,7 @@ func setup(id: String, player_ref: Node) -> void:
 	_slot_label = Label.new()
 	_slot_label.position = Vector2(5.0 * x_scale, 72.0 * y_scale)
 	_slot_label.size = Vector2(86.0 * x_scale, 12.0 * y_scale)
-	var slot_text := BoneRulesService.slot_display_name(BoneRulesService.slot_for(id))
+	var slot_text := EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(id))
 	if slot_text == "":
 		slot_text = "Piece"
 	_slot_label.text = slot_text

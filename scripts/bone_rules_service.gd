@@ -10,30 +10,47 @@ const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
 
 static func definition_for(bone_id: String) -> Dictionary:
-	return BoneDatabase.get_def(bone_id)
+	var definition: Dictionary = BoneDatabase.get_def(bone_id)
+	if not definition.is_empty():
+		return definition
+	return EquipmentRulesService.generated_limb_definition_for(bone_id)
 
 
 static func slot_for(bone_id: String) -> String:
-	return BoneDatabase.slot(bone_id)
+	return EquipmentRulesService.slot_for_bone(bone_id)
 
 
 static func slot_display_name(slot_id: String) -> String:
-	return BoneDatabase.slot_display_name(slot_id)
+	return EquipmentRulesService.slot_display_name(slot_id)
 
 
 static func display_name_with_slot(bone_id: String) -> String:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return str(definition.get("display_name", "Enemy Bone"))
 	return BoneDatabase.display_name_with_slot(bone_id)
 
 
 static func quality_for(bone_id: String) -> String:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return str(definition.get("quality", "Normal"))
 	return BoneDatabase.quality(bone_id)
 
 
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		var color_value: Variant = definition.get("color", fallback)
+		if color_value is Color:
+			return color_value
 	return BoneDatabase.color(bone_id, fallback)
 
 
 static func description_for(bone_id: String) -> String:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return str(definition.get("description", ""))
 	return BoneDatabase.description(bone_id)
 
 
@@ -109,26 +126,11 @@ static func enemy_profile_for(bone_id: String, fallback_flee_chance: float) -> D
 
 
 static func primary_limb_keys_for_slot(slot_id: String) -> Array[String]:
-	match slot_id:
-		"right_arm":
-			return ["right_arm", "left_arm"]
-		"left_arm":
-			return ["left_arm", "right_arm"]
-		"legs":
-			return ["right_leg", "left_leg"]
-		"body":
-			return ["body"]
-		_:
-			return []
+	return EquipmentRulesService.primary_limb_keys_for_slot(slot_id)
 
 
 static func detachable_priority_for_bone(bone_id: String, detachable_limb_keys: Array[String], core_fall_order: Array[String]) -> Array[String]:
-	var keys: Array[String] = []
-	for limb_key in primary_limb_keys_for_slot(slot_for(bone_id)):
-		if core_fall_order.has(limb_key):
-			continue
-		if not keys.has(limb_key):
-			keys.append(limb_key)
+	var keys: Array[String] = DropPickupRulesService.detachable_priority_for_bone(bone_id)
 	for limb_key in detachable_limb_keys:
 		if core_fall_order.has(limb_key):
 			continue
@@ -141,11 +143,19 @@ static func detachable_priority_for_bone(bone_id: String, detachable_limb_keys: 
 
 
 static func pickup_limb_candidates_for_bone(bone_id: String) -> Array[String]:
-	return primary_limb_keys_for_slot(slot_for(bone_id))
+	return DropPickupRulesService.pickup_limb_candidates_for_bone(bone_id)
 
 
 static func drop_slot_matches_limb(bone_id: String, limb_key: String) -> bool:
-	return primary_limb_keys_for_slot(slot_for(bone_id)).has(limb_key)
+	return DropPickupRulesService.drop_slot_matches_limb(bone_id, limb_key)
+
+
+static func pickup_bone_id_for_limb(limb_key: String, source_profile: String = "normal") -> String:
+	return DropPickupRulesService.pickup_bone_id_for_limb(limb_key, source_profile)
+
+
+static func generated_limb_definition_for(bone_id: String) -> Dictionary:
+	return EquipmentRulesService.generated_limb_definition_for(bone_id)
 
 
 static func _format_signed_float(value: float) -> String:

@@ -25,8 +25,9 @@ func equip_bone(bone_id: String) -> void:
 	equip_swaps += 1
 	_recalculate_owner_stats()
 	_notify_equipment_changed()
-	GameEvents.bone_equipped.emit(bone_id, BoneRulesService.slot_for(bone_id), owner_player)
-	print("Equipped ", BoneRulesService.display_name_with_slot(bone_id), " in slot ", BoneRulesService.slot_for(bone_id))
+	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
+	GameEvents.bone_equipped.emit(bone_id, slot, owner_player)
+	print("Equipped ", BoneRulesService.display_name_with_slot(bone_id), " in slot ", slot)
 
 
 func unequip_slot(slot: String) -> void:
@@ -68,13 +69,19 @@ func get_swap_count() -> int:
 
 
 func _equip_bone_in_slot(bone_id: String) -> bool:
-	var slot: String = BoneRulesService.slot_for(bone_id)
+	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
 	if slot == "":
 		print("Bone has no slot: ", bone_id)
 		return false
 
 	if equipped.get(slot, "") == bone_id:
 		return false
+
+	var rig: ModularSkeletonRig = _get_player_rig()
+	if rig != null:
+		equipped[slot] = bone_id
+		_clear_equipped_visual(slot)
+		return true
 
 	var socket: Node3D = _get_socket_for_slot(slot)
 	if socket == null:
@@ -83,10 +90,6 @@ func _equip_bone_in_slot(bone_id: String) -> bool:
 
 	equipped[slot] = bone_id
 	_clear_equipped_visual(slot)
-
-	var rig: ModularSkeletonRig = _get_player_rig()
-	if rig != null:
-		return true
 
 	var visual: Node3D = EQUIPPED_BONE_SCENE.instantiate() as Node3D
 	socket.add_child(visual)

@@ -208,6 +208,7 @@ func _spawn_tutorial_enemy_packs() -> void:
 	_spawn_enemy("ReachRidgeReachEnemy", Vector3(-36.0, 0.6, -10.0), "arm_bone", {"attack_range": 2.4, "detection_range": 13.0})
 	_spawn_enemy("ReachRidgeArcher", Vector3(-28.0, 0.6, -15.0), "arm_bone", {"ranged_attacker_enabled": true, "detection_range": 14.0, "vision_angle_degrees": 125.0})
 	_spawn_enemy("RibfenHybrid", Vector3(-35.0, 0.6, 7.0), "rib_bone", {"detection_range": 10.0})
+	_spawn_enemy("WallPhasingLizard", Vector3(7.5, 0.6, 18.0), "rib_bone", {"lizard_profile_mode": "Always", "detection_range": 13.0, "vision_angle_degrees": 135.0})
 
 
 func _build_enemy_camps(root: Node3D) -> void:
@@ -247,6 +248,17 @@ func _build_enemy_camps(root: Node3D) -> void:
 			{"name": "ReachCampLookout", "offset": Vector3(-2.5, 0.6, -2.0), "bone": "arm_bone", "overrides": {"vision_angle_degrees": 125.0, "detection_range": 13.0}},
 			{"name": "ReachCampGuard", "offset": Vector3(2.8, 0.6, 1.7), "bone": "arm_bone", "overrides": {"attack_range": 2.5}},
 			{"name": "ReachCampArcher", "offset": Vector3(0.2, 0.6, 4.0), "bone": "arm_bone", "overrides": {"ranged_attacker_enabled": true, "detection_range": 14.0, "vision_angle_degrees": 130.0}},
+		]
+	)
+
+	_create_enemy_camp(
+		camps_root,
+		"Lizard Sink Camp",
+		Vector3(19.0, 0.0, 24.0),
+		"rib_bone",
+		[
+			{"name": "LizardSinkSpitter", "offset": Vector3(-1.8, 0.6, -1.2), "bone": "rib_bone", "overrides": {"lizard_profile_mode": "Always", "respawn_enabled": false}},
+			{"name": "LizardSinkGuard", "offset": Vector3(2.2, 0.6, 1.5), "bone": "leg_bone", "overrides": {"move_speed": 3.2, "low_health_flee_chance": 0.7}},
 		]
 	)
 

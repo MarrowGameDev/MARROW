@@ -162,7 +162,7 @@ func get_equipped_bone_for_slot(slot: String) -> String:
 func show_bone_info(bone_id: String) -> void:
 	if hover_info_label == null:
 		return
-	var text := BoneRulesService.quality_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + BoneRulesService.slot_display_name(BoneRulesService.slot_for(bone_id)) + "]\n"
+	var text := BoneRulesService.quality_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id)) + "]\n"
 	text += BoneRulesService.effect_text_for(bone_id)
 	text += BoneRulesService.description_for(bone_id)
 	hover_info_label.text = text
@@ -1348,7 +1348,7 @@ func rebuild_item_tiles() -> void:
 func _bone_matches_inventory_category(bone_id: String) -> bool:
 	if inventory_category == "all":
 		return true
-	var slot: String = BoneRulesService.slot_for(bone_id)
+	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
 	if inventory_category == "right_arm":
 		return slot == "right_arm" or slot == "left_arm"
 	return slot == inventory_category

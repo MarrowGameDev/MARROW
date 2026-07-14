@@ -37,15 +37,6 @@ static var LIMB_GEO := {
 	"left_foot": {"size": Vector3(0.2, 0.12, 0.34), "offset": Vector3(0.0, 0.0, 0.05)},
 }
 
-# Which physical sockets a gameplay slot maps to (a "legs" bone shows on both legs).
-static var SLOT_TO_SOCKETS := {
-	"right_arm": ["right_arm"],
-	"left_arm": ["left_arm"],
-	"legs": ["left_leg", "right_leg"],
-	"body": ["body"],
-	"head": ["head"],
-}
-
 # Per-part placement for the rigged model's limb meshes: which socket, and the
 # local scale + rotation to line each part up. Feet are smaller and turned
 # forward (they came in big + sideways). Tune these values as needed.
@@ -147,6 +138,72 @@ func apply_gorilla_proportions() -> void:
 	_set_base_limb_shape("left_leg", Vector3(0.24, 0.44, 0.24), Vector3(0.0, -0.22, 0.0))
 	_set_base_limb_shape("right_foot", Vector3(0.32, 0.14, 0.46), Vector3(0.0, 0.0, 0.08))
 	_set_base_limb_shape("left_foot", Vector3(0.32, 0.14, 0.46), Vector3(0.0, 0.0, 0.08))
+
+
+func apply_lizard_proportions() -> void:
+	_set_socket_position("body", Vector3(0.0, -0.20, 0.0))
+	_set_socket_position("head", Vector3(0.0, 0.12, -0.46))
+	_set_socket_position("right_arm", Vector3(0.32, -0.16, -0.18))
+	_set_socket_position("left_arm", Vector3(-0.32, -0.16, -0.18))
+	_set_socket_position("right_leg", Vector3(0.28, -0.26, 0.22))
+	_set_socket_position("left_leg", Vector3(-0.28, -0.26, 0.22))
+	_set_socket_position("right_foot", Vector3(0.0, -0.24, 0.18))
+	_set_socket_position("left_foot", Vector3(0.0, -0.24, 0.18))
+
+	_set_base_limb_shape("body", Vector3(0.34, 0.24, 0.34), Vector3(0.0, -0.02, 0.02))
+	_set_base_limb_shape("head", Vector3(0.28, 0.22, 0.42), Vector3(0.0, 0.0, -0.08))
+	_set_base_limb_shape("right_arm", Vector3(0.13, 0.42, 0.13), Vector3(0.0, -0.20, 0.02))
+	_set_base_limb_shape("left_arm", Vector3(0.13, 0.42, 0.13), Vector3(0.0, -0.20, 0.02))
+	_set_base_limb_shape("right_leg", Vector3(0.14, 0.40, 0.14), Vector3(0.0, -0.18, 0.02))
+	_set_base_limb_shape("left_leg", Vector3(0.14, 0.40, 0.14), Vector3(0.0, -0.18, 0.02))
+	_set_base_limb_shape("right_foot", Vector3(0.22, 0.09, 0.38), Vector3(0.0, 0.0, 0.08))
+	_set_base_limb_shape("left_foot", Vector3(0.22, 0.09, 0.38), Vector3(0.0, 0.0, 0.08))
+
+	if base_visuals.has("body"):
+		var body_visual := base_visuals["body"] as MeshInstance3D
+		if body_visual != null:
+			body_visual.visible = false
+	_ensure_lizard_torso_block("LizardTorsoFront", Vector3(0.42, 0.30, 0.48), Vector3(0.0, -0.02, -0.20))
+	_ensure_lizard_torso_block("LizardTorsoRear", Vector3(0.44, 0.32, 0.52), Vector3(0.0, -0.04, 0.28))
+
+	var tail := get_node_or_null("LizardTail") as MeshInstance3D
+	if tail == null:
+		tail = MeshInstance3D.new()
+		tail.name = "LizardTail"
+		add_child(tail)
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.18, 0.16, 0.9)
+		tail.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = BASE_COLOR
+		material.roughness = 0.82
+		tail.material_override = material
+	tail.position = Vector3(0.0, -0.22, 0.68)
+
+
+func _ensure_lizard_torso_block(block_name: String, size: Vector3, local_position: Vector3) -> void:
+	var body: Node3D = sockets.get("body") as Node3D
+	if body == null:
+		return
+
+	var block := body.get_node_or_null(block_name) as MeshInstance3D
+	if block == null:
+		block = MeshInstance3D.new()
+		block.name = block_name
+		body.add_child(block)
+		var material := StandardMaterial3D.new()
+		material.albedo_color = BASE_COLOR
+		material.roughness = 0.82
+		block.material_override = material
+
+	var mesh := block.mesh as BoxMesh
+	if mesh == null:
+		mesh = BoxMesh.new()
+		block.mesh = mesh
+	mesh.size = size
+	block.position = local_position
+	block.scale = Vector3.ONE
+	block.visible = true
 
 
 func _set_socket_position(socket_key: String, new_position: Vector3) -> void:
@@ -303,7 +360,7 @@ func _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshI
 # part. bone_def comes from BoneRulesService.definition_for(bone_id).
 func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 	var slot_id: String = bone_def.get("slot", "")
-	var socket_keys: Array = SLOT_TO_SOCKETS.get(slot_id, [])
+	var socket_keys: Array = EquipmentRulesService.socket_keys_for_slot(slot_id)
 	if socket_keys.is_empty():
 		push_warning("ModularSkeletonRig: no sockets for slot '" + slot_id + "'")
 		return
@@ -343,7 +400,7 @@ func unequip_slot(slot_id: String) -> void:
 	equipped_ids.erase(slot_id)
 
 	# Show the grey base again for that slot's sockets.
-	for key in SLOT_TO_SOCKETS.get(slot_id, []):
+	for key in EquipmentRulesService.socket_keys_for_slot(slot_id):
 		if base_visuals.has(key):
 			base_visuals[key].visible = true
 
