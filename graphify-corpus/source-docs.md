@@ -599,6 +599,8 @@ refactor pass.
   dictionaries only as temporary fallback during gradual migration.
 - `BoneDatabase` remains the compatibility layer that normalizes catalog data
   into the flat fields current systems expect.
+- `BoneDatabase.BONES` is still populated for legacy direct reads, and
+  `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -875,6 +877,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
   en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
   necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
+- No cambiar consumidores existentes para leer `BoneDefinition` directo.
+  `BoneDatabase.get_def` y `BoneRulesService.definition_for` siguen entregando
+  el diccionario plano que el rig, stats y slots ya esperan.
 
 ## Como probar
 
@@ -898,6 +903,8 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se movieron los huesos hechos a mano iniciales a
   `data/bones/*.tres`. La migracion sigue siendo gradual porque el diccionario
   queda como fallback.
+- 2026-07-14: Se mantuvo compatibilidad legacy en `BoneDatabase` con cache
+  `BONES`, `definitions` y `reset_cache`.
 
 ## docs/flow_index.md
 
@@ -1086,6 +1093,14 @@ No conectar la UI directamente a `BoneDefinition` ni `BoneDataCatalog`. La UI
 debe seguir usando `BoneRulesService` para que los assets `.tres`, los fallbacks
 y los huesos generados sigan una sola ruta.
 
+Compatibilidad:
+- Las llamadas actuales a `BoneDatabase.get_def`, `display_name`, `color`,
+  `slot`, `quality`, `description` y `effect_text` deben seguir funcionando.
+- `BoneDatabase.BONES` se mantiene como cache legacy de diccionarios planos para
+  herramientas/codigo viejo que todavia lo lean directamente.
+- Si se modifica un `.tres` durante una herramienta/editor, llamar
+  `BoneDatabase.reset_cache()` o `reload_from_catalog()` antes de leer de nuevo.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -1118,6 +1133,8 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se migraron los huesos hechos a mano a `.tres` en `data/bones/`.
   `BoneDataCatalog` carga Resources primero y conserva diccionarios como
   fallback gradual.
+- 2026-07-14: Se reforzo compatibilidad de `BoneDatabase`; `BONES` vuelve a
+  poblarse al cargar la clase y existen `definitions`/`reset_cache`.
 
 ## docs/open_world_map_layout.md
 
@@ -1298,6 +1315,16 @@ only when an asset is missing.
 
 `scripts/bone_database.gd` is the compatibility API. It normalizes catalog data
 into the flat fields current gameplay systems still expect.
+
+Compatibility contract:
+- Existing calls such as `get_def`, `has_bone`, `all_ids`, `display_name`,
+  `display_name_with_slot`, `color`, `slot`, `quality`, `description`,
+  `effect_text`, `enemy_float_bonus` and `enemy_int_bonus` must keep working.
+- `BoneDatabase.BONES` remains a populated legacy dictionary cache for direct
+  reads by older tools/scripts.
+- `definitions()` returns the same legacy dictionary cache.
+- `reset_cache()` and `reload_from_catalog()` rebuild that cache from current
+  Resources/fallback dictionaries.
 
 Current bone ids:
 - `arm_bone`
