@@ -4,7 +4,7 @@ This generated corpus translates the Godot project into Markdown that Graphify c
 It is derived from source files and should be rebuilt before Graphify runs.
 
 ## Included Source
-- GDScript files: 35
+- GDScript files: 36
 - Godot scenes: 13
 - Documentation files: 12
 - Project/root files: 3

@@ -420,8 +420,9 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/player_camera_controller.gd`: aim point para disparos.
 - `scripts/rig/procedural_player_animator.gd`: animaciones de ataque, aim,
   crawl y climb blend.
-- `scripts/bone_database.gd` + `scripts/bone_data_catalog.gd`: stats de huesos
-  que modifican perfiles de combate del jugador y enemigos.
+- `scripts/bone_definition.gd`, `scripts/bone_database.gd` y
+  `scripts/bone_data_catalog.gd`: stats de huesos que modifican perfiles de
+  combate del jugador y enemigos.
 
 ## Eventos usados
 
@@ -489,7 +490,9 @@ Vision:
 - Line of sight salvo lizards que pueden ver a traves de paredes si esta activo.
 
 Stats por hueso:
-- Los valores editables viven en `BoneDataCatalog.enemy_stats`.
+- La forma editable nueva es `BoneDefinition.enemy_*`.
+- Durante la migracion, `BoneDataCatalog` crea `BoneDefinition` desde sus datos
+  internos.
 - `BoneDatabase` los normaliza a campos planos como
   `enemy_move_speed_bonus`, `enemy_contact_damage_bonus`,
   `enemy_max_health_bonus`, `enemy_detection_range_bonus`,
@@ -515,7 +518,7 @@ Lizard wall climb:
 - Si el ataque afecta camera/aim, actualizar tambien `camera_flow.md`.
 - Si el ataque crea drops o limbs, actualizar tambien `drops_flow.md`.
 - Si un cambio de combate necesita ajustar stats de huesos hechos a mano,
-  editar `BoneDataCatalog` y mantener `BoneRulesService` como punto de lectura.
+  respetar `BoneDefinition` y mantener `BoneRulesService` como punto de lectura.
 
 ## Como probar
 
@@ -537,6 +540,8 @@ En `TESTING ENVIRONMENT`:
   detectar pared, en vez de atravesar usando posicion global.
 - 2026-07-14: Se documento la preparacion de datos limpios para stats de huesos
   usados por combate y perfiles enemigos.
+- 2026-07-14: Se agrego `BoneDefinition` como `Resource`; combate sigue leyendo
+  perfiles normalizados mediante `BoneRulesService`.
 
 ## docs/current_system_status.md
 
@@ -586,11 +591,13 @@ refactor pass.
 
 ## Bone Data
 
-- `BoneDataCatalog` is now the clean authoring source for hand-authored bones.
+- `BoneDefinition` is the Godot `Resource` type for one hand-authored bone.
+- `BoneDataCatalog` currently creates `BoneDefinition` objects from its clean
+  in-code data while the project prepares for `.tres` assets.
 - `BoneDatabase` remains the compatibility layer that normalizes catalog data
   into the flat fields current systems expect.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
-  or `BoneDatabase`, not `BoneDataCatalog` directly.
+  or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
 ## Testing
 
@@ -632,8 +639,9 @@ y el jugador recoge manteniendo interact.
   cuales pueden ser pickups, prioridad, prompt y hold-to-pickup.
 - `scripts/equipment_rules_service.gd`: genera ids de huesos por limb/source.
 - `scripts/bone_rules_service.gd`: nombres, colores y descripcion visible.
-- `scripts/bone_database.gd` + `scripts/bone_data_catalog.gd`: datos de huesos
-  hechos a mano y conversion al formato compatible.
+- `scripts/bone_definition.gd`, `scripts/bone_database.gd` y
+  `scripts/bone_data_catalog.gd`: datos de huesos hechos a mano y conversion al
+  formato compatible.
 - `scenes/bone.tscn` + `scripts/bone.gd`: pickup standard.
 - `scripts/limb_bone_pickup.gd`: pickup que vive sobre un limb desprendido.
 - `scripts/demo_enemy_camp.gd`: camp chest que da reward al limpiar enemigos.
@@ -672,8 +680,9 @@ Reglas actuales:
 - El source profile puede ser `normal`, `gorilla` o `lizard`.
 
 Los drops hechos a mano siguen usando ids como `arm_bone` o `heavy_bone`.
-Esos ids deben existir en `BoneDataCatalog`; `BoneDatabase` los convierte al
-formato plano que leen pickups, labels, camp chests e inventario.
+Esos ids deben poder resolverse como `BoneDefinition` mediante
+`BoneDataCatalog`; `BoneDatabase` los convierte al formato plano que leen
+pickups, labels, camp chests e inventario.
 
 ## Flujo de muerte
 
@@ -710,7 +719,7 @@ formato plano que leen pickups, labels, camp chests e inventario.
   `DropPickupRulesService`.
 - No duplicar reglas de hold prompt en `bone.gd`, `limb_bone_pickup.gd` o
   `demo_enemy_camp.gd`; usar el servicio.
-- No leer `BoneDataCatalog` directamente desde pickups. Usar
+- No leer `BoneDefinition` ni `BoneDataCatalog` directamente desde pickups. Usar
   `BoneRulesService` o `DropPickupRulesService`, para que los drops generados y
   los huesos hechos a mano sigan una sola ruta.
 - Si se agrega un nuevo enemy profile, actualizar:
@@ -738,6 +747,8 @@ En `TESTING ENVIRONMENT`:
   `DropPickupRulesService` y eventos globales de pickup/drop.
 - 2026-07-14: Se preparo `BoneDataCatalog` como datos limpios para drops hechos
   a mano, manteniendo `BoneDatabase` como compatibilidad para pickups actuales.
+- 2026-07-14: Se agrego `BoneDefinition` como tipo Resource para que los drops
+  hechos a mano puedan migrar a assets editables.
 
 ## docs/equipment_flow.md
 
@@ -760,6 +771,8 @@ dependan directamente del componente.
   por limbs y escalas visuales.
 - `scripts/bone_rules_service.gd`: definiciones, bonuses y textos visibles.
 - `scripts/bone_database.gd`: API compatible para definiciones planas.
+- `scripts/bone_definition.gd`: `Resource` editable que representa un hueso
+  hecho a mano.
 - `scripts/bone_data_catalog.gd`: fuente limpia de datos para huesos hechos a
   mano.
 - `scripts/rig/modular_skeleton_rig.gd`: sockets y piezas visuales del cuerpo.
@@ -819,11 +832,12 @@ Cada id generado contiene:
 - escala visual
 - bonuses de jugador
 
-Los huesos hechos a mano (`arm_bone`, `leg_bone`, `heavy_bone`, etc.) se
-authorizan en `BoneDataCatalog` con bloques `identity`, `player_stats`,
-`enemy_stats` y `visual`. `BoneDatabase` transforma esos bloques al formato
-plano que todavia consumen `BoneRulesService`, `EquipmentRulesService`, stats,
-rig e inventario.
+Los huesos hechos a mano (`arm_bone`, `leg_bone`, `heavy_bone`, etc.) se pueden
+representar como `BoneDefinition` Resources con identidad, stats de jugador,
+stats de enemigo y datos visuales. Durante esta etapa, `BoneDataCatalog` crea
+esos Resources desde sus datos internos y `BoneDatabase` los transforma al
+formato plano que todavia consumen `BoneRulesService`, `EquipmentRulesService`,
+stats, rig e inventario.
 
 ## Responsabilidades
 
@@ -853,8 +867,9 @@ rig e inventario.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
-- Al editar datos de huesos hechos a mano, cambiar `BoneDataCatalog`. Solo tocar
-  `BoneDatabase` si se necesita cambiar la conversion o compatibilidad.
+- Al editar datos de huesos hechos a mano ahora se debe respetar la forma de
+  `BoneDefinition`. Solo tocar `BoneDatabase` si se necesita cambiar la
+  conversion o compatibilidad.
 
 ## Como probar
 
@@ -873,6 +888,8 @@ En `TESTING ENVIRONMENT`:
   `GameEvents.bone_equipped`, `bone_unequipped` e `inventory_changed`.
 - 2026-07-14: Se preparo la migracion de `BoneDatabase` a datos limpios con
   `BoneDataCatalog`, manteniendo intactos los consumidores actuales.
+- 2026-07-14: Se agrego `BoneDefinition` como `Resource` de Godot y
+  `BoneDataCatalog` ahora puede convertir cada definicion a ese tipo.
 
 ## docs/flow_index.md
 
@@ -998,6 +1015,8 @@ modificar controles desde la seccion de settings.
 - `scripts/equipment_rules_service.gd`: slot de cada hueso y reglas de slots.
 - `scripts/bone_database.gd`: fachada compatible para leer definiciones de
   huesos.
+- `scripts/bone_definition.gd`: `Resource` editable de Godot para un hueso
+  hecho a mano.
 - `scripts/bone_data_catalog.gd`: datos limpios de autoria para huesos
   hechos a mano.
 
@@ -1047,16 +1066,18 @@ modificar controles desde la seccion de settings.
 ## Datos de huesos
 
 El inventario debe seguir leyendo nombres, colores, descripciones y textos de
-stats mediante `BoneRulesService`. Internamente, `BoneDatabase` normaliza datos
-desde `BoneDataCatalog`, que usa una estructura mas limpia:
+stats mediante `BoneRulesService`. Internamente, `BoneDatabase` normaliza
+`BoneDefinition` Resources creados desde `BoneDataCatalog`, que usa una
+estructura mas limpia:
 
 - `identity`: nombre, rareza, color, slot, tags y descripcion.
 - `player_stats`: bonuses que ve el jugador al equipar.
 - `enemy_stats`: bonuses que usan enemigos y perfiles de combate.
 - `visual`: datos opcionales para escala/peso visual.
 
-No conectar la UI directamente a `BoneDataCatalog` todavia. Esa capa existe para
-preparar una migracion futura a JSON, Resources o una tabla exportada.
+No conectar la UI directamente a `BoneDefinition` ni `BoneDataCatalog` todavia.
+Esa capa existe para preparar una migracion futura a `.tres`, JSON o una tabla
+exportada.
 
 ## Puntos delicados
 
@@ -1085,6 +1106,8 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se preparo la migracion de datos de huesos. La UI sigue usando
   `BoneRulesService`, mientras `BoneDatabase` convierte `BoneDataCatalog` al
   formato compatible.
+- 2026-07-14: Se creo `BoneDefinition` como `Resource` de Godot para que los
+  huesos puedan convertirse luego a assets editables sin cambiar la UI.
 
 ## docs/open_world_map_layout.md
 
@@ -1254,8 +1277,11 @@ Player relationships:
 
 ## Bone Data
 
-`scripts/bone_data_catalog.gd` is the clean authoring source for hand-authored
-bone definitions.
+`scripts/bone_definition.gd` defines `BoneDefinition`, the Godot `Resource`
+type for one hand-authored bone.
+
+`scripts/bone_data_catalog.gd` is the current clean in-code source for
+hand-authored bone definitions. It can create `BoneDefinition` objects by id.
 
 `scripts/bone_database.gd` is the compatibility API. It normalizes catalog data
 into the flat fields current gameplay systems still expect.
@@ -1268,10 +1294,11 @@ Current bone ids:
 - `rib_bone`
 
 Each definition can include:
-- `identity`: display name, quality, color, slot, tags, description.
-- `player_stats`: player-facing stat bonuses.
-- `enemy_stats`: enemy profile bonuses.
-- `visual`: optional scale/weight visual data.
+- `BoneDefinition.identity` fields: display name, quality, color, slot, tags,
+  description.
+- `BoneDefinition.player_*` fields: player-facing stat bonuses.
+- `BoneDefinition.enemy_*` fields: enemy profile bonuses.
+- `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.
 
 Consumers:
 - `Player` uses stat bonuses and slot data through services/components.
@@ -1280,9 +1307,10 @@ Consumers:
 - `BoneTrialGate` uses required bone slot-aware display names and colors.
 - Inventory UI widgets use slot-aware display names, colors, slot labels, and effect text.
 
-Rule: gameplay and UI should not read `BoneDataCatalog` directly yet. Use
-`BoneRulesService`, `EquipmentRulesService`, `DropPickupRulesService` or
-`BoneDatabase` so generated limb bones and hand-authored bones stay compatible.
+Rule: gameplay and UI should not read `BoneDefinition` or `BoneDataCatalog`
+directly yet. Use `BoneRulesService`, `EquipmentRulesService`,
+`DropPickupRulesService` or `BoneDatabase` so generated limb bones and
+hand-authored bones stay compatible.
 
 ## Inventory UI
 

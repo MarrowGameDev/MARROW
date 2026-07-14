@@ -302,6 +302,10 @@ class BoneDataCatalog:
         """Relationship: references class BoneDatabase."""
         return BoneDatabase
 
+    def depends_on_BoneDefinition(self):
+        """Relationship: references class BoneDefinition."""
+        return BoneDefinition
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -320,6 +324,37 @@ class BoneDatabase:
     def depends_on_BoneDataCatalog(self):
         """Relationship: references class BoneDataCatalog."""
         return BoneDataCatalog
+
+    def depends_on_BoneDefinition(self):
+        """Relationship: references class BoneDefinition."""
+        return BoneDefinition
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+class BoneDefinition:
+    """Godot script: scripts/bone_definition.gd
+    class_name: BoneDefinition
+    extends: Resource
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/bone_definition.gd'
+    godot_class_name = 'BoneDefinition'
+    godot_extends = 'Resource'
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def gd_func_to_clean_dictionary(self):
+        """GDScript function: to_clean_dictionary() -> Dictionary"""
+        pass
+
+    def gd_func_to_legacy_dictionary(self):
+        """GDScript function: to_legacy_dictionary() -> Dictionary"""
+        pass
+
+    def depends_on_BoneDatabase(self):
+        """Relationship: references class BoneDatabase."""
+        return BoneDatabase
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""

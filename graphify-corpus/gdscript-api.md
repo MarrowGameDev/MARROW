@@ -278,23 +278,12 @@
 - none
 
 ### Constants
-- `DEFAULT_PLAYER_STATS`
-- `DEFAULT_ENEMY_STATS`
 - `DEFINITIONS`
 
 ### Key Variables
+- `resource`
 - `definition`
 - `result`
-- `clean`
-- `identity`
-- `visual`
-- `player_stats`
-- `enemy_stats`
-- `legacy`
-- `value`
-- `dictionary_value`
-- `array_value`
-- `copy`
 
 ### Functions
 - none
@@ -340,6 +329,72 @@
 
 ### Functions
 - none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## BoneDefinition
+
+- Source file: `scripts/bone_definition.gd`
+- Extends: `Resource`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- `bone_id`
+- `display_name`
+- `quality`
+- `color`
+- `slot`
+- `tags`
+- `description`
+- `player_move_speed`
+- `player_attack_range`
+- `player_attack_damage`
+- `player_max_health`
+- `enemy_move_speed`
+- `enemy_attack_range`
+- `enemy_contact_damage`
+- `enemy_max_health`
+- `enemy_detection_range`
+- `enemy_visual_scale`
+- `enemy_flee_chance`
+- `weight`
+- `visual_scale`
+- `visual_offset`
+- `visual_rotation`
+
+### Constants
+- `DEFAULT_COLOR`
+
+### Key Variables
+- `visual`
+- `legacy`
+- `definition`
+- `identity`
+- `player_stats`
+- `enemy_stats`
+- `value`
+- `dictionary_value`
+- `result`
+- `source`
+- `color_value`
+- `vector_value`
+
+### Functions
+- `to_clean_dictionary() -> Dictionary`
+- `to_legacy_dictionary() -> Dictionary`
 
 ### Resource Dependencies
 - none
