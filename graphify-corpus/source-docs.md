@@ -601,6 +601,8 @@ refactor pass.
   into the flat fields current systems expect.
 - `BoneDatabase.BONES` is still populated for legacy direct reads, and
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
+- Bone quality fields describe part quality/condition and balancing metadata;
+  they are intentionally separate from loot rarity.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -880,6 +882,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - No cambiar consumidores existentes para leer `BoneDefinition` directo.
   `BoneDatabase.get_def` y `BoneRulesService.definition_for` siguen entregando
   el diccionario plano que el rig, stats y slots ya esperan.
+- Los campos de calidad (`quality_rank`, `quality_score`,
+  `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
+  No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
+  balance lo defina explicitamente.
 
 ## Como probar
 
@@ -905,6 +911,9 @@ En `TESTING ENVIRONMENT`:
   queda como fallback.
 - 2026-07-14: Se mantuvo compatibilidad legacy en `BoneDatabase` con cache
   `BONES`, `definitions` y `reset_cache`.
+- 2026-07-14: Se agregaron campos de calidad para preparar ordenamiento,
+  estado visual y balance futuro sin cambiar el contrato de equipamiento. Estos
+  campos no representan rareza de loot.
 
 ## docs/flow_index.md
 
@@ -1101,6 +1110,17 @@ Compatibilidad:
 - Si se modifica un `.tres` durante una herramienta/editor, llamar
   `BoneDatabase.reset_cache()` o `reload_from_catalog()` antes de leer de nuevo.
 
+Campos de calidad:
+- `quality` sigue siendo el texto visible que ya usa la UI.
+- `quality_rank` permite ordenar o filtrar por estado/calidad de la pieza.
+- `quality_score` puede usarse para comparar piezas sin depender del texto.
+- `quality_multiplier` queda reservado para balance si una pieza debe escalar
+  stats, rewards o valor.
+- `quality_color` permite colorear estado/calidad sin cambiar el color fisico
+  del hueso.
+- Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
+  separado como `rarity`/`rarity_rank` en otro cambio.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -1135,6 +1155,8 @@ En `TESTING ENVIRONMENT`:
   fallback gradual.
 - 2026-07-14: Se reforzo compatibilidad de `BoneDatabase`; `BONES` vuelve a
   poblarse al cargar la clase y existen `definitions`/`reset_cache`.
+- 2026-07-14: Se agregaron campos de calidad a `BoneDefinition` y al formato
+  legacy: rank, score, multiplier y color.
 
 ## docs/open_world_map_layout.md
 
@@ -1320,6 +1342,9 @@ Compatibility contract:
 - Existing calls such as `get_def`, `has_bone`, `all_ids`, `display_name`,
   `display_name_with_slot`, `color`, `slot`, `quality`, `description`,
   `effect_text`, `enemy_float_bonus` and `enemy_int_bonus` must keep working.
+- Quality helpers such as `quality_rank`, `quality_score`,
+  `quality_multiplier` and `quality_color` are additive and do not replace the
+  existing `quality` text.
 - `BoneDatabase.BONES` remains a populated legacy dictionary cache for direct
   reads by older tools/scripts.
 - `definitions()` returns the same legacy dictionary cache.
@@ -1336,6 +1361,8 @@ Current bone ids:
 Each definition can include:
 - `BoneDefinition.identity` fields: display name, quality, color, slot, tags,
   description.
+- `BoneDefinition.quality_*` fields: quality rank, score, multiplier and
+  quality color. These describe part quality/condition, not loot rarity.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.

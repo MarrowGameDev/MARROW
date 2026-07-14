@@ -326,6 +326,7 @@
 - `clean_name`
 - `clean_lower`
 - `slot_lower`
+- `color_value`
 - `text`
 - `move_bonus`
 - `range_bonus`
@@ -360,6 +361,10 @@
 - `bone_id`
 - `display_name`
 - `quality`
+- `quality_rank`
+- `quality_score`
+- `quality_multiplier`
+- `quality_color`
 - `color`
 - `slot`
 - `tags`
