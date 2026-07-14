@@ -37,16 +37,22 @@ jobs:
 
       - name: Rebuild graph from curated corpus
         run: |
-          rm -rf graphify-out
+          rm -rf graphify-out graphify-corpus/graphify-out
           graphify graphify-corpus --code-only
+          cd graphify-corpus
+          graphify export html
+          cd ..
+          rm -rf graphify-corpus/graphify-out/cache
+          mv graphify-corpus/graphify-out graphify-out
 
       - name: Remove generated cache
-        run: rm -rf graphify-out/cache
+        run: rm -rf graphify-out/cache graphify-corpus/graphify-out/cache
 
       - name: Commit graph updates
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -r --ignore-unmatch graphify-corpus/graphify-out
           git add graphify-corpus graphify-out .gitignore tools/build_graphify_corpus.py .github/workflows/update-graphify.yml
           if git diff --cached --quiet; then
             echo "Graphify is already up to date."
