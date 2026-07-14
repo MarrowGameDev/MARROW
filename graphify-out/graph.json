@@ -136,6 +136,171 @@
       "norm_label": "main()"
     },
     {
+      "label": "AGENTS.md",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "agents.md"
+    },
+    {
+      "label": "AGENTS.md",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_agents_md",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "agents.md"
+    },
+    {
+      "label": "Principios Del Proyecto",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "agents_principios_del_proyecto",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "principios del proyecto"
+    },
+    {
+      "label": "Estructura Esperada",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "agents_estructura_esperada",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "estructura esperada"
+    },
+    {
+      "label": "Reglas De Arquitectura",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "agents_reglas_de_arquitectura",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "reglas de arquitectura"
+    },
+    {
+      "label": "Godot Y GDScript",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L37",
+      "_origin": "ast",
+      "id": "agents_godot_y_gdscript",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "godot y gdscript"
+    },
+    {
+      "label": "Datos Y Resources",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L50",
+      "_origin": "ast",
+      "id": "agents_datos_y_resources",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "datos y resources"
+    },
+    {
+      "label": "Inventario, Equipamiento Y UI",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L58",
+      "_origin": "ast",
+      "id": "agents_inventario_equipamiento_y_ui",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "inventario, equipamiento y ui"
+    },
+    {
+      "label": "Combate, Enemigos Y Feel",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "agents_combate_enemigos_y_feel",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "combate, enemigos y feel"
+    },
+    {
+      "label": "Camara Y Controles",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L76",
+      "_origin": "ast",
+      "id": "agents_camara_y_controles",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "camara y controles"
+    },
+    {
+      "label": "Escenas De Prueba Y Validacion",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L83",
+      "_origin": "ast",
+      "id": "agents_escenas_de_prueba_y_validacion",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "escenas de prueba y validacion"
+    },
+    {
+      "label": "Git Y Cambios",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L97",
+      "_origin": "ast",
+      "id": "agents_git_y_cambios",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "git y cambios"
+    },
+    {
+      "label": "Documentacion",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L106",
+      "_origin": "ast",
+      "id": "agents_documentacion",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "documentacion"
+    },
+    {
+      "label": "Criterios Para Aceptar Un Cambio",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L113",
+      "_origin": "ast",
+      "id": "agents_criterios_para_aceptar_un_cambio",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "criterios para aceptar un cambio"
+    },
+    {
+      "label": "Reglas Para Asistentes",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L123",
+      "_origin": "ast",
+      "id": "agents_reglas_para_asistentes",
+      "community": 7,
+      "community_name": "AGENTS.md",
+      "norm_label": "reglas para asistentes"
+    },
+    {
       "label": "README.md",
       "file_type": "document",
       "source_file": "README.md",
@@ -867,6 +1032,146 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "agents",
+      "target": "agents_agents_md",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L76",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_camara_y_controles",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_combate_enemigos_y_feel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_criterios_para_aceptar_un_cambio",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L50",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_datos_y_resources",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_documentacion",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_escenas_de_prueba_y_validacion",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_estructura_esperada",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L97",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_git_y_cambios",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_godot_y_gdscript",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L58",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_inventario_equipamiento_y_ui",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_principios_del_proyecto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_reglas_de_arquitectura",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "agents_agents_md",
+      "target": "agents_reglas_para_asistentes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "README.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -1266,5 +1571,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "3046cbd95ca17947cba66fdef7abbe120458c6b2"
+  "built_at_commit": "4d2fb402ec32afaef57fd9ea14dc7c8f24942a4e"
 }

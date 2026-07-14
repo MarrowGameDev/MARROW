@@ -1,16 +1,16 @@
 # Graph Report - MARROW  (2026-07-14)
 
 ## Corpus Check
-- 7 files · ~46,309 words
+- 8 files · ~47,644 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 58 nodes · 61 edges · 7 communities (6 shown, 1 thin omitted)
+- 73 nodes · 75 edges · 8 communities (7 shown, 1 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3046cbd9`
+- Built from commit: `4d2fb402`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,6 +22,7 @@
 - Community 4
 - Community 5
 - MARROW Current System Status
+- AGENTS.md
 
 ## God Nodes (most connected - your core abstractions)
 1. `Marrow Project Graph Map` - 14 edges
@@ -41,7 +42,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (7 total, 1 thin omitted)
+## Communities (8 total, 1 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.29
@@ -67,15 +68,21 @@ Nodes (14): Arena Goals, BoneDatabase, Enemy and Combat, GameEvents, Generated W
 Cohesion: 0.25
 Nodes (7): Camera, Combat, Enemies, Inventory, MARROW Current System Status, Next Refactor Boundary, Rig
 
+### Community 7 - "AGENTS.md"
+Cohesion: 0.13
+Nodes (13): Camara Y Controles, Combate, Enemigos Y Feel, Criterios Para Aceptar Un Cambio, Datos Y Resources, Documentacion, Escenas De Prueba Y Validacion, Estructura Esperada, Git Y Cambios (+5 more)
+
 ## Knowledge Gaps
-- **35 isolated node(s):** `MARROW`, `Inventory`, `Combat`, `Camera`, `Enemies` (+30 more)
+- **48 isolated node(s):** `Principios Del Proyecto`, `Estructura Esperada`, `Reglas De Arquitectura`, `Godot Y GDScript`, `Datos Y Resources` (+43 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **What connects `MARROW`, `Inventory`, `Combat` to the rest of the system?**
-  _35 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `Principios Del Proyecto`, `Estructura Esperada`, `Reglas De Arquitectura` to the rest of the system?**
+  _48 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 4` be split into smaller, more focused modules?**
+  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
+- **Should `AGENTS.md` be split into smaller, more focused modules?**
   _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
