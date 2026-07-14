@@ -20,6 +20,15 @@ Guia obligatoria para cualquier cambio en Marrow. Todo trabajo debe priorizar es
 - `assets/`: recursos visuales/audio/datos importables.
 - `graphify-out/`, `.godot/`, caches y salidas generadas no deben tratarse como fuente de verdad.
 
+## Uso Del Grafo De Arquitectura
+
+- Antes de empezar cambios que toquen sistemas conectados, usar el grafo generado como referencia inicial para entender relaciones, dependencias e impacto probable.
+- Consultar `graphify-out/graph.html` para navegacion visual y `graphify-corpus/dependency-map.md`, `graphify-corpus/scene-map.md` y `graphify-corpus/system-map.md` para revisar dependencias concretas.
+- El grafo y el corpus son apoyo de analisis, no fuente de verdad. La fuente de verdad sigue siendo `scripts/`, `scenes/`, `docs/`, `project.godot` y este `AGENTS.md`.
+- Si el grafo contradice el codigo, confiar en el codigo y corregir el proceso de generacion si corresponde.
+- No editar manualmente `graphify-out/` ni `graphify-corpus/graphify-out/`. Regenerar esos artefactos mediante el workflow o `tools/build_graphify_corpus.py`.
+- No commitear caches de Graphify ni salidas temporales. Si aparece `graphify-out/cache/` o `graphify-corpus/graphify-out/`, eliminarlo del control de versiones.
+
 ## Reglas De Arquitectura
 
 - Una clase debe tener una responsabilidad principal. Si un archivo empieza a mezclar entrada, UI, datos, reglas de balance, efectos visuales y persistencia, dividirlo.
