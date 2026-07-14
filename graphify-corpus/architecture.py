@@ -375,6 +375,10 @@ class BoneRulesService:
         """Relationship: references class BoneDatabase."""
         return BoneDatabase
 
+    def depends_on_BoneDefinition(self):
+        """Relationship: references class BoneDefinition."""
+        return BoneDefinition
+
     def depends_on_DropPickupRulesService(self):
         """Relationship: references class DropPickupRulesService."""
         return DropPickupRulesService
@@ -1108,6 +1112,10 @@ class EquipmentRulesService:
     def depends_on_BoneDatabase(self):
         """Relationship: references class BoneDatabase."""
         return BoneDatabase
+
+    def depends_on_BoneDefinition(self):
+        """Relationship: references class BoneDefinition."""
+        return BoneDefinition
 
 class ExitPortal:
     """Godot script: scripts/exit_portal.gd

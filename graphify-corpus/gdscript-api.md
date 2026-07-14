@@ -422,6 +422,11 @@
 
 ### Constants
 - `DEFAULT_COLOR`
+- `QUALITY_SCRAP`
+- `QUALITY_FRAGILE`
+- `QUALITY_COMMON`
+- `QUALITY_STRONG`
+- `QUALITY_LEGENDARY`
 
 ### Key Variables
 - `visual`
