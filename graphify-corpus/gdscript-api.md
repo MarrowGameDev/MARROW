@@ -327,6 +327,8 @@
 - `clean_lower`
 - `slot_lower`
 - `color_value`
+- `value`
+- `tags`
 - `text`
 - `move_bonus`
 - `range_bonus`
@@ -373,6 +375,11 @@
 - `slot`
 - `tags`
 - `description`
+- `mutation_id`
+- `mutation_family`
+- `mutation_stage`
+- `mutation_intensity`
+- `mutation_tags`
 - `player_move_speed`
 - `player_attack_range`
 - `player_attack_damage`
@@ -398,6 +405,7 @@
 - `definition`
 - `identity`
 - `player_stats`
+- `mutation`
 - `enemy_stats`
 - `value`
 - `dictionary_value`
@@ -441,6 +449,8 @@
 ### Key Variables
 - `definition`
 - `color_value`
+- `value`
+- `tags`
 - `text`
 - `bonus`
 - `move_bonus`

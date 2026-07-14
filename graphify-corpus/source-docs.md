@@ -499,6 +499,15 @@ Stats por hueso:
   `enemy_visual_scale` y `enemy_flee_chance`.
 - `BoneRulesService.enemy_profile_for` es el punto de lectura para `Enemy`.
 
+Mutacion:
+- Los campos `mutation_id`, `mutation_family`, `mutation_stage`,
+  `mutation_intensity` y `mutation_tags` viajan por `BoneDefinition` y
+  `BoneDatabase`.
+- Mutacion no cambia combate automaticamente todavia. Debe activarse desde una
+  regla explicita para evitar que un dato de authoring cambie balance sin querer.
+- Los limbs generados de gorilla/lizard ya exponen familias de mutacion para
+  futuras respuestas visuales o AI.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -544,6 +553,8 @@ En `TESTING ENVIRONMENT`:
   perfiles normalizados mediante `BoneRulesService`.
 - 2026-07-14: Los stats de huesos hechos a mano ya pueden venir de Resources
   `.tres` en `data/bones/` sin cambiar `Enemy`.
+- 2026-07-14: Se agregaron campos de mutacion para huesos hechos a mano y limbs
+  generados, sin activar efectos automaticos de combate.
 
 ## docs/current_system_status.md
 
@@ -896,6 +907,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
   No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
   balance lo defina explicitamente.
+- Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
+  `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
+  de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
+  regla de equipamiento que los consuma.
 
 ## Como probar
 
@@ -924,6 +939,8 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se agregaron campos de calidad para preparar ordenamiento,
   estado visual y balance futuro sin cambiar el contrato de equipamiento. Estos
   campos no representan rareza de loot.
+- 2026-07-14: Se agregaron campos de mutacion para preparar variantes visuales,
+  cuerpo hibrido y respuestas especiales sin acoplarlas todavia al rig.
 
 ## docs/flow_index.md
 
@@ -1386,6 +1403,8 @@ Each definition can include:
   quality color. These describe part quality/condition, not loot rarity.
 - `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
   weighting.
+- `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
+  tags for future visual, rig, AI or combat hooks.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.
