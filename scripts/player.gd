@@ -12,8 +12,6 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var base_move_speed: float = 6.0
 @export var sprint_multiplier: float = 1.55
 @export var jump_velocity: float = 8.5
-@export var movement_acceleration: float = 24.0
-@export var movement_deceleration: float = 30.0
 @export_range(0.0, 0.25, 0.01) var movement_deadzone: float = 0.08
 @export var base_attack_range: float = 2.0
 @export var base_attack_damage: int = 1
@@ -247,17 +245,10 @@ func _physics_process(delta: float) -> void:
 	# Fading knockback from taking a hit rides on top of normal movement.
 	damage_knockback = damage_knockback.move_toward(Vector3.ZERO, damage_knockback_strength * 4.0 * delta)
 
-	var target_horizontal_velocity := Vector3(direction.x * current_move_speed, 0.0, direction.z * current_move_speed)
-	var current_horizontal_velocity := Vector3(velocity.x - damage_knockback.x, 0.0, velocity.z - damage_knockback.z)
-	var movement_rate := movement_acceleration
-	if target_horizontal_velocity.length() <= 0.01:
-		movement_rate = movement_deceleration
-	current_horizontal_velocity = current_horizontal_velocity.move_toward(target_horizontal_velocity, movement_rate * delta)
-
 	# CharacterBody3D already has a velocity variable.
-	# We set the sideways parts from smoothed input, while Y is handled by gravity above.
-	velocity.x = current_horizontal_velocity.x + damage_knockback.x
-	velocity.z = current_horizontal_velocity.z + damage_knockback.z
+	# We keep horizontal control direct so the player stops without sliding.
+	velocity.x = direction.x * current_move_speed + damage_knockback.x
+	velocity.z = direction.z * current_move_speed + damage_knockback.z
 
 	# move_and_slide moves the body, checks collisions, and slides along walls/floors instead of passing through them.
 	move_and_slide()

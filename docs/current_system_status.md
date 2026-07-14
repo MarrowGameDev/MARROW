@@ -28,8 +28,8 @@ refactor pass.
   collision, and aim ray helpers.
 - `Player` delegates mouse capture/release to the camera controller when
   inventory opens or closes.
-- Player movement is camera-relative and now smooths horizontal velocity to avoid
-  sudden frame-to-frame jitter.
+- Player movement is camera-relative and keeps horizontal control direct so the
+  character does not slide after input stops.
 
 ## Enemies
 
@@ -44,6 +44,8 @@ refactor pass.
 - `ProceduralPlayerAnimator` animates sockets from resolved movement velocity and
   equipped bone data.
 - Crawl mode lowers the body and uses stronger arm pulls with tucked legs.
+- Skeleton wobble is intentionally subtle so socket animation reads as motion
+  instead of visible vibration.
 
 ## Next Refactor Boundary
 

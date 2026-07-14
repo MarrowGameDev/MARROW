@@ -51,7 +51,7 @@ Important state:
 - `inventory_preview_rig` shows equipped bones in the inventory preview.
 
 Important methods:
-- `_physics_process` handles smoothed movement, inventory toggle, category cycling, and Q equip.
+- `_physics_process` handles direct camera-relative movement, inventory toggle, category cycling, and Q equip.
 - `collect_bone` adds a bone to the inventory and emits `bone_collected`.
 - `equip_bone` equips a bone in its database slot, recalculates stats, syncs preview, and emits `bone_equipped` only when the equipped slot changes.
 - `unequip_slot` clears a slot, recalculates stats, syncs preview, and emits `bone_unequipped`.
@@ -246,6 +246,7 @@ Consumers:
 `ProceduralPlayerAnimator`:
 - animates the rig sockets based on velocity, facing, speed, and equipped bone defs.
 - uses a lower body pose, stronger arm pulls, and tucked legs in crawl mode.
+- keeps skeleton wobble subtle to avoid visible vibration while moving.
 - responds to attack events.
 - bends limb joints when rigged limb data exists.
 
