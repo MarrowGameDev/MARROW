@@ -63,6 +63,14 @@ Esos ids deben poder resolverse como `BoneDefinition` mediante
 los convierte al formato plano que leen pickups, labels, camp chests e
 inventario.
 
+Rareza:
+- Los campos `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`
+  viven en `BoneDefinition` y pasan por `BoneDatabase`.
+- `rarity_drop_weight` no cambia drops automaticamente todavia; queda listo
+  para cuando se defina una tabla de drops ponderada.
+- Rareza no debe mezclarse con calidad. Calidad describe condicion/valor de la
+  pieza; rareza describe probabilidad o categoria de obtencion.
+
 ## Flujo de muerte
 
 1. `Enemy.die` emite `enemy_defeated`.
@@ -130,3 +138,5 @@ En `TESTING ENVIRONMENT`:
   hechos a mano puedan migrar a assets editables.
 - 2026-07-14: Los drops hechos a mano iniciales (`arm_bone`, `leg_bone`,
   `heavy_bone`, `dummy_bone`, `rib_bone`) ya tienen Resources en `data/bones/`.
+- 2026-07-14: Se agregaron campos de rareza y peso de drop por rareza sin
+  activar todavia reglas ponderadas de loot.

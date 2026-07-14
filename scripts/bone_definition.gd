@@ -17,6 +17,10 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 @export var quality_score: float = 1.0
 @export var quality_multiplier: float = 1.0
 @export var quality_color: Color = DEFAULT_COLOR
+@export var rarity: String = "Common"
+@export var rarity_rank: int = 1
+@export var rarity_color: Color = DEFAULT_COLOR
+@export var rarity_drop_weight: float = 1.0
 @export var color: Color = DEFAULT_COLOR
 @export var slot: String = ""
 @export var tags: Array[String] = []
@@ -62,6 +66,10 @@ func to_clean_dictionary() -> Dictionary:
 			"quality_score": quality_score,
 			"quality_multiplier": quality_multiplier,
 			"quality_color": quality_color,
+			"rarity": rarity,
+			"rarity_rank": rarity_rank,
+			"rarity_color": rarity_color,
+			"rarity_drop_weight": rarity_drop_weight,
 			"color": color,
 			"slot": slot,
 			"tags": tags.duplicate(),
@@ -94,6 +102,10 @@ func to_legacy_dictionary() -> Dictionary:
 		"quality_score": quality_score,
 		"quality_multiplier": quality_multiplier,
 		"quality_color": quality_color,
+		"rarity": rarity,
+		"rarity_rank": rarity_rank,
+		"rarity_color": rarity_color,
+		"rarity_drop_weight": rarity_drop_weight,
 		"color": color,
 		"slot": slot,
 		"move_speed_bonus": player_move_speed,
@@ -138,6 +150,10 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.quality_score = float(identity.get("quality_score", definition.quality_score))
 	definition.quality_multiplier = float(identity.get("quality_multiplier", definition.quality_multiplier))
 	definition.quality_color = _color(identity.get("quality_color", definition.quality_color), definition.quality_color)
+	definition.rarity = str(identity.get("rarity", definition.rarity))
+	definition.rarity_rank = int(identity.get("rarity_rank", definition.rarity_rank))
+	definition.rarity_color = _color(identity.get("rarity_color", definition.rarity_color), definition.rarity_color)
+	definition.rarity_drop_weight = float(identity.get("rarity_drop_weight", definition.rarity_drop_weight))
 	definition.color = _color(identity.get("color", definition.color), definition.color)
 	definition.slot = str(identity.get("slot", definition.slot))
 	definition.tags = _string_array(identity.get("tags", []))

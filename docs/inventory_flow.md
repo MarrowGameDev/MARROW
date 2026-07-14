@@ -109,6 +109,13 @@ Campos de calidad:
 - Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
   separado como `rarity`/`rarity_rank` en otro cambio.
 
+Campos de rareza:
+- `rarity` describe rareza de loot/obtencion, separada de la calidad fisica o
+  funcional de la pieza.
+- `rarity_rank` permite ordenar o filtrar por rareza.
+- `rarity_color` permite mostrar rareza sin cambiar el color fisico del hueso.
+- `rarity_drop_weight` queda disponible para futuras reglas de drops.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -145,3 +152,5 @@ En `TESTING ENVIRONMENT`:
   poblarse al cargar la clase y existen `definitions`/`reset_cache`.
 - 2026-07-14: Se agregaron campos de calidad a `BoneDefinition` y al formato
   legacy: rank, score, multiplier y color.
+- 2026-07-14: Se agregaron campos de rareza separados de calidad:
+  `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`.

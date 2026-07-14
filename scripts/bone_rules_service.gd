@@ -68,6 +68,36 @@ static func quality_color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) 
 	return BoneDatabase.quality_color(bone_id, fallback)
 
 
+static func rarity_for(bone_id: String) -> String:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return str(definition.get("rarity", "Common"))
+	return BoneDatabase.rarity(bone_id)
+
+
+static func rarity_rank_for(bone_id: String) -> int:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return int(definition.get("rarity_rank", 1))
+	return BoneDatabase.rarity_rank(bone_id)
+
+
+static func rarity_color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		var color_value: Variant = definition.get("rarity_color", fallback)
+		if color_value is Color:
+			return color_value
+	return BoneDatabase.rarity_color(bone_id, fallback)
+
+
+static func rarity_drop_weight_for(bone_id: String) -> float:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return float(definition.get("rarity_drop_weight", 1.0))
+	return BoneDatabase.rarity_drop_weight(bone_id)
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():

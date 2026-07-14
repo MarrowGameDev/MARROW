@@ -121,6 +121,10 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"quality_score": _generated_limb_quality_score(source_profile),
 		"quality_multiplier": _generated_limb_quality_multiplier(source_profile),
 		"quality_color": _generated_limb_quality_color(source_profile),
+		"rarity": _generated_limb_rarity(source_profile),
+		"rarity_rank": _generated_limb_rarity_rank(source_profile),
+		"rarity_color": _generated_limb_rarity_color(source_profile),
+		"rarity_drop_weight": _generated_limb_rarity_drop_weight(source_profile),
 		"color": color,
 		"slot": slot_id,
 		"source_profile": source_profile,
@@ -200,6 +204,40 @@ static func _generated_limb_quality_color(source_profile: String) -> Color:
 			return Color(0.23, 0.78, 0.34, 1.0)
 		_:
 			return UNKNOWN_COLOR
+
+
+static func _generated_limb_rarity(source_profile: String) -> String:
+	match source_profile:
+		"gorilla":
+			return "Uncommon"
+		"lizard":
+			return "Uncommon"
+		_:
+			return "Common"
+
+
+static func _generated_limb_rarity_rank(source_profile: String) -> int:
+	match source_profile:
+		"gorilla", "lizard":
+			return 2
+		_:
+			return 1
+
+
+static func _generated_limb_rarity_color(source_profile: String) -> Color:
+	match source_profile:
+		"gorilla", "lizard":
+			return Color(0.35, 0.85, 0.95, 1.0)
+		_:
+			return UNKNOWN_COLOR
+
+
+static func _generated_limb_rarity_drop_weight(source_profile: String) -> float:
+	match source_profile:
+		"gorilla", "lizard":
+			return 0.65
+		_:
+			return 1.0
 
 
 static func _generated_limb_bonus(source_profile: String, limb_key: String) -> Dictionary:

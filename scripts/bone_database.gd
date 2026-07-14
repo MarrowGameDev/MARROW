@@ -164,6 +164,32 @@ static func quality_color(id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	return fallback
 
 
+static func rarity(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("rarity", "Common"))
+	return "Unknown"
+
+
+static func rarity_rank(id: String) -> int:
+	if _bones().has(id):
+		return int(_bones()[id].get("rarity_rank", 0))
+	return 0
+
+
+static func rarity_color(id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
+	if _bones().has(id):
+		var color_value: Variant = _bones()[id].get("rarity_color", fallback)
+		if color_value is Color:
+			return color_value
+	return fallback
+
+
+static func rarity_drop_weight(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("rarity_drop_weight", 1.0))
+	return 0.0
+
+
 static func enemy_float_bonus(id: String, key: String, fallback: float = 0.0) -> float:
 	if _bones().has(id):
 		return float(_bones()[id].get(key, fallback))

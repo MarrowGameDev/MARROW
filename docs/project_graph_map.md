@@ -128,6 +128,8 @@ Compatibility contract:
 - Quality helpers such as `quality_rank`, `quality_score`,
   `quality_multiplier` and `quality_color` are additive and do not replace the
   existing `quality` text.
+- Rarity helpers such as `rarity`, `rarity_rank`, `rarity_color` and
+  `rarity_drop_weight` are additive and separate from quality.
 - `BoneDatabase.BONES` remains a populated legacy dictionary cache for direct
   reads by older tools/scripts.
 - `definitions()` returns the same legacy dictionary cache.
@@ -146,6 +148,8 @@ Each definition can include:
   description.
 - `BoneDefinition.quality_*` fields: quality rank, score, multiplier and
   quality color. These describe part quality/condition, not loot rarity.
+- `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
+  weighting.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.
