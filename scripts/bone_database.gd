@@ -190,6 +190,39 @@ static func rarity_drop_weight(id: String) -> float:
 	return 0.0
 
 
+static func mutation_id(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("mutation_id", ""))
+	return ""
+
+
+static func mutation_family(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("mutation_family", ""))
+	return ""
+
+
+static func mutation_stage(id: String) -> int:
+	if _bones().has(id):
+		return int(_bones()[id].get("mutation_stage", 0))
+	return 0
+
+
+static func mutation_intensity(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("mutation_intensity", 0.0))
+	return 0.0
+
+
+static func mutation_tags(id: String) -> Array:
+	if _bones().has(id):
+		var value: Variant = _bones()[id].get("mutation_tags", [])
+		if value is Array:
+			var tags: Array = value
+			return tags.duplicate()
+	return []
+
+
 static func enemy_float_bonus(id: String, key: String, fallback: float = 0.0) -> float:
 	if _bones().has(id):
 		return float(_bones()[id].get(key, fallback))

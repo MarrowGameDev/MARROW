@@ -125,6 +125,11 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"rarity_rank": _generated_limb_rarity_rank(source_profile),
 		"rarity_color": _generated_limb_rarity_color(source_profile),
 		"rarity_drop_weight": _generated_limb_rarity_drop_weight(source_profile),
+		"mutation_id": _generated_limb_mutation_id(source_profile, limb_key),
+		"mutation_family": _generated_limb_mutation_family(source_profile),
+		"mutation_stage": _generated_limb_mutation_stage(source_profile),
+		"mutation_intensity": _generated_limb_mutation_intensity(source_profile),
+		"mutation_tags": _generated_limb_mutation_tags(source_profile, limb_key),
 		"color": color,
 		"slot": slot_id,
 		"source_profile": source_profile,
@@ -238,6 +243,46 @@ static func _generated_limb_rarity_drop_weight(source_profile: String) -> float:
 			return 0.65
 		_:
 			return 1.0
+
+
+static func _generated_limb_mutation_id(source_profile: String, limb_key: String) -> String:
+	if source_profile == "normal":
+		return ""
+	return source_profile + "_" + limb_key
+
+
+static func _generated_limb_mutation_family(source_profile: String) -> String:
+	match source_profile:
+		"gorilla":
+			return "primal_mass"
+		"lizard":
+			return "reptile_adaptation"
+		_:
+			return ""
+
+
+static func _generated_limb_mutation_stage(source_profile: String) -> int:
+	match source_profile:
+		"gorilla", "lizard":
+			return 1
+		_:
+			return 0
+
+
+static func _generated_limb_mutation_intensity(source_profile: String) -> float:
+	match source_profile:
+		"gorilla":
+			return 0.35
+		"lizard":
+			return 0.3
+		_:
+			return 0.0
+
+
+static func _generated_limb_mutation_tags(source_profile: String, limb_key: String) -> Array[String]:
+	if source_profile == "normal":
+		return []
+	return [source_profile, limb_key]
 
 
 static func _generated_limb_bonus(source_profile: String, limb_key: String) -> Dictionary:

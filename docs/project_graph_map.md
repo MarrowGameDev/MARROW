@@ -150,6 +150,8 @@ Each definition can include:
   quality color. These describe part quality/condition, not loot rarity.
 - `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
   weighting.
+- `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
+  tags for future visual, rig, AI or combat hooks.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.

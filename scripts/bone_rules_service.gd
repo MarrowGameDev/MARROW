@@ -98,6 +98,44 @@ static func rarity_drop_weight_for(bone_id: String) -> float:
 	return BoneDatabase.rarity_drop_weight(bone_id)
 
 
+static func mutation_id_for(bone_id: String) -> String:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return str(definition.get("mutation_id", ""))
+	return BoneDatabase.mutation_id(bone_id)
+
+
+static func mutation_family_for(bone_id: String) -> String:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return str(definition.get("mutation_family", ""))
+	return BoneDatabase.mutation_family(bone_id)
+
+
+static func mutation_stage_for(bone_id: String) -> int:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return int(definition.get("mutation_stage", 0))
+	return BoneDatabase.mutation_stage(bone_id)
+
+
+static func mutation_intensity_for(bone_id: String) -> float:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return float(definition.get("mutation_intensity", 0.0))
+	return BoneDatabase.mutation_intensity(bone_id)
+
+
+static func mutation_tags_for(bone_id: String) -> Array:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		var value: Variant = definition.get("mutation_tags", [])
+		if value is Array:
+			var tags: Array = value
+			return tags.duplicate()
+	return BoneDatabase.mutation_tags(bone_id)
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():

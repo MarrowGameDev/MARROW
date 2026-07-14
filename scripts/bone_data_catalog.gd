@@ -145,6 +145,13 @@ const DEFINITIONS := {
 			"attack_range": 1.0,
 			"max_health": 1,
 		},
+		"mutation": {
+			"id": "rib_hybrid",
+			"family": "hybrid_growth",
+			"stage": 1,
+			"intensity": 0.25,
+			"tags": ["hybrid", "adaptive"],
+		},
 		"enemy_stats": {
 			"move_speed": 0.7,
 			"attack_range": 0.4,

@@ -101,6 +101,15 @@ Stats por hueso:
   `enemy_visual_scale` y `enemy_flee_chance`.
 - `BoneRulesService.enemy_profile_for` es el punto de lectura para `Enemy`.
 
+Mutacion:
+- Los campos `mutation_id`, `mutation_family`, `mutation_stage`,
+  `mutation_intensity` y `mutation_tags` viajan por `BoneDefinition` y
+  `BoneDatabase`.
+- Mutacion no cambia combate automaticamente todavia. Debe activarse desde una
+  regla explicita para evitar que un dato de authoring cambie balance sin querer.
+- Los limbs generados de gorilla/lizard ya exponen familias de mutacion para
+  futuras respuestas visuales o AI.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -146,3 +155,5 @@ En `TESTING ENVIRONMENT`:
   perfiles normalizados mediante `BoneRulesService`.
 - 2026-07-14: Los stats de huesos hechos a mano ya pueden venir de Resources
   `.tres` en `data/bones/` sin cambiar `Enemy`.
+- 2026-07-14: Se agregaron campos de mutacion para huesos hechos a mano y limbs
+  generados, sin activar efectos automaticos de combate.

@@ -122,6 +122,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
   No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
   balance lo defina explicitamente.
+- Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
+  `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
+  de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
+  regla de equipamiento que los consuma.
 
 ## Como probar
 
@@ -150,3 +154,5 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se agregaron campos de calidad para preparar ordenamiento,
   estado visual y balance futuro sin cambiar el contrato de equipamiento. Estos
   campos no representan rareza de loot.
+- 2026-07-14: Se agregaron campos de mutacion para preparar variantes visuales,
+  cuerpo hibrido y respuestas especiales sin acoplarlas todavia al rig.

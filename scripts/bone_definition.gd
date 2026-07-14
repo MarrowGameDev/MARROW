@@ -26,6 +26,13 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 @export var tags: Array[String] = []
 @export_multiline var description: String = ""
 
+@export_group("Mutation")
+@export var mutation_id: String = ""
+@export var mutation_family: String = ""
+@export var mutation_stage: int = 0
+@export_range(0.0, 1.0, 0.01) var mutation_intensity: float = 0.0
+@export var mutation_tags: Array[String] = []
+
 @export_group("Player Stats")
 @export var player_move_speed: float = 0.0
 @export var player_attack_range: float = 0.0
@@ -81,6 +88,13 @@ func to_clean_dictionary() -> Dictionary:
 			"attack_damage": player_attack_damage,
 			"max_health": player_max_health,
 		},
+		"mutation": {
+			"id": mutation_id,
+			"family": mutation_family,
+			"stage": mutation_stage,
+			"intensity": mutation_intensity,
+			"tags": mutation_tags.duplicate(),
+		},
 		"enemy_stats": {
 			"move_speed": enemy_move_speed,
 			"attack_range": enemy_attack_range,
@@ -106,6 +120,11 @@ func to_legacy_dictionary() -> Dictionary:
 		"rarity_rank": rarity_rank,
 		"rarity_color": rarity_color,
 		"rarity_drop_weight": rarity_drop_weight,
+		"mutation_id": mutation_id,
+		"mutation_family": mutation_family,
+		"mutation_stage": mutation_stage,
+		"mutation_intensity": mutation_intensity,
+		"mutation_tags": mutation_tags.duplicate(),
 		"color": color,
 		"slot": slot,
 		"move_speed_bonus": player_move_speed,
@@ -141,6 +160,7 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 
 	var identity: Dictionary = _dictionary(clean, "identity")
 	var player_stats: Dictionary = _dictionary(clean, "player_stats")
+	var mutation: Dictionary = _dictionary(clean, "mutation")
 	var enemy_stats: Dictionary = _dictionary(clean, "enemy_stats")
 	var visual: Dictionary = _dictionary(clean, "visual")
 
@@ -158,6 +178,12 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.slot = str(identity.get("slot", definition.slot))
 	definition.tags = _string_array(identity.get("tags", []))
 	definition.description = str(identity.get("description", definition.description))
+
+	definition.mutation_id = str(mutation.get("id", definition.mutation_id))
+	definition.mutation_family = str(mutation.get("family", definition.mutation_family))
+	definition.mutation_stage = int(mutation.get("stage", definition.mutation_stage))
+	definition.mutation_intensity = float(mutation.get("intensity", definition.mutation_intensity))
+	definition.mutation_tags = _string_array(mutation.get("tags", []))
 
 	definition.player_move_speed = float(player_stats.get("move_speed", definition.player_move_speed))
 	definition.player_attack_range = float(player_stats.get("attack_range", definition.player_attack_range))
