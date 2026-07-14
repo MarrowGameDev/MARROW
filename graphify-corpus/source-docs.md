@@ -508,6 +508,15 @@ Mutacion:
 - Los limbs generados de gorilla/lizard ya exponen familias de mutacion para
   futuras respuestas visuales o AI.
 
+Ataque/combo por hueso:
+- `BoneDefinition` ahora expone `attack_type`, `attack_tags`, `combo_family`,
+  `combo_step`, `combo_window`, `combo_tags` y `combo_finisher`.
+- `BoneDatabase` y `BoneRulesService` entregan esos campos con compatibilidad
+  para huesos hechos a mano y limbs generados.
+- Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
+  activar combos reales se debe crear una regla de combate explicita y probarla
+  en `TESTING ENVIRONMENT`.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -555,6 +564,9 @@ En `TESTING ENVIRONMENT`:
   `.tres` en `data/bones/` sin cambiar `Enemy`.
 - 2026-07-14: Se agregaron campos de mutacion para huesos hechos a mano y limbs
   generados, sin activar efectos automaticos de combate.
+- 2026-07-14: Se agregaron campos de ataque/combo a `BoneDefinition`,
+  `BoneDatabase` y `BoneRulesService`; quedan como metadata hasta que exista
+  una regla real de combos.
 
 ## docs/current_system_status.md
 
@@ -614,6 +626,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
+- Bone attack/combo fields are present as passive metadata for future combat
+  chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`.
 - Bone set/synergy fields are present as passive metadata; no automatic set
@@ -915,6 +929,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
   regla de equipamiento que los consuma.
+- Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
+  `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
+  una pieza podria participar en cadenas de combate. Son metadata pasiva por
+  ahora; equipar una pieza no debe activar combos sin una regla dedicada.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
@@ -942,6 +960,8 @@ En `TESTING ENVIRONMENT`:
   `BoneDataCatalog`, manteniendo intactos los consumidores actuales.
 - 2026-07-14: Se agrego `BoneDefinition` como `Resource` de Godot y
   `BoneDataCatalog` ahora puede convertir cada definicion a ese tipo.
+- 2026-07-14: Se agregaron campos pasivos de ataque/combo a los huesos y limbs
+  generados para preparar previews y futuras reglas de cadenas de combate.
 - 2026-07-14: Se movieron los huesos hechos a mano iniciales a
   `data/bones/*.tres`. La migracion sigue siendo gradual porque el diccionario
   queda como fallback.
@@ -1184,6 +1204,14 @@ Campos de set/sinergia:
   de combinaciones.
 - La UI puede mostrar estos datos, pero no debe calcular bonuses de set hasta
   que exista una regla de equipamiento dedicada.
+
+Campos de ataque/combo:
+- `attack_type` describe la categoria principal de uso de combate o movimiento.
+- `attack_tags` y `combo_tags` permiten filtros o detalles en UI.
+- `combo_family`, `combo_step`, `combo_window` y `combo_finisher` preparan la
+  lectura de cadenas de ataque.
+- Inventario puede mostrar estos datos, pero no debe cambiar ataques ni combos
+  automaticamente.
 
 ## Puntos delicados
 
@@ -1439,6 +1467,8 @@ Each definition can include:
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
   tags for future visual, rig, AI or combat hooks.
+- `BoneDefinition.attack_*` and `BoneDefinition.combo_*` fields: passive attack
+  and combo authoring metadata for future combat chains.
 - `BoneDefinition.weight*` fields: legacy animation weight plus weight class,
   physical weight, equipment weight and inventory weight.
 - `BoneDefinition.set_*` and `BoneDefinition.synergy_*` fields: passive set
