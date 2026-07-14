@@ -444,22 +444,22 @@
     ],
     "11": [
       "architecture_enemy",
-      "architecture_enemy_gd_func_alert_nearby_allies",
       "architecture_enemy_gd_func_detach_limbs_for_damage",
       "architecture_enemy_gd_func_drop_remaining_limbs_on_death",
       "architecture_enemy_gd_func_get_bone_recovery_move",
       "architecture_enemy_gd_func_get_held_rock_world_position",
-      "architecture_enemy_gd_func_receive_alert",
       "architecture_enemy_gd_func_set_enemy_color",
       "architecture_enemy_gd_func_set_rig_color",
+      "architecture_enemy_gd_func_should_use_gorilla_profile",
+      "architecture_enemy_gd_func_should_use_lizard_profile",
       "architecture_enemy_gd_func_spawn_is_out_of_perspective",
       "architecture_enemy_gd_func_turn_toward",
       "architecture_enemy_gd_func_update_lizard_wall_climb_blend",
       "architecture_enemy_gd_func_update_saliva_spit_windup",
+      "architecture_rationale_1003",
       "architecture_rationale_603",
       "architecture_rationale_623",
       "architecture_rationale_671",
-      "architecture_rationale_711",
       "architecture_rationale_719",
       "architecture_rationale_759",
       "architecture_rationale_827",
@@ -890,29 +890,29 @@
       "architecture_scenemain_contains_sceneexitportal"
     ],
     "49": [
+      "architecture_enemy_gd_func_alert_nearby_allies",
+      "architecture_enemy_gd_func_receive_alert",
+      "architecture_rationale_711"
+    ],
+    "50": [
       "architecture_enemy_gd_func_apply_lizard_wall_climb_velocity",
       "architecture_proceduralplayeranimator_gd_func_apply_lizard_wall_climb_limb_pose",
       "architecture_rationale_599"
     ],
-    "50": [
+    "51": [
       "architecture_enemy_gd_func_get_stealth_prompt_text",
       "architecture_player_gd_func_set_stealth_prompt",
       "architecture_rationale_683"
     ],
-    "51": [
+    "52": [
       "architecture_enemy_gd_func_make_bow_piece",
       "architecture_player_gd_func_make_bow_piece",
       "architecture_rationale_983"
     ],
-    "52": [
+    "53": [
       "architecture_enemy_gd_func_setup_procedural_character",
       "architecture_player_gd_func_setup_procedural_character",
       "architecture_rationale_967"
-    ],
-    "53": [
-      "architecture_enemy_gd_func_should_use_gorilla_profile",
-      "architecture_enemy_gd_func_should_use_lizard_profile",
-      "architecture_rationale_1003"
     ],
     "54": [
       "architecture_enemy_gd_func_show_held_rock",

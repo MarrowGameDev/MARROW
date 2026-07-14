@@ -329,6 +329,7 @@
 - `color_value`
 - `value`
 - `tags`
+- `ids`
 - `text`
 - `move_bonus`
 - `range_bonus`
@@ -380,6 +381,13 @@
 - `mutation_stage`
 - `mutation_intensity`
 - `mutation_tags`
+- `set_id`
+- `set_name`
+- `set_piece_key`
+- `set_tags`
+- `synergy_ids`
+- `synergy_tags`
+- `synergy_score`
 - `player_move_speed`
 - `player_attack_range`
 - `player_attack_damage`
@@ -410,6 +418,8 @@
 - `identity`
 - `player_stats`
 - `mutation`
+- `set_data`
+- `synergy`
 - `enemy_stats`
 - `value`
 - `dictionary_value`
@@ -455,6 +465,7 @@
 - `color_value`
 - `value`
 - `tags`
+- `ids`
 - `text`
 - `bonus`
 - `move_bonus`
