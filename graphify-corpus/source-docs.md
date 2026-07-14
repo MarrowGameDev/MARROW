@@ -632,6 +632,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
+- Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
+  `legendario`; UI can localize display text separately.
 - Quality percentage modifiers are stored as passive metadata for damage, speed,
   health, drop and weight tuning; no automatic formula consumes them yet.
 - Bone attack/combo fields are present as passive metadata for future combat
@@ -940,6 +942,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
   `quality_weight_percent`) son metadata granular. Pueden alimentar balance
   futuro, pero equipamiento no los aplica automaticamente todavia.
+- Las calidades canonicas son ids en minuscula y sin acentos para datos:
+  `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
+  acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
@@ -993,6 +998,8 @@ En `TESTING ENVIRONMENT`:
   futuras reglas de combinacion.
 - 2026-07-14: Se agregaron modificadores porcentuales por calidad separados de
   `quality_multiplier` para preparar balance granular.
+- 2026-07-14: Se definieron calidades canonicas (`chatarra`, `fragil`,
+  `comun`, `fuerte`, `legendario`) y se migraron los huesos base a esos ids.
 
 ## docs/flow_index.md
 
@@ -1201,8 +1208,9 @@ Campos de calidad:
   `quality_health_percent`, `quality_drop_percent` y
   `quality_weight_percent` permiten mostrar o comparar intenciones de balance
   por calidad sin aplicar reglas automaticas.
-- Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
-  separado como `rarity`/`rarity_rank` en otro cambio.
+- Calidades canonicas: `chatarra`, `fragil`, `comun`, `fuerte`,
+  `legendario`.
+- Calidad no es rareza. Rareza de loot vive en `rarity`/`rarity_rank`.
 
 Campos de rareza:
 - `rarity` describe rareza de loot/obtencion, separada de la calidad fisica o
@@ -1485,6 +1493,8 @@ Each definition can include:
 - `BoneDefinition.quality_*` fields: quality rank, score, multiplier, quality
   color and granular percent modifiers for damage, speed, health, drops and
   weight. These describe part quality/condition, not loot rarity.
+  Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
+  `legendario`.
 - `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
