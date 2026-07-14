@@ -22,6 +22,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var search_turn_speed: float = 0.9
 @export var search_rotation_smoothing: float = 5.0
 @export_range(10.0, 120.0, 1.0) var search_sweep_angle_degrees: float = 28.0
+@export var arrow_hit_search_duration: float = 20.0
 @export var idle_wander_enabled: bool = true
 @export var idle_wander_radius: float = 2.8
 @export var idle_wander_interval: float = 2.4
@@ -186,7 +187,7 @@ func _ready() -> void:
 	_setup_procedural_character()
 
 	# Preview the dropped bone's color. Unknown drops fall back to the enemy's red.
-	normal_color = BoneDatabase.color(dropped_bone_id, Color(0.85, 0.18, 0.16, 1.0))
+	normal_color = BoneRulesService.color_for(dropped_bone_id, Color(0.85, 0.18, 0.16, 1.0))
 	_set_enemy_color(normal_color)
 	_update_health_label()
 	_build_vision_cone()
@@ -528,14 +529,14 @@ func can_be_stealth_finished_by(player: Node3D) -> bool:
 
 
 func get_stealth_prompt_text() -> String:
-	var bone_name := BoneDatabase.display_name_with_slot(dropped_bone_id)
+	var bone_name: String = BoneRulesService.display_name_with_slot(dropped_bone_id)
 	if health <= stealth_finish_max_health:
 		return "F: Finish " + bone_name + " enemy"
 	return "F: Ambush " + bone_name + " enemy"
 
 
 func get_drop_display_name() -> String:
-	return BoneDatabase.display_name_with_slot(dropped_bone_id)
+	return BoneRulesService.display_name_with_slot(dropped_bone_id)
 
 
 func _is_player_behind(player: Node3D) -> bool:
@@ -1014,13 +1015,36 @@ func _update_vision_visual(can_see_player: bool) -> void:
 
 # Tier 1D: the attack hitbox calls this. It adds knockback on top of the normal
 # damage so a landed hit is obvious. hit_from is the attack box's world position.
-func take_damage(amount: int, hit_from: Vector3 = Vector3.ZERO, _attacker: Node = null) -> void:
+func take_damage(amount: int, hit_from: Vector3 = Vector3.ZERO, attacker: Node = null, damage_source: String = "") -> void:
 	if not alive:
 		return
 
 	last_hit_from_position = hit_from
 	_apply_knockback(hit_from)
 	take_hit(amount)
+	if alive and damage_source == "arrow":
+		_react_to_arrow_hit(attacker, hit_from)
+
+
+func _react_to_arrow_hit(attacker: Node, hit_from: Vector3) -> void:
+	var attacker_body: Node3D = attacker as Node3D
+	if attacker_body == null or not is_instance_valid(attacker_body):
+		if hit_from != Vector3.ZERO:
+			_investigate_position(hit_from, arrow_hit_search_duration)
+		return
+
+	last_known_player_position = attacker_body.global_position
+	search_timer = maxf(search_timer, arrow_hit_search_duration)
+	search_look_time = 0.0
+	returning_to_spawn = false
+	recovering_limb_key = ""
+	bone_recovery_safe_timer = 0.0
+	_alert_nearby_allies(attacker_body.global_position)
+
+	var to_attacker: Vector3 = attacker_body.global_position - global_position
+	to_attacker.y = 0.0
+	if to_attacker.length() > 0.01:
+		_turn_toward(to_attacker.normalized())
 
 
 # Turns a hit into a fading push instead of a teleport (works with move_and_slide).
@@ -1118,28 +1142,7 @@ func _next_attached_limb_key() -> String:
 
 
 func _preferred_detach_keys() -> Array[String]:
-	var keys: Array[String] = []
-	match BoneDatabase.slot(dropped_bone_id):
-		"right_arm":
-			keys.append("right_arm")
-			keys.append("left_arm")
-		"left_arm":
-			keys.append("left_arm")
-			keys.append("right_arm")
-		"legs":
-			keys.append("right_leg")
-			keys.append("left_leg")
-
-	for limb_key in DETACHABLE_LIMBS:
-		if CORE_FALL_ORDER.has(limb_key):
-			continue
-		if not keys.has(limb_key):
-			keys.append(limb_key)
-
-	for limb_key in CORE_FALL_ORDER:
-		if not keys.has(limb_key):
-			keys.append(limb_key)
-	return keys
+	return BoneRulesService.detachable_priority_for_bone(dropped_bone_id, DETACHABLE_LIMBS, CORE_FALL_ORDER)
 
 
 func _detach_limb_group(limb_key: String, force_pickup: bool = false) -> void:
@@ -1236,7 +1239,7 @@ func _attach_pickup_to_detached_limb(body: RigidBody3D) -> void:
 	var label := Label3D.new()
 	label.name = "PromptLabel"
 	label.position = Vector3(0.0, 1.25, 0.0)
-	label.text = BoneDatabase.display_name_with_slot(dropped_bone_id)
+	label.text = BoneRulesService.display_name_with_slot(dropped_bone_id)
 	label.font_size = 42
 	label.outline_size = 8
 	label.outline_modulate = Color(0.08, 0.07, 0.02, 1.0)
@@ -1464,7 +1467,7 @@ func _drop_bone() -> void:
 	if limb_pickup_spawned:
 		return
 
-	var drop_slot := BoneDatabase.slot(dropped_bone_id)
+	var drop_slot: String = BoneRulesService.slot_for(dropped_bone_id)
 	if drop_slot == "body" and not detached_limb_keys.has("body"):
 		return
 
@@ -1505,19 +1508,7 @@ func _force_limb_pickup_drop() -> bool:
 
 
 func _next_pickup_limb_key() -> String:
-	var candidates: Array[String] = []
-	match BoneDatabase.slot(dropped_bone_id):
-		"right_arm":
-			candidates.append("right_arm")
-			candidates.append("left_arm")
-		"left_arm":
-			candidates.append("left_arm")
-			candidates.append("right_arm")
-		"legs":
-			candidates.append("right_leg")
-			candidates.append("left_leg")
-		"body":
-			candidates.append("body")
+	var candidates: Array[String] = BoneRulesService.pickup_limb_candidates_for_bone(dropped_bone_id)
 
 	for limb_key in candidates:
 		if not detached_limb_keys.has(limb_key):
@@ -1539,17 +1530,7 @@ func _drop_remaining_limbs_on_death() -> void:
 
 
 func _drop_slot_matches_limb(limb_key: String) -> bool:
-	match BoneDatabase.slot(dropped_bone_id):
-		"right_arm":
-			return limb_key == "right_arm" or limb_key == "left_arm"
-		"left_arm":
-			return limb_key == "left_arm" or limb_key == "right_arm"
-		"legs":
-			return limb_key == "right_leg" or limb_key == "left_leg"
-		"body":
-			return limb_key == "body"
-		_:
-			return false
+	return BoneRulesService.drop_slot_matches_limb(dropped_bone_id, limb_key)
 
 
 # This updates the floating HP text above the enemy.
@@ -1564,7 +1545,7 @@ func _update_health_label() -> void:
 		state_text = "\nFLEEING"
 	elif _can_recover_bone_part():
 		state_text = "\nRECOVERING"
-	health_label.text = BoneDatabase.quality(dropped_bone_id) + " " + BoneDatabase.display_name_with_slot(dropped_bone_id) + "\nHP: " + str(health) + state_text
+	health_label.text = BoneRulesService.quality_for(dropped_bone_id) + " " + BoneRulesService.display_name_with_slot(dropped_bone_id) + "\nHP: " + str(health) + state_text
 
 
 # This gives a clear visual response every time the enemy is hit.
@@ -1655,19 +1636,19 @@ func _set_rig_color(new_color: Color) -> void:
 
 
 func _apply_bone_identity() -> void:
-	var def := BoneDatabase.get_def(dropped_bone_id)
-	if def.is_empty():
+	var profile: Dictionary = BoneRulesService.enemy_profile_for(dropped_bone_id, low_health_flee_chance)
+	if not bool(profile["is_defined"]):
 		return
 
-	move_speed += BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_move_speed_bonus")
-	attack_range += BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_attack_range_bonus")
-	contact_damage += BoneDatabase.enemy_int_bonus(dropped_bone_id, "enemy_contact_damage_bonus")
-	max_health += BoneDatabase.enemy_int_bonus(dropped_bone_id, "enemy_max_health_bonus")
-	detection_range += BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_detection_range_bonus")
-	low_health_flee_chance = BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_flee_chance", low_health_flee_chance)
+	move_speed += float(profile["move_speed_bonus"])
+	attack_range += float(profile["attack_range_bonus"])
+	contact_damage += int(profile["contact_damage_bonus"])
+	max_health += int(profile["max_health_bonus"])
+	detection_range += float(profile["detection_range_bonus"])
+	low_health_flee_chance = float(profile["flee_chance"])
 	stealth_finish_max_health = maxi(stealth_finish_max_health, max_health - 1)
 
-	var enemy_scale := BoneDatabase.enemy_float_bonus(dropped_bone_id, "enemy_visual_scale", 1.0)
+	var enemy_scale: float = float(profile["visual_scale"])
 	if visual_root != null:
 		visual_root.scale = Vector3.ONE * enemy_scale
 

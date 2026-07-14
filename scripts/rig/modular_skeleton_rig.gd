@@ -300,7 +300,7 @@ func _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshI
 
 
 # Equip a bone: swap the target socket(s) grey limb for a bone-colored, bone-scaled
-# part. bone_def comes from BoneDatabase.get_def(bone_id).
+# part. bone_def comes from BoneRulesService.definition_for(bone_id).
 func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 	var slot_id: String = bone_def.get("slot", "")
 	var socket_keys: Array = SLOT_TO_SOCKETS.get(slot_id, [])
@@ -352,7 +352,7 @@ func unequip_slot(slot_id: String) -> void:
 func get_equipped_bone_defs() -> Array:
 	var defs: Array = []
 	for slot_id in equipped_ids:
-		var def := BoneDatabase.get_def(equipped_ids[slot_id])
+		var def := BoneRulesService.definition_for(equipped_ids[slot_id])
 		if not def.is_empty():
 			defs.append(def)
 	return defs

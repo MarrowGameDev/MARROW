@@ -1,8 +1,5 @@
 extends CharacterBody3D
 
-# This is the visible bone piece that gets attached to a player socket.
-const EQUIPPED_BONE_SCENE: PackedScene = preload("res://scenes/equipped_bone.tscn")
-
 # Tier 1D: the short-lived, visible attack box we spawn in front of the player.
 const ATTACK_HITBOX_SCENE: PackedScene = preload("res://scenes/attack_hitbox.tscn")
 const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.gd")
@@ -61,22 +58,13 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 var move_speed: float = 0.0
 var attack_range: float = 0.0
 var attack_damage: int = 0
-var base_max_health: int = 0
-
-# This is the player's first tiny inventory.
-# For now it only stores bone names, which is enough to prove pickup works.
-var bone_inventory: Array[String] = []
 
 # Pressing Tab toggles the inventory screen (which also pauses the game).
 var inventory_open: bool = false
 var inventory_ui: PlayerInventoryUI = null
-
-# Multi-slot equipment: each body slot ("right_arm","left_arm","legs","body")
-# can hold one bone id, and each keeps its own attached visual. Wearing bones in
-# different slots stacks their stats — your body is your build.
-var equipped: Dictionary = {}          # slot -> bone_id
-var equipped_visuals: Dictionary = {}  # slot -> Node3D
-var equip_cursor: int = 0              # which collected bone Q equips next
+var inventory_component: PlayerInventoryComponent = null
+var equipment_component: PlayerEquipmentComponent = null
+var stats_component: PlayerStatsComponent = null
 
 # This counts nearby world interactions that use the Interact action.
 # When it is above 0, that action is reserved for the world prompt.
@@ -98,9 +86,6 @@ var aim_reticle_root: Control = null
 var aim_reticle_dot: ColorRect = null
 var aim_reticle_bars: Array[ColorRect] = []
 var aim_reticle_charge_label: Label = null
-
-# Tier 1F: how many times a bone was equipped this run (shown on the win screen).
-var equip_swaps: int = 0
 
 # Survivability state.
 var health: int = 0
@@ -131,9 +116,17 @@ func _ready() -> void:
 	# Keep processing while the tree is paused, so the inventory screen (which
 	# pauses the game) can still be closed and browsed.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	base_max_health = max_health
 	health = max_health
 	bow_equipped = start_with_bow_equipped
+	stats_component = PlayerStatsComponent.new()
+	add_child(stats_component)
+	stats_component.setup(base_move_speed, base_attack_range, base_attack_damage, max_health)
+	equipment_component = PlayerEquipmentComponent.new()
+	add_child(equipment_component)
+	equipment_component.setup(self)
+	inventory_component = PlayerInventoryComponent.new()
+	add_child(inventory_component)
+	inventory_component.setup(self, equipment_component)
 	_recalculate_stats()
 	inventory_ui = PlayerInventoryUI.new()
 	add_child(inventory_ui)
@@ -640,38 +633,46 @@ func _update_procedural_animation(delta: float, max_speed: float) -> void:
 
 # Bone pickups call this when the player walks into them.
 func collect_bone(bone_id: String) -> void:
-	bone_inventory.append(bone_id)
-	if inventory_ui != null:
-		inventory_ui.notify_inventory_changed()
-	GameEvents.bone_collected.emit(bone_id, self)
-	print("Collected bone: ", BoneDatabase.display_name_with_slot(bone_id))
+	if inventory_component != null:
+		inventory_component.collect_bone(bone_id)
 
 
 # Kept so arena objects can still detect "this body is the player." With multi-slot
 # equipping, trials should use has_bone_equipped() instead of a single active id.
 func get_equipped_bone_id() -> String:
-	return equipped.get("right_arm", "")
+	if equipment_component == null:
+		return ""
+	return equipment_component.get_equipped_bone_id()
 
 
 # True if the given bone is worn in ANY slot. Trials check this now.
 func has_bone_equipped(bone_id: String) -> bool:
-	return equipped.values().has(bone_id)
+	return equipment_component != null and equipment_component.has_bone_equipped(bone_id)
 
 
 # Tier 1F: the arena goal manager reads this to fill in the win screen.
 func get_run_stats() -> Dictionary:
-	return {
-		"collected": bone_inventory.duplicate(),
-		"swaps": equip_swaps,
-	}
+	if inventory_component == null:
+		return {"collected": [], "swaps": 0}
+	return inventory_component.get_run_stats()
 
 
 func get_inventory_items() -> Array:
-	return bone_inventory.duplicate()
+	if inventory_component == null:
+		return []
+	return inventory_component.get_inventory_items()
 
 
 func get_equipment_state() -> Dictionary:
-	return equipped.duplicate()
+	if equipment_component == null:
+		return {}
+	return equipment_component.get_equipment_state()
+
+
+func get_equipped_bone_for_slot(slot: String) -> String:
+	if equipment_component == null:
+		return ""
+	return equipment_component.get_equipped_bone_for_slot(slot)
 
 
 func get_inventory_stats_snapshot() -> Dictionary:
@@ -747,54 +748,19 @@ func _flash_player_damage() -> void:
 		mesh.material_override = null
 
 
-# Equipping is a build: Q steps through your collected bones and snaps each one
-# into ITS slot (from the bone database). Different slots coexist, so you end up
-# wearing several at once; a new bone in a filled slot replaces that slot.
 func _equip_next_bone() -> void:
-	if bone_inventory.is_empty():
-		print("No bones to equip yet.")
-		return
-
-	if equip_cursor >= bone_inventory.size():
-		equip_cursor = 0
-
-	var bone_id := bone_inventory[equip_cursor]
-	equip_cursor = (equip_cursor + 1) % bone_inventory.size()
-	equip_bone(bone_id)
+	if inventory_component != null:
+		inventory_component.equip_next_bone()
 
 
-# Public: equip a specific bone into its slot. Used by Q and by drag-and-drop.
 func equip_bone(bone_id: String) -> void:
-	if not _equip_bone_in_slot(bone_id):
-		return
-	if rig != null:
-		rig.equip_bone(bone_id, BoneDatabase.get_def(bone_id))
-	equip_swaps += 1
-	_recalculate_stats()
-	if inventory_ui != null:
-		inventory_ui.notify_equipment_changed()
-	GameEvents.bone_equipped.emit(bone_id, BoneDatabase.slot(bone_id), self)
-	print("Equipped ", BoneDatabase.display_name_with_slot(bone_id), " in slot ", BoneDatabase.slot(bone_id))
+	if equipment_component != null:
+		equipment_component.equip_bone(bone_id)
 
 
-# Public: clear a slot. Used by dragging a worn bone out, or right-clicking a slot.
 func unequip_slot(slot: String) -> void:
-	if not equipped.has(slot):
-		return
-
-	var bone_id: String = equipped[slot]
-	equipped.erase(slot)
-	if rig != null:
-		rig.unequip_slot(slot)
-	if equipped_visuals.has(slot) and is_instance_valid(equipped_visuals[slot]):
-		equipped_visuals[slot].queue_free()
-	equipped_visuals.erase(slot)
-
-	_recalculate_stats()
-	if inventory_ui != null:
-		inventory_ui.notify_equipment_changed()
-	GameEvents.bone_unequipped.emit(bone_id, slot, self)
-	print("Unequipped slot ", slot)
+	if equipment_component != null:
+		equipment_component.unequip_slot(slot)
 
 
 # Shows a bone's stats in the hover-info area (called by tiles/slots on mouse-over).
@@ -808,45 +774,7 @@ func clear_bone_info() -> void:
 		inventory_ui.clear_bone_info()
 
 
-# Attaches one bone into the slot the database assigns it, replacing whatever
-# was already in that slot and rebuilding its visual.
-func _equip_bone_in_slot(bone_id: String) -> bool:
-	var slot := BoneDatabase.slot(bone_id)
-	if slot == "":
-		print("Bone has no slot: ", bone_id)
-		return false
-
-	var socket := _get_socket_for_slot(slot)
-	if socket == null:
-		print("No socket for slot: ", slot)
-		return false
-
-	# Already wearing this exact bone in that slot? Nothing to do.
-	if equipped.get(slot, "") == bone_id:
-		return false
-
-	equipped[slot] = bone_id
-
-	# Remove the old visual in this slot, if any.
-	if equipped_visuals.has(slot) and is_instance_valid(equipped_visuals[slot]):
-		equipped_visuals[slot].queue_free()
-	equipped_visuals.erase(slot)
-
-	if rig != null:
-		return true
-
-	# Build and attach the new visual, tinted to the bone's color.
-	var visual := EQUIPPED_BONE_SCENE.instantiate() as Node3D
-	socket.add_child(visual)
-	visual.position = Vector3.ZERO
-	visual.rotation = Vector3.ZERO
-	equipped_visuals[slot] = visual
-	_tint_visual(visual, BoneDatabase.color(bone_id))
-	return true
-
-
-# Maps a slot name to the socket node the bone attaches to.
-func _get_socket_for_slot(slot: String) -> Node3D:
+func get_equipment_socket_for_slot(slot: String) -> Node3D:
 	match slot:
 		"right_arm":
 			return socket_arm_right
@@ -860,24 +788,25 @@ func _get_socket_for_slot(slot: String) -> Node3D:
 			return null
 
 
+func recalculate_player_stats() -> void:
+	_recalculate_stats()
+
+
+func recalculate_inventory_stats() -> void:
+	recalculate_player_stats()
+
+
 # Recalculates gameplay stats by stacking every bone currently worn.
 func _recalculate_stats() -> void:
-	var old_max_health := max_health
-	move_speed = base_move_speed
-	attack_range = base_attack_range
-	attack_damage = base_attack_damage
-	max_health = base_max_health
-
-	for slot in equipped:
-		var bone_id: String = equipped[slot]
-		move_speed += BoneDatabase.move_speed_bonus(bone_id)
-		attack_range += BoneDatabase.attack_range_bonus(bone_id)
-		attack_damage += BoneDatabase.attack_damage_bonus(bone_id)
-		max_health += BoneDatabase.max_health_bonus(bone_id)
-
-	if old_max_health > 0 and max_health > old_max_health:
-		health += max_health - old_max_health
-	health = clampi(health, 0, max_health)
+	if stats_component == null:
+		return
+	var equipment_state: Dictionary = get_equipment_state()
+	var calculated_stats: Dictionary = stats_component.calculate(equipment_state, health, max_health)
+	move_speed = float(calculated_stats["move_speed"])
+	attack_range = float(calculated_stats["attack_range"])
+	attack_damage = int(calculated_stats["attack_damage"])
+	max_health = int(calculated_stats["max_health"])
+	health = int(calculated_stats["health"])
 	if bow_visual != null:
 		bow_visual.visible = bow_equipped
 	_update_health_ui()
@@ -1033,29 +962,3 @@ func _update_mouse_mode() -> void:
 # Tier 1E: bone names, colors, stat bonuses, and effect text used to live here as
 # a stack of match statements. They now live in one shared table that every script
 # reads from: scripts/bone_database.gd.
-
-
-# Tints one bone visual so its bone type is readable on the player's body.
-func _tint_visual(visual: Node3D, color: Color) -> void:
-	_tint_visual_mesh(visual, "BoneMesh", color)
-	_tint_visual_mesh(visual, "JointMesh", color)
-
-
-func _tint_visual_mesh(visual: Node3D, mesh_name: String, color: Color) -> void:
-	var mesh := visual.get_node_or_null(mesh_name) as MeshInstance3D
-	if mesh == null:
-		return
-
-	var material: StandardMaterial3D = null
-	var raw_material := mesh.get_surface_override_material(0)
-	if raw_material != null:
-		material = raw_material.duplicate() as StandardMaterial3D
-
-	if material == null:
-		material = StandardMaterial3D.new()
-
-	material.albedo_color = color
-	material.emission_enabled = true
-	material.emission = color
-	material.emission_energy_multiplier = 0.25
-	mesh.set_surface_override_material(0, material)

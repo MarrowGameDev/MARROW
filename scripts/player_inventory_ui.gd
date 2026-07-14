@@ -156,9 +156,9 @@ func get_equipped_bone_for_slot(slot: String) -> String:
 func show_bone_info(bone_id: String) -> void:
 	if hover_info_label == null:
 		return
-	var text := BoneDatabase.quality(bone_id) + " " + BoneDatabase.display_name_with_slot(bone_id) + "  [slot: " + BoneDatabase.slot_display_name(BoneDatabase.slot(bone_id)) + "]\n"
-	text += BoneDatabase.effect_text(bone_id)
-	text += BoneDatabase.description(bone_id)
+	var text := BoneRulesService.quality_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + BoneRulesService.slot_display_name(BoneRulesService.slot_for(bone_id)) + "]\n"
+	text += BoneRulesService.effect_text_for(bone_id)
+	text += BoneRulesService.description_for(bone_id)
 	hover_info_label.text = text
 
 
@@ -861,7 +861,7 @@ func sync_preview() -> void:
 
 	for slot in equipped:
 		var bone_id: String = str(equipped[slot])
-		var bone_def: Dictionary = BoneDatabase.get_def(bone_id)
+		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id)
 		if not bone_def.is_empty():
 			inventory_preview_rig.equip_bone(bone_id, bone_def)
 
@@ -1220,7 +1220,7 @@ func rebuild_item_tiles() -> void:
 func _bone_matches_inventory_category(bone_id: String) -> bool:
 	if inventory_category == "all":
 		return true
-	var slot := BoneDatabase.slot(bone_id)
+	var slot: String = BoneRulesService.slot_for(bone_id)
 	if inventory_category == "right_arm":
 		return slot == "right_arm" or slot == "left_arm"
 	return slot == inventory_category

@@ -84,11 +84,11 @@ func _update_prompt() -> void:
 		return
 
 	if player_in_range == null:
-		prompt_label.text = BoneDatabase.display_name_with_slot(bone_id)
+		prompt_label.text = BoneRulesService.display_name_with_slot(bone_id)
 		return
 
 	var percent := int((hold_progress / pickup_hold_time) * 100.0)
-	prompt_label.text = "Hold " + _action_binding_text("interact") + ": " + BoneDatabase.display_name_with_slot(bone_id) + " " + str(percent) + "%"
+	prompt_label.text = "Hold " + _action_binding_text("interact") + ": " + BoneRulesService.display_name_with_slot(bone_id) + " " + str(percent) + "%"
 
 
 func _action_binding_text(action: String) -> String:
@@ -121,4 +121,4 @@ func _update_prompt_color() -> void:
 	if prompt_label == null:
 		return
 
-	prompt_label.modulate = BoneDatabase.color(bone_id)
+	prompt_label.modulate = BoneRulesService.color_for(bone_id)

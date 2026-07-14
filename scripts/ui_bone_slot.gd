@@ -92,8 +92,8 @@ func _on_mouse_exited() -> void:
 func refresh() -> void:
 	var bone_id := _equipped_bone_id()
 	if bone_id != "":
-		_box.color = BoneDatabase.color(bone_id)
-		_label.text = BoneDatabase.display_name_with_slot(bone_id)
+		_box.color = BoneRulesService.color_for(bone_id)
+		_label.text = BoneRulesService.display_name_with_slot(bone_id)
 	else:
 		_box.color = Color(0.87, 0.63, 0.19, 0.28)
 		_label.text = "Empty"
@@ -109,7 +109,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 
 	var wrap := Control.new()
 	var rect := ColorRect.new()
-	rect.color = BoneDatabase.color(bone_id)
+	rect.color = BoneRulesService.color_for(bone_id)
 	var preview_size: float = clampf(minf(_slot_size.x, _slot_size.y) * 0.56, 48.0, 64.0)
 	rect.size = Vector2(preview_size, preview_size)
 	rect.position = Vector2(-preview_size * 0.5, -preview_size * 0.5)
@@ -123,7 +123,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	if typeof(data) != TYPE_DICTIONARY or not data.has("bone_id"):
 		return false
-	return BoneDatabase.slot(data["bone_id"]) == slot_name
+	return BoneRulesService.slot_for(data["bone_id"]) == slot_name
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:

@@ -153,7 +153,7 @@ func _show_win_screen(player: Node, elapsed_ms: int) -> void:
 	for id in collected:
 		if names_text != "":
 			names_text += ", "
-		names_text += BoneDatabase.display_name_with_slot(id)
+		names_text += BoneRulesService.display_name_with_slot(id)
 
 	var text := "DEMO COMPLETE!\n\n"
 	text += "Time: %d:%02d\n" % [minutes, seconds]

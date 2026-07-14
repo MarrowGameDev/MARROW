@@ -64,7 +64,7 @@ func _prepare_material() -> void:
 
 func _update_appearance() -> void:
 	# Unknown required bones fall back to red, matching the old gate default.
-	_set_gate_color(BoneDatabase.color(required_bone_id, Color(0.85, 0.18, 0.16, 1.0)))
+	_set_gate_color(BoneRulesService.color_for(required_bone_id, Color(0.85, 0.18, 0.16, 1.0)))
 
 
 func _update_label() -> void:
@@ -75,7 +75,7 @@ func _update_label() -> void:
 		gate_label.text = trial_name + "\nComplete"
 		return
 
-	var required_name := BoneDatabase.display_name_with_slot(required_bone_id)
+	var required_name: String = BoneRulesService.display_name_with_slot(required_bone_id)
 	if player_in_range == null:
 		gate_label.text = trial_name + "\nNeeds " + required_name
 	elif player_in_range.has_method("has_bone_equipped") and player_in_range.call("has_bone_equipped", required_bone_id):

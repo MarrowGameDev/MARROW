@@ -57,7 +57,7 @@ func _on_body_entered(body: Node) -> void:
 
 	if body != null and body.has_method("take_damage"):
 		_has_hit = true
-		body.take_damage(damage, global_position, owner_body)
+		body.take_damage(damage, global_position, owner_body, projectile_style)
 		queue_free()
 	elif body != null and body != owner_body:
 		_has_hit = true

@@ -54,7 +54,7 @@ func _physics_process(delta: float) -> void:
 func _cycle_equip() -> void:
 	var bone_id := _equip_cycle[_equip_index]
 	_equip_index = (_equip_index + 1) % _equip_cycle.size()
-	rig.equip_bone(bone_id, BoneDatabase.get_def(bone_id))
+	rig.equip_bone(bone_id, BoneRulesService.definition_for(bone_id))
 	if not equipped_ids.has(bone_id):
 		equipped_ids.append(bone_id)
-	print("Rig test equipped: ", BoneDatabase.display_name_with_slot(bone_id))
+	print("Rig test equipped: ", BoneRulesService.display_name_with_slot(bone_id))
