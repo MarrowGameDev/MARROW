@@ -126,6 +126,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
   regla de equipamiento que los consuma.
+- Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
+  `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
+  una pieza podria participar en cadenas de combate. Son metadata pasiva por
+  ahora; equipar una pieza no debe activar combos sin una regla dedicada.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
@@ -153,6 +157,8 @@ En `TESTING ENVIRONMENT`:
   `BoneDataCatalog`, manteniendo intactos los consumidores actuales.
 - 2026-07-14: Se agrego `BoneDefinition` como `Resource` de Godot y
   `BoneDataCatalog` ahora puede convertir cada definicion a ese tipo.
+- 2026-07-14: Se agregaron campos pasivos de ataque/combo a los huesos y limbs
+  generados para preparar previews y futuras reglas de cadenas de combate.
 - 2026-07-14: Se movieron los huesos hechos a mano iniciales a
   `data/bones/*.tres`. La migracion sigue siendo gradual porque el diccionario
   queda como fallback.

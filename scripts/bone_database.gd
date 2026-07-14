@@ -223,6 +223,54 @@ static func mutation_tags(id: String) -> Array:
 	return []
 
 
+static func attack_type(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("attack_type", "melee"))
+	return ""
+
+
+static func attack_tags(id: String) -> Array:
+	if _bones().has(id):
+		var value: Variant = _bones()[id].get("attack_tags", [])
+		if value is Array:
+			var tags: Array = value
+			return tags.duplicate()
+	return []
+
+
+static func combo_family(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("combo_family", ""))
+	return ""
+
+
+static func combo_step(id: String) -> int:
+	if _bones().has(id):
+		return int(_bones()[id].get("combo_step", 0))
+	return 0
+
+
+static func combo_window(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("combo_window", 0.0))
+	return 0.0
+
+
+static func combo_tags(id: String) -> Array:
+	if _bones().has(id):
+		var value: Variant = _bones()[id].get("combo_tags", [])
+		if value is Array:
+			var tags: Array = value
+			return tags.duplicate()
+	return []
+
+
+static func combo_finisher(id: String) -> bool:
+	if _bones().has(id):
+		return bool(_bones()[id].get("combo_finisher", false))
+	return false
+
+
 static func weight(id: String) -> float:
 	if _bones().has(id):
 		return float(_bones()[id].get("weight", 1.0))

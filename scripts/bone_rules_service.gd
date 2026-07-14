@@ -136,6 +136,49 @@ static func mutation_tags_for(bone_id: String) -> Array:
 	return BoneDatabase.mutation_tags(bone_id)
 
 
+static func attack_type_for(bone_id: String) -> String:
+	var definition: Dictionary = definition_for(bone_id)
+	return str(definition.get("attack_type", "melee"))
+
+
+static func attack_tags_for(bone_id: String) -> Array:
+	var definition: Dictionary = definition_for(bone_id)
+	var value: Variant = definition.get("attack_tags", [])
+	if value is Array:
+		var tags: Array = value
+		return tags.duplicate()
+	return []
+
+
+static func combo_family_for(bone_id: String) -> String:
+	var definition: Dictionary = definition_for(bone_id)
+	return str(definition.get("combo_family", ""))
+
+
+static func combo_step_for(bone_id: String) -> int:
+	var definition: Dictionary = definition_for(bone_id)
+	return int(definition.get("combo_step", 0))
+
+
+static func combo_window_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("combo_window", 0.0))
+
+
+static func combo_tags_for(bone_id: String) -> Array:
+	var definition: Dictionary = definition_for(bone_id)
+	var value: Variant = definition.get("combo_tags", [])
+	if value is Array:
+		var tags: Array = value
+		return tags.duplicate()
+	return []
+
+
+static func combo_finisher_for(bone_id: String) -> bool:
+	var definition: Dictionary = definition_for(bone_id)
+	return bool(definition.get("combo_finisher", false))
+
+
 static func weight_for(bone_id: String) -> float:
 	var definition: Dictionary = definition_for(bone_id)
 	return float(definition.get("weight", 1.0))

@@ -152,6 +152,8 @@ Each definition can include:
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
   tags for future visual, rig, AI or combat hooks.
+- `BoneDefinition.attack_*` and `BoneDefinition.combo_*` fields: passive attack
+  and combo authoring metadata for future combat chains.
 - `BoneDefinition.weight*` fields: legacy animation weight plus weight class,
   physical weight, equipment weight and inventory weight.
 - `BoneDefinition.set_*` and `BoneDefinition.synergy_*` fields: passive set

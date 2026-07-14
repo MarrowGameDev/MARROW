@@ -131,6 +131,14 @@ Campos de set/sinergia:
 - La UI puede mostrar estos datos, pero no debe calcular bonuses de set hasta
   que exista una regla de equipamiento dedicada.
 
+Campos de ataque/combo:
+- `attack_type` describe la categoria principal de uso de combate o movimiento.
+- `attack_tags` y `combo_tags` permiten filtros o detalles en UI.
+- `combo_family`, `combo_step`, `combo_window` y `combo_finisher` preparan la
+  lectura de cadenas de ataque.
+- Inventario puede mostrar estos datos, pero no debe cambiar ataques ni combos
+  automaticamente.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe

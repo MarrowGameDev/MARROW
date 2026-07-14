@@ -110,6 +110,15 @@ Mutacion:
 - Los limbs generados de gorilla/lizard ya exponen familias de mutacion para
   futuras respuestas visuales o AI.
 
+Ataque/combo por hueso:
+- `BoneDefinition` ahora expone `attack_type`, `attack_tags`, `combo_family`,
+  `combo_step`, `combo_window`, `combo_tags` y `combo_finisher`.
+- `BoneDatabase` y `BoneRulesService` entregan esos campos con compatibilidad
+  para huesos hechos a mano y limbs generados.
+- Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
+  activar combos reales se debe crear una regla de combate explicita y probarla
+  en `TESTING ENVIRONMENT`.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -157,3 +166,6 @@ En `TESTING ENVIRONMENT`:
   `.tres` en `data/bones/` sin cambiar `Enemy`.
 - 2026-07-14: Se agregaron campos de mutacion para huesos hechos a mano y limbs
   generados, sin activar efectos automaticos de combate.
+- 2026-07-14: Se agregaron campos de ataque/combo a `BoneDefinition`,
+  `BoneDatabase` y `BoneRulesService`; quedan como metadata hasta que exista
+  una regla real de combos.

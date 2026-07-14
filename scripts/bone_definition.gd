@@ -33,6 +33,15 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 @export_range(0.0, 1.0, 0.01) var mutation_intensity: float = 0.0
 @export var mutation_tags: Array[String] = []
 
+@export_group("Attack / Combo")
+@export var attack_type: String = "melee"
+@export var attack_tags: Array[String] = []
+@export var combo_family: String = ""
+@export var combo_step: int = 0
+@export var combo_window: float = 0.0
+@export var combo_tags: Array[String] = []
+@export var combo_finisher: bool = false
+
 @export_group("Set / Synergy")
 @export var set_id: String = ""
 @export var set_name: String = ""
@@ -112,6 +121,15 @@ func to_clean_dictionary() -> Dictionary:
 			"intensity": mutation_intensity,
 			"tags": mutation_tags.duplicate(),
 		},
+		"attack_combo": {
+			"attack_type": attack_type,
+			"attack_tags": attack_tags.duplicate(),
+			"combo_family": combo_family,
+			"combo_step": combo_step,
+			"combo_window": combo_window,
+			"combo_tags": combo_tags.duplicate(),
+			"combo_finisher": combo_finisher,
+		},
 		"set": {
 			"id": set_id,
 			"name": set_name,
@@ -153,6 +171,13 @@ func to_legacy_dictionary() -> Dictionary:
 		"mutation_stage": mutation_stage,
 		"mutation_intensity": mutation_intensity,
 		"mutation_tags": mutation_tags.duplicate(),
+		"attack_type": attack_type,
+		"attack_tags": attack_tags.duplicate(),
+		"combo_family": combo_family,
+		"combo_step": combo_step,
+		"combo_window": combo_window,
+		"combo_tags": combo_tags.duplicate(),
+		"combo_finisher": combo_finisher,
 		"set_id": set_id,
 		"set_name": set_name,
 		"set_piece_key": set_piece_key,
@@ -200,6 +225,7 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	var identity: Dictionary = _dictionary(clean, "identity")
 	var player_stats: Dictionary = _dictionary(clean, "player_stats")
 	var mutation: Dictionary = _dictionary(clean, "mutation")
+	var attack_combo: Dictionary = _dictionary(clean, "attack_combo")
 	var set_data: Dictionary = _dictionary(clean, "set")
 	var synergy: Dictionary = _dictionary(clean, "synergy")
 	var enemy_stats: Dictionary = _dictionary(clean, "enemy_stats")
@@ -225,6 +251,14 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.mutation_stage = int(mutation.get("stage", definition.mutation_stage))
 	definition.mutation_intensity = float(mutation.get("intensity", definition.mutation_intensity))
 	definition.mutation_tags = _string_array(mutation.get("tags", []))
+
+	definition.attack_type = str(attack_combo.get("attack_type", definition.attack_type))
+	definition.attack_tags = _string_array(attack_combo.get("attack_tags", []))
+	definition.combo_family = str(attack_combo.get("combo_family", definition.combo_family))
+	definition.combo_step = int(attack_combo.get("combo_step", definition.combo_step))
+	definition.combo_window = float(attack_combo.get("combo_window", definition.combo_window))
+	definition.combo_tags = _string_array(attack_combo.get("combo_tags", []))
+	definition.combo_finisher = bool(attack_combo.get("combo_finisher", definition.combo_finisher))
 
 	definition.set_id = str(set_data.get("id", definition.set_id))
 	definition.set_name = str(set_data.get("name", definition.set_name))

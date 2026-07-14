@@ -54,6 +54,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
+- Bone attack/combo fields are present as passive metadata for future combat
+  chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`.
 - Bone set/synergy fields are present as passive metadata; no automatic set

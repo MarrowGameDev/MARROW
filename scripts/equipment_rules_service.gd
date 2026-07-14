@@ -130,6 +130,13 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"mutation_stage": _generated_limb_mutation_stage(source_profile),
 		"mutation_intensity": _generated_limb_mutation_intensity(source_profile),
 		"mutation_tags": _generated_limb_mutation_tags(source_profile, limb_key),
+		"attack_type": _generated_limb_attack_type(limb_key),
+		"attack_tags": _generated_limb_attack_tags(source_profile, limb_key),
+		"combo_family": _generated_limb_combo_family(source_profile, limb_key),
+		"combo_step": _generated_limb_combo_step(limb_key),
+		"combo_window": _generated_limb_combo_window(source_profile, limb_key),
+		"combo_tags": _generated_limb_combo_tags(source_profile, limb_key),
+		"combo_finisher": _generated_limb_combo_finisher(limb_key),
 		"weight": _generated_limb_weight(source_profile, limb_key),
 		"weight_class": _generated_limb_weight_class(source_profile, limb_key),
 		"physical_weight": _generated_limb_physical_weight(source_profile, limb_key),
@@ -295,6 +302,71 @@ static func _generated_limb_mutation_tags(source_profile: String, limb_key: Stri
 	if source_profile == "normal":
 		return []
 	return [source_profile, limb_key]
+
+
+static func _generated_limb_attack_type(limb_key: String) -> String:
+	match limb_key:
+		"right_arm", "left_arm":
+			return "melee"
+		"right_leg", "left_leg":
+			return "movement"
+		"head":
+			return "sense"
+		"body":
+			return "guard"
+		_:
+			return "melee"
+
+
+static func _generated_limb_attack_tags(source_profile: String, limb_key: String) -> Array[String]:
+	return [source_profile, limb_key, _generated_limb_attack_type(limb_key)]
+
+
+static func _generated_limb_combo_family(source_profile: String, limb_key: String) -> String:
+	match limb_key:
+		"right_arm", "left_arm":
+			return source_profile + "_strikes"
+		"right_leg", "left_leg":
+			return source_profile + "_mobility"
+		"head":
+			return source_profile + "_focus"
+		"body":
+			return source_profile + "_guard"
+		_:
+			return source_profile + "_combo"
+
+
+static func _generated_limb_combo_step(limb_key: String) -> int:
+	match limb_key:
+		"right_arm":
+			return 1
+		"left_arm":
+			return 2
+		"body":
+			return 3
+		_:
+			return 0
+
+
+static func _generated_limb_combo_window(source_profile: String, limb_key: String) -> float:
+	if _generated_limb_combo_step(limb_key) == 0:
+		return 0.0
+	if source_profile == "gorilla":
+		return 0.45
+	if source_profile == "lizard":
+		return 0.3
+	return 0.35
+
+
+static func _generated_limb_combo_tags(source_profile: String, limb_key: String) -> Array[String]:
+	var tags: Array[String] = [source_profile, _generated_limb_attack_type(limb_key)]
+	if _generated_limb_combo_finisher(limb_key):
+		tags.append("finisher")
+	return tags
+
+
+static func _generated_limb_combo_finisher(limb_key: String) -> bool:
+	return limb_key == "body"
 
 
 static func _generated_limb_weight(source_profile: String, limb_key: String) -> float:
