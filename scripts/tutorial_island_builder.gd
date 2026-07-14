@@ -5,6 +5,7 @@ extends Node3D
 # It is intentionally code-built so the demo layout can be reshaped quickly.
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
+const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 const CAMP_SCRIPT: Script = preload("res://scripts/demo_enemy_camp.gd")
 
 @export var enabled: bool = true
@@ -23,6 +24,7 @@ func _ready() -> void:
 func _build_demo_island() -> void:
 	_resize_base_ground()
 	_place_player_start()
+	_spawn_starter_torso_pickup()
 	_layout_stage_regions()
 	_layout_story_nodes()
 	_build_island_visuals()
@@ -47,6 +49,21 @@ func _place_player_start() -> void:
 	var wisp := get_node_or_null("../GuideWisp") as Node3D
 	if wisp != null:
 		wisp.global_position = Vector3(-2.0, 2.0, 40.0)
+
+
+func _spawn_starter_torso_pickup() -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null or scene_root.get_node_or_null("StarterTorsoPickup") != null:
+		return
+
+	var pickup: Node = BONE_PICKUP_SCENE.instantiate()
+	pickup.name = "StarterTorsoPickup"
+	if pickup.has_method("set_bone_id"):
+		pickup.call("set_bone_id", "torso_bone")
+	var pickup_body: Node3D = pickup as Node3D
+	if pickup_body != null:
+		pickup_body.global_position = Vector3(0.0, 0.45, 34.5)
+	scene_root.add_child(pickup)
 
 
 func _layout_stage_regions() -> void:

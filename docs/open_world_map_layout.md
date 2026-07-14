@@ -40,6 +40,8 @@ Those are not terrain geometry. They are labels and progression metadata. The te
 ## Current Regions
 
 - `BonefieldHub`: Difficulty 1, safe center.
+  - Starter `torso_bone` pickup sits near player spawn so the opening order is
+    head first, then torso, then extremities.
 - `FirstHuntField`: Difficulty 2, starter enemies and first bones.
 - `ReachRidge`: Difficulty 3, Arm Bone / reach-focused area.
 - `QuickrootRun`: Difficulty 4, Leg Bone / speed-focused area.

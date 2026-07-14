@@ -18,6 +18,8 @@ gameplay debe actualizar el archivo de flujo correspondiente.
 6. `docs/bone_data_structure.md`
    - Estructura de `BoneDefinition`, compatibilidad, calidades, rarezas,
      mutaciones, ataque/combo, stats, peso y pasos para agregar huesos.
+7. `docs/tutorial_flow.md`
+   - Tutorial de controles, hints del demo y checklist de onboarding.
 
 ## Politica
 

@@ -78,6 +78,7 @@ var base_visuals: Dictionary = {}    # socket key -> MeshInstance3D (grey defaul
 var equipped_parts: Dictionary = {}  # slot id -> Array of Node3D
 var equipped_ids: Dictionary = {}    # slot id -> bone_id
 var limb_joints: Dictionary = {}     # socket key -> {skel, bone, rest_rot} for bending
+var body_progression_enabled: bool = false
 
 
 func _ready() -> void:
@@ -339,6 +340,15 @@ func get_socket(socket_key: String) -> Node3D:
 	return sockets.get(socket_key)
 
 
+func set_body_progression_enabled(enabled: bool) -> void:
+	body_progression_enabled = enabled
+	_refresh_body_progression_visibility()
+
+
+func has_equipped_slot(slot_id: String) -> bool:
+	return equipped_ids.has(slot_id)
+
+
 # Builds one grey-box MeshInstance3D for a socket, offset so it hangs correctly.
 func _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D:
 	var geo: Dictionary = LIMB_GEO.get(socket_key, {"size": Vector3(0.2, 0.2, 0.2), "offset": Vector3.ZERO})
@@ -389,6 +399,7 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 
 	equipped_parts[slot_id] = parts
 	equipped_ids[slot_id] = bone_id
+	_refresh_body_progression_visibility()
 
 
 func unequip_slot(slot_id: String) -> void:
@@ -403,6 +414,7 @@ func unequip_slot(slot_id: String) -> void:
 	for key in EquipmentRulesService.socket_keys_for_slot(slot_id):
 		if base_visuals.has(key):
 			base_visuals[key].visible = true
+	_refresh_body_progression_visibility()
 
 
 # The rig knows what's equipped; the animator uses these for weight response.
@@ -413,3 +425,40 @@ func get_equipped_bone_defs() -> Array:
 		if not def.is_empty():
 			defs.append(def)
 	return defs
+
+
+func _refresh_body_progression_visibility() -> void:
+	if not body_progression_enabled:
+		return
+
+	for key in base_visuals:
+		var socket_key: String = str(key)
+		var visual: MeshInstance3D = base_visuals[socket_key] as MeshInstance3D
+		if visual == null:
+			continue
+		visual.visible = _base_socket_should_show(socket_key)
+
+
+func _base_socket_should_show(socket_key: String) -> bool:
+	if _socket_is_equipped(socket_key):
+		return false
+	if socket_key == "head":
+		return true
+	if socket_key == "body":
+		return equipped_ids.has("body")
+	if socket_key == "right_arm":
+		return equipped_ids.has("right_arm")
+	if socket_key == "left_arm":
+		return equipped_ids.has("left_arm")
+	if socket_key == "right_leg" or socket_key == "left_leg" or socket_key == "right_foot" or socket_key == "left_foot":
+		return equipped_ids.has("legs")
+	return true
+
+
+func _socket_is_equipped(socket_key: String) -> bool:
+	if socket_key == "right_foot" or socket_key == "left_foot":
+		return equipped_ids.has("legs")
+	for slot_id in equipped_ids:
+		if EquipmentRulesService.socket_keys_for_slot(str(slot_id)).has(socket_key):
+			return true
+	return false

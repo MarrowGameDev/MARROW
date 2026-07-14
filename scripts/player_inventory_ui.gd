@@ -958,6 +958,8 @@ func _build_character_preview_panel() -> Control:
 	inventory_preview_rig = ModularSkeletonRig.new()
 	inventory_preview_rig.name = "PreviewModularSkeletonRig"
 	rig_holder.add_child(inventory_preview_rig)
+	if inventory_preview_rig.has_method("set_body_progression_enabled"):
+		inventory_preview_rig.set_body_progression_enabled(true)
 
 	var camera := Camera3D.new()
 	camera.name = "PreviewCamera"

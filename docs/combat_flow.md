@@ -117,15 +117,27 @@ Ataque/combo por hueso:
   `combo_step`, `combo_window`, `combo_tags` y `combo_finisher`.
 - `BoneDatabase` y `BoneRulesService` entregan esos campos con compatibilidad
   para huesos hechos a mano y limbs generados.
+- `Player` usa `combo_window` como ventana visual para mantener una cadena de
+  animacion simple si el jugador vuelve a atacar a tiempo.
+- `ProceduralPlayerAnimator.trigger_attack(combo_step)` alterna tres poses:
+  golpe derecho, golpe izquierdo y finisher con ambos brazos/torso.
 - Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
-  activar combos reales se debe crear una regla de combate explicita y probarla
-  en `TESTING ENVIRONMENT`.
+  activar combos con gameplay real se debe crear una regla de combate explicita
+  y probarla en `TESTING ENVIRONMENT`.
 
 Modificadores porcentuales:
 - `quality_damage_percent`, `quality_speed_percent` y
   `quality_health_percent` describen intencion de balance por calidad.
 - Combate no multiplica dano, velocidad ni salud con esos campos todavia. Si se
   activan, debe hacerse en una formula documentada y testeada.
+
+Nucleo del jugador:
+- La cabeza es el nucleo fijo del jugador. La vida base representa sobrevivir
+  como cabeza.
+- Recuperar torso y extremidades aumenta `max_health`; la logica existente de
+  stats recupera la diferencia de vida cuando sube el maximo.
+- Si una regla futura destruye la cabeza del jugador, debe llamar a la muerte
+  del jugador directamente.
 
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
@@ -147,6 +159,8 @@ Lizard wall climb:
 - Si el ataque crea drops o limbs, actualizar tambien `drops_flow.md`.
 - Si un cambio de combate necesita ajustar stats de huesos hechos a mano,
   respetar `BoneDefinition` y mantener `BoneRulesService` como punto de lectura.
+- Si se agrega un nuevo input de combate, actualizar tambien
+  `docs/tutorial_flow.md` para que el tutorial de controles lo ensene.
 
 ## Como probar
 
@@ -177,3 +191,7 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se agregaron campos de ataque/combo a `BoneDefinition`,
   `BoneDatabase` y `BoneRulesService`; quedan como metadata hasta que exista
   una regla real de combos.
+- 2026-07-14: Se agregaron animaciones simples de combo en tres pasos. La cadena
+  es visual solamente y no cambia dano ni hitboxes.
+- 2026-07-14: Se documento el inicio como cabeza fija y la recuperacion de vida
+  al equipar torso/extremidades.

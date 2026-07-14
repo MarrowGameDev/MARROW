@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="BoneDefinition" format=3 uid="uid://cm2c35ey88ipi"]
+
+[ext_resource type="Script" path="res://scripts/bone_definition.gd" id="1_bonedef"]
+
+[resource]
+script = ExtResource("1_bonedef")
+bone_id = "head_bone"
+display_name = "Core Head"
+quality = "comun"
+quality_rank = 2
+quality_score = 1.0
+quality_multiplier = 1.0
+quality_color = Color(1, 0.94, 0.68, 1)
+rarity = "comun"
+rarity_rank = 1
+rarity_color = Color(1, 0.94, 0.68, 1)
+rarity_drop_weight = 0.0
+color = Color(1, 0.94, 0.68, 1)
+slot = "head"
+tags = Array[String](["core", "fixed"])
+description = "The fixed living core. If the head breaks, the player dies."
+attack_type = "sense"
+attack_tags = Array[String](["core"])
+combo_family = "core_survival"
+combo_step = 0
+combo_window = 0.0
+combo_tags = Array[String](["core"])
+combo_finisher = false
+weight = 0.7
+weight_class = "light"
+physical_weight = 0.7
+equipment_weight = 0.7
+inventory_weight = 0.0
+set_id = "core_body"
+set_name = "Core Body"
+set_piece_key = "head"
+set_tags = Array[String](["core"])
+synergy_ids = Array[String](["core_body"])
+synergy_tags = Array[String](["core", "head"])
+synergy_score = 0.0

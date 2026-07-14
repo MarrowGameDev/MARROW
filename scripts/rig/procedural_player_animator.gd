@@ -36,6 +36,8 @@ extends Node3D
 @export var lizard_wall_climb_pitch := 0.42
 @export var lizard_wall_climb_head_lift := 0.16
 @export var lizard_wall_climb_limb_reach := 0.34
+@export var head_only_hop_amount := 0.18
+@export var head_only_roll_amount := 0.42
 
 # Bend at the limb mid-joint (elbow/knee) so limbs flex instead of staying stiff.
 @export var joint_bend_base := 0.12    # radians always bent a little (never a stick)
@@ -64,6 +66,10 @@ extends Node3D
 @export var attack_arm_forward := 1.1       # radians the right arm swings forward
 @export var attack_torso_twist := 0.35      # radians the torso twists into the swing
 @export var attack_lunge := 0.22            # radians the body leans into the swing
+@export var combo_left_arm_forward := 1.0
+@export var combo_finisher_arm_forward := 0.85
+@export var combo_finisher_torso_twist := 0.5
+@export var combo_finisher_lunge := 0.34
 
 @export_group("Aim overlay")
 @export var aim_overlay_blend_speed := 14.0
@@ -91,6 +97,8 @@ var total_equipped_weight := 1.0
 
 var _attack_timer := 0.0
 var _attack_blend := 0.0
+var _attack_duration_current := 0.16
+var _attack_combo_step := 1
 var _aim_requested := false
 var _aim_blend := 0.0
 var _lizard_wall_climb_blend := 0.0
@@ -141,8 +149,16 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 
 
 # The player calls this when an attack fires (Phase E).
-func trigger_attack() -> void:
-	_attack_timer = attack_overlay_duration
+func trigger_attack(combo_step: int = 0) -> void:
+	if combo_step <= 0:
+		_attack_combo_step = (_attack_combo_step % 3) + 1
+	else:
+		_attack_combo_step = clampi(combo_step, 1, 3)
+	_attack_duration_current = attack_overlay_duration
+	if _attack_combo_step == 3:
+		_attack_duration_current *= 1.15
+	_attack_timer = _attack_duration_current
+	_attack_blend = maxf(_attack_blend, 0.25)
 
 
 func set_aiming(enabled: bool) -> void:
@@ -193,6 +209,9 @@ func _animate_body() -> void:
 	var sway := sin(walk_time) * body_sway_amount * total_equipped_weight * speed_ratio
 	var bob := absf(sin(walk_time)) * body_bob_amount * speed_ratio
 	var breath := sin(_time * 1.8) * idle_breath_amount * (1.0 - speed_ratio)
+	if _is_head_only():
+		_animate_head_only(sway, breath)
+		return
 
 	var body := rig.get_socket("body")
 	if body != null and _rest_pos.has("body"):
@@ -204,6 +223,21 @@ func _animate_body() -> void:
 		head.position = _get_rest_pos("head") + Vector3(0.0, breath * 0.6 + lizard_wall_climb_head_lift * _lizard_wall_climb_blend, -0.10 * _lizard_wall_climb_blend)
 		head.rotation = _get_rest_rot("head") + Vector3(-lizard_wall_climb_pitch * 0.35 * _lizard_wall_climb_blend, 0.0, sway * 0.3)
 	_animate_lizard_torso_blocks(sway, breath, 0.0)
+
+
+func _is_head_only() -> bool:
+	return rig != null and rig.has_method("has_equipped_slot") and not bool(rig.call("has_equipped_slot", "body"))
+
+
+func _animate_head_only(sway: float, breath: float) -> void:
+	var head := rig.get_socket("head")
+	if head == null or not _rest_pos.has("head"):
+		return
+
+	var hop: float = absf(sin(walk_time)) * head_only_hop_amount * speed_ratio
+	var idle: float = breath * 0.6
+	head.position = _get_rest_pos("head") + Vector3(sway * 0.8, hop + idle - 0.22, 0.0)
+	head.rotation = _get_rest_rot("head") + Vector3(0.0, 0.0, -sin(walk_time) * head_only_roll_amount * speed_ratio)
 
 
 func _animate_limbs() -> void:
@@ -436,19 +470,70 @@ func _update_attack_overlay(delta: float) -> void:
 	_attack_blend = lerp(_attack_blend, target, 1.0 - exp(-attack_overlay_blend_speed * delta))
 
 
-# Adds a forward arm thrust + torso twist ON TOP of the walk pose, so an attack
-# reads clearly whether idle or moving.
+# Adds a combo pose ON TOP of the walk pose, so attacks read clearly whether idle
+# or moving.
 func _apply_attack_overlay() -> void:
 	if _attack_blend <= 0.001:
 		return
+	var punch: float = _attack_pose_strength()
+	match _attack_combo_step:
+		2:
+			_apply_left_combo_pose(punch)
+		3:
+			_apply_finisher_combo_pose(punch)
+		_:
+			_apply_right_combo_pose(punch)
+
+
+func _attack_pose_strength() -> float:
+	if _attack_duration_current <= 0.001:
+		return _attack_blend
+	var phase: float = 1.0 - clampf(_attack_timer / _attack_duration_current, 0.0, 1.0)
+	var snap: float = sin(phase * PI)
+	return maxf(_attack_blend * 0.35, snap * _attack_blend)
+
+
+func _apply_right_combo_pose(strength: float) -> void:
 	var arm := rig.get_socket("right_arm")
 	if arm != null:
-		# Negative X thrusts the arm FORWARD (the previous sign swung it backward).
-		arm.rotation.x -= attack_arm_forward * _attack_blend
+		arm.rotation.x -= attack_arm_forward * strength
+		arm.rotation.z -= 0.18 * strength
 	var body := rig.get_socket("body")
 	if body != null:
-		body.rotation.y += attack_torso_twist * _attack_blend
-		body.rotation.x -= attack_lunge * _attack_blend   # lean into the swing
+		body.rotation.y += attack_torso_twist * strength
+		body.rotation.x -= attack_lunge * strength
+
+
+func _apply_left_combo_pose(strength: float) -> void:
+	var arm := rig.get_socket("left_arm")
+	if arm != null:
+		arm.rotation.x -= combo_left_arm_forward * strength
+		arm.rotation.z += 0.22 * strength
+	var counter_arm := rig.get_socket("right_arm")
+	if counter_arm != null:
+		counter_arm.rotation.x += attack_arm_forward * 0.25 * strength
+	var body := rig.get_socket("body")
+	if body != null:
+		body.rotation.y -= attack_torso_twist * 0.9 * strength
+		body.rotation.x -= attack_lunge * 0.8 * strength
+
+
+func _apply_finisher_combo_pose(strength: float) -> void:
+	var right_arm := rig.get_socket("right_arm")
+	if right_arm != null:
+		right_arm.rotation.x -= combo_finisher_arm_forward * strength
+		right_arm.rotation.z -= 0.28 * strength
+	var left_arm := rig.get_socket("left_arm")
+	if left_arm != null:
+		left_arm.rotation.x -= combo_finisher_arm_forward * strength
+		left_arm.rotation.z += 0.28 * strength
+	var body := rig.get_socket("body")
+	if body != null:
+		body.rotation.y += combo_finisher_torso_twist * strength
+		body.rotation.x -= combo_finisher_lunge * strength
+	var head := rig.get_socket("head")
+	if head != null:
+		head.rotation.x -= 0.12 * strength
 
 
 # --- Phase F: foot placement ---------------------------------------------------

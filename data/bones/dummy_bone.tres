@@ -43,3 +43,4 @@ set_tags = Array[String](["training"])
 synergy_ids = Array[String](["training_bones"])
 synergy_tags = Array[String](["training", "right_arm"])
 synergy_score = 0.0
+player_max_health = 1

@@ -8,6 +8,8 @@ class_name BoneDataCatalog
 # fallback data until every bone is safely authored as a Resource.
 
 const RESOURCE_PATHS := {
+	"head_bone": "res://data/bones/head_bone.tres",
+	"torso_bone": "res://data/bones/torso_bone.tres",
 	"arm_bone": "res://data/bones/arm_bone.tres",
 	"leg_bone": "res://data/bones/leg_bone.tres",
 	"heavy_bone": "res://data/bones/heavy_bone.tres",
@@ -16,6 +18,102 @@ const RESOURCE_PATHS := {
 }
 
 const DEFINITIONS := {
+	"head_bone": {
+		"identity": {
+			"display_name": "Core Head",
+			"quality": "comun",
+			"quality_rank": 2,
+			"quality_score": 1.0,
+			"quality_multiplier": 1.0,
+			"quality_color": Color(1.0, 0.94, 0.68, 1.0),
+			"rarity": "comun",
+			"rarity_rank": 1,
+			"rarity_color": Color(1.0, 0.94, 0.68, 1.0),
+			"rarity_drop_weight": 0.0,
+			"color": Color(1.0, 0.94, 0.68, 1.0),
+			"slot": "head",
+			"tags": ["core", "fixed"],
+			"description": "The fixed living core. If the head breaks, the player dies.",
+		},
+		"visual": {
+			"weight": 0.7,
+			"weight_class": "light",
+			"physical_weight": 0.7,
+			"equipment_weight": 0.7,
+			"inventory_weight": 0.0,
+		},
+		"attack_combo": {
+			"attack_type": "sense",
+			"attack_tags": ["core"],
+			"combo_family": "core_survival",
+			"combo_step": 0,
+			"combo_window": 0.0,
+			"combo_tags": ["core"],
+			"combo_finisher": false,
+		},
+		"set": {
+			"id": "core_body",
+			"name": "Core Body",
+			"piece_key": "head",
+			"tags": ["core"],
+		},
+		"synergy": {
+			"ids": ["core_body"],
+			"tags": ["core", "head"],
+			"score": 0.0,
+		},
+	},
+	"torso_bone": {
+		"identity": {
+			"display_name": "Torso Bone",
+			"quality": "comun",
+			"quality_rank": 2,
+			"quality_score": 1.0,
+			"quality_multiplier": 1.0,
+			"quality_color": Color(1.0, 0.94, 0.68, 1.0),
+			"rarity": "comun",
+			"rarity_rank": 1,
+			"rarity_color": Color(1.0, 0.94, 0.68, 1.0),
+			"rarity_drop_weight": 1.0,
+			"color": Color(0.82, 0.92, 1.0, 1.0),
+			"slot": "body",
+			"tags": ["starter", "torso", "core"],
+			"description": "Restores the torso. Arms and legs can only attach after this is equipped.",
+		},
+		"visual": {
+			"weight": 1.2,
+			"weight_class": "medium",
+			"physical_weight": 1.2,
+			"equipment_weight": 1.2,
+			"inventory_weight": 1.0,
+		},
+		"attack_combo": {
+			"attack_type": "guard",
+			"attack_tags": ["guard", "starter"],
+			"combo_family": "starter_guard",
+			"combo_step": 0,
+			"combo_window": 0.2,
+			"combo_tags": ["starter", "guard"],
+			"combo_finisher": false,
+		},
+		"set": {
+			"id": "core_body",
+			"name": "Core Body",
+			"piece_key": "body",
+			"tags": ["core", "starter"],
+		},
+		"synergy": {
+			"ids": ["core_body", "body_bones"],
+			"tags": ["core", "body", "starter"],
+			"score": 0.1,
+		},
+		"player_stats": {
+			"max_health": 2,
+		},
+		"enemy_stats": {
+			"max_health": 1,
+		},
+	},
 	"arm_bone": {
 		"identity": {
 			"display_name": "Arm Bone",
@@ -67,6 +165,7 @@ const DEFINITIONS := {
 		},
 		"player_stats": {
 			"attack_range": 2.5,
+			"max_health": 1,
 		},
 		"enemy_stats": {
 			"attack_range": 1.0,
@@ -126,6 +225,7 @@ const DEFINITIONS := {
 		},
 		"player_stats": {
 			"move_speed": 3.0,
+			"max_health": 1,
 		},
 		"enemy_stats": {
 			"move_speed": 1.4,
@@ -246,6 +346,9 @@ const DEFINITIONS := {
 			"ids": ["training_bones"],
 			"tags": ["training", "right_arm"],
 			"score": 0.0,
+		},
+		"player_stats": {
+			"max_health": 1,
 		},
 	},
 	"rib_bone": {

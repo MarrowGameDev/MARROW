@@ -15,6 +15,19 @@ var help_label: Label
 var win_root: Control
 var win_label: Label
 var current_tutorial_priority: int = -1
+var active_tutorial_hint: String = ""
+var control_tutorial_done: Dictionary = {}
+
+const CONTROL_TUTORIAL_STEPS := [
+	"move",
+	"sprint",
+	"jump",
+	"attack",
+	"bow",
+	"pickup",
+	"inventory",
+	"equip",
+]
 
 
 func _ready() -> void:
@@ -26,12 +39,37 @@ func _ready() -> void:
 	GameEvents.objective_updated.connect(_on_objective_updated)
 	GameEvents.tutorial_hint_requested.connect(_on_tutorial_hint_requested)
 	GameEvents.bone_collected.connect(_on_bone_collected)
+	GameEvents.bone_equipped.connect(_on_bone_equipped)
+	GameEvents.inventory_open_changed.connect(_on_inventory_open_changed)
 	GameEvents.camp_state_changed.connect(_on_camp_state_changed)
+	_reset_control_tutorial()
 	_build_goal_ui()
 	_build_help_ui()
 	_build_win_ui()
 	_emit_objective_updated()
 	GameEvents.tutorial_hint_requested.emit(self, "demo_start", _default_help_text(), 0)
+
+
+func _process(_delta: float) -> void:
+	if ended:
+		return
+
+	var is_moving := (
+		Input.is_action_pressed("move_forward")
+		or Input.is_action_pressed("move_back")
+		or Input.is_action_pressed("move_left")
+		or Input.is_action_pressed("move_right")
+	)
+	if is_moving:
+		_complete_control_tutorial_step("move")
+	if is_moving and Input.is_action_pressed("sprint"):
+		_complete_control_tutorial_step("sprint")
+	if Input.is_action_just_pressed("jump"):
+		_complete_control_tutorial_step("jump")
+	if Input.is_action_just_pressed("attack"):
+		_complete_control_tutorial_step("attack")
+	if Input.is_action_just_pressed("toggle_bow"):
+		_complete_control_tutorial_step("bow")
 
 
 # Tier 1F: R restarts the whole run at any time, so repeated testing is fast.
@@ -162,11 +200,22 @@ func _on_tutorial_hint_requested(_source: Node, _hint_id: String, text: String, 
 		if _priority < current_tutorial_priority:
 			return
 		current_tutorial_priority = _priority
-		help_label.text = text
+		active_tutorial_hint = text
+		_refresh_help_ui()
 
 
 func _on_bone_collected(bone_id: String, _collector: Node) -> void:
+	_complete_control_tutorial_step("pickup")
 	GameEvents.tutorial_hint_requested.emit(self, "bone_collected", "Bone collected: " + BoneRulesService.display_name_with_slot(bone_id) + "\nOpen inventory with Tab to equip body parts and inspect stats.", 1)
+
+
+func _on_bone_equipped(_bone_id: String, _slot: String, _player: Node) -> void:
+	_complete_control_tutorial_step("equip")
+
+
+func _on_inventory_open_changed(_player: Node, is_open: bool) -> void:
+	if is_open:
+		_complete_control_tutorial_step("inventory")
 
 
 func _on_camp_state_changed(camp: Node, unlocked: bool, opened: bool, _remaining_enemies: int) -> void:
@@ -226,19 +275,98 @@ func _build_help_ui() -> void:
 	panel.add_child(margin)
 
 	help_label = Label.new()
-	help_label.text = _default_help_text()
+	help_label.text = _full_help_text()
 	margin.add_child(help_label)
 
 
 func _default_help_text() -> String:
 	var text := "Marrow - Demo Island\n"
-	text += "Move: WASD     Sprint: Shift     Jump: Space     Attack: Left Click\n"
-	text += "Stealth finish: F     Pick up bone: hold " + DropPickupRulesService.action_binding_text(DropPickupRulesService.PICKUP_ACTION) + "     Equip next: Q     Inventory: Tab\n\n"
 	text += "Defeat enemies and harvest their bones, then equip the\n"
 	text += "matching bone at each colored trial gate.\n"
 	text += "Clear all 3 trials to open the exit, then step through it.\n"
 	text += "R: restart"
 	return text
+
+
+func _full_help_text() -> String:
+	var text := active_tutorial_hint
+	if text == "":
+		text = _default_help_text()
+	text += "\n\n" + _control_tutorial_text()
+	return text
+
+
+func _refresh_help_ui() -> void:
+	if help_label == null:
+		return
+	help_label.text = _full_help_text()
+
+
+func _reset_control_tutorial() -> void:
+	control_tutorial_done.clear()
+	for step_id in CONTROL_TUTORIAL_STEPS:
+		control_tutorial_done[str(step_id)] = false
+
+
+func _complete_control_tutorial_step(step_id: String) -> void:
+	if not control_tutorial_done.has(step_id):
+		return
+	if bool(control_tutorial_done[step_id]):
+		return
+	control_tutorial_done[step_id] = true
+	_refresh_help_ui()
+
+
+func _control_tutorial_text() -> String:
+	var text := "Controls Tutorial\n"
+	for step_id in CONTROL_TUTORIAL_STEPS:
+		text += _control_tutorial_line(str(step_id)) + "\n"
+	return text.strip_edges()
+
+
+func _control_tutorial_line(step_id: String) -> String:
+	var marker := "[ ]"
+	if bool(control_tutorial_done.get(step_id, false)):
+		marker = "[x]"
+	return marker + " " + _control_tutorial_label(step_id)
+
+
+func _control_tutorial_label(step_id: String) -> String:
+	match step_id:
+		"move":
+			return "Move: " + _movement_binding_text()
+		"sprint":
+			return "Sprint: hold " + _action_binding_text("sprint") + " while moving"
+		"jump":
+			return "Jump: " + _action_binding_text("jump")
+		"attack":
+			return "Attack: " + _action_binding_text("attack")
+		"bow":
+			return "Bow: " + _action_binding_text("toggle_bow") + " to equip, hold/release " + _action_binding_text("attack") + " to shoot"
+		"pickup":
+			return "Pick up bones: hold " + _action_binding_text(DropPickupRulesService.PICKUP_ACTION)
+		"inventory":
+			return "Inventory: " + _action_binding_text("inventory")
+		"equip":
+			return "Equip a bone: drag in Inventory or press " + _action_binding_text("equip")
+		_:
+			return step_id
+
+
+func _movement_binding_text() -> String:
+	return (
+		_action_binding_text("move_forward")
+		+ "/"
+		+ _action_binding_text("move_left")
+		+ "/"
+		+ _action_binding_text("move_back")
+		+ "/"
+		+ _action_binding_text("move_right")
+	)
+
+
+func _action_binding_text(action: String) -> String:
+	return DropPickupRulesService.action_binding_text(action)
 
 
 # The full-screen win overlay, hidden until the player finishes the course.

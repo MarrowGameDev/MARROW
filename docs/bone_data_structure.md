@@ -26,6 +26,16 @@ Regla principal:
 6. `BoneRulesService.definition_for(id)` resuelve huesos hechos a mano y limbs
    generados de enemigos.
 
+Ids hechos a mano actuales:
+- `head_bone`: nucleo fijo inicial, slot `head`, no debe dropear como loot
+  normal.
+- `torso_bone`: torso starter, slot `body`, habilita acoplar extremidades.
+- `arm_bone`
+- `leg_bone`
+- `heavy_bone`
+- `dummy_bone`
+- `rib_bone`
+
 ## Identidad
 
 Campos principales:
@@ -120,8 +130,15 @@ Campos:
 - `combo_finisher`
 
 Ejemplo: un brazo puede declarar `attack_type = "melee"` y
-`combo_family = "starter_strikes"`. Eso no cambia cooldown, dano ni input hasta
-que el sistema de combate lo consuma explicitamente.
+`combo_family = "starter_strikes"`.
+
+Uso actual:
+- `combo_window` puede mantener viva una cadena visual de ataques.
+- `combo_step`/`combo_family` describen authoring, pero no cambian dano.
+- La animacion simple de combo vive en `ProceduralPlayerAnimator`.
+
+Esto no cambia cooldown, dano, input ni hitbox hasta que el sistema de combate
+lo consuma explicitamente.
 
 ## Set Y Sinergia
 
@@ -150,6 +167,10 @@ Campos legacy equivalentes:
 - `attack_range_bonus`
 - `attack_damage_bonus`
 - `max_health_bonus`
+
+El inicio del juego usa `head_bone` como pieza fija y `max_health` base bajo.
+`torso_bone`, brazos y piernas pueden aumentar `max_health`; al subir el maximo,
+`PlayerStatsComponent` recupera esa diferencia de vida.
 
 ## Stats De Enemigos
 

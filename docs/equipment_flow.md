@@ -103,6 +103,14 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 
 ## Puntos delicados
 
+- Inicio/progresion corporal:
+  - El jugador inicia con `head_bone` equipado como nucleo fijo.
+  - La cabeza no se puede reemplazar ni desequipar; si se rompe, el jugador
+    muere.
+  - El torso (`body`) debe equiparse antes de brazos o piernas.
+  - Si el torso se quita, las extremidades se desacoplan primero.
+  - Brazos y piernas no tienen orden obligatorio entre si una vez equipado el
+    torso.
 - `Player` debe seguir como orquestador. No mover input o UI directo al
   componente sin actualizar este documento.
 - Si se agregan nuevos slots, actualizar:
@@ -140,8 +148,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   regla de equipamiento que los consuma.
 - Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
   `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
-  una pieza podria participar en cadenas de combate. Son metadata pasiva por
-  ahora; equipar una pieza no debe activar combos sin una regla dedicada.
+  una pieza podria participar en cadenas de combate. Actualmente solo alimentan
+  una cadena visual simple; equipar una pieza no debe cambiar dano, cooldown ni
+  hitboxes sin una regla dedicada.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
@@ -149,17 +158,22 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
   combinaciones de piezas. No aplican bonuses automaticamente todavia.
+- `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
+  entra al inventario normal; `torso_bone` aparece como pickup starter en el
+  demo.
 
 ## Como probar
 
 En `TESTING ENVIRONMENT`:
 
 1. Abrir inventario con `Tab`.
-2. Equipar huesos de brazo, piernas, torso y cabeza.
-3. Confirmar que el cuerpo del jugador cambia.
-4. Confirmar que el preview cambia igual que el jugador.
-5. Desequipar con right click o drag hacia zona vacia si aplica.
-6. Confirmar que stats en UI cambian.
+2. Confirmar que la cabeza inicial ya esta equipada y no se puede reemplazar.
+3. Equipar torso.
+4. Equipar huesos de brazo y piernas.
+5. Confirmar que el cuerpo del jugador cambia.
+6. Confirmar que el preview cambia igual que el jugador.
+7. Desequipar con right click o drag hacia zona vacia si aplica.
+8. Confirmar que stats en UI cambian.
 
 ## Historial de cambios
 
@@ -193,3 +207,5 @@ En `TESTING ENVIRONMENT`:
   valores legacy `Common`, `Uncommon`, `Rare` y `hybrid_growth`.
 - 2026-07-14: Se agrego `docs/bone_data_structure.md` como referencia principal
   de estructura de datos de huesos para programadores.
+- 2026-07-14: El jugador ahora inicia como cabeza fija, necesita torso para
+  acoplar extremidades, y el rig muestra solo las partes recuperadas.

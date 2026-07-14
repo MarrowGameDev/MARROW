@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="BoneDefinition" format=3 uid="uid://cihweoy1xwoxy"]
+
+[ext_resource type="Script" path="res://scripts/bone_definition.gd" id="1_bonedef"]
+
+[resource]
+script = ExtResource("1_bonedef")
+bone_id = "torso_bone"
+display_name = "Torso Bone"
+quality = "comun"
+quality_rank = 2
+quality_score = 1.0
+quality_multiplier = 1.0
+quality_color = Color(1, 0.94, 0.68, 1)
+rarity = "comun"
+rarity_rank = 1
+rarity_color = Color(1, 0.94, 0.68, 1)
+rarity_drop_weight = 1.0
+color = Color(0.82, 0.92, 1, 1)
+slot = "body"
+tags = Array[String](["starter", "torso", "core"])
+description = "Restores the torso. Arms and legs can only attach after this is equipped."
+attack_type = "guard"
+attack_tags = Array[String](["guard", "starter"])
+combo_family = "starter_guard"
+combo_step = 0
+combo_window = 0.2
+combo_tags = Array[String](["starter", "guard"])
+combo_finisher = false
+player_max_health = 2
+enemy_max_health = 1
+weight = 1.2
+weight_class = "medium"
+physical_weight = 1.2
+equipment_weight = 1.2
+inventory_weight = 1.0
+set_id = "core_body"
+set_name = "Core Body"
+set_piece_key = "body"
+set_tags = Array[String](["core", "starter"])
+synergy_ids = Array[String](["core_body", "body_bones"])
+synergy_tags = Array[String](["core", "body", "starter"])
+synergy_score = 0.1

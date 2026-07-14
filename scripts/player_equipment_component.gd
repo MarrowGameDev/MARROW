@@ -2,6 +2,10 @@ class_name PlayerEquipmentComponent
 extends Node
 
 const EQUIPPED_BONE_SCENE: PackedScene = preload("res://scenes/equipped_bone.tscn")
+const CORE_HEAD_BONE_ID := "head_bone"
+const CORE_HEAD_SLOT := "head"
+const CORE_TORSO_SLOT := "body"
+const TORSO_REQUIRED_SLOTS := ["right_arm", "left_arm", "legs"]
 
 var owner_player: Node = null
 var equipped: Dictionary = {}
@@ -12,6 +16,14 @@ var equip_swaps: int = 0
 func setup(player: Node) -> void:
 	owner_player = player
 	name = "PlayerEquipmentComponent"
+
+
+func equip_starting_core() -> void:
+	if _equip_bone_in_slot(CORE_HEAD_BONE_ID, true):
+		var rig: ModularSkeletonRig = _get_player_rig()
+		if rig != null:
+			rig.equip_bone(CORE_HEAD_BONE_ID, BoneRulesService.definition_for(CORE_HEAD_BONE_ID))
+		_recalculate_owner_stats()
 
 
 func equip_bone(bone_id: String) -> void:
@@ -33,6 +45,12 @@ func equip_bone(bone_id: String) -> void:
 func unequip_slot(slot: String) -> void:
 	if not equipped.has(slot):
 		return
+	if slot == CORE_HEAD_SLOT:
+		print("The head is the fixed core. If it breaks, the player dies.")
+		return
+	if slot == CORE_TORSO_SLOT:
+		for limb_slot in TORSO_REQUIRED_SLOTS:
+			unequip_slot(str(limb_slot))
 
 	var bone_id: String = equipped[slot]
 	equipped.erase(slot)
@@ -68,10 +86,13 @@ func get_swap_count() -> int:
 	return equip_swaps
 
 
-func _equip_bone_in_slot(bone_id: String) -> bool:
+func _equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool:
 	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
 	if slot == "":
 		print("Bone has no slot: ", bone_id)
+		return false
+
+	if not force_core and not _can_equip_slot(slot, bone_id):
 		return false
 
 	if equipped.get(slot, "") == bone_id:
@@ -98,6 +119,29 @@ func _equip_bone_in_slot(bone_id: String) -> bool:
 	equipped_visuals[slot] = visual
 	_tint_visual(visual, BoneRulesService.color_for(bone_id))
 	return true
+
+
+func _can_equip_slot(slot: String, bone_id: String) -> bool:
+	if slot == CORE_HEAD_SLOT:
+		print("The head is fixed. Enemy heads cannot replace the player's core.")
+		_emit_equipment_hint("head_fixed", "Your head is the fixed core. If it breaks, you die.")
+		return false
+
+	if TORSO_REQUIRED_SLOTS.has(slot) and not equipped.has(CORE_TORSO_SLOT):
+		print("Equip a torso before attaching limbs.")
+		_emit_equipment_hint("torso_required", "Recover a torso first. Arms and legs cannot attach to a head alone.")
+		return false
+
+	if slot == CORE_TORSO_SLOT and bone_id == "":
+		return false
+
+	return true
+
+
+func _emit_equipment_hint(hint_id: String, text: String) -> void:
+	if owner_player == null:
+		return
+	GameEvents.tutorial_hint_requested.emit(owner_player, hint_id, text, 3)
 
 
 func _clear_equipped_visual(slot: String) -> void:

@@ -8,8 +8,8 @@ Open `scenes/rig_test.tscn` in Godot and run it (F6 / "Run Current Scene").
 
 - **WASD** — move. Body bobs, torso leans, arms/legs swing, and the whole figure
   turns smoothly toward the movement direction. Standing still = subtle idle breathing.
-- **Space** — attack: a quick forward arm thrust + torso twist that blends back out
-  (Phase E), readable while idle or walking.
+- **Attack** — cycles simple combo poses: right-arm strike, left-arm strike,
+  then a heavier two-arm/torso finisher.
 - **Q** — cycles equipping **Arm → Leg → Heavy** into their slots. The grey limb is
   swapped for a bone-colored one; Heavy is bigger (visual_scale) and heavier.
 - Walk **forward onto the ramp** (in front of spawn) to see foot placement (Phase F):
@@ -40,6 +40,13 @@ turn_smoothing 12.0 · idle_breath_amount 0.025 · heavy_weight_swing_slowdown 0
 attack_overlay_duration 0.16 · attack_overlay_blend_speed 18 · attack_arm_forward 1.1 ·
 attack_torso_twist 0.35 · foot_raycast_up/down 0.6/1.4 · foot_lift 0.06 ·
 foot_smoothing 14 · foot_align_to_normal true (uncheck foot_placement_enabled to disable).
+
+Combo overlay:
+- `Player` passes a combo step into `ProceduralPlayerAnimator.trigger_attack`.
+- Step 1 uses right arm + torso twist.
+- Step 2 uses left arm + opposite torso twist.
+- Step 3 uses both arms, deeper lunge, and a small head dip.
+- This is visual only; melee damage and hitbox behavior are unchanged.
 
 ## Known limitations / TODO
 - Socket positions & limb sizes are hand-estimated grey-box values — expect to

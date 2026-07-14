@@ -49,6 +49,9 @@ Event relationships:
 - `OpenWorldStage._on_body_exited` emits `GameEvents.stage_exited`.
 - `DemoEnemyCamp._open_chest` emits `GameEvents.camp_chest_opened`.
 - `ArenaGoalManager` listens to `trial_completed`, `exit_reached`, and `player_died`.
+- `ArenaGoalManager` listens to `bone_collected`, `bone_equipped`,
+  `inventory_open_changed` and `tutorial_hint_requested` to update the controls
+  tutorial checklist.
 - `WorldMapManager` listens to `stage_entered` and `stage_exited`.
 
 ## Player
@@ -82,6 +85,8 @@ Player relationships:
 - `Player` uses `PlayerCameraController` for third-person mouse look.
 - `Player` owns inventory and equipment rules; `PlayerInventoryUI` owns inventory presentation.
 - `Player` spawns `AttackHitbox` for attacks.
+- `Player` starts with `head_bone` equipped as a fixed core and enables body
+  progression visibility on `ModularSkeletonRig`.
 
 ## Player Camera
 
@@ -303,13 +308,15 @@ dictionary entries only as temporary fallback.
 - maps gameplay slots to sockets through `SLOT_TO_SOCKETS`.
 - equips a bone by hiding base visuals and adding colored parts to matching sockets.
 - exposes `get_equipped_bone_defs` for animation weight response.
+- supports body progression visibility: head first, torso required, limbs only
+  when equipped.
 
 `scripts/rig/procedural_player_animator.gd` defines `ProceduralPlayerAnimator`.
 
 `ProceduralPlayerAnimator`:
 - animates the rig sockets based on velocity, facing, speed, and equipped bone defs.
 - uses a lower body pose, stronger arm pulls, and tucked legs in crawl mode.
-- responds to attack events.
+- responds to attack events and supports three simple combo poses.
 - bends limb joints when rigged limb data exists.
 
 ## Generated World
@@ -318,6 +325,7 @@ dictionary entries only as temporary fallback.
 
 It positions the player, creates or updates open world stages, places enemies,
 registers camp enemies, and configures stage metadata for the playable loop.
+It also spawns the starter `torso_bone` pickup near the player start.
 
 ## Guidance Docs
 
@@ -329,3 +337,6 @@ enemy, and rig boundaries before the component refactor.
 `docs/open_world_map_layout.md` describes the demo island route and stage regions.
 
 `docs/rig_notes.md` describes modular rig and procedural animation setup.
+
+`docs/tutorial_flow.md` describes the demo controls tutorial and onboarding
+checklist.

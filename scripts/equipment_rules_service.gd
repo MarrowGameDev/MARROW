@@ -19,7 +19,7 @@ const SLOT_DISPLAY := {
 const SLOT_TO_SOCKETS := {
 	"right_arm": ["right_arm"],
 	"left_arm": ["left_arm"],
-	"legs": ["left_leg", "right_leg"],
+	"legs": ["left_leg", "right_leg", "left_foot", "right_foot"],
 	"body": ["body"],
 	"head": ["head"],
 }
@@ -462,10 +462,12 @@ static func _generated_limb_bonus(source_profile: String, limb_key: String) -> D
 	match limb_key:
 		"right_arm", "left_arm":
 			bonus["attack_range"] = 0.8
+			bonus["max_health"] = 1
 		"right_leg", "left_leg":
 			bonus["move_speed"] = 0.8
-		"body":
 			bonus["max_health"] = 1
+		"body":
+			bonus["max_health"] = 2
 		"head":
 			bonus["attack_damage"] = 1
 

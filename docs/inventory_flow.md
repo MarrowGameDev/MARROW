@@ -145,8 +145,8 @@ Campos de ataque/combo:
 - `attack_tags` y `combo_tags` permiten filtros o detalles en UI.
 - `combo_family`, `combo_step`, `combo_window` y `combo_finisher` preparan la
   lectura de cadenas de ataque.
-- Inventario puede mostrar estos datos, pero no debe cambiar ataques ni combos
-  automaticamente.
+- Inventario puede mostrar estos datos, pero no debe cambiar ataques, hitboxes,
+  dano ni combos automaticamente.
 
 ## Puntos delicados
 
@@ -154,8 +154,14 @@ Campos de ataque/combo:
   filtrar solo las copias equipadas, no esconder todos los duplicados.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
+- El tutorial de controles debe leer los bindings actuales con
+  `DropPickupRulesService.action_binding_text`, para que el texto visible siga
+  los cambios hechos en settings.
 - Interaccion: si el jugador esta en rango de pickup, el inventario no debe
   abrirse con la misma tecla de interact.
+- Progresion corporal: el inventario puede contener torso/extremidades, pero el
+  slot de cabeza es fijo. Si se intenta equipar brazos o piernas sin torso,
+  `PlayerEquipmentComponent` bloquea la accion y emite hint.
 
 ## Como probar
 
@@ -167,6 +173,9 @@ En `TESTING ENVIRONMENT`:
 4. Cambiar categoria.
 5. Ir a settings y cambiar una tecla.
 6. Recoger un drop real y confirmar que aparece sin reiniciar la UI.
+7. Intentar equipar brazo/pierna sin torso y confirmar que se bloquea.
+8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
+   solo las partes recuperadas.
 
 ## Historial de cambios
 

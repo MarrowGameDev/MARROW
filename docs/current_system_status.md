@@ -16,6 +16,8 @@ refactor pass.
 - The character preview is rendered in an isolated `SubViewport` world with its
   own small room backdrop, so the preview clone stays outside the playable
   world and can be framed independently.
+- The inventory preview uses the same body progression visibility as the player:
+  fixed head first, torso required, limbs visible only after recovery/equip.
 
 ## Combat
 
@@ -78,12 +80,25 @@ refactor pass.
 - `scenes/main_menu.tscn` exposes both the playable demo and testing
   environment.
 
+## Tutorial
+
+- `ArenaGoalManager` owns the demo help panel and now shows a live controls
+  tutorial checklist.
+- The checklist reads current bindings through `DropPickupRulesService`, so it
+  follows control remaps instead of hardcoded key text.
+- Tutorial progress listens to direct input plus `GameEvents` for pickup,
+  inventory open, and equip events.
+
 ## Rig
 
 - `ModularSkeletonRig` creates sockets and visual equipment parts.
 - `ProceduralPlayerAnimator` animates sockets from resolved movement velocity and
   equipped bone data.
 - Crawl mode lowers the body and uses stronger arm pulls with tucked legs.
+- Attack animation now supports a simple three-step combo overlay: right strike,
+  left strike, and two-arm finisher. It is visual only.
+- Player body progression mode hides unrecovered body parts. Head-only movement
+  uses a simple hop/roll pose until the torso is equipped.
 
 ## Documentation Boundary
 

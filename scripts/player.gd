@@ -14,7 +14,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 
 # Player survivability. Enemies deal contact_damage; invuln_time is a brief mercy
 # window after each hit so a crowd can't drain you in a single frame.
-@export var max_health: int = 5
+@export var max_health: int = 1
 @export var damage_invuln_time: float = 0.7
 @export var damage_knockback_strength: float = 5.0
 
@@ -77,6 +77,8 @@ var can_attack: bool = true
 var can_shoot_bow: bool = true
 var last_facing_direction: Vector3 = Vector3.FORWARD
 var current_move_direction: Vector3 = Vector3.ZERO
+var combo_animation_step: int = 0
+var combo_animation_timer: float = 0.0
 var bow_visual: Node3D = null
 var bow_equipped: bool = false
 var bow_aiming: bool = false
@@ -124,6 +126,9 @@ func _ready() -> void:
 	equipment_component = PlayerEquipmentComponent.new()
 	add_child(equipment_component)
 	equipment_component.setup(self)
+	if rig != null and rig.has_method("set_body_progression_enabled"):
+		rig.set_body_progression_enabled(true)
+	equipment_component.equip_starting_core()
 	inventory_component = PlayerInventoryComponent.new()
 	add_child(inventory_component)
 	inventory_component.setup(self, equipment_component)
@@ -184,6 +189,10 @@ func _physics_process(delta: float) -> void:
 		invuln_timer -= delta
 	if noise_timer > 0.0:
 		noise_timer = maxf(noise_timer - delta, 0.0)
+	if combo_animation_timer > 0.0:
+		combo_animation_timer = maxf(combo_animation_timer - delta, 0.0)
+	elif combo_animation_step != 0:
+		combo_animation_step = 0
 
 	if Input.is_action_just_pressed("attack"):
 		if bow_equipped:
@@ -274,8 +283,9 @@ func _try_attack() -> void:
 		return
 	can_attack = false
 	noise_timer = maxf(noise_timer, 0.55)
+	var combo_step: int = _next_combo_animation_step()
 	if animator != null:
-		animator.trigger_attack()
+		animator.trigger_attack(combo_step)
 
 	# Aim the swing in the direction the player last moved.
 	var forward := current_move_direction
@@ -321,7 +331,7 @@ func _try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) ->
 	can_shoot_bow = false
 	noise_timer = maxf(noise_timer, 0.45)
 	if animator != null:
-		animator.trigger_attack()
+		animator.trigger_attack(0)
 
 	var forward: Vector3 = _get_camera_forward_direction()
 	if not bow_equipped and current_move_direction.length() > 0.01:
@@ -446,7 +456,7 @@ func _try_stealth_finish() -> void:
 	can_attack = false
 	noise_timer = maxf(noise_timer, 0.35)
 	if animator != null:
-		animator.trigger_attack()
+		animator.trigger_attack(3)
 	_flash_player_attack()
 	var finished := bool(stealth_target.call("try_stealth_finish", self, attack_damage, global_position))
 	if not finished:
@@ -455,6 +465,25 @@ func _try_stealth_finish() -> void:
 
 	await get_tree().create_timer(attack_cooldown).timeout
 	can_attack = true
+
+
+func _next_combo_animation_step() -> int:
+	if combo_animation_timer <= 0.0:
+		combo_animation_step = 0
+	combo_animation_step = (combo_animation_step % 3) + 1
+	combo_animation_timer = _combo_animation_window()
+	return combo_animation_step
+
+
+func _combo_animation_window() -> float:
+	var window: float = attack_cooldown + 0.25
+	var equipment_state: Dictionary = get_equipment_state()
+	for slot in equipment_state:
+		var bone_id := str(equipment_state[slot])
+		if bone_id == "":
+			continue
+		window = maxf(window, BoneRulesService.combo_window_for(bone_id) + attack_cooldown)
+	return window
 
 
 # Tier 1D: briefly brighten the player's own mesh on attack, then restore it.
