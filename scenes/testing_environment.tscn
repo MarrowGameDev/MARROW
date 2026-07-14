@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/testing_environment.gd" id="1_testing_environment"]
+
+[node name="TestingEnvironment" type="Node3D"]
+script = ExtResource("1_testing_environment")
+
+[node name="EnemySpawnPoints" type="Node3D" parent="."]
+
+[node name="NormalSpawn" type="Marker3D" parent="EnemySpawnPoints"]
+position = Vector3(-7, 0.6, 9)
+metadata/enemy_profile = "normal"
+
+[node name="GorillaSpawn" type="Marker3D" parent="EnemySpawnPoints"]
+position = Vector3(7, 0.6, 9)
+metadata/enemy_profile = "gorilla"
+
+[node name="LizardSpawn" type="Marker3D" parent="EnemySpawnPoints"]
+position = Vector3(-7, 0.6, -9)
+metadata/enemy_profile = "lizard"
+
+[node name="RangedSpawn" type="Marker3D" parent="EnemySpawnPoints"]
+position = Vector3(7, 0.6, -9)
+metadata/enemy_profile = "ranged"

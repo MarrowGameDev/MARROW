@@ -125,12 +125,19 @@ func _recalculate_owner_stats() -> void:
 
 
 func _notify_equipment_changed() -> void:
-	if owner_player == null:
-		return
-	var inventory_ui_value: Variant = owner_player.get("inventory_ui")
-	var inventory_ui: Node = inventory_ui_value as Node
-	if inventory_ui != null and inventory_ui.has_method("notify_equipment_changed"):
-		inventory_ui.call("notify_equipment_changed")
+	GameEvents.inventory_changed.emit(owner_player, _get_inventory_items(), _get_run_stats())
+
+
+func _get_inventory_items() -> Array:
+	if owner_player != null and owner_player.has_method("get_inventory_items"):
+		return owner_player.call("get_inventory_items") as Array
+	return []
+
+
+func _get_run_stats() -> Dictionary:
+	if owner_player != null and owner_player.has_method("get_run_stats"):
+		return owner_player.call("get_run_stats") as Dictionary
+	return {}
 
 
 func _tint_visual(visual: Node3D, color: Color) -> void:

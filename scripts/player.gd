@@ -135,7 +135,8 @@ func _ready() -> void:
 	_build_stealth_ui()
 	_build_aim_reticle_ui()
 	_build_bow_visual()
-	inventory_ui.notify_inventory_changed()
+	if inventory_component != null:
+		GameEvents.inventory_changed.emit(self, inventory_component.get_inventory_items(), inventory_component.get_run_stats())
 	_setup_procedural_character()
 	_update_mouse_mode()
 
@@ -953,6 +954,7 @@ func _toggle_inventory() -> void:
 	inventory_open = not inventory_open
 	if inventory_ui != null:
 		inventory_ui.set_open(inventory_open)
+	GameEvents.inventory_open_changed.emit(self, inventory_open)
 	get_tree().paused = inventory_open
 	_update_mouse_mode()
 

@@ -10,19 +10,22 @@ func _ready() -> void:
 	add_to_group("world_map_managers")
 	GameEvents.stage_entered.connect(_on_stage_entered)
 	GameEvents.stage_exited.connect(_on_stage_exited)
+	GameEvents.objective_updated.connect(_on_objective_updated)
 	_build_map_ui()
-	_update_map_ui()
+	_emit_region_objective()
 
 
 func enter_stage(stage: Node) -> void:
 	current_stage = stage
-	_update_map_ui()
+	_emit_region_objective()
+	if current_stage != null and current_stage.has_method("get_stage_summary"):
+		GameEvents.tutorial_hint_requested.emit(current_stage, "stage_entered", "Entered region:\n" + str(current_stage.call("get_stage_summary")), 0)
 
 
 func exit_stage(stage: Node) -> void:
 	if current_stage == stage:
 		current_stage = null
-		_update_map_ui()
+		_emit_region_objective()
 
 
 func _on_stage_entered(stage: Node) -> void:
@@ -31,6 +34,12 @@ func _on_stage_entered(stage: Node) -> void:
 
 func _on_stage_exited(stage: Node) -> void:
 	exit_stage(stage)
+
+
+func _on_objective_updated(source: Node, objective_id: String, title: String, body: String) -> void:
+	if source != self or objective_id != "current_stage" or map_label == null:
+		return
+	map_label.text = title + "\n\n" + body
 
 
 func _build_map_ui() -> void:
@@ -62,7 +71,14 @@ func _update_map_ui() -> void:
 	if map_label == null:
 		return
 
+	map_label.text = "Demo Island Region\n\n" + _region_body()
+
+
+func _emit_region_objective() -> void:
+	GameEvents.objective_updated.emit(self, "current_stage", "Demo Island Region", _region_body())
+
+
+func _region_body() -> String:
 	if current_stage != null and current_stage.has_method("get_stage_summary"):
-		map_label.text = "Demo Island Region\n\n" + current_stage.call("get_stage_summary")
-	else:
-		map_label.text = "Demo Island Region\n\nCliffside Start\nDifficulty 1 / 10\nFollow the river paths to test the full demo loop."
+		return str(current_stage.call("get_stage_summary"))
+	return "Cliffside Start\nDifficulty 1 / 10\nFollow the river paths to test the full demo loop."

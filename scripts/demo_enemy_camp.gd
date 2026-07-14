@@ -24,8 +24,8 @@ var flame_time: float = 0.0
 
 func _ready() -> void:
 	add_to_group("enemy_camps")
+	GameEvents.enemy_defeated.connect(_on_enemy_defeated)
 	_build_visuals()
-	_update_state()
 	_update_label()
 
 
@@ -36,6 +36,7 @@ func register_enemy(enemy: Node) -> void:
 		enemies.append(enemy)
 		enemy.set("respawn_enabled", false)
 	_update_state()
+	_emit_camp_state_changed()
 	_update_label()
 
 
@@ -45,15 +46,13 @@ func _process(delta: float) -> void:
 		var pulse := 1.0 + sin(flame_time * 8.0) * 0.12
 		flame_mesh.scale = Vector3.ONE * pulse
 
-	_update_state()
-
 	if opened or not unlocked or player_in_range == null:
 		if hold_progress > 0.0:
 			hold_progress = 0.0
 			_update_label()
 		return
 
-	if Input.is_action_pressed("interact"):
+	if Input.is_action_pressed(DropPickupRulesService.PICKUP_ACTION):
 		hold_progress += delta
 		_update_label()
 		if hold_progress >= chest_open_hold_time:
@@ -77,7 +76,19 @@ func _update_state() -> void:
 	if all_cleared != unlocked:
 		unlocked = all_cleared
 		_update_chest_visual()
+		_emit_camp_state_changed()
 		_update_label()
+
+
+func _on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void:
+	if not enemies.has(enemy):
+		return
+	_update_state()
+	_update_label()
+
+
+func _emit_camp_state_changed() -> void:
+	GameEvents.camp_state_changed.emit(self, unlocked, opened, _remaining_enemy_count())
 
 
 func _open_chest() -> void:
@@ -87,6 +98,7 @@ func _open_chest() -> void:
 	opened = true
 	hold_progress = 0.0
 	_update_chest_visual()
+	_emit_camp_state_changed()
 
 	if player_in_range != null and reward_bone_id != "" and player_in_range.has_method("collect_bone"):
 		player_in_range.call("collect_bone", reward_bone_id)
@@ -232,7 +244,7 @@ func _update_label() -> void:
 		label.text = camp_name + "\nChest unlocked"
 	else:
 		var percent := int((hold_progress / chest_open_hold_time) * 100.0)
-		label.text = camp_name + "\nHold " + _action_binding_text("interact") + " to open: " + str(percent) + "%"
+		label.text = camp_name + "\nHold " + DropPickupRulesService.action_binding_text(DropPickupRulesService.PICKUP_ACTION) + " to open: " + str(percent) + "%"
 
 
 func _remaining_enemy_count() -> int:
@@ -241,32 +253,6 @@ func _remaining_enemy_count() -> int:
 		if enemy != null and is_instance_valid(enemy) and bool(enemy.get("alive")):
 			count += 1
 	return count
-
-
-func _action_binding_text(action: String) -> String:
-	if not InputMap.has_action(action):
-		return action
-	var events := InputMap.action_get_events(action)
-	if events.is_empty():
-		return action
-	var event := events[0]
-	if event is InputEventKey:
-		var key_event := event as InputEventKey
-		var key_name := OS.get_keycode_string(key_event.keycode)
-		if key_name != "":
-			return key_name
-	if event is InputEventMouseButton:
-		var mouse_event := event as InputEventMouseButton
-		match mouse_event.button_index:
-			MOUSE_BUTTON_LEFT:
-				return "Left Click"
-			MOUSE_BUTTON_RIGHT:
-				return "Right Click"
-			MOUSE_BUTTON_MIDDLE:
-				return "Middle Click"
-			_:
-				return "Mouse " + str(mouse_event.button_index)
-	return action
 
 
 func _make_material(color: Color, glowing: bool = false) -> StandardMaterial3D:

@@ -75,6 +75,9 @@ func setup(owner_player: Node) -> void:
 	player = owner_player
 	name = "PlayerInventoryUI"
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	GameEvents.inventory_changed.connect(_on_inventory_changed)
+	GameEvents.bone_equipped.connect(_on_bone_equipped)
+	GameEvents.bone_unequipped.connect(_on_bone_unequipped)
 	_load_control_settings()
 	_build_inventory_ui()
 	get_viewport().size_changed.connect(Callable(self, "_queue_inventory_responsive_layout"))
@@ -135,6 +138,24 @@ func notify_equipment_changed() -> void:
 	update_inventory_ui()
 	sync_preview()
 	call_deferred("rebuild_item_tiles")
+
+
+func _on_inventory_changed(event_player: Node, _items: Array, _stats: Dictionary) -> void:
+	if event_player != player:
+		return
+	notify_inventory_changed()
+
+
+func _on_bone_equipped(_bone_id: String, _slot: String, event_player: Node) -> void:
+	if event_player != player:
+		return
+	notify_equipment_changed()
+
+
+func _on_bone_unequipped(_bone_id: String, _slot: String, event_player: Node) -> void:
+	if event_player != player:
+		return
+	notify_equipment_changed()
 
 
 func get_inventory_tile_size() -> Vector2:

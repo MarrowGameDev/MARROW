@@ -14,6 +14,7 @@ var run_start_ms: int = 0
 var help_label: Label
 var win_root: Control
 var win_label: Label
+var current_tutorial_priority: int = -1
 
 
 func _ready() -> void:
@@ -22,10 +23,15 @@ func _ready() -> void:
 	GameEvents.trial_completed.connect(_on_trial_completed)
 	GameEvents.exit_reached.connect(_on_exit_reached)
 	GameEvents.player_died.connect(_on_player_died)
+	GameEvents.objective_updated.connect(_on_objective_updated)
+	GameEvents.tutorial_hint_requested.connect(_on_tutorial_hint_requested)
+	GameEvents.bone_collected.connect(_on_bone_collected)
+	GameEvents.camp_state_changed.connect(_on_camp_state_changed)
 	_build_goal_ui()
 	_build_help_ui()
 	_build_win_ui()
-	_update_goal_ui()
+	_emit_objective_updated()
+	GameEvents.tutorial_hint_requested.emit(self, "demo_start", _default_help_text(), 0)
 
 
 # Tier 1F: R restarts the whole run at any time, so repeated testing is fast.
@@ -40,7 +46,7 @@ func register_trial_complete(trial_id: String, trial_name: String) -> void:
 		return
 
 	completed_trials[trial_id] = trial_name
-	_update_goal_ui()
+	_emit_objective_updated()
 
 	if completed_trials.size() >= required_trials:
 		_open_exit()
@@ -60,7 +66,8 @@ func _open_exit() -> void:
 		if portal.has_method("open_exit"):
 			portal.call("open_exit")
 
-	_update_goal_ui()
+	_emit_objective_updated()
+	GameEvents.tutorial_hint_requested.emit(self, "exit_open", "All trials are clear. Find the open exit portal and step through it.", 2)
 	print("All bone trials complete. Exit opened.")
 
 
@@ -91,8 +98,15 @@ func _update_goal_ui() -> void:
 	if goal_label == null:
 		return
 
-	var text := "Bone Trials\n\n"
-	text += "Completed: " + str(completed_trials.size()) + " / " + str(required_trials) + "\n"
+	goal_label.text = "Bone Trials\n\n" + _objective_body()
+
+
+func _emit_objective_updated() -> void:
+	GameEvents.objective_updated.emit(self, "bone_trials", "Bone Trials", _objective_body())
+
+
+func _objective_body() -> String:
+	var text := "Completed: " + str(completed_trials.size()) + " / " + str(required_trials) + "\n"
 
 	if completed_trials.is_empty():
 		text += "- None yet\n"
@@ -105,7 +119,7 @@ func _update_goal_ui() -> void:
 	else:
 		text += "\nExit: locked"
 
-	goal_label.text = text
+	return text
 
 
 # Tier 1F: called by the exit portal when the player steps through an open exit.
@@ -135,6 +149,31 @@ func _on_exit_reached(player: Node) -> void:
 
 func _on_player_died(player: Node) -> void:
 	game_over(player)
+
+
+func _on_objective_updated(source: Node, _objective_id: String, title: String, body: String) -> void:
+	if source != self or goal_label == null:
+		return
+	goal_label.text = title + "\n\n" + body
+
+
+func _on_tutorial_hint_requested(_source: Node, _hint_id: String, text: String, _priority: int) -> void:
+	if help_label != null:
+		if _priority < current_tutorial_priority:
+			return
+		current_tutorial_priority = _priority
+		help_label.text = text
+
+
+func _on_bone_collected(bone_id: String, _collector: Node) -> void:
+	GameEvents.tutorial_hint_requested.emit(self, "bone_collected", "Bone collected: " + BoneRulesService.display_name_with_slot(bone_id) + "\nOpen inventory with Tab to equip body parts and inspect stats.", 1)
+
+
+func _on_camp_state_changed(camp: Node, unlocked: bool, opened: bool, _remaining_enemies: int) -> void:
+	if opened:
+		return
+	if unlocked:
+		GameEvents.tutorial_hint_requested.emit(camp, "camp_unlocked", "Camp cleared. Hold " + DropPickupRulesService.action_binding_text(DropPickupRulesService.PICKUP_ACTION) + " at the chest to claim the reward.", 1)
 
 
 func _show_win_screen(player: Node, elapsed_ms: int) -> void:
@@ -187,15 +226,19 @@ func _build_help_ui() -> void:
 	panel.add_child(margin)
 
 	help_label = Label.new()
-	var t := "Marrow — Demo Island\n"
-	t += "Move: WASD     Sprint: Shift     Jump: Space     Attack: Left Click\n"
-	t += "Stealth finish: F     Pick up bone: hold E     Equip next: Q     Inventory: E\n\n"
-	t += "Defeat enemies and harvest their bones, then equip the\n"
-	t += "matching bone at each colored trial gate.\n"
-	t += "Clear all 3 trials to open the exit, then step through it.\n"
-	t += "R: restart"
-	help_label.text = t
+	help_label.text = _default_help_text()
 	margin.add_child(help_label)
+
+
+func _default_help_text() -> String:
+	var text := "Marrow - Demo Island\n"
+	text += "Move: WASD     Sprint: Shift     Jump: Space     Attack: Left Click\n"
+	text += "Stealth finish: F     Pick up bone: hold " + DropPickupRulesService.action_binding_text(DropPickupRulesService.PICKUP_ACTION) + "     Equip next: Q     Inventory: Tab\n\n"
+	text += "Defeat enemies and harvest their bones, then equip the\n"
+	text += "matching bone at each colored trial gate.\n"
+	text += "Clear all 3 trials to open the exit, then step through it.\n"
+	text += "R: restart"
+	return text
 
 
 # The full-screen win overlay, hidden until the player finishes the course.

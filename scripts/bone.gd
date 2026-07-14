@@ -68,6 +68,7 @@ func _on_body_entered(body: Node3D) -> void:
 		player_in_range = body
 		hold_progress = 0.0
 		body.call("enter_bone_pickup_range")
+		GameEvents.pickup_focus_changed.emit(self, bone_id, body, true)
 		_update_prompt()
 
 
@@ -79,6 +80,7 @@ func _on_body_exited(body: Node3D) -> void:
 	if body.has_method("exit_bone_pickup_range"):
 		body.call("exit_bone_pickup_range")
 
+	GameEvents.pickup_focus_changed.emit(self, bone_id, body, false)
 	player_in_range = null
 	hold_progress = 0.0
 	_update_prompt()
@@ -92,6 +94,8 @@ func _collect() -> void:
 	collected = true
 	if player_in_range.has_method("collect_bone"):
 		player_in_range.call("collect_bone", bone_id)
+	GameEvents.pickup_collected.emit(bone_id, self, player_in_range)
+	GameEvents.pickup_focus_changed.emit(self, bone_id, player_in_range, false)
 	if player_in_range.has_method("exit_bone_pickup_range"):
 		player_in_range.call("exit_bone_pickup_range")
 

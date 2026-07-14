@@ -79,6 +79,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var lizard_saliva_speed: float = 15.0
 @export var lizard_saliva_gravity: float = 1.5
 @export var lizard_wall_climb_probe_distance: float = 0.85
+@export var lizard_wall_climb_speed: float = 4.2
 @export var lizard_wall_climb_blend_speed: float = 9.0
 @export_group("")
 @export_group("Bone Recovery")
@@ -233,11 +234,7 @@ func _process(delta: float) -> void:
 # _physics_process drives movement, chasing, and attacking on the physics clock.
 func _physics_process(delta: float) -> void:
 	# Gravity keeps the box resting on the ground instead of floating.
-	if _is_wall_phasing_lizard():
-		velocity.y = 0.0
-		if alive:
-			global_position.y = spawn_transform.origin.y
-	elif not is_on_floor():
+	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
@@ -329,7 +326,7 @@ func _physics_process(delta: float) -> void:
 			move = _get_bone_recovery_move()
 		elif player_visible and dist <= detection_range and dist > 0.01:
 			# Chase: move toward the player, but steer around blocking walls.
-			if _is_wall_phasing_lizard():
+			if _is_lizard_wall_climb_enabled():
 				move = to_player.normalized() * effective_move_speed
 			else:
 				move = _steer_around_obstacles(to_player.normalized()) * effective_move_speed
@@ -354,8 +351,9 @@ func _physics_process(delta: float) -> void:
 
 	velocity.x = move.x + knockback_velocity.x
 	velocity.z = move.z + knockback_velocity.z
+	_apply_lizard_wall_climb_velocity()
 	_update_lizard_wall_climb_blend(delta)
-	_apply_enemy_movement(delta)
+	_apply_enemy_movement()
 	_update_procedural_animation(delta)
 
 
@@ -372,17 +370,20 @@ func _player_is_dead(player: Node) -> bool:
 	return player.has_method("is_player_dead") and player.is_player_dead()
 
 
-func _apply_enemy_movement(delta: float) -> void:
-	if _is_wall_phasing_lizard():
-		global_position += Vector3(velocity.x, 0.0, velocity.z) * delta
-		global_position.y = spawn_transform.origin.y
-		return
-
+func _apply_enemy_movement() -> void:
 	move_and_slide()
 
 
-func _is_wall_phasing_lizard() -> bool:
+func _is_lizard_wall_climb_enabled() -> bool:
 	return lizard_profile_active and lizard_wall_phase_enabled
+
+
+func _apply_lizard_wall_climb_velocity() -> void:
+	if not _is_lizard_wall_climb_enabled():
+		return
+
+	if _lizard_wall_probe_blocked():
+		velocity.y = lizard_wall_climb_speed
 
 
 func _update_lizard_wall_climb_blend(delta: float) -> void:
@@ -1382,6 +1383,7 @@ func _attach_pickup_to_detached_limb(body: RigidBody3D, pickup_bone_id: String) 
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	pickup_area.add_child(label)
 	body.add_child(pickup_area)
+	GameEvents.drop_spawned.emit(pickup_bone_id, pickup_area, self)
 
 
 func _pickup_bone_id_for_limb(limb_key: String) -> String:
@@ -1468,6 +1470,7 @@ func die() -> void:
 		return
 
 	alive = false
+	GameEvents.enemy_defeated.emit(self, dropped_bone_id)
 	search_timer = 0.0
 	search_look_time = 0.0
 	returning_to_spawn = false
@@ -1681,6 +1684,7 @@ func _drop_standard_bone_pickup() -> void:
 	if bone.has_method("set_bone_id"):
 		bone.call("set_bone_id", dropped_bone_id)
 	limb_pickup_spawned = true
+	GameEvents.drop_spawned.emit(dropped_bone_id, bone, self)
 
 
 func _force_limb_pickup_drop() -> bool:

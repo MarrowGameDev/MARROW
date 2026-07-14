@@ -52,9 +52,4 @@ func _get_equipment_swap_count() -> int:
 
 
 func _notify_inventory_changed() -> void:
-	if owner_player == null:
-		return
-	var inventory_ui_value: Variant = owner_player.get("inventory_ui")
-	var inventory_ui: Node = inventory_ui_value as Node
-	if inventory_ui != null and inventory_ui.has_method("notify_inventory_changed"):
-		inventory_ui.call("notify_inventory_changed")
+	GameEvents.inventory_changed.emit(owner_player, get_inventory_items(), get_run_stats())
