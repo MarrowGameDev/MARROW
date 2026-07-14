@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="BoneDefinition" load_steps=2 format=3 uid="uid://b8xmxrc5he31w"]
+
+[ext_resource type="Script" path="res://scripts/bone_definition.gd" id="1_bonedef"]
+
+[resource]
+script = ExtResource("1_bonedef")
+bone_id = "rib_bone"
+display_name = "Rib Bone"
+quality = "Strong"
+color = Color(0.35, 0.85, 0.95, 1)
+slot = "body"
+tags = Array[String](["hybrid", "bonus"])
+description = "A bit of everything: some extra reach and speed."
+player_move_speed = 1.5
+player_attack_range = 1.0
+player_max_health = 1
+enemy_move_speed = 0.7
+enemy_attack_range = 0.4
+enemy_max_health = 1
+enemy_detection_range = 1.0
+enemy_visual_scale = 1.08
+enemy_flee_chance = 0.55

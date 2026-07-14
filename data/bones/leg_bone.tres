@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BoneDefinition" load_steps=2 format=3 uid="uid://bbwojxmjdlkqp"]
+
+[ext_resource type="Script" path="res://scripts/bone_definition.gd" id="1_bonedef"]
+
+[resource]
+script = ExtResource("1_bonedef")
+bone_id = "leg_bone"
+display_name = "Leg Bone"
+quality = "Normal"
+color = Color(0.25, 0.95, 0.55, 1)
+slot = "legs"
+tags = Array[String](["speed"])
+description = "Faster movement."
+player_move_speed = 3.0
+enemy_move_speed = 1.4
+enemy_detection_range = 2.0
+enemy_visual_scale = 0.95
+enemy_flee_chance = 1.0

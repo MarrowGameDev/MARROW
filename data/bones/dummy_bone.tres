@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BoneDefinition" load_steps=2 format=3 uid="uid://b43u32nfbqapa"]
+
+[ext_resource type="Script" path="res://scripts/bone_definition.gd" id="1_bonedef"]
+
+[resource]
+script = ExtResource("1_bonedef")
+bone_id = "dummy_bone"
+display_name = "Training Bone"
+quality = "Cracked"
+color = Color(1, 0.94, 0.68, 1)
+slot = "right_arm"
+tags = Array[String]([])
+description = "A plain practice bone with no special effect."

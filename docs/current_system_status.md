@@ -45,8 +45,9 @@ refactor pass.
 ## Bone Data
 
 - `BoneDefinition` is the Godot `Resource` type for one hand-authored bone.
-- `BoneDataCatalog` currently creates `BoneDefinition` objects from its clean
-  in-code data while the project prepares for `.tres` assets.
+- Initial hand-authored bones now live as `.tres` assets in `data/bones/`.
+- `BoneDataCatalog` loads `.tres` Resources first and uses its in-code
+  dictionaries only as temporary fallback during gradual migration.
 - `BoneDatabase` remains the compatibility layer that normalizes catalog data
   into the flat fields current systems expect.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`

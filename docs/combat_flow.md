@@ -93,8 +93,8 @@ Vision:
 
 Stats por hueso:
 - La forma editable nueva es `BoneDefinition.enemy_*`.
-- Durante la migracion, `BoneDataCatalog` crea `BoneDefinition` desde sus datos
-  internos.
+- `BoneDataCatalog` carga `BoneDefinition` desde `data/bones/*.tres` primero y
+  usa sus datos internos solo como fallback temporal.
 - `BoneDatabase` los normaliza a campos planos como
   `enemy_move_speed_bonus`, `enemy_contact_damage_bonus`,
   `enemy_max_health_bonus`, `enemy_detection_range_bonus`,
@@ -144,3 +144,5 @@ En `TESTING ENVIRONMENT`:
   usados por combate y perfiles enemigos.
 - 2026-07-14: Se agrego `BoneDefinition` como `Resource`; combate sigue leyendo
   perfiles normalizados mediante `BoneRulesService`.
+- 2026-07-14: Los stats de huesos hechos a mano ya pueden venir de Resources
+  `.tres` en `data/bones/` sin cambiar `Enemy`.

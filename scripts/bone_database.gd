@@ -3,9 +3,10 @@ class_name BoneDatabase
 # Compatibility API for bone definitions.
 #
 # Gameplay code should keep reading through BoneDatabase or BoneRulesService.
-# Hand-authored bone data now lives in BoneDataCatalog using a cleaner nested
-# schema, then gets normalized here to the legacy flat fields that current
-# systems already expect.
+# Hand-authored bone data now resolves through BoneDataCatalog, which loads
+# BoneDefinition .tres assets first and uses dictionary data only as temporary
+# fallback. Definitions get normalized here to the legacy flat fields that
+# current systems already expect.
 
 # Color used for any bone id that is not listed below (kept neutral/cream).
 const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)

@@ -59,8 +59,9 @@ Reglas actuales:
 
 Los drops hechos a mano siguen usando ids como `arm_bone` o `heavy_bone`.
 Esos ids deben poder resolverse como `BoneDefinition` mediante
-`BoneDataCatalog`; `BoneDatabase` los convierte al formato plano que leen
-pickups, labels, camp chests e inventario.
+`BoneDataCatalog`, preferiblemente desde `data/bones/*.tres`. `BoneDatabase`
+los convierte al formato plano que leen pickups, labels, camp chests e
+inventario.
 
 ## Flujo de muerte
 
@@ -127,3 +128,5 @@ En `TESTING ENVIRONMENT`:
   a mano, manteniendo `BoneDatabase` como compatibilidad para pickups actuales.
 - 2026-07-14: Se agrego `BoneDefinition` como tipo Resource para que los drops
   hechos a mano puedan migrar a assets editables.
+- 2026-07-14: Los drops hechos a mano iniciales (`arm_bone`, `leg_bone`,
+  `heavy_bone`, `dummy_bone`, `rib_bone`) ya tienen Resources en `data/bones/`.

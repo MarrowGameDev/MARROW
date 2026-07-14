@@ -79,17 +79,16 @@ modificar controles desde la seccion de settings.
 
 El inventario debe seguir leyendo nombres, colores, descripciones y textos de
 stats mediante `BoneRulesService`. Internamente, `BoneDatabase` normaliza
-`BoneDefinition` Resources creados desde `BoneDataCatalog`, que usa una
-estructura mas limpia:
+`BoneDefinition` Resources cargados por `BoneDataCatalog`.
 
-- `identity`: nombre, rareza, color, slot, tags y descripcion.
-- `player_stats`: bonuses que ve el jugador al equipar.
-- `enemy_stats`: bonuses que usan enemigos y perfiles de combate.
-- `visual`: datos opcionales para escala/peso visual.
+La ruta actual es:
+- primero cargar `.tres` desde `data/bones/`.
+- si falta un Resource, usar el diccionario temporal de `BoneDataCatalog`.
+- convertir el `BoneDefinition` al formato plano que ya espera la UI.
 
-No conectar la UI directamente a `BoneDefinition` ni `BoneDataCatalog` todavia.
-Esa capa existe para preparar una migracion futura a `.tres`, JSON o una tabla
-exportada.
+No conectar la UI directamente a `BoneDefinition` ni `BoneDataCatalog`. La UI
+debe seguir usando `BoneRulesService` para que los assets `.tres`, los fallbacks
+y los huesos generados sigan una sola ruta.
 
 ## Puntos delicados
 
@@ -120,3 +119,6 @@ En `TESTING ENVIRONMENT`:
   formato compatible.
 - 2026-07-14: Se creo `BoneDefinition` como `Resource` de Godot para que los
   huesos puedan convertirse luego a assets editables sin cambiar la UI.
+- 2026-07-14: Se migraron los huesos hechos a mano a `.tres` en `data/bones/`.
+  `BoneDataCatalog` carga Resources primero y conserva diccionarios como
+  fallback gradual.

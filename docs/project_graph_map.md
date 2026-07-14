@@ -112,8 +112,11 @@ Player relationships:
 `scripts/bone_definition.gd` defines `BoneDefinition`, the Godot `Resource`
 type for one hand-authored bone.
 
-`scripts/bone_data_catalog.gd` is the current clean in-code source for
-hand-authored bone definitions. It can create `BoneDefinition` objects by id.
+`data/bones/*.tres` contains the current hand-authored bone assets.
+
+`scripts/bone_data_catalog.gd` resolves bone ids. It loads `.tres`
+`BoneDefinition` assets first and falls back to its temporary in-code dictionary
+only when an asset is missing.
 
 `scripts/bone_database.gd` is the compatibility API. It normalizes catalog data
 into the flat fields current gameplay systems still expect.
@@ -143,6 +146,10 @@ Rule: gameplay and UI should not read `BoneDefinition` or `BoneDataCatalog`
 directly yet. Use `BoneRulesService`, `EquipmentRulesService`,
 `DropPickupRulesService` or `BoneDatabase` so generated limb bones and
 hand-authored bones stay compatible.
+
+Migration rule: when adding a new hand-authored bone, create a `.tres` in
+`data/bones/`, add its id/path to `BoneDataCatalog.RESOURCE_PATHS`, and keep
+dictionary entries only as temporary fallback.
 
 ## Inventory UI
 

@@ -78,12 +78,11 @@ Cada id generado contiene:
 - escala visual
 - bonuses de jugador
 
-Los huesos hechos a mano (`arm_bone`, `leg_bone`, `heavy_bone`, etc.) se pueden
-representar como `BoneDefinition` Resources con identidad, stats de jugador,
-stats de enemigo y datos visuales. Durante esta etapa, `BoneDataCatalog` crea
-esos Resources desde sus datos internos y `BoneDatabase` los transforma al
-formato plano que todavia consumen `BoneRulesService`, `EquipmentRulesService`,
-stats, rig e inventario.
+Los huesos hechos a mano (`arm_bone`, `leg_bone`, `heavy_bone`, etc.) viven
+como `BoneDefinition` Resources en `data/bones/`. `BoneDataCatalog` carga esos
+assets primero y solo usa sus diccionarios internos como fallback temporal.
+`BoneDatabase` transforma cada Resource al formato plano que todavia consumen
+`BoneRulesService`, `EquipmentRulesService`, stats, rig e inventario.
 
 ## Responsabilidades
 
@@ -113,9 +112,9 @@ stats, rig e inventario.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
-- Al editar datos de huesos hechos a mano ahora se debe respetar la forma de
-  `BoneDefinition`. Solo tocar `BoneDatabase` si se necesita cambiar la
-  conversion o compatibilidad.
+- Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
+  en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
+  necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
 
 ## Como probar
 
@@ -136,3 +135,6 @@ En `TESTING ENVIRONMENT`:
   `BoneDataCatalog`, manteniendo intactos los consumidores actuales.
 - 2026-07-14: Se agrego `BoneDefinition` como `Resource` de Godot y
   `BoneDataCatalog` ahora puede convertir cada definicion a ese tipo.
+- 2026-07-14: Se movieron los huesos hechos a mano iniciales a
+  `data/bones/*.tres`. La migracion sigue siendo gradual porque el diccionario
+  queda como fallback.

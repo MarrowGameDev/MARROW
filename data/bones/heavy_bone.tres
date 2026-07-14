@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BoneDefinition" load_steps=2 format=3 uid="uid://cde2ydrq7rh6s"]
+
+[ext_resource type="Script" path="res://scripts/bone_definition.gd" id="1_bonedef"]
+
+[resource]
+script = ExtResource("1_bonedef")
+bone_id = "heavy_bone"
+display_name = "Heavy Bone"
+quality = "Strong"
+color = Color(0.65, 0.35, 1, 1)
+slot = "body"
+tags = Array[String](["power"])
+description = "More health and harder hits, but slows you down."
+player_move_speed = -1.5
+player_attack_damage = 2
+player_max_health = 2
+enemy_move_speed = -0.5
+enemy_attack_range = 0.2
+enemy_contact_damage = 1
+enemy_max_health = 2
+enemy_visual_scale = 1.22
+enemy_flee_chance = 0.15
+weight = 2.0
+visual_scale = Vector3(1.3, 1.3, 1.3)

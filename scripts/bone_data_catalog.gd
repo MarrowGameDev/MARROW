@@ -2,10 +2,18 @@ class_name BoneDataCatalog
 
 # Clean authoring schema for hand-authored bones.
 #
-# Keep gameplay code reading through BoneDatabase/BoneRulesService. This catalog
-# still stores temporary in-code data, but each entry is now converted through
-# BoneDefinition so the next step can move authoring to .tres assets without
-# changing inventory, equipment, combat, drops, or UI.
+# Keep gameplay code reading through BoneDatabase/BoneRulesService. The current
+# migration path is Resource first, dictionary fallback second: each id listed in
+# RESOURCE_PATHS loads a .tres BoneDefinition, while DEFINITIONS keeps temporary
+# fallback data until every bone is safely authored as a Resource.
+
+const RESOURCE_PATHS := {
+	"arm_bone": "res://data/bones/arm_bone.tres",
+	"leg_bone": "res://data/bones/leg_bone.tres",
+	"heavy_bone": "res://data/bones/heavy_bone.tres",
+	"dummy_bone": "res://data/bones/dummy_bone.tres",
+	"rib_bone": "res://data/bones/rib_bone.tres",
+}
 
 const DEFINITIONS := {
 	"arm_bone": {
@@ -110,11 +118,18 @@ const DEFINITIONS := {
 
 
 static func all_ids() -> Array:
-	return DEFINITIONS.keys()
+	var ids: Array[String] = []
+	for id in RESOURCE_PATHS.keys():
+		ids.append(str(id))
+	for id in DEFINITIONS.keys():
+		var clean_id: String = str(id)
+		if not ids.has(clean_id):
+			ids.append(clean_id)
+	return ids
 
 
 static func has_bone(id: String) -> bool:
-	return DEFINITIONS.has(id)
+	return RESOURCE_PATHS.has(id) or DEFINITIONS.has(id)
 
 
 static func clean_definition_for(id: String) -> Dictionary:
@@ -125,6 +140,10 @@ static func clean_definition_for(id: String) -> Dictionary:
 
 
 static func resource_for(id: String) -> BoneDefinition:
+	var resource: BoneDefinition = _load_resource_for(id)
+	if resource != null:
+		return resource
+
 	if not DEFINITIONS.has(id):
 		return null
 	var definition: Dictionary = DEFINITIONS[id]
@@ -133,7 +152,7 @@ static func resource_for(id: String) -> BoneDefinition:
 
 static func legacy_definitions() -> Dictionary:
 	var result: Dictionary = {}
-	for id in DEFINITIONS.keys():
+	for id in all_ids():
 		result[id] = legacy_definition_for(str(id))
 	return result
 
@@ -143,3 +162,21 @@ static func legacy_definition_for(id: String) -> Dictionary:
 	if resource == null:
 		return {}
 	return resource.to_legacy_dictionary()
+
+
+static func _load_resource_for(id: String) -> BoneDefinition:
+	if not RESOURCE_PATHS.has(id):
+		return null
+
+	var path: String = str(RESOURCE_PATHS[id])
+	if not ResourceLoader.exists(path):
+		return null
+
+	var loaded: Resource = ResourceLoader.load(path)
+	if loaded is BoneDefinition:
+		var definition: BoneDefinition = loaded
+		if definition.bone_id == "":
+			definition.bone_id = id
+		return definition
+
+	return null
