@@ -121,6 +121,16 @@ only when an asset is missing.
 `scripts/bone_database.gd` is the compatibility API. It normalizes catalog data
 into the flat fields current gameplay systems still expect.
 
+Compatibility contract:
+- Existing calls such as `get_def`, `has_bone`, `all_ids`, `display_name`,
+  `display_name_with_slot`, `color`, `slot`, `quality`, `description`,
+  `effect_text`, `enemy_float_bonus` and `enemy_int_bonus` must keep working.
+- `BoneDatabase.BONES` remains a populated legacy dictionary cache for direct
+  reads by older tools/scripts.
+- `definitions()` returns the same legacy dictionary cache.
+- `reset_cache()` and `reload_from_catalog()` rebuild that cache from current
+  Resources/fallback dictionaries.
+
 Current bone ids:
 - `arm_bone`
 - `leg_bone`

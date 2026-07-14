@@ -90,6 +90,14 @@ No conectar la UI directamente a `BoneDefinition` ni `BoneDataCatalog`. La UI
 debe seguir usando `BoneRulesService` para que los assets `.tres`, los fallbacks
 y los huesos generados sigan una sola ruta.
 
+Compatibilidad:
+- Las llamadas actuales a `BoneDatabase.get_def`, `display_name`, `color`,
+  `slot`, `quality`, `description` y `effect_text` deben seguir funcionando.
+- `BoneDatabase.BONES` se mantiene como cache legacy de diccionarios planos para
+  herramientas/codigo viejo que todavia lo lean directamente.
+- Si se modifica un `.tres` durante una herramienta/editor, llamar
+  `BoneDatabase.reset_cache()` o `reload_from_catalog()` antes de leer de nuevo.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -122,3 +130,5 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se migraron los huesos hechos a mano a `.tres` en `data/bones/`.
   `BoneDataCatalog` carga Resources primero y conserva diccionarios como
   fallback gradual.
+- 2026-07-14: Se reforzo compatibilidad de `BoneDatabase`; `BONES` vuelve a
+  poblarse al cargar la clase y existen `definitions`/`reset_cache`.

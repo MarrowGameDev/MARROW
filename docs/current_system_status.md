@@ -50,6 +50,8 @@ refactor pass.
   dictionaries only as temporary fallback during gradual migration.
 - `BoneDatabase` remains the compatibility layer that normalizes catalog data
   into the flat fields current systems expect.
+- `BoneDatabase.BONES` is still populated for legacy direct reads, and
+  `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 

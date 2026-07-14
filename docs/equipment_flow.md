@@ -115,6 +115,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
   en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
   necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
+- No cambiar consumidores existentes para leer `BoneDefinition` directo.
+  `BoneDatabase.get_def` y `BoneRulesService.definition_for` siguen entregando
+  el diccionario plano que el rig, stats y slots ya esperan.
 
 ## Como probar
 
@@ -138,3 +141,5 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se movieron los huesos hechos a mano iniciales a
   `data/bones/*.tres`. La migracion sigue siendo gradual porque el diccionario
   queda como fallback.
+- 2026-07-14: Se mantuvo compatibilidad legacy en `BoneDatabase` con cache
+  `BONES`, `definitions` y `reset_cache`.

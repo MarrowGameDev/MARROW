@@ -14,6 +14,10 @@ const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 static var BONES: Dictionary = {}
 
 
+static func _static_init() -> void:
+	reload_from_catalog()
+
+
 # True if the given id is a defined bone type.
 static func has_bone(id: String) -> bool:
 	return _bones().has(id)
@@ -22,6 +26,10 @@ static func has_bone(id: String) -> bool:
 # Every defined bone id, e.g. for iterating in tools or tests.
 static func all_ids() -> Array:
 	return _bones().keys()
+
+
+static func definitions() -> Dictionary:
+	return _bones()
 
 
 # The full definition dictionary for an id, or an empty one if unknown.
@@ -41,6 +49,10 @@ static func get_resource(id: String) -> BoneDefinition:
 
 static func reload_from_catalog() -> void:
 	BONES = BoneDataCatalog.legacy_definitions()
+
+
+static func reset_cache() -> void:
+	reload_from_catalog()
 
 
 static func display_name(id: String) -> String:
