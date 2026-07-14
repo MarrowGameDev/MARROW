@@ -616,6 +616,8 @@ refactor pass.
   they are intentionally separate from loot rarity.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`.
+- Bone set/synergy fields are present as passive metadata; no automatic set
+  bonuses are active yet.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -917,6 +919,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
   animacion procedural actual.
+- Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
+  `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
+  combinaciones de piezas. No aplican bonuses automaticamente todavia.
 
 ## Como probar
 
@@ -949,6 +954,8 @@ En `TESTING ENVIRONMENT`:
   cuerpo hibrido y respuestas especiales sin acoplarlas todavia al rig.
 - 2026-07-14: Se agregaron campos de peso granulares manteniendo `weight` como
   compatibilidad para animacion.
+- 2026-07-14: Se agregaron campos de set/sinergia como metadata pasiva para
+  futuras reglas de combinacion.
 
 ## docs/flow_index.md
 
@@ -1170,6 +1177,14 @@ Campos de peso:
 - `equipment_weight` queda disponible para carga al equipar.
 - `inventory_weight` queda disponible para limites o coste de inventario.
 
+Campos de set/sinergia:
+- `set_id`, `set_name`, `set_piece_key` y `set_tags` describen a que conjunto
+  pertenece una pieza.
+- `synergy_ids`, `synergy_tags` y `synergy_score` preparan filtros o previews
+  de combinaciones.
+- La UI puede mostrar estos datos, pero no debe calcular bonuses de set hasta
+  que exista una regla de equipamiento dedicada.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -1210,6 +1225,8 @@ En `TESTING ENVIRONMENT`:
   `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`.
 - 2026-07-14: Se agregaron campos de peso para inventario/equipamiento sin
   cambiar todavia limites de carga.
+- 2026-07-14: Se agregaron campos de set/sinergia para futuras vistas y reglas
+  de combinacion.
 
 ## docs/open_world_map_layout.md
 
@@ -1424,6 +1441,8 @@ Each definition can include:
   tags for future visual, rig, AI or combat hooks.
 - `BoneDefinition.weight*` fields: legacy animation weight plus weight class,
   physical weight, equipment weight and inventory weight.
+- `BoneDefinition.set_*` and `BoneDefinition.synergy_*` fields: passive set
+  membership and synergy metadata for future combination rules.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.

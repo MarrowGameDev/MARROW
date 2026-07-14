@@ -1270,7 +1270,7 @@
       "source_location": "L598",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_apply_lizard_wall_climb_velocity",
-      "community": 49,
+      "community": 50,
       "norm_label": ".gd_func__apply_lizard_wall_climb_velocity()"
     },
     {
@@ -1480,7 +1480,7 @@
       "source_location": "L682",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_get_stealth_prompt_text",
-      "community": 50,
+      "community": 51,
       "norm_label": ".gd_func_get_stealth_prompt_text()"
     },
     {
@@ -1550,7 +1550,7 @@
       "source_location": "L710",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_receive_alert",
-      "community": 11,
+      "community": 49,
       "norm_label": ".gd_func_receive_alert()"
     },
     {
@@ -1560,7 +1560,7 @@
       "source_location": "L714",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_alert_nearby_allies",
-      "community": 11,
+      "community": 49,
       "norm_label": ".gd_func__alert_nearby_allies()"
     },
     {
@@ -2190,7 +2190,7 @@
       "source_location": "L966",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_setup_procedural_character",
-      "community": 52,
+      "community": 53,
       "norm_label": ".gd_func__setup_procedural_character()"
     },
     {
@@ -2230,7 +2230,7 @@
       "source_location": "L982",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_make_bow_piece",
-      "community": 51,
+      "community": 52,
       "norm_label": ".gd_func__make_bow_piece()"
     },
     {
@@ -2280,7 +2280,7 @@
       "source_location": "L1002",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_should_use_gorilla_profile",
-      "community": 53,
+      "community": 11,
       "norm_label": ".gd_func__should_use_gorilla_profile()"
     },
     {
@@ -2290,7 +2290,7 @@
       "source_location": "L1006",
       "_origin": "ast",
       "id": "architecture_enemy_gd_func_should_use_lizard_profile",
-      "community": 53,
+      "community": 11,
       "norm_label": ".gd_func__should_use_lizard_profile()"
     },
     {
@@ -3350,7 +3350,7 @@
       "source_location": "L1493",
       "_origin": "ast",
       "id": "architecture_player_gd_func_setup_procedural_character",
-      "community": 52,
+      "community": 53,
       "norm_label": ".gd_func__setup_procedural_character()"
     },
     {
@@ -3440,7 +3440,7 @@
       "source_location": "L1529",
       "_origin": "ast",
       "id": "architecture_player_gd_func_make_bow_piece",
-      "community": 51,
+      "community": 52,
       "norm_label": ".gd_func__make_bow_piece()"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_location": "L1665",
       "_origin": "ast",
       "id": "architecture_player_gd_func_set_stealth_prompt",
-      "community": 50,
+      "community": 51,
       "norm_label": ".gd_func__set_stealth_prompt()"
     },
     {
@@ -5610,7 +5610,7 @@
       "source_location": "L2446",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_apply_lizard_wall_climb_limb_pose",
-      "community": 49,
+      "community": 50,
       "norm_label": ".gd_func__apply_lizard_wall_climb_limb_pose()"
     },
     {
@@ -8020,7 +8020,7 @@
       "source_location": "L599",
       "_origin": "ast",
       "id": "architecture_rationale_599",
-      "community": 49,
+      "community": 50,
       "norm_label": "gdscript function: _apply_lizard_wall_climb_velocity() -> void"
     },
     {
@@ -8220,7 +8220,7 @@
       "source_location": "L683",
       "_origin": "ast",
       "id": "architecture_rationale_683",
-      "community": 50,
+      "community": 51,
       "norm_label": "gdscript function: get_stealth_prompt_text() -> string"
     },
     {
@@ -8290,7 +8290,7 @@
       "source_location": "L711",
       "_origin": "ast",
       "id": "architecture_rationale_711",
-      "community": 11,
+      "community": 49,
       "norm_label": "gdscript function: receive_alert(position: vector3) -> void"
     },
     {
@@ -8890,7 +8890,7 @@
       "source_location": "L967",
       "_origin": "ast",
       "id": "architecture_rationale_967",
-      "community": 52,
+      "community": 53,
       "norm_label": "gdscript function: _setup_procedural_character() -> void"
     },
     {
@@ -8930,7 +8930,7 @@
       "source_location": "L983",
       "_origin": "ast",
       "id": "architecture_rationale_983",
-      "community": 51,
+      "community": 52,
       "norm_label": "gdscript function: _make_bow_piece(piece_name: string, size: vector3, local_posi"
     },
     {
@@ -8960,7 +8960,7 @@
       "source_location": "L1003",
       "_origin": "ast",
       "id": "architecture_rationale_1003",
-      "community": 53,
+      "community": 11,
       "norm_label": "gdscript function: _should_use_gorilla_profile() -> bool"
     },
     {
@@ -27025,5 +27025,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "2fe6188e88983e4ee0e7799229848d9d378d5b6a"
+  "built_at_commit": "9017b23eb6bbe5efc6ab38c7ead960401f96c71d"
 }
