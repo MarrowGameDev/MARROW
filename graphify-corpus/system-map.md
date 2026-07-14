@@ -15,6 +15,7 @@
 ## Inventory, equipment, and bones
 
 - `scripts/bone.gd`
+- `scripts/bone_data_catalog.gd`
 - `scripts/bone_database.gd`
 - `scripts/bone_rules_service.gd`
 - `scripts/bone_trial_gate.gd`

@@ -287,6 +287,25 @@ class Bone:
         """Relationship: references class DropPickupRulesService."""
         return DropPickupRulesService
 
+class BoneDataCatalog:
+    """Godot script: scripts/bone_data_catalog.gd
+    class_name: BoneDataCatalog
+    extends: unknown
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/bone_data_catalog.gd'
+    godot_class_name = 'BoneDataCatalog'
+    godot_extends = ''
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def depends_on_BoneDatabase(self):
+        """Relationship: references class BoneDatabase."""
+        return BoneDatabase
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
 class BoneDatabase:
     """Godot script: scripts/bone_database.gd
     class_name: BoneDatabase
@@ -298,7 +317,13 @@ class BoneDatabase:
     godot_extends = ''
     gameplay_system = 'Inventory, equipment, and bones'
 
-    pass
+    def depends_on_BoneDataCatalog(self):
+        """Relationship: references class BoneDataCatalog."""
+        return BoneDataCatalog
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
 
 class BoneRulesService:
     """Godot script: scripts/bone_rules_service.gd

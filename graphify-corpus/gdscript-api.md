@@ -265,6 +265,52 @@
 ### Node Path Lookups
 - `PromptLabel`
 
+## BoneDataCatalog
+
+- Source file: `scripts/bone_data_catalog.gd`
+- Extends: `unknown`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `DEFAULT_PLAYER_STATS`
+- `DEFAULT_ENEMY_STATS`
+- `DEFINITIONS`
+
+### Key Variables
+- `definition`
+- `result`
+- `clean`
+- `identity`
+- `visual`
+- `player_stats`
+- `enemy_stats`
+- `legacy`
+- `value`
+- `dictionary_value`
+- `array_value`
+- `copy`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## BoneDatabase
 
 - Source file: `scripts/bone_database.gd`

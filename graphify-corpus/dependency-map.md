@@ -8,6 +8,10 @@
 - `scripts/arena_goal_manager.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/bone.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/bone.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
+- `scripts/bone_data_catalog.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
+- `scripts/bone_data_catalog.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/bone_database.gd` depends on `scripts/bone_data_catalog.gd` because it references class BoneDataCatalog.
+- `scripts/bone_database.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/bone_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/bone_rules_service.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/bone_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
