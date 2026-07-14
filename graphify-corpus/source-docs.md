@@ -503,6 +503,8 @@ Mutacion:
 - Los campos `mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity` y `mutation_tags` viajan por `BoneDefinition` y
   `BoneDatabase`.
+- Familias canonicas actuales: vacio, `corrupto`, `maldito`, `especial`,
+  `hibrido`.
 - Mutacion no cambia combate automaticamente todavia. Debe activarse desde una
   regla explicita para evitar que un dato de authoring cambie balance sin querer.
 - Los limbs generados de gorilla/lizard ya exponen familias de mutacion para
@@ -636,6 +638,9 @@ refactor pass.
   `legendario`; UI can localize display text separately.
 - Quality percentage modifiers are stored as passive metadata for damage, speed,
   health, drop and weight tuning; no automatic formula consumes them yet.
+- Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
+  `legendario`; canonical mutation families are empty, `corrupto`, `maldito`,
+  `especial` and `hibrido`.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
@@ -739,6 +744,8 @@ Rareza:
 - `quality_drop_percent` permite expresar una intencion de ajuste porcentual por
   calidad. No modifica drops automaticamente hasta que exista una regla clara en
   `DropRulesService`.
+- Rarezas canonicas para drops: `comun`, `corrupto`, `maldito`, `especial`,
+  `legendario`. No usar labels legacy como `Common`, `Uncommon` o `Rare`.
 - Rareza no debe mezclarse con calidad. Calidad describe condicion/valor de la
   pieza; rareza describe probabilidad o categoria de obtencion.
 
@@ -945,6 +952,11 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Las calidades canonicas son ids en minuscula y sin acentos para datos:
   `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
   acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
+- Las rarezas canonicas son `comun`, `corrupto`, `maldito`, `especial` y
+  `legendario`. Las familias de mutacion canonicas actuales son vacio,
+  `corrupto`, `maldito`, `especial` e `hibrido`.
+- Rareza y mutacion siguen siendo metadata pasiva hasta que una regla de drops,
+  rig o combate las consuma explicitamente.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
@@ -1000,6 +1012,8 @@ En `TESTING ENVIRONMENT`:
   `quality_multiplier` para preparar balance granular.
 - 2026-07-14: Se definieron calidades canonicas (`chatarra`, `fragil`,
   `comun`, `fuerte`, `legendario`) y se migraron los huesos base a esos ids.
+- 2026-07-14: Se definieron rarezas/mutaciones canonicas y se migraron los
+  valores legacy `Common`, `Uncommon`, `Rare` y `hybrid_growth`.
 
 ## docs/flow_index.md
 
@@ -1218,6 +1232,10 @@ Campos de rareza:
 - `rarity_rank` permite ordenar o filtrar por rareza.
 - `rarity_color` permite mostrar rareza sin cambiar el color fisico del hueso.
 - `rarity_drop_weight` queda disponible para futuras reglas de drops.
+- Rarezas canonicas: `comun`, `corrupto`, `maldito`, `especial`,
+  `legendario`.
+- Mutaciones canonicas actuales: vacio, `corrupto`, `maldito`, `especial`,
+  `hibrido`.
 
 Campos de peso:
 - `weight` se mantiene como campo legacy para animacion procedural.
@@ -1496,9 +1514,11 @@ Each definition can include:
   Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
   `legendario`.
 - `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
-  weighting.
+  weighting. Canonical ids are `comun`, `corrupto`, `maldito`, `especial` and
+  `legendario`.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
-  tags for future visual, rig, AI or combat hooks.
+  tags for future visual, rig, AI or combat hooks. Canonical families are empty,
+  `corrupto`, `maldito`, `especial` and `hibrido`.
 - `BoneDefinition.attack_*` and `BoneDefinition.combo_*` fields: passive attack
   and combo authoring metadata for future combat chains.
 - `BoneDefinition.weight*` fields: legacy animation weight plus weight class,
