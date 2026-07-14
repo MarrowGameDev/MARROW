@@ -520,7 +520,7 @@ func _get_rock_throw_socket() -> Node3D:
 func can_be_stealth_finished_by(player: Node3D) -> bool:
 	if not alive or player == null:
 		return false
-	if player_visible or search_timer > 0.0 or returning_to_spawn:
+	if returning_to_spawn:
 		return false
 	if global_position.distance_to(player.global_position) > stealth_finish_range:
 		return false

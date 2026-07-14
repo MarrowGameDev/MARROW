@@ -806,6 +806,8 @@ func _build_character_preview_panel() -> Control:
 	inventory_preview_viewport = SubViewport.new()
 	inventory_preview_viewport.size = Vector2i(210, 276)
 	inventory_preview_viewport.transparent_bg = true
+	inventory_preview_viewport.world_3d = World3D.new()
+	inventory_preview_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	inventory_preview_container.add_child(inventory_preview_viewport)
 
 	var preview_scene := Node3D.new()
@@ -815,15 +817,22 @@ func _build_character_preview_panel() -> Control:
 
 	var light := DirectionalLight3D.new()
 	light.name = "PreviewLight"
-	light.rotation_degrees = Vector3(-45.0, 35.0, 0.0)
-	light.light_energy = 1.6
+	light.rotation_degrees = Vector3(-38.0, 28.0, 0.0)
+	light.light_energy = 1.9
 	preview_scene.add_child(light)
+
+	var fill_light := OmniLight3D.new()
+	fill_light.name = "PreviewFillLight"
+	fill_light.position = Vector3(0.0, 0.9, 1.4)
+	fill_light.light_energy = 0.45
+	fill_light.omni_range = 3.0
+	preview_scene.add_child(fill_light)
 
 	var rig_holder := Node3D.new()
 	rig_holder.name = "PreviewRigHolder"
-	rig_holder.position = Vector3(0.0, -0.26, 0.0)
+	rig_holder.position = Vector3(0.0, -0.34, 0.0)
 	rig_holder.rotation_degrees = Vector3(0.0, 180.0, 0.0)
-	rig_holder.scale = Vector3.ONE * 1.48
+	rig_holder.scale = Vector3.ONE * 1.58
 	preview_scene.add_child(rig_holder)
 
 	inventory_preview_rig = ModularSkeletonRig.new()
@@ -832,8 +841,9 @@ func _build_character_preview_panel() -> Control:
 
 	var camera := Camera3D.new()
 	camera.name = "PreviewCamera"
-	camera.position = Vector3(0.0, 0.68, 2.85)
-	camera.look_at(Vector3(0.0, 0.05, 0.0), Vector3.UP)
+	camera.position = Vector3(0.0, 0.72, 3.05)
+	camera.fov = 34.0
+	camera.look_at(Vector3(0.0, 0.10, 0.0), Vector3.UP)
 	camera.current = true
 	preview_scene.add_child(camera)
 

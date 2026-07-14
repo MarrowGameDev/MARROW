@@ -51,7 +51,7 @@ Important state:
 - `inventory_preview_rig` shows equipped bones in the inventory preview.
 
 Important methods:
-- `_physics_process` handles movement, inventory toggle, category cycling, and Q equip.
+- `_physics_process` handles smoothed movement, inventory toggle, category cycling, and Q equip.
 - `collect_bone` adds a bone to the inventory and emits `bone_collected`.
 - `equip_bone` equips a bone in its database slot, recalculates stats, syncs preview, and emits `bone_equipped` only when the equipped slot changes.
 - `unequip_slot` clears a slot, recalculates stats, syncs preview, and emits `bone_unequipped`.
@@ -145,6 +145,7 @@ Consumers:
 
 `PlayerInventoryUI`:
 - owns inventory UI layout, tabs, responsive sizing, settings screen, item grid, paper doll, and preview rig.
+- renders the character preview inside an isolated `SubViewport` world, separate from the playable world.
 - receives inventory data through player snapshot methods instead of reaching into player state directly.
 - calls player commands such as `equip_bone` and `unequip_slot` only when the user performs equip actions.
 - filters equipped copies by count so duplicate bone ids can remain as separate inventory tiles.
@@ -219,7 +220,7 @@ Consumers:
 - finds the player by group.
 - applies contact damage through `Player.take_player_damage`.
 - can receive alerts from other enemies.
-- validates stealth finishes by range, alert state, and whether the player is behind the enemy facing direction.
+- validates stealth finishes by range and whether the player is behind the enemy facing direction.
 - drops a bone pickup by setting `Bone.set_bone_id`.
 
 `scripts/attack_hitbox.gd` defines a short-lived attack area.
@@ -258,6 +259,9 @@ registers camp enemies, and configures stage metadata for the playable loop.
 ## Guidance Docs
 
 `docs/godot_signal_guidelines.md` defines signal naming and decoupling rules.
+
+`docs/current_system_status.md` records the current inventory, combat, camera,
+enemy, and rig boundaries before the component refactor.
 
 `docs/open_world_map_layout.md` describes the demo island route and stage regions.
 
