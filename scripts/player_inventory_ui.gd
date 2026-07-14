@@ -30,11 +30,13 @@ var hover_info_label: Label = null
 var inventory_status_label: Label = null
 var inventory_category: String = "all"
 var inventory_tab_buttons: Dictionary = {}
-var inventory_safe_area: MarginContainer = null
+var inventory_safe_area: Control = null
 var inventory_panel: PanelContainer = null
 var inventory_panel_margin: MarginContainer = null
 var inventory_scroll: ScrollContainer = null
 var inventory_content_root: VBoxContainer = null
+var inventory_header: HBoxContainer = null
+var inventory_title_label: Label = null
 var inventory_tabs_container: HBoxContainer = null
 var inventory_body: HBoxContainer = null
 var inventory_left_panel: VBoxContainer = null
@@ -75,10 +77,11 @@ func setup(owner_player: Node) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_load_control_settings()
 	_build_inventory_ui()
-	get_viewport().size_changed.connect(Callable(self, "_apply_inventory_responsive_layout"))
+	get_viewport().size_changed.connect(Callable(self, "_queue_inventory_responsive_layout"))
 	rebuild_item_tiles()
 	update_inventory_ui()
 	_apply_inventory_responsive_layout()
+	call_deferred("_apply_inventory_responsive_layout")
 
 
 func handle_input(event: InputEvent) -> void:
@@ -101,14 +104,17 @@ func set_open(open: bool) -> void:
 	if inventory_root == null:
 		return
 	if open:
+		inventory_root.visible = true
 		if inventory_category != "all":
 			_select_inventory_category("all")
 		_apply_inventory_responsive_layout()
+		call_deferred("_apply_inventory_responsive_layout")
 		_refresh_inventory_mode()
 		_refresh_control_buttons()
 		update_inventory_ui()
 		sync_preview()
-	inventory_root.visible = open
+	else:
+		inventory_root.visible = false
 
 
 func cycle_category() -> void:
@@ -176,24 +182,25 @@ func _build_inventory_ui() -> void:
 
 	inventory_root = Control.new()
 	inventory_root.name = "InventoryRoot"
-	inventory_root.anchor_right = 1.0
-	inventory_root.anchor_bottom = 1.0
+	inventory_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	inventory_root.process_mode = Node.PROCESS_MODE_ALWAYS
 	inventory_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inventory_root.visible = false
 	canvas.add_child(inventory_root)
 	inventory_root.add_child(_build_inventory_blur_layer())
 
-	inventory_safe_area = MarginContainer.new()
-	inventory_safe_area.anchor_right = 1.0
-	inventory_safe_area.anchor_bottom = 1.0
+	inventory_safe_area = Control.new()
+	inventory_safe_area.name = "InventorySafeArea"
+	inventory_safe_area.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	inventory_safe_area.process_mode = Node.PROCESS_MODE_ALWAYS
 	inventory_safe_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inventory_safe_area.clip_contents = true
 	inventory_root.add_child(inventory_safe_area)
 
 	inventory_panel = PanelContainer.new()
 	inventory_panel.name = "InventoryPanel"
 	inventory_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	inventory_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	inventory_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(0.99, 0.985, 0.955, 0.86), Color(0.87, 0.63, 0.19, 0.96), 2, 0))
@@ -208,6 +215,7 @@ func _build_inventory_ui() -> void:
 	inventory_scroll.process_mode = Node.PROCESS_MODE_ALWAYS
 	inventory_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	inventory_panel_margin.add_child(inventory_scroll)
 
 	inventory_content_root = VBoxContainer.new()
@@ -217,27 +225,32 @@ func _build_inventory_ui() -> void:
 	inventory_content_root.add_theme_constant_override("separation", 9)
 	inventory_scroll.add_child(inventory_content_root)
 
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 16)
-	inventory_content_root.add_child(header)
-	header.add_child(_make_rule())
+	inventory_header = HBoxContainer.new()
+	inventory_header.add_theme_constant_override("separation", 16)
+	inventory_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_content_root.add_child(inventory_header)
+	inventory_header.add_child(_make_rule())
 
 	var title := Label.new()
+	inventory_title_label = title
 	title.text = "Inventory"
 	title.custom_minimum_size = Vector2(260, 48)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 38)
 	title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	header.add_child(title)
-	header.add_child(_make_rule())
+	inventory_header.add_child(title)
+	inventory_header.add_child(_make_rule())
 
 	inventory_status_label = Label.new()
 	inventory_status_label.custom_minimum_size = Vector2(140, 48)
-	inventory_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	inventory_status_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	inventory_status_label.size_flags_stretch_ratio = 0.0
+	inventory_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	inventory_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	inventory_status_label.clip_text = false
 	inventory_status_label.add_theme_font_size_override("font_size", 20)
 	inventory_status_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	header.add_child(inventory_status_label)
+	inventory_header.add_child(inventory_status_label)
 
 	_build_inventory_tabs(inventory_content_root)
 
@@ -289,10 +302,9 @@ func _build_inventory_ui() -> void:
 
 	inventory_footer = HBoxContainer.new()
 	inventory_footer.alignment = BoxContainer.ALIGNMENT_END
+	inventory_footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_footer.add_theme_constant_override("separation", 16)
 	inventory_content_root.add_child(inventory_footer)
-	_add_footer_hint(inventory_footer, "Click", "Category")
-	_add_footer_hint(inventory_footer, "Equip Key", "Equip Next")
 	_add_footer_hint(inventory_footer, "Right Click", "Unequip")
 	_add_footer_hint(inventory_footer, "Esc / Inventory", "Back")
 	clear_bone_info()
@@ -307,12 +319,14 @@ func _build_right_inventory_panel() -> void:
 	inventory_preview_panel = PanelContainer.new()
 	inventory_preview_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_preview_panel.clip_contents = true
 	inventory_preview_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.18), Color(0.87, 0.63, 0.19, 0.88), 1, 0))
 	inventory_right_panel.add_child(inventory_preview_panel)
 
 	inventory_preview_area = MarginContainer.new()
 	inventory_preview_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_preview_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_preview_area.clip_contents = true
 	inventory_preview_panel.add_child(inventory_preview_area)
 	inventory_preview_area.add_child(_build_paper_doll())
 
@@ -447,101 +461,83 @@ func _refresh_inventory_mode() -> void:
 		settings_panel.visible = showing_settings
 
 
+func _queue_inventory_responsive_layout() -> void:
+	_apply_inventory_responsive_layout()
+	call_deferred("_apply_inventory_responsive_layout")
+
+
 func _apply_inventory_responsive_layout() -> void:
 	if inventory_root == null:
 		return
 
 	var viewport_size := get_viewport().get_visible_rect().size
-	var width: float = viewport_size.x
-	var height: float = viewport_size.y
-	var compact: bool = width < 1160.0 or height < 680.0
-	var very_compact: bool = width < 860.0 or height < 560.0
+	var root_size := inventory_root.size
+	if root_size.x <= 0.0 or root_size.y <= 0.0:
+		root_size = viewport_size
+	var width: float = root_size.x
+	var height: float = root_size.y
+	var compact: bool = width < 1440.0 or height < 800.0
+	var very_compact: bool = width < 1040.0 or height < 640.0
 
-	var outer_margin := 34
-	var inner_margin := 24
-	var tab_gap := 42
-	var tab_width := 108
-	var tab_height := 48
-	var body_gap := 18
-	var vertical_margin := 18
-	var grid_columns := 6
-	var tile_gap := 12
-	var grid_inner_margin := 14
-	var details_height := 96
-	var label_height := 44
-	var footer_gap := 16
-	var header_height := 62
-	var tabs_height := 52
-	var sort_height := 26
-
-	if compact:
-		outer_margin = 16
-		inner_margin = 16
-		vertical_margin = 10
-		tab_gap = 18
-		tab_width = 94
-		tab_height = 42
-		body_gap = 12
-		details_height = 84
-		label_height = 40
-		header_height = 52
-		tabs_height = 46
-		sort_height = 22
-		grid_columns = 4
-		tile_gap = 8
-		grid_inner_margin = 10
-		footer_gap = 8
-
-	if very_compact:
-		outer_margin = 8
-		inner_margin = 10
-		vertical_margin = 6
-		tab_gap = 8
-		tab_width = 78
-		tab_height = 38
-		body_gap = 8
-		details_height = 78
-		label_height = 34
-		header_height = 46
-		tabs_height = 40
-		sort_height = 18
-		grid_columns = 3
-		tile_gap = 6
-		grid_inner_margin = 7
-		footer_gap = 6
-
-	if width >= 1180.0 and height >= 680.0:
-		grid_columns = 6
-	elif width >= 980.0:
-		grid_columns = 5
-
-	var panel_height: int = maxi(320, int(height) - (vertical_margin * 2))
-	var panel_width: int = maxi(360, int(width) - (outer_margin * 2))
+	var outer_margin_x := int(clampf(width * 0.025, 10.0, 60.0))
+	var outer_margin_y := int(clampf(height * 0.022, 6.0, 24.0))
+	var inner_margin := int(clampf(minf(width, height) * 0.018, 8.0, 24.0))
+	var top_inner_margin: int = maxi(6, inner_margin - 2)
+	var bottom_inner_margin: int = maxi(6, inner_margin - 2)
+	var panel_height: int = maxi(320, int(height) - (outer_margin_y * 2))
+	var available_panel_width: int = maxi(360, int(width) - (outer_margin_x * 2))
+	var max_panel_width: int = int(minf(1800.0, width - float(outer_margin_x * 2)))
+	var panel_width: int = mini(available_panel_width, max_panel_width)
+	var panel_x: int = int(round((width - float(panel_width)) * 0.5))
 	var content_width: int = maxi(320, panel_width - (inner_margin * 2))
-	var top_inner_margin: int = maxi(8, inner_margin - 4)
-	var bottom_inner_margin: int = maxi(8, inner_margin - 6)
 	var content_height: int = maxi(280, panel_height - top_inner_margin - bottom_inner_margin)
-	var body_height: int = maxi(190, content_height - (header_height + tabs_height + 10 + label_height + footer_gap))
+
+	var content_gap := int(clampf(height * 0.008, 4.0, 10.0))
+	var tab_gap := int(clampf(width * 0.018, 8.0, 42.0))
+	var tab_width := int(clampf(width * 0.068, 72.0, 108.0))
+	var tab_height := int(clampf(height * 0.052, 32.0, 48.0))
+	var body_gap := int(clampf(width * 0.008, 8.0, 18.0))
+	var tile_gap := int(clampf(width * 0.006, 5.0, 12.0))
+	var grid_inner_margin := int(clampf(width * 0.007, 6.0, 14.0))
+	var details_height := int(clampf(height * 0.095, 60.0, 96.0))
+	var label_height := int(clampf(height * 0.052, 34.0, 46.0))
+	var footer_height := int(clampf(height * 0.032, 20.0, 32.0))
+	var header_height := int(clampf(height * 0.066, 38.0, 62.0))
+	var tabs_height := int(clampf(height * 0.052, 34.0, 52.0))
+	var sort_height := int(clampf(height * 0.03, 18.0, 26.0))
+	var divider_height := 1
+	var vertical_gaps := content_gap * 4
+	var fixed_vertical: int = header_height + tabs_height + divider_height + sort_height + footer_height + vertical_gaps
+	var body_height: int = maxi(190, content_height - fixed_vertical)
 	var body_width: int = maxi(320, content_width - body_gap)
-	var min_left_width: int = 190 if very_compact else 300
-	var min_right_width: int = 190 if very_compact else 300
-	var max_right_width: int = mini(560, maxi(min_right_width, body_width - min_left_width))
-	var right_width: int = clampi(int(float(body_width) * 0.33), min_right_width, max_right_width)
+	var min_left_width: int = 180 if very_compact else (260 if compact else 360)
+	var min_right_width: int = 220 if very_compact else (330 if compact else 360)
+	var max_right_width: int = mini(600, maxi(min_right_width, body_width - min_left_width))
+	var right_ratio := 0.39 if compact else 0.34
+	var right_width: int = clampi(int(float(body_width) * right_ratio), min_right_width, max_right_width)
 	var left_width: int = maxi(min_left_width, body_width - right_width)
 	if left_width + right_width > body_width:
 		left_width = maxi(160, body_width - right_width)
 	if left_width + right_width > body_width:
 		right_width = maxi(160, body_width - left_width)
 
-	var preview_height: int = maxi(165, body_height - details_height - label_height - (body_gap * 2))
-	var grid_height: int = maxi(170, body_height - sort_height)
+	var preview_height: int = maxi(150, body_height - details_height - label_height - (body_gap * 2))
+	var left_panel_gap := content_gap
+	var grid_height: int = maxi(160, body_height - sort_height - left_panel_gap)
 	var grid_content_width: int = maxi(160, left_width - (grid_inner_margin * 2))
 	var grid_content_height: int = maxi(140, grid_height - (grid_inner_margin * 2))
 	var visible_rows := 4
-	if height < 560.0:
+	if height < 660.0:
 		visible_rows = 3
-	elif height > 820.0:
+	elif height > 860.0:
 		visible_rows = 5
+	var grid_columns := 6
+	if grid_content_width < 520:
+		grid_columns = 3
+	elif grid_content_width < 760:
+		grid_columns = 4
+	elif grid_content_width < 980:
+		grid_columns = 5
 	var tile_width: float = floor(float(grid_content_width - (tile_gap * (grid_columns - 1))) / float(grid_columns))
 	var tile_height: float = floor(float(grid_content_height - (tile_gap * (visible_rows - 1))) / float(visible_rows))
 	inventory_item_tile_size = Vector2(clampf(tile_width, 58.0, 170.0), clampf(tile_height, 52.0, 150.0))
@@ -551,19 +547,33 @@ func _apply_inventory_responsive_layout() -> void:
 	var preview_inner_height: int = maxi(140, preview_height - 24)
 	var doll_scale: float = clampf(minf(float(preview_inner_width) / 406.0, float(preview_inner_height) / 306.0), 0.55, 1.75)
 
-	_set_margin(inventory_safe_area, outer_margin, vertical_margin, outer_margin, vertical_margin)
+	inventory_safe_area.position = Vector2(panel_x, outer_margin_y)
+	inventory_safe_area.size = Vector2(panel_width, panel_height)
+	inventory_safe_area.custom_minimum_size = Vector2(panel_width, panel_height)
+	inventory_panel.position = Vector2.ZERO
+	inventory_panel.size = Vector2(panel_width, panel_height)
+	inventory_panel_margin.size = Vector2(panel_width, panel_height)
 	_set_margin(inventory_panel_margin, inner_margin, top_inner_margin, inner_margin, bottom_inner_margin)
 	_set_margin(inventory_grid_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin)
 	_set_margin(inventory_preview_area, maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin))
 
 	inventory_panel.custom_minimum_size = Vector2(panel_width, panel_height)
 	inventory_scroll.custom_minimum_size = Vector2(content_width, content_height)
+	inventory_scroll.size = Vector2(content_width, content_height)
 	inventory_content_root.custom_minimum_size = Vector2(content_width, content_height)
-	inventory_content_root.add_theme_constant_override("separation", 6 if very_compact else 9)
+	inventory_content_root.size = Vector2(content_width, content_height)
+	inventory_content_root.add_theme_constant_override("separation", content_gap)
+	inventory_header.custom_minimum_size = Vector2(content_width, header_height)
+	inventory_header.size = Vector2(content_width, header_height)
 	inventory_tabs_container.add_theme_constant_override("separation", tab_gap)
 	inventory_body.custom_minimum_size = Vector2(body_width, body_height)
+	inventory_body.size = Vector2(body_width, body_height)
 	inventory_body.add_theme_constant_override("separation", body_gap)
-	inventory_footer.add_theme_constant_override("separation", footer_gap)
+	inventory_footer.custom_minimum_size = Vector2(content_width, footer_height)
+	inventory_footer.size = Vector2(content_width, footer_height)
+	inventory_footer.alignment = BoxContainer.ALIGNMENT_CENTER
+	inventory_footer.visible = true
+	_apply_footer_responsive_layout(content_width, very_compact)
 
 	for category in inventory_tab_buttons:
 		var button := inventory_tab_buttons[String(category)] as Button
@@ -572,10 +582,13 @@ func _apply_inventory_responsive_layout() -> void:
 		button.custom_minimum_size = Vector2(tab_width, tab_height)
 		button.add_theme_font_size_override("font_size", 14 if very_compact else (15 if compact else 18))
 
-	inventory_status_label.custom_minimum_size = Vector2(92 if compact else 140, 38 if compact else 48)
-	inventory_status_label.add_theme_font_size_override("font_size", 16 if compact else 20)
+	if inventory_title_label != null:
+		inventory_title_label.custom_minimum_size = Vector2(190 if compact else 260, header_height)
+		inventory_title_label.add_theme_font_size_override("font_size", int(clampf(height * 0.048, 28.0, 38.0)))
+	inventory_status_label.custom_minimum_size = Vector2(86 if compact else 118, header_height)
+	inventory_status_label.add_theme_font_size_override("font_size", 12 if compact else 15)
 	inventory_left_panel.custom_minimum_size = Vector2(left_width, body_height)
-	inventory_left_panel.add_theme_constant_override("separation", 5 if very_compact else 8)
+	inventory_left_panel.add_theme_constant_override("separation", left_panel_gap)
 	inventory_grid_panel.custom_minimum_size = Vector2(left_width, grid_height)
 	inventory_right_panel.custom_minimum_size = Vector2(right_width, body_height)
 	inventory_right_panel.add_theme_constant_override("separation", body_gap)
@@ -592,9 +605,7 @@ func _apply_inventory_responsive_layout() -> void:
 	items_grid.add_theme_constant_override("h_separation", tile_gap)
 	items_grid.add_theme_constant_override("v_separation", tile_gap)
 
-	inventory_paper_doll.scale = Vector2(doll_scale, doll_scale)
-	inventory_paper_doll.custom_minimum_size = Vector2(406, 306) * doll_scale
-	inventory_preview_viewport.size = Vector2i(int(210.0 * doll_scale), int(276.0 * doll_scale))
+	_apply_paper_doll_responsive_layout(doll_scale)
 
 	_apply_settings_responsive_layout(content_width, body_height, compact, very_compact)
 	rebuild_item_tiles()
@@ -644,6 +655,88 @@ func _apply_settings_responsive_layout(content_width: int, content_height: int, 
 
 	settings_reset_button.custom_minimum_size = Vector2(0, row_height)
 	settings_reset_button.add_theme_font_size_override("font_size", body_size)
+
+
+func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
+	if inventory_paper_doll == null:
+		return
+
+	var base_doll_size := Vector2(406.0, 306.0)
+	var scaled_doll_size := base_doll_size * doll_scale
+	inventory_paper_doll.scale = Vector2.ONE
+	inventory_paper_doll.custom_minimum_size = scaled_doll_size
+	inventory_paper_doll.size = scaled_doll_size
+	inventory_paper_doll.clip_contents = true
+
+	var center_frame := inventory_paper_doll.get_node_or_null("CenterFrame") as Control
+	if center_frame != null:
+		center_frame.position = Vector2(94.0, 11.0) * doll_scale
+		center_frame.size = Vector2(218.0, 284.0) * doll_scale
+
+	var ring := inventory_paper_doll.get_node_or_null("CenterRing") as ColorRect
+	if ring != null:
+		ring.position = Vector2(171.0, 96.0) * doll_scale
+		ring.size = Vector2(64.0, 64.0) * doll_scale
+
+	if inventory_preview_container != null:
+		inventory_preview_container.position = Vector2(98.0, 15.0) * doll_scale
+		inventory_preview_container.size = Vector2(210.0, 276.0) * doll_scale
+	if inventory_preview_viewport != null:
+		inventory_preview_viewport.size = Vector2i(maxi(96, int(210.0 * doll_scale)), maxi(126, int(276.0 * doll_scale)))
+
+	var slot_positions := {
+		"left_arm": Vector2(0.0, 12.0),
+		"right_arm": Vector2(310.0, 12.0),
+		"body": Vector2(0.0, 128.0),
+		"legs": Vector2(310.0, 128.0),
+	}
+	for slot in slot_positions:
+		var widget := slot_widgets.get(slot) as Control
+		if widget == null:
+			continue
+		var base_position: Vector2 = slot_positions[slot]
+		widget.position = base_position * doll_scale
+		widget.scale = Vector2(doll_scale, doll_scale)
+		widget.custom_minimum_size = Vector2(96.0, 96.0) * doll_scale
+		widget.size = Vector2(96.0, 96.0) * doll_scale
+
+
+func _apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void:
+	if inventory_footer == null:
+		return
+
+	var compact_footer := content_width < 1500
+	var tight_footer := content_width < 1180 or very_compact
+	inventory_footer.add_theme_constant_override("separation", 5 if compact_footer else 10)
+	var footer_item_height := 20 if tight_footer else (22 if compact_footer else 24)
+	var key_font_size := 10 if tight_footer else (11 if compact_footer else 14)
+	var action_font_size := 10 if tight_footer else (11 if compact_footer else 15)
+
+	for child in inventory_footer.get_children():
+		var label := child as Label
+		if label == null:
+			continue
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var full_text := str(label.get_meta("inventory_footer_full_text", label.text))
+		var role := str(label.get_meta("inventory_footer_role", ""))
+		if role == "key":
+			label.visible = true
+			if compact_footer and full_text == "Esc / Inventory":
+				label.text = "Esc"
+			else:
+				label.text = full_text
+			label.custom_minimum_size = Vector2(0, footer_item_height)
+			label.add_theme_font_size_override("font_size", key_font_size)
+		elif role == "action":
+			label.visible = true
+			label.text = {
+				"Unequip": "Drop",
+				"Back": "Back"
+			}.get(full_text, full_text)
+			label.custom_minimum_size = Vector2(0, footer_item_height)
+			label.add_theme_font_size_override("font_size", action_font_size)
+		label.clip_text = false
 
 
 func _set_margin(container: MarginContainer, left: int, top: int, right: int, bottom: int) -> void:
@@ -745,6 +838,8 @@ func _build_control_binding_row(action: String, label_text: String) -> Control:
 func _add_footer_hint(parent: HBoxContainer, key_text: String, action_text: String) -> void:
 	var key := Label.new()
 	key.text = key_text
+	key.set_meta("inventory_footer_role", "key")
+	key.set_meta("inventory_footer_full_text", key_text)
 	key.add_theme_font_size_override("font_size", 15)
 	key.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	key.add_theme_stylebox_override("normal", _make_inventory_style(Color(1.0, 0.99, 0.95, 0.6), Color(0.03, 0.33, 0.38, 1.0), 1, 3))
@@ -752,6 +847,8 @@ func _add_footer_hint(parent: HBoxContainer, key_text: String, action_text: Stri
 
 	var action := Label.new()
 	action.text = action_text
+	action.set_meta("inventory_footer_role", "action")
+	action.set_meta("inventory_footer_full_text", action_text)
 	action.add_theme_font_size_override("font_size", 16)
 	action.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	parent.add_child(action)
@@ -858,11 +955,11 @@ func _build_preview_room(parent: Node3D) -> void:
 	room_root.name = "PreviewRoom"
 	parent.add_child(room_root)
 
-	room_root.add_child(_make_preview_room_box("PreviewFloor", Vector3(3.2, 0.05, 3.4), Vector3(0.0, -1.08, -0.10), Color(0.78, 0.70, 0.55, 1.0)))
-	room_root.add_child(_make_preview_room_box("PreviewBackWall", Vector3(3.2, 2.7, 0.06), Vector3(0.0, 0.12, -1.45), Color(0.93, 0.90, 0.80, 1.0)))
-	room_root.add_child(_make_preview_room_box("PreviewLeftWall", Vector3(0.06, 2.7, 3.2), Vector3(-1.62, 0.12, -0.05), Color(0.88, 0.84, 0.73, 1.0)))
-	room_root.add_child(_make_preview_room_box("PreviewRightWall", Vector3(0.06, 2.7, 3.2), Vector3(1.62, 0.12, -0.05), Color(0.88, 0.84, 0.73, 1.0)))
-	room_root.add_child(_make_preview_room_box("PreviewBaseLine", Vector3(2.3, 0.035, 0.035), Vector3(0.0, -1.02, -1.38), Color(0.64, 0.45, 0.18, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewFloor", Vector3(3.2, 0.05, 3.4), Vector3(0.0, -1.08, -0.10), Color(0.34, 0.31, 0.26, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewBackWall", Vector3(3.2, 2.7, 0.06), Vector3(0.0, 0.12, -1.45), Color(0.30, 0.39, 0.41, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewLeftWall", Vector3(0.06, 2.7, 3.2), Vector3(-1.62, 0.12, -0.05), Color(0.24, 0.31, 0.33, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewRightWall", Vector3(0.06, 2.7, 3.2), Vector3(1.62, 0.12, -0.05), Color(0.24, 0.31, 0.33, 1.0)))
+	room_root.add_child(_make_preview_room_box("PreviewBaseLine", Vector3(2.3, 0.035, 0.035), Vector3(0.0, -1.02, -1.38), Color(0.70, 0.53, 0.24, 1.0)))
 
 
 func _make_preview_room_box(name: String, size: Vector3, position: Vector3, color: Color) -> MeshInstance3D:
@@ -902,13 +999,15 @@ func _build_paper_doll() -> Control:
 	doll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var center_frame := PanelContainer.new()
-	center_frame.position = Vector2(104, 0)
-	center_frame.size = Vector2(198, 306)
+	center_frame.name = "CenterFrame"
+	center_frame.position = Vector2(94, 11)
+	center_frame.size = Vector2(218, 284)
 	center_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
 	doll.add_child(center_frame)
 
 	var ring := ColorRect.new()
+	ring.name = "CenterRing"
 	ring.position = Vector2(171, 96)
 	ring.size = Vector2(64, 64)
 	ring.rotation = PI / 4.0
@@ -1271,15 +1370,20 @@ func update_inventory_ui() -> void:
 
 	var bones := _bone_inventory()
 	if inventory_status_label != null:
-		inventory_status_label.text = "Bones " + str(bones.size())
+		inventory_status_label.text = "Bones: " + str(bones.size())
 
 	var stats := _inventory_stats_snapshot()
+	var root_size := inventory_root.size if inventory_root != null else get_viewport().get_visible_rect().size
+	var compact_text := root_size.x < 1400.0 or root_size.y < 780.0
 	var text := "Stats: "
 	text += "Speed " + str(stats.get("move_speed", 0.0))
 	text += "   Reach " + str(stats.get("attack_range", 0.0))
 	text += "   Damage " + str(stats.get("attack_damage", 0))
 	text += "   HP " + str(stats.get("health", 0)) + "/" + str(stats.get("max_health", 0)) + "\n"
-	text += "Drag a bone onto a matching slot. Right-click a worn bone slot to remove."
+	if compact_text:
+		text += "Drag to equip. Right-click worn slots to remove."
+	else:
+		text += "Drag a bone onto a matching slot. Right-click a worn bone slot to remove."
 	inventory_label.text = text
 
 
