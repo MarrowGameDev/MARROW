@@ -368,6 +368,11 @@
 - `quality_score`
 - `quality_multiplier`
 - `quality_color`
+- `quality_damage_percent`
+- `quality_speed_percent`
+- `quality_health_percent`
+- `quality_drop_percent`
+- `quality_weight_percent`
 - `rarity`
 - `rarity_rank`
 - `rarity_color`
@@ -423,6 +428,7 @@
 - `legacy`
 - `definition`
 - `identity`
+- `quality_modifiers`
 - `player_stats`
 - `mutation`
 - `attack_combo`

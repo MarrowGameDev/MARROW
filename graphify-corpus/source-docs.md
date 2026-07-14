@@ -517,6 +517,12 @@ Ataque/combo por hueso:
   activar combos reales se debe crear una regla de combate explicita y probarla
   en `TESTING ENVIRONMENT`.
 
+Modificadores porcentuales:
+- `quality_damage_percent`, `quality_speed_percent` y
+  `quality_health_percent` describen intencion de balance por calidad.
+- Combate no multiplica dano, velocidad ni salud con esos campos todavia. Si se
+  activan, debe hacerse en una formula documentada y testeada.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -626,6 +632,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
+- Quality percentage modifiers are stored as passive metadata for damage, speed,
+  health, drop and weight tuning; no automatic formula consumes them yet.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
@@ -726,6 +734,9 @@ Rareza:
   viven en `BoneDefinition` y pasan por `BoneDatabase`.
 - `rarity_drop_weight` no cambia drops automaticamente todavia; queda listo
   para cuando se defina una tabla de drops ponderada.
+- `quality_drop_percent` permite expresar una intencion de ajuste porcentual por
+  calidad. No modifica drops automaticamente hasta que exista una regla clara en
+  `DropRulesService`.
 - Rareza no debe mezclarse con calidad. Calidad describe condicion/valor de la
   pieza; rareza describe probabilidad o categoria de obtencion.
 
@@ -925,6 +936,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
   No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
   balance lo defina explicitamente.
+- Los modificadores porcentuales por calidad (`quality_damage_percent`,
+  `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
+  `quality_weight_percent`) son metadata granular. Pueden alimentar balance
+  futuro, pero equipamiento no los aplica automaticamente todavia.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
@@ -976,6 +991,8 @@ En `TESTING ENVIRONMENT`:
   compatibilidad para animacion.
 - 2026-07-14: Se agregaron campos de set/sinergia como metadata pasiva para
   futuras reglas de combinacion.
+- 2026-07-14: Se agregaron modificadores porcentuales por calidad separados de
+  `quality_multiplier` para preparar balance granular.
 
 ## docs/flow_index.md
 
@@ -1180,6 +1197,10 @@ Campos de calidad:
   stats, rewards o valor.
 - `quality_color` permite colorear estado/calidad sin cambiar el color fisico
   del hueso.
+- `quality_damage_percent`, `quality_speed_percent`,
+  `quality_health_percent`, `quality_drop_percent` y
+  `quality_weight_percent` permiten mostrar o comparar intenciones de balance
+  por calidad sin aplicar reglas automaticas.
 - Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
   separado como `rarity`/`rarity_rank` en otro cambio.
 
@@ -1461,8 +1482,9 @@ Current bone ids:
 Each definition can include:
 - `BoneDefinition.identity` fields: display name, quality, color, slot, tags,
   description.
-- `BoneDefinition.quality_*` fields: quality rank, score, multiplier and
-  quality color. These describe part quality/condition, not loot rarity.
+- `BoneDefinition.quality_*` fields: quality rank, score, multiplier, quality
+  color and granular percent modifiers for damage, speed, health, drops and
+  weight. These describe part quality/condition, not loot rarity.
 - `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and
