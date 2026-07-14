@@ -33,6 +33,15 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 @export_range(0.0, 1.0, 0.01) var mutation_intensity: float = 0.0
 @export var mutation_tags: Array[String] = []
 
+@export_group("Set / Synergy")
+@export var set_id: String = ""
+@export var set_name: String = ""
+@export var set_piece_key: String = ""
+@export var set_tags: Array[String] = []
+@export var synergy_ids: Array[String] = []
+@export var synergy_tags: Array[String] = []
+@export var synergy_score: float = 0.0
+
 @export_group("Player Stats")
 @export var player_move_speed: float = 0.0
 @export var player_attack_range: float = 0.0
@@ -103,6 +112,17 @@ func to_clean_dictionary() -> Dictionary:
 			"intensity": mutation_intensity,
 			"tags": mutation_tags.duplicate(),
 		},
+		"set": {
+			"id": set_id,
+			"name": set_name,
+			"piece_key": set_piece_key,
+			"tags": set_tags.duplicate(),
+		},
+		"synergy": {
+			"ids": synergy_ids.duplicate(),
+			"tags": synergy_tags.duplicate(),
+			"score": synergy_score,
+		},
 		"enemy_stats": {
 			"move_speed": enemy_move_speed,
 			"attack_range": enemy_attack_range,
@@ -133,6 +153,13 @@ func to_legacy_dictionary() -> Dictionary:
 		"mutation_stage": mutation_stage,
 		"mutation_intensity": mutation_intensity,
 		"mutation_tags": mutation_tags.duplicate(),
+		"set_id": set_id,
+		"set_name": set_name,
+		"set_piece_key": set_piece_key,
+		"set_tags": set_tags.duplicate(),
+		"synergy_ids": synergy_ids.duplicate(),
+		"synergy_tags": synergy_tags.duplicate(),
+		"synergy_score": synergy_score,
 		"color": color,
 		"slot": slot,
 		"move_speed_bonus": player_move_speed,
@@ -173,6 +200,8 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	var identity: Dictionary = _dictionary(clean, "identity")
 	var player_stats: Dictionary = _dictionary(clean, "player_stats")
 	var mutation: Dictionary = _dictionary(clean, "mutation")
+	var set_data: Dictionary = _dictionary(clean, "set")
+	var synergy: Dictionary = _dictionary(clean, "synergy")
 	var enemy_stats: Dictionary = _dictionary(clean, "enemy_stats")
 	var visual: Dictionary = _dictionary(clean, "visual")
 
@@ -196,6 +225,14 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.mutation_stage = int(mutation.get("stage", definition.mutation_stage))
 	definition.mutation_intensity = float(mutation.get("intensity", definition.mutation_intensity))
 	definition.mutation_tags = _string_array(mutation.get("tags", []))
+
+	definition.set_id = str(set_data.get("id", definition.set_id))
+	definition.set_name = str(set_data.get("name", definition.set_name))
+	definition.set_piece_key = str(set_data.get("piece_key", definition.set_piece_key))
+	definition.set_tags = _string_array(set_data.get("tags", []))
+	definition.synergy_ids = _string_array(synergy.get("ids", []))
+	definition.synergy_tags = _string_array(synergy.get("tags", []))
+	definition.synergy_score = float(synergy.get("score", definition.synergy_score))
 
 	definition.player_move_speed = float(player_stats.get("move_speed", definition.player_move_speed))
 	definition.player_attack_range = float(player_stats.get("attack_range", definition.player_attack_range))

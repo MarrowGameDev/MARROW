@@ -135,6 +135,13 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"physical_weight": _generated_limb_physical_weight(source_profile, limb_key),
 		"equipment_weight": _generated_limb_equipment_weight(source_profile, limb_key),
 		"inventory_weight": _generated_limb_inventory_weight(source_profile, limb_key),
+		"set_id": _generated_limb_set_id(source_profile),
+		"set_name": _generated_limb_set_name(source_profile),
+		"set_piece_key": limb_key,
+		"set_tags": _generated_limb_set_tags(source_profile),
+		"synergy_ids": _generated_limb_synergy_ids(source_profile, limb_key),
+		"synergy_tags": _generated_limb_synergy_tags(source_profile, limb_key),
+		"synergy_score": _generated_limb_synergy_score(source_profile, limb_key),
 		"color": color,
 		"slot": slot_id,
 		"source_profile": source_profile,
@@ -327,6 +334,34 @@ static func _generated_limb_equipment_weight(source_profile: String, limb_key: S
 
 static func _generated_limb_inventory_weight(source_profile: String, limb_key: String) -> float:
 	return _generated_limb_physical_weight(source_profile, limb_key) * 0.85
+
+
+static func _generated_limb_set_id(source_profile: String) -> String:
+	return source_profile + "_parts"
+
+
+static func _generated_limb_set_name(source_profile: String) -> String:
+	return str(SOURCE_DISPLAY.get(source_profile, "Enemy")) + " Parts"
+
+
+static func _generated_limb_set_tags(source_profile: String) -> Array[String]:
+	return [source_profile, "enemy_part"]
+
+
+static func _generated_limb_synergy_ids(source_profile: String, limb_key: String) -> Array[String]:
+	return [source_profile + "_parts", source_profile + "_" + limb_key]
+
+
+static func _generated_limb_synergy_tags(source_profile: String, limb_key: String) -> Array[String]:
+	return [source_profile, limb_key, str(LIMB_TO_SLOT.get(limb_key, ""))]
+
+
+static func _generated_limb_synergy_score(source_profile: String, limb_key: String) -> float:
+	if source_profile == "normal":
+		return 0.1
+	if limb_key == "body" or limb_key == "head":
+		return 0.3
+	return 0.2
 
 
 static func _generated_limb_bonus(source_profile: String, limb_key: String) -> Dictionary:

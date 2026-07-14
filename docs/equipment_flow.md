@@ -130,6 +130,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
   animacion procedural actual.
+- Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
+  `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
+  combinaciones de piezas. No aplican bonuses automaticamente todavia.
 
 ## Como probar
 
@@ -162,3 +165,5 @@ En `TESTING ENVIRONMENT`:
   cuerpo hibrido y respuestas especiales sin acoplarlas todavia al rig.
 - 2026-07-14: Se agregaron campos de peso granulares manteniendo `weight` como
   compatibilidad para animacion.
+- 2026-07-14: Se agregaron campos de set/sinergia como metadata pasiva para
+  futuras reglas de combinacion.

@@ -40,6 +40,17 @@ const DEFINITIONS := {
 			"equipment_weight": 1.0,
 			"inventory_weight": 0.8,
 		},
+		"set": {
+			"id": "starter_bones",
+			"name": "Starter Bones",
+			"piece_key": "arm",
+			"tags": ["starter", "reach"],
+		},
+		"synergy": {
+			"ids": ["starter_bones", "reach_bones"],
+			"tags": ["starter", "reach", "right_arm"],
+			"score": 0.15,
+		},
 		"player_stats": {
 			"attack_range": 2.5,
 		},
@@ -73,6 +84,17 @@ const DEFINITIONS := {
 			"physical_weight": 1.1,
 			"equipment_weight": 1.1,
 			"inventory_weight": 0.9,
+		},
+		"set": {
+			"id": "starter_bones",
+			"name": "Starter Bones",
+			"piece_key": "legs",
+			"tags": ["starter", "speed"],
+		},
+		"synergy": {
+			"ids": ["starter_bones", "speed_bones"],
+			"tags": ["starter", "speed", "legs"],
+			"score": 0.15,
 		},
 		"player_stats": {
 			"move_speed": 3.0,
@@ -108,6 +130,17 @@ const DEFINITIONS := {
 			"equipment_weight": 2.0,
 			"inventory_weight": 2.2,
 			"visual_scale": Vector3(1.3, 1.3, 1.3),
+		},
+		"set": {
+			"id": "power_bones",
+			"name": "Power Bones",
+			"piece_key": "body",
+			"tags": ["power", "heavy"],
+		},
+		"synergy": {
+			"ids": ["power_bones", "body_bones"],
+			"tags": ["power", "heavy", "body"],
+			"score": 0.25,
 		},
 		"player_stats": {
 			"move_speed": -1.5,
@@ -147,6 +180,17 @@ const DEFINITIONS := {
 			"equipment_weight": 0.6,
 			"inventory_weight": 0.5,
 		},
+		"set": {
+			"id": "training_bones",
+			"name": "Training Bones",
+			"piece_key": "arm",
+			"tags": ["training"],
+		},
+		"synergy": {
+			"ids": ["training_bones"],
+			"tags": ["training", "right_arm"],
+			"score": 0.0,
+		},
 	},
 	"rib_bone": {
 		"identity": {
@@ -183,6 +227,17 @@ const DEFINITIONS := {
 			"physical_weight": 1.4,
 			"equipment_weight": 1.4,
 			"inventory_weight": 1.1,
+		},
+		"set": {
+			"id": "hybrid_bones",
+			"name": "Hybrid Bones",
+			"piece_key": "body",
+			"tags": ["hybrid", "adaptive"],
+		},
+		"synergy": {
+			"ids": ["hybrid_bones", "body_bones"],
+			"tags": ["hybrid", "adaptive", "body"],
+			"score": 0.3,
 		},
 		"enemy_stats": {
 			"move_speed": 0.7,

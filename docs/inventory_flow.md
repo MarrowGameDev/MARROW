@@ -123,6 +123,14 @@ Campos de peso:
 - `equipment_weight` queda disponible para carga al equipar.
 - `inventory_weight` queda disponible para limites o coste de inventario.
 
+Campos de set/sinergia:
+- `set_id`, `set_name`, `set_piece_key` y `set_tags` describen a que conjunto
+  pertenece una pieza.
+- `synergy_ids`, `synergy_tags` y `synergy_score` preparan filtros o previews
+  de combinaciones.
+- La UI puede mostrar estos datos, pero no debe calcular bonuses de set hasta
+  que exista una regla de equipamiento dedicada.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -163,3 +171,5 @@ En `TESTING ENVIRONMENT`:
   `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`.
 - 2026-07-14: Se agregaron campos de peso para inventario/equipamiento sin
   cambiar todavia limites de carga.
+- 2026-07-14: Se agregaron campos de set/sinergia para futuras vistas y reglas
+  de combinacion.

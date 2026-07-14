@@ -253,6 +253,57 @@ static func inventory_weight(id: String) -> float:
 	return 0.0
 
 
+static func set_id(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("set_id", ""))
+	return ""
+
+
+static func set_name(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("set_name", ""))
+	return ""
+
+
+static func set_piece_key(id: String) -> String:
+	if _bones().has(id):
+		return str(_bones()[id].get("set_piece_key", ""))
+	return ""
+
+
+static func set_tags(id: String) -> Array:
+	if _bones().has(id):
+		var value: Variant = _bones()[id].get("set_tags", [])
+		if value is Array:
+			var tags: Array = value
+			return tags.duplicate()
+	return []
+
+
+static func synergy_ids(id: String) -> Array:
+	if _bones().has(id):
+		var value: Variant = _bones()[id].get("synergy_ids", [])
+		if value is Array:
+			var ids: Array = value
+			return ids.duplicate()
+	return []
+
+
+static func synergy_tags(id: String) -> Array:
+	if _bones().has(id):
+		var value: Variant = _bones()[id].get("synergy_tags", [])
+		if value is Array:
+			var tags: Array = value
+			return tags.duplicate()
+	return []
+
+
+static func synergy_score(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("synergy_score", 0.0))
+	return 0.0
+
+
 static func enemy_float_bonus(id: String, key: String, fallback: float = 0.0) -> float:
 	if _bones().has(id):
 		return float(_bones()[id].get(key, fallback))

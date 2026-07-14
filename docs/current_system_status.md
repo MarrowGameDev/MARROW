@@ -56,6 +56,8 @@ refactor pass.
   they are intentionally separate from loot rarity.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`.
+- Bone set/synergy fields are present as passive metadata; no automatic set
+  bonuses are active yet.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 

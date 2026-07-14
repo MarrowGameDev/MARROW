@@ -161,6 +161,53 @@ static func inventory_weight_for(bone_id: String) -> float:
 	return float(definition.get("inventory_weight", definition.get("weight", 1.0)))
 
 
+static func set_id_for(bone_id: String) -> String:
+	var definition: Dictionary = definition_for(bone_id)
+	return str(definition.get("set_id", ""))
+
+
+static func set_name_for(bone_id: String) -> String:
+	var definition: Dictionary = definition_for(bone_id)
+	return str(definition.get("set_name", ""))
+
+
+static func set_piece_key_for(bone_id: String) -> String:
+	var definition: Dictionary = definition_for(bone_id)
+	return str(definition.get("set_piece_key", ""))
+
+
+static func set_tags_for(bone_id: String) -> Array:
+	var definition: Dictionary = definition_for(bone_id)
+	var value: Variant = definition.get("set_tags", [])
+	if value is Array:
+		var tags: Array = value
+		return tags.duplicate()
+	return []
+
+
+static func synergy_ids_for(bone_id: String) -> Array:
+	var definition: Dictionary = definition_for(bone_id)
+	var value: Variant = definition.get("synergy_ids", [])
+	if value is Array:
+		var ids: Array = value
+		return ids.duplicate()
+	return []
+
+
+static func synergy_tags_for(bone_id: String) -> Array:
+	var definition: Dictionary = definition_for(bone_id)
+	var value: Variant = definition.get("synergy_tags", [])
+	if value is Array:
+		var tags: Array = value
+		return tags.duplicate()
+	return []
+
+
+static func synergy_score_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("synergy_score", 0.0))
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
