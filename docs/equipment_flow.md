@@ -118,6 +118,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - No cambiar consumidores existentes para leer `BoneDefinition` directo.
   `BoneDatabase.get_def` y `BoneRulesService.definition_for` siguen entregando
   el diccionario plano que el rig, stats y slots ya esperan.
+- Los campos de calidad (`quality_rank`, `quality_score`,
+  `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
+  No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
+  balance lo defina explicitamente.
 
 ## Como probar
 
@@ -143,3 +147,6 @@ En `TESTING ENVIRONMENT`:
   queda como fallback.
 - 2026-07-14: Se mantuvo compatibilidad legacy en `BoneDatabase` con cache
   `BONES`, `definitions` y `reset_cache`.
+- 2026-07-14: Se agregaron campos de calidad para preparar ordenamiento,
+  estado visual y balance futuro sin cambiar el contrato de equipamiento. Estos
+  campos no representan rareza de loot.

@@ -125,6 +125,9 @@ Compatibility contract:
 - Existing calls such as `get_def`, `has_bone`, `all_ids`, `display_name`,
   `display_name_with_slot`, `color`, `slot`, `quality`, `description`,
   `effect_text`, `enemy_float_bonus` and `enemy_int_bonus` must keep working.
+- Quality helpers such as `quality_rank`, `quality_score`,
+  `quality_multiplier` and `quality_color` are additive and do not replace the
+  existing `quality` text.
 - `BoneDatabase.BONES` remains a populated legacy dictionary cache for direct
   reads by older tools/scripts.
 - `definitions()` returns the same legacy dictionary cache.
@@ -141,6 +144,8 @@ Current bone ids:
 Each definition can include:
 - `BoneDefinition.identity` fields: display name, quality, color, slot, tags,
   description.
+- `BoneDefinition.quality_*` fields: quality rank, score, multiplier and
+  quality color. These describe part quality/condition, not loot rarity.
 - `BoneDefinition.player_*` fields: player-facing stat bonuses.
 - `BoneDefinition.enemy_*` fields: enemy profile bonuses.
 - `BoneDefinition.visual_*` fields: optional scale/offset/rotation visual data.

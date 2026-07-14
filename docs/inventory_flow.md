@@ -98,6 +98,17 @@ Compatibilidad:
 - Si se modifica un `.tres` durante una herramienta/editor, llamar
   `BoneDatabase.reset_cache()` o `reload_from_catalog()` antes de leer de nuevo.
 
+Campos de calidad:
+- `quality` sigue siendo el texto visible que ya usa la UI.
+- `quality_rank` permite ordenar o filtrar por estado/calidad de la pieza.
+- `quality_score` puede usarse para comparar piezas sin depender del texto.
+- `quality_multiplier` queda reservado para balance si una pieza debe escalar
+  stats, rewards o valor.
+- `quality_color` permite colorear estado/calidad sin cambiar el color fisico
+  del hueso.
+- Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
+  separado como `rarity`/`rarity_rank` en otro cambio.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -132,3 +143,5 @@ En `TESTING ENVIRONMENT`:
   fallback gradual.
 - 2026-07-14: Se reforzo compatibilidad de `BoneDatabase`; `BONES` vuelve a
   poblarse al cargar la clase y existen `definitions`/`reset_cache`.
+- 2026-07-14: Se agregaron campos de calidad a `BoneDefinition` y al formato
+  legacy: rank, score, multiplier y color.

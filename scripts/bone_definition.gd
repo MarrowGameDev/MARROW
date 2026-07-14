@@ -13,6 +13,10 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 @export var bone_id: String = ""
 @export var display_name: String = "Unknown Bone"
 @export var quality: String = "Normal"
+@export var quality_rank: int = 1
+@export var quality_score: float = 1.0
+@export var quality_multiplier: float = 1.0
+@export var quality_color: Color = DEFAULT_COLOR
 @export var color: Color = DEFAULT_COLOR
 @export var slot: String = ""
 @export var tags: Array[String] = []
@@ -54,6 +58,10 @@ func to_clean_dictionary() -> Dictionary:
 		"identity": {
 			"display_name": display_name,
 			"quality": quality,
+			"quality_rank": quality_rank,
+			"quality_score": quality_score,
+			"quality_multiplier": quality_multiplier,
+			"quality_color": quality_color,
 			"color": color,
 			"slot": slot,
 			"tags": tags.duplicate(),
@@ -82,6 +90,10 @@ func to_legacy_dictionary() -> Dictionary:
 	var legacy: Dictionary = {
 		"display_name": display_name,
 		"quality": quality,
+		"quality_rank": quality_rank,
+		"quality_score": quality_score,
+		"quality_multiplier": quality_multiplier,
+		"quality_color": quality_color,
 		"color": color,
 		"slot": slot,
 		"move_speed_bonus": player_move_speed,
@@ -122,6 +134,10 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 
 	definition.display_name = str(identity.get("display_name", definition.display_name))
 	definition.quality = str(identity.get("quality", definition.quality))
+	definition.quality_rank = int(identity.get("quality_rank", definition.quality_rank))
+	definition.quality_score = float(identity.get("quality_score", definition.quality_score))
+	definition.quality_multiplier = float(identity.get("quality_multiplier", definition.quality_multiplier))
+	definition.quality_color = _color(identity.get("quality_color", definition.quality_color), definition.quality_color)
 	definition.color = _color(identity.get("color", definition.color), definition.color)
 	definition.slot = str(identity.get("slot", definition.slot))
 	definition.tags = _string_array(identity.get("tags", []))

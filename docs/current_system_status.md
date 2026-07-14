@@ -52,6 +52,8 @@ refactor pass.
   into the flat fields current systems expect.
 - `BoneDatabase.BONES` is still populated for legacy direct reads, and
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
+- Bone quality fields describe part quality/condition and balancing metadata;
+  they are intentionally separate from loot rarity.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 

@@ -38,6 +38,36 @@ static func quality_for(bone_id: String) -> String:
 	return BoneDatabase.quality(bone_id)
 
 
+static func quality_rank_for(bone_id: String) -> int:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return int(definition.get("quality_rank", 1))
+	return BoneDatabase.quality_rank(bone_id)
+
+
+static func quality_score_for(bone_id: String) -> float:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return float(definition.get("quality_score", 1.0))
+	return BoneDatabase.quality_score(bone_id)
+
+
+static func quality_multiplier_for(bone_id: String) -> float:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		return float(definition.get("quality_multiplier", 1.0))
+	return BoneDatabase.quality_multiplier(bone_id)
+
+
+static func quality_color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
+	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
+	if not definition.is_empty():
+		var color_value: Variant = definition.get("quality_color", fallback)
+		if color_value is Color:
+			return color_value
+	return BoneDatabase.quality_color(bone_id, fallback)
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():

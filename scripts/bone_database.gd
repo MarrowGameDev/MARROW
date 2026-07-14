@@ -138,6 +138,32 @@ static func quality(id: String) -> String:
 	return "Unknown"
 
 
+static func quality_rank(id: String) -> int:
+	if _bones().has(id):
+		return int(_bones()[id].get("quality_rank", 0))
+	return 0
+
+
+static func quality_score(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("quality_score", 0.0))
+	return 0.0
+
+
+static func quality_multiplier(id: String) -> float:
+	if _bones().has(id):
+		return float(_bones()[id].get("quality_multiplier", 1.0))
+	return 1.0
+
+
+static func quality_color(id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
+	if _bones().has(id):
+		var color_value: Variant = _bones()[id].get("quality_color", fallback)
+		if color_value is Color:
+			return color_value
+	return fallback
+
+
 static func enemy_float_bonus(id: String, key: String, fallback: float = 0.0) -> float:
 	if _bones().has(id):
 		return float(_bones()[id].get(key, fallback))
