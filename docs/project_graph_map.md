@@ -109,6 +109,8 @@ Player relationships:
 
 ## Bone Data
 
+Detailed schema reference: `docs/bone_data_structure.md`.
+
 `scripts/bone_definition.gd` defines `BoneDefinition`, the Godot `Resource`
 type for one hand-authored bone.
 

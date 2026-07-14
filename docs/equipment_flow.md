@@ -191,3 +191,5 @@ En `TESTING ENVIRONMENT`:
   `comun`, `fuerte`, `legendario`) y se migraron los huesos base a esos ids.
 - 2026-07-14: Se definieron rarezas/mutaciones canonicas y se migraron los
   valores legacy `Common`, `Uncommon`, `Rare` y `hybrid_growth`.
+- 2026-07-14: Se agrego `docs/bone_data_structure.md` como referencia principal
+  de estructura de datos de huesos para programadores.

@@ -44,6 +44,7 @@ refactor pass.
 
 ## Bone Data
 
+- Full schema reference lives in `docs/bone_data_structure.md`.
 - `BoneDefinition` is the Godot `Resource` type for one hand-authored bone.
 - Initial hand-authored bones now live as `.tres` assets in `data/bones/`.
 - `BoneDataCatalog` loads `.tres` Resources first and uses its in-code

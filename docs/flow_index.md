@@ -15,6 +15,9 @@ gameplay debe actualizar el archivo de flujo correspondiente.
    - Limb drops, pickups, camp chests, reglas de drops.
 5. `docs/camera_flow.md`
    - Orbit camera, aim zoom, raycast, pruebas de camara.
+6. `docs/bone_data_structure.md`
+   - Estructura de `BoneDefinition`, compatibilidad, calidades, rarezas,
+     mutaciones, ataque/combo, stats, peso y pasos para agregar huesos.
 
 ## Politica
 
