@@ -12,7 +12,6 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var base_move_speed: float = 6.0
 @export var sprint_multiplier: float = 1.55
 @export var jump_velocity: float = 8.5
-@export_range(0.0, 0.25, 0.01) var movement_deadzone: float = 0.08
 @export var base_attack_range: float = 2.0
 @export var base_attack_damage: int = 1
 
@@ -216,8 +215,6 @@ func _physics_process(delta: float) -> void:
 	# Input.get_vector reads four named input actions from project.godot.
 	# W makes the y value negative, S makes it positive, A makes x negative, and D makes x positive.
 	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	if input_vector.length() < movement_deadzone:
-		input_vector = Vector2.ZERO
 
 	var direction := _get_camera_relative_move_direction(input_vector)
 	current_move_direction = direction

@@ -40,9 +40,9 @@ extends Node3D
 # rattles like a skeleton (always on, even standing still).
 @export_group("Skeleton wobble")
 @export var wobble_enabled := true
-@export var wobble_rotation := 0.012   # subtle idle jiggle without visible vibration
-@export var wobble_slide := 0.004      # meters the bone slides in/out of its socket
-@export var wobble_speed := 1.4        # slow, coherent sway (not chaotic)
+@export var wobble_rotation := 0.035   # radians of GENTLE idle jiggle
+@export var wobble_slide := 0.012      # meters the bone slides in/out of its socket
+@export var wobble_speed := 2.5        # slow, coherent sway (not chaotic)
 
 # Environment reaction: the figure leans to match the floor slope and tips away
 # from nearby objects/walls.
