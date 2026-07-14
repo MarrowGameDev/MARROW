@@ -68,6 +68,9 @@ Rareza:
   viven en `BoneDefinition` y pasan por `BoneDatabase`.
 - `rarity_drop_weight` no cambia drops automaticamente todavia; queda listo
   para cuando se defina una tabla de drops ponderada.
+- `quality_drop_percent` permite expresar una intencion de ajuste porcentual por
+  calidad. No modifica drops automaticamente hasta que exista una regla clara en
+  `DropRulesService`.
 - Rareza no debe mezclarse con calidad. Calidad describe condicion/valor de la
   pieza; rareza describe probabilidad o categoria de obtencion.
 

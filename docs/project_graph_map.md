@@ -146,8 +146,9 @@ Current bone ids:
 Each definition can include:
 - `BoneDefinition.identity` fields: display name, quality, color, slot, tags,
   description.
-- `BoneDefinition.quality_*` fields: quality rank, score, multiplier and
-  quality color. These describe part quality/condition, not loot rarity.
+- `BoneDefinition.quality_*` fields: quality rank, score, multiplier, quality
+  color and granular percent modifiers for damage, speed, health, drops and
+  weight. These describe part quality/condition, not loot rarity.
 - `BoneDefinition.rarity_*` fields: loot rarity metadata and optional drop
   weighting.
 - `BoneDefinition.mutation_*` fields: mutation family, stage, intensity and

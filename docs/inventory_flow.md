@@ -106,6 +106,10 @@ Campos de calidad:
   stats, rewards o valor.
 - `quality_color` permite colorear estado/calidad sin cambiar el color fisico
   del hueso.
+- `quality_damage_percent`, `quality_speed_percent`,
+  `quality_health_percent`, `quality_drop_percent` y
+  `quality_weight_percent` permiten mostrar o comparar intenciones de balance
+  por calidad sin aplicar reglas automaticas.
 - Calidad no es rareza. Si el juego necesita rareza de loot, agregar un campo
   separado como `rarity`/`rarity_rank` en otro cambio.
 

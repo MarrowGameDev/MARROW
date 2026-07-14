@@ -122,6 +122,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
   No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
   balance lo defina explicitamente.
+- Los modificadores porcentuales por calidad (`quality_damage_percent`,
+  `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
+  `quality_weight_percent`) son metadata granular. Pueden alimentar balance
+  futuro, pero equipamiento no los aplica automaticamente todavia.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
@@ -173,3 +177,5 @@ En `TESTING ENVIRONMENT`:
   compatibilidad para animacion.
 - 2026-07-14: Se agregaron campos de set/sinergia como metadata pasiva para
   futuras reglas de combinacion.
+- 2026-07-14: Se agregaron modificadores porcentuales por calidad separados de
+  `quality_multiplier` para preparar balance granular.

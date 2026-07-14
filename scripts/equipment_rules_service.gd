@@ -121,6 +121,11 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"quality_score": _generated_limb_quality_score(source_profile),
 		"quality_multiplier": _generated_limb_quality_multiplier(source_profile),
 		"quality_color": _generated_limb_quality_color(source_profile),
+		"quality_damage_percent": _generated_limb_quality_damage_percent(source_profile),
+		"quality_speed_percent": _generated_limb_quality_speed_percent(source_profile),
+		"quality_health_percent": _generated_limb_quality_health_percent(source_profile),
+		"quality_drop_percent": _generated_limb_quality_drop_percent(source_profile),
+		"quality_weight_percent": _generated_limb_quality_weight_percent(source_profile),
 		"rarity": _generated_limb_rarity(source_profile),
 		"rarity_rank": _generated_limb_rarity_rank(source_profile),
 		"rarity_color": _generated_limb_rarity_color(source_profile),
@@ -218,6 +223,52 @@ static func _generated_limb_quality_score(source_profile: String) -> float:
 
 static func _generated_limb_quality_multiplier(source_profile: String) -> float:
 	return _generated_limb_quality_score(source_profile)
+
+
+static func _generated_limb_quality_damage_percent(source_profile: String) -> float:
+	match source_profile:
+		"gorilla":
+			return 0.08
+		"lizard":
+			return -0.03
+		_:
+			return 0.0
+
+
+static func _generated_limb_quality_speed_percent(source_profile: String) -> float:
+	match source_profile:
+		"gorilla":
+			return -0.06
+		"lizard":
+			return 0.08
+		_:
+			return 0.0
+
+
+static func _generated_limb_quality_health_percent(source_profile: String) -> float:
+	match source_profile:
+		"gorilla":
+			return 0.05
+		_:
+			return 0.0
+
+
+static func _generated_limb_quality_drop_percent(source_profile: String) -> float:
+	match source_profile:
+		"lizard":
+			return 0.03
+		_:
+			return 0.0
+
+
+static func _generated_limb_quality_weight_percent(source_profile: String) -> float:
+	match source_profile:
+		"gorilla":
+			return 0.1
+		"lizard":
+			return -0.08
+		_:
+			return 0.0
 
 
 static func _generated_limb_quality_color(source_profile: String) -> Color:

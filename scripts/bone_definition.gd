@@ -17,6 +17,11 @@ const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 @export var quality_score: float = 1.0
 @export var quality_multiplier: float = 1.0
 @export var quality_color: Color = DEFAULT_COLOR
+@export var quality_damage_percent: float = 0.0
+@export var quality_speed_percent: float = 0.0
+@export var quality_health_percent: float = 0.0
+@export var quality_drop_percent: float = 0.0
+@export var quality_weight_percent: float = 0.0
 @export var rarity: String = "Common"
 @export var rarity_rank: int = 1
 @export var rarity_color: Color = DEFAULT_COLOR
@@ -108,6 +113,13 @@ func to_clean_dictionary() -> Dictionary:
 			"tags": tags.duplicate(),
 			"description": description,
 		},
+		"quality_modifiers": {
+			"damage_percent": quality_damage_percent,
+			"speed_percent": quality_speed_percent,
+			"health_percent": quality_health_percent,
+			"drop_percent": quality_drop_percent,
+			"weight_percent": quality_weight_percent,
+		},
 		"player_stats": {
 			"move_speed": player_move_speed,
 			"attack_range": player_attack_range,
@@ -162,6 +174,11 @@ func to_legacy_dictionary() -> Dictionary:
 		"quality_score": quality_score,
 		"quality_multiplier": quality_multiplier,
 		"quality_color": quality_color,
+		"quality_damage_percent": quality_damage_percent,
+		"quality_speed_percent": quality_speed_percent,
+		"quality_health_percent": quality_health_percent,
+		"quality_drop_percent": quality_drop_percent,
+		"quality_weight_percent": quality_weight_percent,
 		"rarity": rarity,
 		"rarity_rank": rarity_rank,
 		"rarity_color": rarity_color,
@@ -223,6 +240,7 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.bone_id = id
 
 	var identity: Dictionary = _dictionary(clean, "identity")
+	var quality_modifiers: Dictionary = _dictionary(clean, "quality_modifiers")
 	var player_stats: Dictionary = _dictionary(clean, "player_stats")
 	var mutation: Dictionary = _dictionary(clean, "mutation")
 	var attack_combo: Dictionary = _dictionary(clean, "attack_combo")
@@ -237,6 +255,11 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.quality_score = float(identity.get("quality_score", definition.quality_score))
 	definition.quality_multiplier = float(identity.get("quality_multiplier", definition.quality_multiplier))
 	definition.quality_color = _color(identity.get("quality_color", definition.quality_color), definition.quality_color)
+	definition.quality_damage_percent = float(quality_modifiers.get("damage_percent", identity.get("quality_damage_percent", definition.quality_damage_percent)))
+	definition.quality_speed_percent = float(quality_modifiers.get("speed_percent", identity.get("quality_speed_percent", definition.quality_speed_percent)))
+	definition.quality_health_percent = float(quality_modifiers.get("health_percent", identity.get("quality_health_percent", definition.quality_health_percent)))
+	definition.quality_drop_percent = float(quality_modifiers.get("drop_percent", identity.get("quality_drop_percent", definition.quality_drop_percent)))
+	definition.quality_weight_percent = float(quality_modifiers.get("weight_percent", identity.get("quality_weight_percent", definition.quality_weight_percent)))
 	definition.rarity = str(identity.get("rarity", definition.rarity))
 	definition.rarity_rank = int(identity.get("rarity_rank", definition.rarity_rank))
 	definition.rarity_color = _color(identity.get("rarity_color", definition.rarity_color), definition.rarity_color)

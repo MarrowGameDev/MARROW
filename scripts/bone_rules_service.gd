@@ -59,6 +59,31 @@ static func quality_multiplier_for(bone_id: String) -> float:
 	return BoneDatabase.quality_multiplier(bone_id)
 
 
+static func quality_damage_percent_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("quality_damage_percent", 0.0))
+
+
+static func quality_speed_percent_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("quality_speed_percent", 0.0))
+
+
+static func quality_health_percent_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("quality_health_percent", 0.0))
+
+
+static func quality_drop_percent_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("quality_drop_percent", 0.0))
+
+
+static func quality_weight_percent_for(bone_id: String) -> float:
+	var definition: Dictionary = definition_for(bone_id)
+	return float(definition.get("quality_weight_percent", 0.0))
+
+
 static func quality_color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():

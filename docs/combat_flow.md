@@ -119,6 +119,12 @@ Ataque/combo por hueso:
   activar combos reales se debe crear una regla de combate explicita y probarla
   en `TESTING ENVIRONMENT`.
 
+Modificadores porcentuales:
+- `quality_damage_percent`, `quality_speed_percent` y
+  `quality_health_percent` describen intencion de balance por calidad.
+- Combate no multiplica dano, velocidad ni salud con esos campos todavia. Si se
+  activan, debe hacerse en una formula documentada y testeada.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
