@@ -22,6 +22,8 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/player_camera_controller.gd`: aim point para disparos.
 - `scripts/rig/procedural_player_animator.gd`: animaciones de ataque, aim,
   crawl y climb blend.
+- `scripts/bone_database.gd` + `scripts/bone_data_catalog.gd`: stats de huesos
+  que modifican perfiles de combate del jugador y enemigos.
 
 ## Eventos usados
 
@@ -88,6 +90,14 @@ Vision:
 - Cono + distancia.
 - Line of sight salvo lizards que pueden ver a traves de paredes si esta activo.
 
+Stats por hueso:
+- Los valores editables viven en `BoneDataCatalog.enemy_stats`.
+- `BoneDatabase` los normaliza a campos planos como
+  `enemy_move_speed_bonus`, `enemy_contact_damage_bonus`,
+  `enemy_max_health_bonus`, `enemy_detection_range_bonus`,
+  `enemy_visual_scale` y `enemy_flee_chance`.
+- `BoneRulesService.enemy_profile_for` es el punto de lectura para `Enemy`.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -106,6 +116,8 @@ Lizard wall climb:
   - como reacciona `Enemy`
 - Si el ataque afecta camera/aim, actualizar tambien `camera_flow.md`.
 - Si el ataque crea drops o limbs, actualizar tambien `drops_flow.md`.
+- Si un cambio de combate necesita ajustar stats de huesos hechos a mano,
+  editar `BoneDataCatalog` y mantener `BoneRulesService` como punto de lectura.
 
 ## Como probar
 
@@ -125,3 +137,5 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se documento el flujo actual.
 - 2026-07-14: Lizard wall climb corregido para usar colision normal y subir al
   detectar pared, en vez de atravesar usando posicion global.
+- 2026-07-14: Se documento la preparacion de datos limpios para stats de huesos
+  usados por combate y perfiles enemigos.

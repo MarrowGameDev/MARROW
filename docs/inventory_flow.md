@@ -25,6 +25,10 @@ modificar controles desde la seccion de settings.
 - `scripts/bone_rules_service.gd`: display name, color, descripcion y textos de
   stats.
 - `scripts/equipment_rules_service.gd`: slot de cada hueso y reglas de slots.
+- `scripts/bone_database.gd`: fachada compatible para leer definiciones de
+  huesos.
+- `scripts/bone_data_catalog.gd`: datos limpios de autoria para huesos
+  hechos a mano.
 
 ## Eventos usados
 
@@ -69,6 +73,20 @@ modificar controles desde la seccion de settings.
 - Decide cuando pausar el juego al abrir inventario.
 - Coordina input global y comunica UI con componentes.
 
+## Datos de huesos
+
+El inventario debe seguir leyendo nombres, colores, descripciones y textos de
+stats mediante `BoneRulesService`. Internamente, `BoneDatabase` normaliza datos
+desde `BoneDataCatalog`, que usa una estructura mas limpia:
+
+- `identity`: nombre, rareza, color, slot, tags y descripcion.
+- `player_stats`: bonuses que ve el jugador al equipar.
+- `enemy_stats`: bonuses que usan enemigos y perfiles de combate.
+- `visual`: datos opcionales para escala/peso visual.
+
+No conectar la UI directamente a `BoneDataCatalog` todavia. Esa capa existe para
+preparar una migracion futura a JSON, Resources o una tabla exportada.
+
 ## Puntos delicados
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
@@ -93,3 +111,6 @@ En `TESTING ENVIRONMENT`:
 
 - 2026-07-14: Se documento el flujo actual. El inventario ya usa
   `GameEvents.inventory_changed` para desacoplar componentes y UI.
+- 2026-07-14: Se preparo la migracion de datos de huesos. La UI sigue usando
+  `BoneRulesService`, mientras `BoneDatabase` convierte `BoneDataCatalog` al
+  formato compatible.

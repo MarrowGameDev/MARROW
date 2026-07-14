@@ -107,9 +107,13 @@ Player relationships:
 - uses camera forward for attacks while the player is standing still.
 - freezes camera look while the inventory is open by releasing the mouse through the camera controller.
 
-## BoneDatabase
+## Bone Data
 
-`scripts/bone_database.gd` is the single source of truth for bone definitions.
+`scripts/bone_data_catalog.gd` is the clean authoring source for hand-authored
+bone definitions.
+
+`scripts/bone_database.gd` is the compatibility API. It normalizes catalog data
+into the flat fields current gameplay systems still expect.
 
 Current bone ids:
 - `arm_bone`
@@ -119,21 +123,21 @@ Current bone ids:
 - `rib_bone`
 
 Each definition can include:
-- display name
-- quality
-- color
-- slot
-- player stat bonuses
-- enemy stat bonuses
-- visual scale and tags
-- description
+- `identity`: display name, quality, color, slot, tags, description.
+- `player_stats`: player-facing stat bonuses.
+- `enemy_stats`: enemy profile bonuses.
+- `visual`: optional scale/weight visual data.
 
 Consumers:
-- `Player` uses stat bonuses and slot data.
+- `Player` uses stat bonuses and slot data through services/components.
 - `Bone` and `LimbBonePickup` use slot-aware display names and colors.
 - `Enemy` uses enemy bonuses, drop data, and slot-aware display names.
 - `BoneTrialGate` uses required bone slot-aware display names and colors.
 - Inventory UI widgets use slot-aware display names, colors, slot labels, and effect text.
+
+Rule: gameplay and UI should not read `BoneDataCatalog` directly yet. Use
+`BoneRulesService`, `EquipmentRulesService`, `DropPickupRulesService` or
+`BoneDatabase` so generated limb bones and hand-authored bones stay compatible.
 
 ## Inventory UI
 

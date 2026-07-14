@@ -42,6 +42,14 @@ refactor pass.
 - Lizard wall climb uses normal collision and upward climb velocity instead of
   direct position movement through walls.
 
+## Bone Data
+
+- `BoneDataCatalog` is now the clean authoring source for hand-authored bones.
+- `BoneDatabase` remains the compatibility layer that normalizes catalog data
+  into the flat fields current systems expect.
+- Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
+  or `BoneDatabase`, not `BoneDataCatalog` directly.
+
 ## Testing
 
 - `scenes/testing_environment.tscn` is the unified sandbox for camera, enemies,
