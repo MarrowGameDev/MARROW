@@ -381,6 +381,13 @@
 - `mutation_stage`
 - `mutation_intensity`
 - `mutation_tags`
+- `attack_type`
+- `attack_tags`
+- `combo_family`
+- `combo_step`
+- `combo_window`
+- `combo_tags`
+- `combo_finisher`
 - `set_id`
 - `set_name`
 - `set_piece_key`
@@ -418,6 +425,7 @@
 - `identity`
 - `player_stats`
 - `mutation`
+- `attack_combo`
 - `set_data`
 - `synergy`
 - `enemy_stats`
@@ -1040,6 +1048,7 @@
 - `color`
 - `bonus`
 - `prefix`
+- `tags`
 - `equipment_weight`
 - `base_weight`
 
