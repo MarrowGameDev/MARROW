@@ -99,6 +99,18 @@ stealth_finish={
 
 # MARROW
 
+## Programmer Flow Docs
+
+Current gameplay flows are documented in `docs/flow_index.md`.
+
+From this point forward, functional changes should update the matching flow doc:
+
+- `docs/inventory_flow.md`
+- `docs/equipment_flow.md`
+- `docs/combat_flow.md`
+- `docs/drops_flow.md`
+- `docs/camera_flow.md`
+
 ## AGENTS.md
 
 # AGENTS.md
@@ -241,6 +253,277 @@ Guia obligatoria para cualquier cambio en Marrow. Todo trabajo debe priorizar es
 - Si algo no puede verificarse, decirlo de forma explicita y concreta.
 - No incluir planes de roadmap externos en este archivo. Este documento define reglas permanentes, no tareas pendientes.
 
+## docs/camera_flow.md
+
+# Flujo de camara
+
+Este documento describe la camara de tercera persona, movimiento relativo a
+camara, zoom de apuntado y pruebas de camara.
+
+## Objetivo del sistema
+
+La camara debe seguir al jugador, orbitar con mouse, colisionar con paredes,
+apoyar movimiento relativo a camara, permitir aim/left shoulder para bow, y dar
+un punto de disparo consistente desde el centro de pantalla.
+
+## Scripts y escenas principales
+
+- `scripts/player_camera_controller.gd`: componente principal de camara.
+- `scenes/player.tscn`: contiene `CameraPivot`, `SpringArm3D` y `Camera3D`.
+- `scripts/player.gd`: delega input/estado a la camara y usa helpers de aim.
+- `scenes/testing_environment.tscn`: escena para probar camara con paredes,
+  rampas, player real y enemigos.
+
+## Responsabilidades
+
+`PlayerCameraController`:
+- Captura/libera mouse.
+- Sigue al jugador con smoothing.
+- Aplica yaw/pitch por mouse.
+- Limita pitch.
+- Controla zoom con rueda.
+- Usa `SpringArm3D` para collision de camara.
+- Cambia a aim zoom.
+- Expone `get_flat_forward`, `get_flat_right`.
+- Expone `get_center_aim_point`.
+
+`Player`:
+- Pide vectores de camara para movimiento.
+- Usa camara forward cuando ataca parado.
+- Activa/desactiva aim zoom al cargar bow.
+- Deshabilita look cuando inventario esta abierto o jugador muerto.
+
+## Flujo de movimiento relativo a camara
+
+1. `Player._physics_process` lee input WASD.
+2. `_get_camera_relative_move_direction` pide flat forward/right al controller.
+3. Calcula direccion en mundo.
+4. Player rota/facing segun direccion o aim.
+5. Animator recibe velocidad final.
+
+## Flujo de aim
+
+1. Player mantiene ataque ranged.
+2. `PlayerCameraController.set_aim_zoom(true, distance)` activa zoom.
+3. La camara aplica offset de hombro izquierdo.
+4. Al soltar, player pregunta `get_center_aim_point`.
+5. El raycast desde centro de pantalla devuelve punto de impacto o punto lejano.
+6. El proyectil se dispara hacia ese punto.
+7. `set_aim_zoom(false)` vuelve al zoom normal.
+
+## Flujo de mouse
+
+- En gameplay: mouse capturado.
+- En inventario: look deshabilitado y mouse visible.
+- `Escape` puede liberar mouse.
+- Click recaptura mouse si look esta habilitado.
+
+## Eventos relacionados
+
+- `GameEvents.inventory_open_changed(player, is_open)`: indica que la camara
+  debe quedar bloqueada/visible segun el estado del inventario. Actualmente el
+  player llama directamente `camera_controller.set_look_enabled`; si se mueve a
+  evento, actualizar este archivo.
+
+## Puntos delicados
+
+- No mover la camara desde `Player` directamente. Usar
+  `PlayerCameraController`.
+- Si se cambia el punto de aim, probar arco, finger bones y enemigos ranged.
+- Si se cambian offsets de shoulder aim, probar visibilidad del cuerpo y del
+  objetivo.
+- Si se cambia collision mask del SpringArm, probar paredes en
+  `TESTING ENVIRONMENT`.
+
+## Como probar
+
+En `TESTING ENVIRONMENT`:
+
+1. Caminar alrededor de paredes altas y bajas.
+2. Acercar/alejar con rueda.
+3. Apuntar con bow y confirmar shoulder camera.
+4. Disparar al centro de pantalla.
+5. Abrir inventario y confirmar que camara no gira.
+6. Cerrar inventario y confirmar que mouse/look vuelve.
+7. Subir rampas y confirmar que la camara no se inclina raro.
+
+## Historial de cambios
+
+- 2026-07-14: Se documento el flujo actual de camara.
+- 2026-07-14: Se agrego `TESTING ENVIRONMENT` como escena unica para probar
+  camara, enemigos, movimiento, animaciones y rig.
+
+## docs/change_documentation_policy.md
+
+# Politica de documentacion de cambios
+
+Desde este punto, todo cambio funcional debe actualizar el archivo de flujo que
+corresponda. La meta es que otro programador pueda leer la documentacion y
+entender que sistema se toco, por que se toco, y que comportamiento debe probar.
+
+## Archivos responsables
+
+- Inventario: `docs/inventory_flow.md`
+- Equipamiento: `docs/equipment_flow.md`
+- Combate: `docs/combat_flow.md`
+- Drops y pickups: `docs/drops_flow.md`
+- Camara: `docs/camera_flow.md`
+
+Si un cambio toca mas de un flujo, actualizar todos los archivos afectados.
+Ejemplo: un nuevo ataque con arco que cambia la camara debe actualizar combate y
+camara.
+
+## Que documentar en cada cambio
+
+Agregar una entrada corta en la seccion `Historial de cambios` del archivo
+correspondiente:
+
+- Fecha.
+- Scripts o escenas tocadas.
+- Comportamiento nuevo o corregido.
+- Eventos de `GameEvents` nuevos, emitidos o escuchados.
+- Pruebas recomendadas en el editor o en `TESTING ENVIRONMENT`.
+
+## Regla practica
+
+Antes de cerrar un cambio, preguntar:
+
+1. El programador que revise esto sabra donde vive la logica?
+2. Sabra que eventos conectan el sistema?
+3. Sabra como probar si sigue funcionando?
+
+Si alguna respuesta es no, falta documentacion.
+
+## docs/combat_flow.md
+
+# Flujo de combate
+
+Este documento describe combate del jugador, enemigos, proyectiles, stealth,
+danio, limb loss, huida y respuesta de AI.
+
+## Objetivo del sistema
+
+El combate debe permitir probar melee, arco/finger bones, stealth finish,
+enemigos normales, enemigos ranged, gorillas, lizards, dano por contacto,
+perdida de limbs, crawling, drops y reacciones de AI.
+
+## Scripts y escenas principales
+
+- `scripts/player.gd`: input de ataque, arco, stealth finish, dano recibido y
+  muerte.
+- `scenes/attack_hitbox.tscn` + `scripts/attack_hitbox.gd`: hitbox melee.
+- `scripts/arrow_projectile.gd`: flechas, finger bones, saliva y proyectiles
+  compartidos.
+- `scripts/enemy.gd`: AI, vision, hearing, melee, ranged, gorilla rock throw,
+  lizard saliva, damage, limb detach, flee, crawl, death y respawn.
+- `scripts/enemy_rock_projectile.gd`: roca de gorilla.
+- `scripts/player_camera_controller.gd`: aim point para disparos.
+- `scripts/rig/procedural_player_animator.gd`: animaciones de ataque, aim,
+  crawl y climb blend.
+
+## Eventos usados
+
+- `GameEvents.enemy_defeated(enemy, dropped_bone_id)`.
+- `GameEvents.player_died(player)`.
+- `GameEvents.drop_spawned(bone_id, pickup, source)`.
+
+## Flujo melee del jugador
+
+1. `Player._physics_process` detecta input `attack` cuando no esta apuntando.
+2. Se respeta cooldown.
+3. Se calcula direccion usando camara o facing.
+4. Se instancia `AttackHitbox`.
+5. `AttackHitbox` revisa overlaps y `body_entered`.
+6. Si el cuerpo tiene `take_damage`, llama `take_damage(damage, hit_pos, player)`.
+7. `Enemy.take_damage` aplica knockback, dano, limb loss y muerte si corresponde.
+
+## Flujo ranged del jugador
+
+1. `toggle_bow` equipa/oculta bow.
+2. Mantener y soltar click carga el disparo.
+3. La camara entra en aim zoom/left shoulder.
+4. `PlayerCameraController.get_center_aim_point` calcula el punto del centro de
+   pantalla.
+5. `Player` instancia `ArrowProjectile`.
+6. Si no hay bow equipado, el player tira finger bones.
+7. El proyectil llama `take_damage` en enemigos.
+8. Si el enemigo no ve al player, `Enemy` entra en search hacia el atacante.
+
+## Flujo stealth
+
+1. `Player` busca target con `can_be_stealth_finished_by`.
+2. El enemigo valida distancia y que el player este detras.
+3. UI muestra `get_stealth_prompt_text`.
+4. Al presionar stealth:
+   - Si enemy health <= threshold, muere.
+   - Si tiene demasiada vida, recibe dano extra y responde atacando/buscando.
+
+## Flujo de dano enemigo
+
+`Enemy.take_hit`:
+
+1. Reduce health.
+2. Llama `_maybe_start_low_health_flee`.
+3. Llama `_detach_limbs_for_damage` si no es killing hit.
+4. Actualiza label/flash/sound.
+5. Si health llega a 0, llama `die`.
+
+## AI de enemigos
+
+Estados principales:
+- idle wander
+- vision chase
+- search last known position
+- return to spawn
+- flee low health
+- bone recovery
+- ranged windup
+- rock throw windup
+- saliva windup
+- crawl when both legs are lost
+
+Vision:
+- Cono + distancia.
+- Line of sight salvo lizards que pueden ver a traves de paredes si esta activo.
+
+Lizard wall climb:
+- El lizard ya no atraviesa paredes con `global_position`.
+- Usa `move_and_slide`.
+- Cuando el probe detecta pared adelante, aplica `lizard_wall_climb_speed` en Y.
+- El blend visual se controla con `lizard_wall_climb_blend`.
+
+## Puntos delicados
+
+- No volver a mover enemigos con `global_position +=` para locomocion normal.
+  Eso salta fisica y causa bugs como atravesar paredes.
+- Si se agrega un nuevo tipo de ataque, documentar:
+  - input
+  - cooldown/charge
+  - script del proyectil o hitbox
+  - evento emitido
+  - como reacciona `Enemy`
+- Si el ataque afecta camera/aim, actualizar tambien `camera_flow.md`.
+- Si el ataque crea drops o limbs, actualizar tambien `drops_flow.md`.
+
+## Como probar
+
+En `TESTING ENVIRONMENT`:
+
+1. Spawn normal con `1`.
+2. Probar melee.
+3. Spawn gorilla con `2`, confirmar rock throw.
+4. Spawn lizard con `3`, confirmar saliva y wall climb.
+5. Spawn ranged con `4`, confirmar flechas enemigas.
+6. Probar bow/finger bones del player.
+7. Atacar limbs hasta crawling.
+8. Confirmar que muerte emite drops.
+
+## Historial de cambios
+
+- 2026-07-14: Se documento el flujo actual.
+- 2026-07-14: Lizard wall climb corregido para usar colision normal y subir al
+  detectar pared, en vez de atravesar usando posicion global.
+
 ## docs/current_system_status.md
 
 # MARROW Current System Status
@@ -252,8 +535,10 @@ refactor pass.
 
 - `PlayerInventoryUI` owns inventory presentation, tabs, item tiles, details,
   settings, paper doll slots, and the character preview.
-- `Player` still owns inventory and equipment state through `bone_inventory` and
-  `equipped`.
+- `PlayerInventoryComponent` owns collected inventory state.
+- `PlayerEquipmentComponent` owns equipped state.
+- `Player` remains the gameplay orchestrator and exposes stable methods for UI,
+  pickups, gates, and tests.
 - Equipped copies are filtered out of the carried item grid, while duplicate
   bone ids can remain as separate inventory copies.
 - The character preview is rendered in an isolated `SubViewport` world with its
@@ -282,6 +567,15 @@ refactor pass.
   rock throws, limb detachment, crawling, respawn, and bone recovery.
 - Enemies can recover detached parts after a safe delay.
 - Enemy labels and drops use slot-aware bone names.
+- Lizard wall climb uses normal collision and upward climb velocity instead of
+  direct position movement through walls.
+
+## Testing
+
+- `scenes/testing_environment.tscn` is the unified sandbox for camera, enemies,
+  movement, animation, rig, drops, and equipment checks.
+- `scenes/main_menu.tscn` exposes both the playable demo and testing
+  environment.
 
 ## Rig
 
@@ -290,11 +584,286 @@ refactor pass.
   equipped bone data.
 - Crawl mode lowers the body and uses stronger arm pulls with tucked legs.
 
-## Next Refactor Boundary
+## Documentation Boundary
 
-The next architecture step should extract inventory and equipment ownership from
-`Player` into dedicated components while keeping the current public methods
-stable for UI, pickups, gates, and tests.
+All future functional changes should update the relevant flow file listed in
+`docs/flow_index.md`.
+
+## docs/drops_flow.md
+
+# Flujo de drops y pickups
+
+Este documento describe como aparecen huesos, limbs desprendidos, pickups de
+limb y recompensas de camp chests.
+
+## Objetivo del sistema
+
+Los drops deben sentirse fisicos y legibles: los enemigos sueltan limbs, solo
+uno de esos limbs puede volverse pickup por enemigo, torso/cabeza caen al final,
+y el jugador recoge manteniendo interact.
+
+## Scripts y escenas principales
+
+- `scripts/enemy.gd`: desprende limbs, crea rigid bodies, decide cuando soltar
+  bone pickup o standard pickup.
+- `scripts/drop_pickup_rules_service.gd`: reglas de que limbs pueden caer,
+  cuales pueden ser pickups, prioridad, prompt y hold-to-pickup.
+- `scripts/equipment_rules_service.gd`: genera ids de huesos por limb/source.
+- `scripts/bone_rules_service.gd`: nombres, colores y descripcion visible.
+- `scenes/bone.tscn` + `scripts/bone.gd`: pickup standard.
+- `scripts/limb_bone_pickup.gd`: pickup que vive sobre un limb desprendido.
+- `scripts/demo_enemy_camp.gd`: camp chest que da reward al limpiar enemigos.
+- `scripts/player_inventory_component.gd`: recibe `collect_bone`.
+
+## Eventos usados
+
+- `GameEvents.drop_spawned(bone_id, pickup, source)`.
+- `GameEvents.pickup_focus_changed(pickup, bone_id, player, in_range)`.
+- `GameEvents.pickup_collected(bone_id, pickup, collector)`.
+- `GameEvents.bone_collected(bone_id, collector)`.
+- `GameEvents.camp_chest_opened(camp, reward_bone_id, player)`.
+- `GameEvents.camp_state_changed(camp, unlocked, opened, remaining_enemies)`.
+
+## Flujo de limb detach
+
+1. `Enemy.take_hit` calcula dano recibido.
+2. `_detach_limbs_for_damage` decide cuantos limbs caeran.
+3. `_preferred_detach_keys` pregunta a `DropPickupRulesService`.
+4. `_detach_limb_group` oculta el limb del rig y crea una pieza fisica.
+5. `_spawn_detached_limb_piece` crea `RigidBody3D` con mesh duplicada.
+6. El limb cae con impulso.
+7. Si pasa la regla de pickup, se adjunta `LimbBonePickup`.
+8. Se emite `drop_spawned`.
+
+## Reglas de drops
+
+Dueño principal: `DropPickupRulesService`.
+
+Reglas actuales:
+- Limbs detachables: right arm, left arm, right leg, left leg, body, head.
+- Pickups elegibles: todos esos limbs.
+- Core fall order: body, head.
+- Torso y cabeza caen al final.
+- Solo un limb pickup por enemigo.
+- El source profile puede ser `normal`, `gorilla` o `lizard`.
+
+## Flujo de muerte
+
+1. `Enemy.die` emite `enemy_defeated`.
+2. `_drop_bone` evita duplicar si ya hubo limb pickup.
+3. `_drop_remaining_limbs_on_death` desprende lo restante.
+4. Si no se creo pickup de limb, `_drop_standard_bone_pickup` instancia
+   `scenes/bone.tscn`.
+5. Se emite `drop_spawned`.
+
+## Flujo de pickup
+
+1. Player entra al area del pickup.
+2. Pickup llama `enter_bone_pickup_range` en player.
+3. Se emite `pickup_focus_changed(..., true)`.
+4. Mientras se mantiene interact, `DropPickupRulesService` calcula progreso.
+5. Cuando el hold completa, pickup llama `player.collect_bone`.
+6. Se emite `pickup_collected`.
+7. Se emite `pickup_focus_changed(..., false)`.
+8. El pickup se elimina.
+
+## Camp chest
+
+1. `DemoEnemyCamp` registra enemigos.
+2. Escucha `GameEvents.enemy_defeated`.
+3. Cuando todos estan muertos, unlock.
+4. Emite `camp_state_changed`.
+5. Si el player mantiene interact en el cofre, llama `collect_bone`.
+6. Emite `camp_chest_opened`.
+
+## Puntos delicados
+
+- `Enemy` ejecuta el drop, pero las reglas viven en
+  `DropPickupRulesService`.
+- No duplicar reglas de hold prompt en `bone.gd`, `limb_bone_pickup.gd` o
+  `demo_enemy_camp.gd`; usar el servicio.
+- Si se agrega un nuevo enemy profile, actualizar:
+  - `EquipmentRulesService`
+  - `DropPickupRulesService` si cambia elegibilidad
+  - `ModularSkeletonRig` si cambia visual
+  - este documento
+- Si un drop afecta equipamiento, actualizar tambien `equipment_flow.md`.
+
+## Como probar
+
+En `TESTING ENVIRONMENT`:
+
+1. Spawn enemy normal, gorilla, lizard y ranged.
+2. Atacar hasta que caigan limbs.
+3. Confirmar que torso/cabeza caen al final.
+4. Confirmar que solo un limb pickup por enemigo se puede recoger.
+5. Recoger el pickup manteniendo interact.
+6. Confirmar que aparece en inventario.
+7. Confirmar que el limb recogido cambia el cuerpo al equiparlo.
+
+## Historial de cambios
+
+- 2026-07-14: Se documento el flujo actual. Drops/pickups usan
+  `DropPickupRulesService` y eventos globales de pickup/drop.
+
+## docs/equipment_flow.md
+
+# Flujo de equipamiento
+
+Este documento describe como un hueso pasa del inventario al cuerpo del jugador
+y como cambia stats/rig visual.
+
+## Objetivo del sistema
+
+Equipar huesos debe modificar el slot correcto del cuerpo, refrescar stats,
+actualizar el rig visual y avisar a UI/sistemas externos sin que esos sistemas
+dependan directamente del componente.
+
+## Scripts y escenas principales
+
+- `scripts/player_equipment_component.gd`: estado real de equipo por slot.
+- `scripts/player_stats_component.gd`: calculo de stats finales del jugador.
+- `scripts/equipment_rules_service.gd`: reglas de slots, sockets, ids generados
+  por limbs y escalas visuales.
+- `scripts/bone_rules_service.gd`: definiciones, bonuses y textos visibles.
+- `scripts/rig/modular_skeleton_rig.gd`: sockets y piezas visuales del cuerpo.
+- `scripts/rig/procedural_player_animator.gd`: anima los sockets ya equipados.
+- `scripts/player_inventory_ui.gd`: paper doll, slots, preview y drag/drop.
+- `scripts/ui_bone_slot.gd`: valida drop visual hacia un slot.
+
+## Eventos usados
+
+- `GameEvents.bone_equipped(bone_id, slot, player)`.
+- `GameEvents.bone_unequipped(bone_id, slot, player)`.
+- `GameEvents.inventory_changed(player, items, stats)`.
+
+## Flujo de equipar
+
+1. La UI o el input de equip next llama `player.equip_bone(bone_id)`.
+2. `Player` delega a `PlayerEquipmentComponent.equip_bone`.
+3. El componente pregunta el slot con `EquipmentRulesService.slot_for_bone`.
+4. Si el hueso ya esta equipado en ese slot, no hace nada.
+5. Si hay `ModularSkeletonRig`, el componente llama `rig.equip_bone`.
+6. Se incrementa `equip_swaps`.
+7. Se recalculan stats con `player.recalculate_player_stats`.
+8. Se emite `inventory_changed`.
+9. Se emite `bone_equipped`.
+10. La UI escucha los eventos y refresca grid, paper doll y preview.
+
+## Flujo de desequipar
+
+1. La UI llama `player.unequip_slot(slot)`.
+2. `PlayerEquipmentComponent` borra el slot de `equipped`.
+3. Si hay rig, llama `rig.unequip_slot(slot)`.
+4. Limpia visuales legacy si existen.
+5. Recalcula stats.
+6. Emite `inventory_changed`.
+7. Emite `bone_unequipped`.
+
+## Reglas de slots
+
+El punto central es `EquipmentRulesService`.
+
+Slots principales:
+- `right_arm`
+- `left_arm`
+- `legs`
+- `body`
+- `head`
+
+Los huesos generados por limbs usan ids como:
+- `normal_right_arm_bone`
+- `gorilla_left_leg_bone`
+- `lizard_body_bone`
+
+Cada id generado contiene:
+- slot
+- source profile
+- limb key
+- escala visual
+- bonuses de jugador
+
+## Responsabilidades
+
+`PlayerEquipmentComponent`:
+- Posee `equipped`.
+- No construye UI.
+- Emite eventos de cambio.
+- Pide al rig que aplique visuales.
+
+`ModularSkeletonRig`:
+- Solo visual/estructura corporal.
+- No decide reglas de inventario.
+- Aplica proporciones especiales como gorilla/lizard.
+
+`PlayerStatsComponent`:
+- Calcula stats a partir de base stats + equipo.
+- No conoce UI ni pickups.
+
+## Puntos delicados
+
+- `Player` debe seguir como orquestador. No mover input o UI directo al
+  componente sin actualizar este documento.
+- Si se agregan nuevos slots, actualizar:
+  - `EquipmentRulesService`
+  - `PlayerInventoryUI`
+  - `ModularSkeletonRig`
+  - este documento
+- Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
+  mostrarlo tambien.
+
+## Como probar
+
+En `TESTING ENVIRONMENT`:
+
+1. Abrir inventario con `Tab`.
+2. Equipar huesos de brazo, piernas, torso y cabeza.
+3. Confirmar que el cuerpo del jugador cambia.
+4. Confirmar que el preview cambia igual que el jugador.
+5. Desequipar con right click o drag hacia zona vacia si aplica.
+6. Confirmar que stats en UI cambian.
+
+## Historial de cambios
+
+- 2026-07-14: Se documento el flujo actual. El equipamiento usa
+  `GameEvents.bone_equipped`, `bone_unequipped` e `inventory_changed`.
+
+## docs/flow_index.md
+
+# Indice de flujos de MARROW
+
+Estos documentos son la referencia viva para programadores. Todo cambio de
+gameplay debe actualizar el archivo de flujo correspondiente.
+
+## Flujos principales
+
+1. `docs/inventory_flow.md`
+   - Inventario, UI, filtros, settings, eventos de inventario.
+2. `docs/equipment_flow.md`
+   - Slots, rig, equip/unequip, stats, preview.
+3. `docs/combat_flow.md`
+   - Melee, ranged, stealth, enemy AI, dano, lizard climb.
+4. `docs/drops_flow.md`
+   - Limb drops, pickups, camp chests, reglas de drops.
+5. `docs/camera_flow.md`
+   - Orbit camera, aim zoom, raycast, pruebas de camara.
+
+## Politica
+
+Leer `docs/change_documentation_policy.md` antes de cerrar cualquier cambio
+funcional.
+
+## Escena de prueba recomendada
+
+`scenes/testing_environment.tscn` es la escena unificada para validar:
+- camara
+- enemigos
+- rig
+- animaciones
+- movimiento
+- combate
+- drops
+- equipamiento
 
 ## docs/godot_signal_guidelines.md
 
@@ -351,6 +920,104 @@ future systems like audio, analytics, achievements, and tutorials can react.
 
 `GameEvents` is for cross-scene gameplay events that distant systems may need.
 Do not put every button hover or tiny local interaction on the global bus.
+
+## docs/inventory_flow.md
+
+# Flujo de inventario
+
+Este documento describe como se recoge, guarda y muestra el inventario del
+jugador.
+
+## Objetivo del sistema
+
+El inventario guarda huesos obtenidos por pickups, drops o cofres. La UI permite
+verlos, filtrarlos por tipo, revisar detalles, arrastrarlos a slots de equipo y
+modificar controles desde la seccion de settings.
+
+## Scripts y escenas principales
+
+- `scripts/player.gd`: orquestador del jugador. Crea `PlayerInventoryComponent`
+  y `PlayerInventoryUI`, expone metodos que la UI usa como `get_inventory_items`,
+  `equip_bone`, `unequip_slot`, `show_bone_info` y `clear_bone_info`.
+- `scripts/player_inventory_component.gd`: guarda `bone_inventory`, recibe
+  `collect_bone`, expone snapshots y emite cambios por eventos.
+- `scripts/player_inventory_ui.gd`: construye la pantalla de inventario, tabs,
+  grid, detalles, settings, paper doll y preview 3D.
+- `scripts/ui_bone_item.gd`: tile arrastrable de un hueso en el grid.
+- `scripts/ui_bone_slot.gd`: slot visual del paper doll.
+- `scripts/ui_inventory_empty_slot.gd`: zona para soltar items/equipamiento
+  cuando aplica.
+- `scripts/bone_rules_service.gd`: display name, color, descripcion y textos de
+  stats.
+- `scripts/equipment_rules_service.gd`: slot de cada hueso y reglas de slots.
+
+## Eventos usados
+
+- `GameEvents.bone_collected(bone_id, collector)`: se emite cuando el jugador
+  recibe un hueso.
+- `GameEvents.inventory_changed(player, items, stats)`: snapshot de inventario
+  para UI y sistemas externos.
+- `GameEvents.inventory_open_changed(player, is_open)`: inventario abierto o
+  cerrado.
+- `GameEvents.bone_equipped(bone_id, slot, player)`: la UI escucha para refrescar
+  el paper doll.
+- `GameEvents.bone_unequipped(bone_id, slot, player)`: la UI escucha para
+  refrescar el paper doll.
+
+## Flujo actual
+
+1. Un pickup, limb pickup o cofre llama `player.collect_bone(bone_id)`.
+2. `Player.collect_bone` delega a `PlayerInventoryComponent.collect_bone`.
+3. `PlayerInventoryComponent` agrega el `bone_id` a `bone_inventory`.
+4. El componente emite `GameEvents.inventory_changed`.
+5. Tambien emite `GameEvents.bone_collected`.
+6. `PlayerInventoryUI` escucha `inventory_changed` y reconstruye tiles + textos.
+7. Cuando el inventario se abre, `Player._toggle_inventory` llama
+   `inventory_ui.set_open` y emite `inventory_open_changed`.
+
+## Responsabilidades
+
+`PlayerInventoryComponent`:
+- Posee la lista real de huesos.
+- Permite duplicados.
+- No conoce la UI.
+- Solo emite eventos/snapshots.
+
+`PlayerInventoryUI`:
+- No debe poseer estado de gameplay.
+- Lee datos mediante metodos publicos del player.
+- Puede llamar comandos del player cuando el usuario hace acciones de UI.
+- Mantiene el preview 3D en un `SubViewport` aislado.
+
+`Player`:
+- Sigue siendo orquestador.
+- Decide cuando pausar el juego al abrir inventario.
+- Coordina input global y comunica UI con componentes.
+
+## Puntos delicados
+
+- Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
+  filtrar solo las copias equipadas, no esconder todos los duplicados.
+- Pausa: la UI procesa mientras el arbol esta pausado.
+- Settings: controles modificados se guardan en `user://control_settings.cfg`.
+- Interaccion: si el jugador esta en rango de pickup, el inventario no debe
+  abrirse con la misma tecla de interact.
+
+## Como probar
+
+En `TESTING ENVIRONMENT`:
+
+1. Abrir inventario con `Tab`.
+2. Revisar que aparecen huesos iniciales de prueba.
+3. Arrastrar huesos a slots.
+4. Cambiar categoria.
+5. Ir a settings y cambiar una tecla.
+6. Recoger un drop real y confirmar que aparece sin reiniciar la UI.
+
+## Historial de cambios
+
+- 2026-07-14: Se documento el flujo actual. El inventario ya usa
+  `GameEvents.inventory_changed` para desacoplar componentes y UI.
 
 ## docs/open_world_map_layout.md
 
@@ -417,7 +1084,11 @@ this workspace, so this map mirrors the important script relationships.
 
 ## Runtime Entry
 
-`project.godot` runs `scenes/main.tscn`.
+`project.godot` runs `scenes/main_menu.tscn`.
+
+`scenes/main_menu.tscn` can open:
+- `scenes/main.tscn`
+- `scenes/testing_environment.tscn`
 
 `project.godot` autoloads `GameEvents` from `scripts/game_events.gd`.
 
@@ -429,11 +1100,20 @@ Signals:
 - `bone_collected(bone_id, collector)`
 - `bone_equipped(bone_id, slot, player)`
 - `bone_unequipped(bone_id, slot, player)`
+- `inventory_changed(player, items, stats)`
+- `inventory_open_changed(player, is_open)`
+- `pickup_focus_changed(pickup, bone_id, player, in_range)`
+- `pickup_collected(bone_id, pickup, collector)`
+- `drop_spawned(bone_id, pickup, source)`
+- `enemy_defeated(enemy, dropped_bone_id)`
 - `player_died(player)`
 - `trial_completed(trial_id, trial_name)`
 - `exit_reached(player)`
 - `stage_entered(stage)`
 - `stage_exited(stage)`
+- `objective_updated(source, objective_id, title, body)`
+- `tutorial_hint_requested(source, hint_id, text, priority)`
+- `camp_state_changed(camp, unlocked, opened, remaining_enemies)`
 - `camp_chest_opened(camp, reward_bone_id, player)`
 
 Event relationships:
