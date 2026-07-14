@@ -64,6 +64,23 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var gorilla_rock_gravity: float = 24.0
 @export var gorilla_rock_damage: int = 1
 @export_group("")
+@export_group("Lizard Profile")
+@export_enum("Auto", "Always", "Never") var lizard_profile_mode: String = "Never"
+@export var lizard_wall_phase_enabled: bool = true
+@export var lizard_sees_through_walls: bool = true
+@export var lizard_body_color: Color = Color(0.23, 0.78, 0.34, 1.0)
+@export_range(0.5, 1.8, 0.05) var lizard_move_speed_multiplier: float = 1.08
+@export_range(0.35, 1.0, 0.05) var lizard_health_multiplier: float = 0.85
+@export var lizard_saliva_min_range: float = 2.2
+@export var lizard_saliva_range: float = 12.0
+@export var lizard_saliva_cooldown: float = 1.8
+@export var lizard_saliva_windup: float = 0.28
+@export var lizard_saliva_damage: int = 1
+@export var lizard_saliva_speed: float = 15.0
+@export var lizard_saliva_gravity: float = 1.5
+@export var lizard_wall_climb_probe_distance: float = 0.85
+@export var lizard_wall_climb_blend_speed: float = 9.0
+@export_group("")
 @export_group("Bone Recovery")
 @export var bone_recovery_enabled: bool = true
 @export var bone_recovery_safe_delay: float = 10.0
@@ -130,10 +147,15 @@ var last_hit_from_position: Vector3 = Vector3.ZERO
 var limb_pickup_spawned: bool = false
 var crawling_due_to_leg_loss: bool = false
 var gorilla_profile_active: bool = false
+var lizard_profile_active: bool = false
 var rock_throw_timer: float = 0.0
 var rock_throw_windup_timer: float = 0.0
 var rock_throw_target_position: Vector3 = Vector3.ZERO
 var held_rock_visual: MeshInstance3D = null
+var saliva_spit_timer: float = 0.0
+var saliva_spit_windup_timer: float = 0.0
+var saliva_spit_target_position: Vector3 = Vector3.ZERO
+var lizard_wall_climb_blend: float = 0.0
 var ranged_attack_timer: float = 0.0
 var ranged_attack_windup_timer: float = 0.0
 var ranged_attack_target_position: Vector3 = Vector3.ZERO
@@ -150,7 +172,7 @@ var _hit_sound: AudioStreamWAV = null
 
 const HIT_COLOR: Color = Color(1, 0.95, 0.45, 1)
 const DETACHABLE_LIMBS: Array[String] = ["right_arm", "left_arm", "right_leg", "left_leg", "body", "head"]
-const PICKUP_ELIGIBLE_LIMBS: Array[String] = ["right_arm", "left_arm", "right_leg", "left_leg", "body"]
+const PICKUP_ELIGIBLE_LIMBS: Array[String] = ["right_arm", "left_arm", "right_leg", "left_leg", "body", "head"]
 const CORE_FALL_ORDER: Array[String] = ["body", "head"]
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
@@ -171,6 +193,7 @@ func _ready() -> void:
 	spawn_facing_direction = _facing_from_rotation()
 	facing_direction = spawn_facing_direction
 	_apply_bone_identity()
+	_apply_lizard_profile()
 	_apply_gorilla_profile()
 	health = max_health
 	_roll_low_health_personality()
@@ -188,6 +211,8 @@ func _ready() -> void:
 
 	# Preview the dropped bone's color. Unknown drops fall back to the enemy's red.
 	normal_color = BoneRulesService.color_for(dropped_bone_id, Color(0.85, 0.18, 0.16, 1.0))
+	if lizard_profile_active:
+		normal_color = lizard_body_color
 	_set_enemy_color(normal_color)
 	_update_health_label()
 	_build_vision_cone()
@@ -211,7 +236,11 @@ func _process(delta: float) -> void:
 # _physics_process drives movement, chasing, and attacking on the physics clock.
 func _physics_process(delta: float) -> void:
 	# Gravity keeps the box resting on the ground instead of floating.
-	if not is_on_floor():
+	if _is_wall_phasing_lizard():
+		velocity.y = 0.0
+		if alive:
+			global_position.y = spawn_transform.origin.y
+	elif not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
@@ -230,6 +259,8 @@ func _physics_process(delta: float) -> void:
 		attack_timer -= delta
 	if rock_throw_timer > 0.0:
 		rock_throw_timer = maxf(rock_throw_timer - delta, 0.0)
+	if saliva_spit_timer > 0.0:
+		saliva_spit_timer = maxf(saliva_spit_timer - delta, 0.0)
 	if ranged_attack_timer > 0.0:
 		ranged_attack_timer = maxf(ranged_attack_timer - delta, 0.0)
 
@@ -280,7 +311,9 @@ func _physics_process(delta: float) -> void:
 			returning_to_spawn = false
 			_turn_toward(to_player.normalized())
 
-		if ranged_attack_windup_timer > 0.0:
+		if saliva_spit_windup_timer > 0.0:
+			_update_saliva_spit_windup(delta, player)
+		elif ranged_attack_windup_timer > 0.0:
 			_update_ranged_attack_windup(delta, player)
 		elif rock_throw_windup_timer > 0.0:
 			_update_rock_throw_windup(delta, player)
@@ -291,13 +324,18 @@ func _physics_process(delta: float) -> void:
 			_try_attack_player(player)
 		elif _can_start_rock_throw(player, dist):
 			_start_rock_throw(player)
+		elif _can_start_saliva_spit(player, dist):
+			_start_saliva_spit(player)
 		elif _can_start_ranged_attack(player, dist):
 			_start_ranged_attack(player)
 		elif _can_recover_bone_part():
 			move = _get_bone_recovery_move()
 		elif player_visible and dist <= detection_range and dist > 0.01:
 			# Chase: move toward the player, but steer around blocking walls.
-			move = _steer_around_obstacles(to_player.normalized()) * effective_move_speed
+			if _is_wall_phasing_lizard():
+				move = to_player.normalized() * effective_move_speed
+			else:
+				move = _steer_around_obstacles(to_player.normalized()) * effective_move_speed
 		elif search_timer > 0.0:
 			move = _get_search_move(delta)
 		elif returning_to_spawn:
@@ -309,6 +347,7 @@ func _physics_process(delta: float) -> void:
 		search_timer = 0.0
 		ranged_attack_windup_timer = 0.0
 		rock_throw_windup_timer = 0.0
+		saliva_spit_windup_timer = 0.0
 		_cancel_held_rock()
 		_update_bone_recovery_safety(delta, null, INF)
 		if _can_recover_bone_part():
@@ -318,7 +357,8 @@ func _physics_process(delta: float) -> void:
 
 	velocity.x = move.x + knockback_velocity.x
 	velocity.z = move.z + knockback_velocity.z
-	move_and_slide()
+	_update_lizard_wall_climb_blend(delta)
+	_apply_enemy_movement(delta)
 	_update_procedural_animation(delta)
 
 
@@ -335,6 +375,41 @@ func _player_is_dead(player: Node) -> bool:
 	return player.has_method("is_player_dead") and player.is_player_dead()
 
 
+func _apply_enemy_movement(delta: float) -> void:
+	if _is_wall_phasing_lizard():
+		global_position += Vector3(velocity.x, 0.0, velocity.z) * delta
+		global_position.y = spawn_transform.origin.y
+		return
+
+	move_and_slide()
+
+
+func _is_wall_phasing_lizard() -> bool:
+	return lizard_profile_active and lizard_wall_phase_enabled
+
+
+func _update_lizard_wall_climb_blend(delta: float) -> void:
+	if not lizard_profile_active:
+		lizard_wall_climb_blend = 0.0
+		return
+
+	var target_blend: float = 0.0
+	if _lizard_wall_probe_blocked():
+		target_blend = 1.0
+	var alpha: float = 1.0 - exp(-lizard_wall_climb_blend_speed * delta)
+	lizard_wall_climb_blend = lerpf(lizard_wall_climb_blend, target_blend, alpha)
+
+
+func _lizard_wall_probe_blocked() -> bool:
+	var horizontal_velocity: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
+	if horizontal_velocity.length() <= 0.05:
+		return false
+
+	var probe_direction: Vector3 = horizontal_velocity.normalized()
+	var probe_distance: float = maxf(lizard_wall_climb_probe_distance, 0.05)
+	return test_move(global_transform, probe_direction * probe_distance)
+
+
 # Damages the player when in range, on a cooldown, with a quick "chomp" tell.
 func _try_attack_player(player: Node) -> void:
 	if attack_timer > 0.0:
@@ -346,6 +421,67 @@ func _try_attack_player(player: Node) -> void:
 		animator.trigger_attack()
 	if player.has_method("take_player_damage"):
 		player.take_player_damage(contact_damage, global_position)
+
+
+func _can_start_saliva_spit(player: Node3D, distance_to_player: float) -> bool:
+	if not lizard_profile_active:
+		return false
+	if player == null or not player_visible:
+		return false
+	if saliva_spit_timer > 0.0 or saliva_spit_windup_timer > 0.0:
+		return false
+	if distance_to_player < lizard_saliva_min_range or distance_to_player > lizard_saliva_range:
+		return false
+	if detached_limb_keys.has("head"):
+		return false
+	return true
+
+
+func _start_saliva_spit(player: Node3D) -> void:
+	saliva_spit_timer = lizard_saliva_cooldown
+	saliva_spit_windup_timer = lizard_saliva_windup
+	saliva_spit_target_position = player.global_position
+	var to_player: Vector3 = player.global_position - global_position
+	to_player.y = 0.0
+	if to_player.length() > 0.01:
+		_turn_toward(to_player.normalized())
+
+
+func _update_saliva_spit_windup(delta: float, player: Node3D) -> void:
+	if player != null and not _player_is_dead(player):
+		saliva_spit_target_position = player.global_position
+		var to_player: Vector3 = player.global_position - global_position
+		to_player.y = 0.0
+		if to_player.length() > 0.01:
+			_turn_toward(to_player.normalized())
+
+	saliva_spit_windup_timer = maxf(saliva_spit_windup_timer - delta, 0.0)
+	if saliva_spit_windup_timer <= 0.0:
+		_fire_saliva_spit()
+
+
+func _fire_saliva_spit() -> void:
+	var world: Node = get_parent()
+	if world == null:
+		return
+
+	var start_position: Vector3 = global_position + Vector3.UP * 0.78 + facing_direction.normalized() * 0.58
+	var target_position: Vector3 = saliva_spit_target_position + Vector3.UP * 0.65
+	var to_target: Vector3 = target_position - start_position
+	var horizontal: Vector3 = Vector3(to_target.x, 0.0, to_target.z)
+	if horizontal.length() < 0.1:
+		return
+
+	var travel_time: float = horizontal.length() / maxf(lizard_saliva_speed, 0.1)
+	var launch_velocity: Vector3 = horizontal.normalized() * lizard_saliva_speed
+	launch_velocity.y = (to_target.y / maxf(travel_time, 0.1)) + (lizard_saliva_gravity * 0.5 * travel_time)
+
+	var saliva: Area3D = ARROW_PROJECTILE_SCRIPT.new() as Area3D
+	if saliva == null:
+		return
+	if saliva.has_method("configure"):
+		saliva.call("configure", start_position, launch_velocity, lizard_saliva_damage, self, true, lizard_saliva_gravity, "saliva")
+	world.add_child(saliva)
 
 
 func _can_start_ranged_attack(player: Node3D, distance_to_player: float) -> bool:
@@ -593,6 +729,8 @@ func _can_see_player(player: Node3D, to_player: Vector3, dist: float) -> bool:
 		return false
 
 	if not use_line_of_sight:
+		return true
+	if lizard_profile_active and lizard_sees_through_walls:
 		return true
 
 	var space_state := get_world_3d().direct_space_state
@@ -1206,10 +1344,11 @@ func _spawn_detached_limb_piece(limb_key: String, force_pickup: bool = false) ->
 	body.apply_impulse(knock_direction.normalized() * limb_detach_impulse)
 	body.angular_velocity = Vector3(randf_range(-4.0, 4.0), randf_range(-6.0, 6.0), randf_range(-4.0, 4.0))
 
-	var can_be_pickup := PICKUP_ELIGIBLE_LIMBS.has(limb_key) and dropped_bone_id != ""
+	var pickup_bone_id: String = _pickup_bone_id_for_limb(limb_key)
+	var can_be_pickup := PICKUP_ELIGIBLE_LIMBS.has(limb_key) and pickup_bone_id != ""
 	var should_be_pickup := force_pickup or randf() <= limb_pickup_drop_chance
 	if not limb_pickup_spawned and can_be_pickup and should_be_pickup:
-		_attach_pickup_to_detached_limb(body)
+		_attach_pickup_to_detached_limb(body, pickup_bone_id)
 		limb_pickup_spawned = true
 	else:
 		var cleanup_delay: float = detached_limb_lifetime
@@ -1222,13 +1361,13 @@ func _spawn_detached_limb_piece(limb_key: String, force_pickup: bool = false) ->
 		cleanup.tween_callback(Callable(body, "queue_free"))
 
 
-func _attach_pickup_to_detached_limb(body: RigidBody3D) -> void:
+func _attach_pickup_to_detached_limb(body: RigidBody3D, pickup_bone_id: String) -> void:
 	var pickup_area := Area3D.new()
 	pickup_area.name = "LimbBonePickup"
 	pickup_area.collision_layer = 0
 	pickup_area.collision_mask = 1
 	pickup_area.set_script(LIMB_BONE_PICKUP_SCRIPT)
-	pickup_area.set("bone_id", dropped_bone_id)
+	pickup_area.set("bone_id", pickup_bone_id)
 
 	var pickup_shape := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()
@@ -1239,7 +1378,7 @@ func _attach_pickup_to_detached_limb(body: RigidBody3D) -> void:
 	var label := Label3D.new()
 	label.name = "PromptLabel"
 	label.position = Vector3(0.0, 1.25, 0.0)
-	label.text = BoneRulesService.display_name_with_slot(dropped_bone_id)
+	label.text = BoneRulesService.display_name_with_slot(pickup_bone_id)
 	label.font_size = 42
 	label.outline_size = 8
 	label.outline_modulate = Color(0.08, 0.07, 0.02, 1.0)
@@ -1248,13 +1387,51 @@ func _attach_pickup_to_detached_limb(body: RigidBody3D) -> void:
 	body.add_child(pickup_area)
 
 
+func _pickup_bone_id_for_limb(limb_key: String) -> String:
+	return BoneRulesService.pickup_bone_id_for_limb(limb_key, _pickup_source_profile())
+
+
+func _pickup_source_profile() -> String:
+	if lizard_profile_active:
+		return "lizard"
+	if gorilla_profile_active:
+		return "gorilla"
+	return "normal"
+
+
 func _set_rig_limb_visible(limb_key: String, is_visible: bool) -> void:
 	if rig == null or not rig.base_visuals.has(limb_key):
 		return
 
 	var limb := rig.base_visuals[limb_key] as MeshInstance3D
 	if limb != null:
-		limb.visible = is_visible
+		limb.visible = is_visible and not (limb_key == "body" and _has_lizard_torso_blocks())
+	if limb_key == "body":
+		_set_lizard_torso_blocks_visible(is_visible)
+
+
+func _has_lizard_torso_blocks() -> bool:
+	if rig == null:
+		return false
+
+	var body_socket := rig.get_socket("body")
+	if body_socket == null:
+		return false
+	return body_socket.get_node_or_null("LizardTorsoFront") != null and body_socket.get_node_or_null("LizardTorsoRear") != null
+
+
+func _set_lizard_torso_blocks_visible(is_visible: bool) -> void:
+	if rig == null:
+		return
+
+	var body_socket := rig.get_socket("body")
+	if body_socket == null:
+		return
+
+	for block_name in ["LizardTorsoFront", "LizardTorsoRear"]:
+		var block := body_socket.get_node_or_null(block_name) as MeshInstance3D
+		if block != null:
+			block.visible = is_visible
 
 
 func _restore_attached_limbs() -> void:
@@ -1301,6 +1478,8 @@ func die() -> void:
 	avoidance_direction = Vector3.ZERO
 	ranged_attack_windup_timer = 0.0
 	rock_throw_windup_timer = 0.0
+	saliva_spit_windup_timer = 0.0
+	lizard_wall_climb_blend = 0.0
 	_cancel_held_rock()
 	var respawn_delay := _get_respawn_delay()
 	# Leave the group right away so nothing counts a dying enemy as still alive.
@@ -1314,6 +1493,8 @@ func die() -> void:
 	avoidance_direction = Vector3.ZERO
 	ranged_attack_windup_timer = 0.0
 	rock_throw_windup_timer = 0.0
+	saliva_spit_windup_timer = 0.0
+	lizard_wall_climb_blend = 0.0
 	_cancel_held_rock()
 	_drop_bone()
 	await _drop_remaining_limbs_on_death()
@@ -1355,6 +1536,8 @@ func _hide_until_respawn() -> void:
 	fleeing_timer = 0.0
 	ranged_attack_windup_timer = 0.0
 	rock_throw_windup_timer = 0.0
+	saliva_spit_windup_timer = 0.0
+	lizard_wall_climb_blend = 0.0
 	_cancel_held_rock()
 	set_physics_process(false)
 
@@ -1389,6 +1572,9 @@ func _respawn() -> void:
 	ranged_attack_windup_timer = 0.0
 	rock_throw_timer = 0.0
 	rock_throw_windup_timer = 0.0
+	saliva_spit_timer = 0.0
+	saliva_spit_windup_timer = 0.0
+	lizard_wall_climb_blend = 0.0
 	_cancel_held_rock()
 	has_fled_low_health = false
 	_roll_low_health_personality()
@@ -1466,6 +1652,8 @@ func _kill_scale_tween() -> void:
 func _drop_bone() -> void:
 	if limb_pickup_spawned:
 		return
+	if rig != null and guarantee_limb_pickup_on_death:
+		return
 
 	var drop_slot: String = BoneRulesService.slot_for(dropped_bone_id)
 	if drop_slot == "body" and not detached_limb_keys.has("body"):
@@ -1508,10 +1696,10 @@ func _force_limb_pickup_drop() -> bool:
 
 
 func _next_pickup_limb_key() -> String:
-	var candidates: Array[String] = BoneRulesService.pickup_limb_candidates_for_bone(dropped_bone_id)
+	var candidates: Array[String] = PICKUP_ELIGIBLE_LIMBS.duplicate()
 
 	for limb_key in candidates:
-		if not detached_limb_keys.has(limb_key):
+		if not detached_limb_keys.has(limb_key) and _pickup_bone_id_for_limb(limb_key) != "":
 			return limb_key
 	return ""
 
@@ -1520,13 +1708,30 @@ func _drop_remaining_limbs_on_death() -> void:
 	if rig == null:
 		return
 
+	var guaranteed_pickup_limb_key: String = _choose_death_pickup_limb_key()
 	for limb_key in _preferred_detach_keys():
 		if detached_limb_keys.has(limb_key):
 			continue
-		var should_force_pickup := guarantee_limb_pickup_on_death and not limb_pickup_spawned and _drop_slot_matches_limb(limb_key)
+		var should_force_pickup := guarantee_limb_pickup_on_death and not limb_pickup_spawned and limb_key == guaranteed_pickup_limb_key
 		_detach_limb_group(limb_key, should_force_pickup)
 		if death_limb_fall_spacing > 0.0:
 			await get_tree().create_timer(death_limb_fall_spacing).timeout
+
+
+func _choose_death_pickup_limb_key() -> String:
+	var candidates: Array[String] = []
+	for limb_key in _preferred_detach_keys():
+		if detached_limb_keys.has(limb_key):
+			continue
+		if not PICKUP_ELIGIBLE_LIMBS.has(limb_key):
+			continue
+		if _pickup_bone_id_for_limb(limb_key) == "":
+			continue
+		candidates.append(limb_key)
+
+	if candidates.is_empty():
+		return ""
+	return str(candidates[randi_range(0, candidates.size() - 1)])
 
 
 func _drop_slot_matches_limb(limb_key: String) -> bool:
@@ -1545,6 +1750,8 @@ func _update_health_label() -> void:
 		state_text = "\nFLEEING"
 	elif _can_recover_bone_part():
 		state_text = "\nRECOVERING"
+	elif lizard_profile_active:
+		state_text = "\nPHASE LIZARD"
 	health_label.text = BoneRulesService.quality_for(dropped_bone_id) + " " + BoneRulesService.display_name_with_slot(dropped_bone_id) + "\nHP: " + str(health) + state_text
 
 
@@ -1567,7 +1774,9 @@ func _setup_procedural_character() -> void:
 	if animator == null or rig == null:
 		return
 
-	if gorilla_profile_active and rig.has_method("apply_gorilla_proportions"):
+	if lizard_profile_active and rig.has_method("apply_lizard_proportions"):
+		rig.apply_lizard_proportions()
+	elif gorilla_profile_active and rig.has_method("apply_gorilla_proportions"):
 		rig.apply_gorilla_proportions()
 	animator.rig = rig
 	animator.turn_target = null
@@ -1580,6 +1789,8 @@ func _update_procedural_animation(delta: float) -> void:
 	if animator == null or rig == null:
 		return
 
+	if animator.has_method("set_lizard_wall_climb_blend"):
+		animator.set_lizard_wall_climb_blend(lizard_wall_climb_blend)
 	animator.update_from_player(delta, velocity, _get_effective_move_speed(), facing_direction, [])
 
 
@@ -1634,6 +1845,22 @@ func _set_rig_color(new_color: Color) -> void:
 		if material != null:
 			material.albedo_color = new_color
 
+	var tail := rig.get_node_or_null("LizardTail") as MeshInstance3D
+	if tail != null:
+		var tail_material := tail.material_override as StandardMaterial3D
+		if tail_material != null:
+			tail_material.albedo_color = new_color
+
+	var body_socket := rig.get_socket("body")
+	if body_socket != null:
+		for block_name in ["LizardTorsoFront", "LizardTorsoRear"]:
+			var block := body_socket.get_node_or_null(block_name) as MeshInstance3D
+			if block == null:
+				continue
+			var block_material := block.material_override as StandardMaterial3D
+			if block_material != null:
+				block_material.albedo_color = new_color
+
 
 func _apply_bone_identity() -> void:
 	var profile: Dictionary = BoneRulesService.enemy_profile_for(dropped_bone_id, low_health_flee_chance)
@@ -1653,7 +1880,28 @@ func _apply_bone_identity() -> void:
 		visual_root.scale = Vector3.ONE * enemy_scale
 
 
+func _apply_lizard_profile() -> void:
+	lizard_profile_active = _should_use_lizard_profile()
+	if not lizard_profile_active:
+		return
+
+	move_speed *= lizard_move_speed_multiplier
+	max_health = maxi(1, roundi(float(max_health) * lizard_health_multiplier))
+	attack_range = maxf(attack_range, 1.45)
+	detection_range = maxf(detection_range, lizard_saliva_range)
+	vision_angle_degrees = maxf(vision_angle_degrees, 120.0)
+	if lizard_sees_through_walls:
+		use_line_of_sight = false
+
+	if visual_root != null:
+		visual_root.scale = Vector3(1.12, 0.82, 1.28)
+
+
 func _apply_gorilla_profile() -> void:
+	if lizard_profile_active:
+		gorilla_profile_active = false
+		return
+
 	gorilla_profile_active = _should_use_gorilla_profile()
 	if not gorilla_profile_active:
 		return
@@ -1674,6 +1922,16 @@ func _should_use_gorilla_profile() -> bool:
 			return false
 		_:
 			return max_health >= gorilla_profile_min_health or contact_damage >= gorilla_profile_min_damage
+
+
+func _should_use_lizard_profile() -> bool:
+	match lizard_profile_mode:
+		"Always":
+			return true
+		"Never":
+			return false
+		_:
+			return String(name).to_lower().contains("lizard")
 
 
 func _roll_low_health_personality() -> void:

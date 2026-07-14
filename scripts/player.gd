@@ -784,6 +784,10 @@ func get_equipment_socket_for_slot(slot: String) -> Node3D:
 			return socket_legs
 		"body":
 			return socket_body
+		"head":
+			if rig != null:
+				return rig.get_socket("head")
+			return null
 		_:
 			return null
 

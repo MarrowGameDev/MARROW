@@ -31,6 +31,11 @@ extends Node3D
 @export var crawl_arm_reach := 0.18
 @export var crawl_leg_tuck := 0.72
 @export var crawl_shoulder_roll := 0.42
+@export var lizard_torso_flex_amount := 0.12
+@export var lizard_wall_climb_lift := 0.18
+@export var lizard_wall_climb_pitch := 0.42
+@export var lizard_wall_climb_head_lift := 0.16
+@export var lizard_wall_climb_limb_reach := 0.34
 
 # Bend at the limb mid-joint (elbow/knee) so limbs flex instead of staying stiff.
 @export var joint_bend_base := 0.12    # radians always bent a little (never a stick)
@@ -88,6 +93,7 @@ var _attack_timer := 0.0
 var _attack_blend := 0.0
 var _aim_requested := false
 var _aim_blend := 0.0
+var _lizard_wall_climb_blend := 0.0
 
 var _rest_pos: Dictionary = {}
 var _rest_rot: Dictionary = {}
@@ -124,6 +130,7 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 		_animate_limbs()
 		_animate_joints()
 	_animate_wobble()
+	_apply_lizard_wall_climb_limb_pose()
 	_update_aim_overlay(delta)
 	_apply_aim_overlay()
 	_update_attack_overlay(delta)
@@ -144,6 +151,10 @@ func set_aiming(enabled: bool) -> void:
 
 func set_crawl_mode(enabled: bool) -> void:
 	crawl_mode = enabled
+
+
+func set_lizard_wall_climb_blend(blend: float) -> void:
+	_lizard_wall_climb_blend = clampf(blend, 0.0, 1.0)
 
 
 func _capture_rest() -> void:
@@ -185,13 +196,14 @@ func _animate_body() -> void:
 
 	var body := rig.get_socket("body")
 	if body != null and _rest_pos.has("body"):
-		body.position = _get_rest_pos("body") + Vector3(sway, bob + breath, 0.0)
-		body.rotation = _get_rest_rot("body") + Vector3(torso_lean_amount * speed_ratio, 0.0, -sway * 0.6)
+		body.position = _get_rest_pos("body") + Vector3(sway, bob + breath + lizard_wall_climb_lift * _lizard_wall_climb_blend, -0.08 * _lizard_wall_climb_blend)
+		body.rotation = _get_rest_rot("body") + Vector3(torso_lean_amount * speed_ratio + lizard_wall_climb_pitch * _lizard_wall_climb_blend, 0.0, -sway * 0.6)
 
 	var head := rig.get_socket("head")
 	if head != null and _rest_pos.has("head"):
-		head.position = _get_rest_pos("head") + Vector3(0.0, breath * 0.6, 0.0)
-		head.rotation = _get_rest_rot("head") + Vector3(0.0, 0.0, sway * 0.3)
+		head.position = _get_rest_pos("head") + Vector3(0.0, breath * 0.6 + lizard_wall_climb_head_lift * _lizard_wall_climb_blend, -0.10 * _lizard_wall_climb_blend)
+		head.rotation = _get_rest_rot("head") + Vector3(-lizard_wall_climb_pitch * 0.35 * _lizard_wall_climb_blend, 0.0, sway * 0.3)
+	_animate_lizard_torso_blocks(sway, breath, 0.0)
 
 
 func _animate_limbs() -> void:
@@ -212,13 +224,14 @@ func _animate_crawl_body() -> void:
 
 	var body := rig.get_socket("body")
 	if body != null and _rest_pos.has("body"):
-		body.position = _get_rest_pos("body") + Vector3(pull * body_sway_amount * 0.65 * speed_ratio, -crawl_body_drop + shove + breath, -forward_shove)
-		body.rotation = _get_rest_rot("body") + Vector3(crawl_body_pitch, pull * 0.10 * speed_ratio, -pull * 0.16 * speed_ratio)
+		body.position = _get_rest_pos("body") + Vector3(pull * body_sway_amount * 0.65 * speed_ratio, -crawl_body_drop + shove + breath + lizard_wall_climb_lift * _lizard_wall_climb_blend, -forward_shove - 0.08 * _lizard_wall_climb_blend)
+		body.rotation = _get_rest_rot("body") + Vector3(crawl_body_pitch + lizard_wall_climb_pitch * 0.45 * _lizard_wall_climb_blend, pull * 0.10 * speed_ratio, -pull * 0.16 * speed_ratio)
 
 	var head := rig.get_socket("head")
 	if head != null and _rest_pos.has("head"):
-		head.position = _get_rest_pos("head") + Vector3(0.0, -crawl_body_drop - 0.12 + breath, -0.22 - forward_shove * 0.35)
+		head.position = _get_rest_pos("head") + Vector3(0.0, -crawl_body_drop - 0.12 + breath + lizard_wall_climb_head_lift * _lizard_wall_climb_blend, -0.22 - forward_shove * 0.35 - 0.08 * _lizard_wall_climb_blend)
 		head.rotation = _get_rest_rot("head") + Vector3(-crawl_head_lift, pull * 0.06 * speed_ratio, pull * 0.10 * speed_ratio)
+	_animate_lizard_torso_blocks(pull * body_sway_amount * speed_ratio, breath, crawl_body_pitch)
 
 
 func _animate_crawl_limbs() -> void:
@@ -254,6 +267,55 @@ func _animate_crawl_limbs() -> void:
 	if left_foot != null:
 		left_foot.position = _get_rest_pos("left_foot") + Vector3(0.0, 0.02, 0.12)
 		left_foot.rotation = _get_rest_rot("left_foot") + Vector3(crawl_leg_tuck * 0.5, 0.0, 0.0)
+
+
+func _apply_lizard_wall_climb_limb_pose() -> void:
+	if _lizard_wall_climb_blend <= 0.001:
+		return
+
+	var reach: float = lizard_wall_climb_limb_reach * _lizard_wall_climb_blend
+	var right_arm: Node3D = rig.get_socket("right_arm")
+	if right_arm != null:
+		right_arm.position = right_arm.position + Vector3(0.04, reach * 0.35, -reach)
+		right_arm.rotation.x -= reach * 1.8
+		right_arm.rotation.z += reach * 0.55
+	var left_arm: Node3D = rig.get_socket("left_arm")
+	if left_arm != null:
+		left_arm.position = left_arm.position + Vector3(-0.04, reach * 0.35, -reach)
+		left_arm.rotation.x -= reach * 1.8
+		left_arm.rotation.z -= reach * 0.55
+
+	var right_leg: Node3D = rig.get_socket("right_leg")
+	if right_leg != null:
+		right_leg.position = right_leg.position + Vector3(0.02, -reach * 0.12, reach * 0.35)
+		right_leg.rotation.x += reach * 0.9
+	var left_leg: Node3D = rig.get_socket("left_leg")
+	if left_leg != null:
+		left_leg.position = left_leg.position + Vector3(-0.02, -reach * 0.12, reach * 0.35)
+		left_leg.rotation.x += reach * 0.9
+
+
+func _animate_lizard_torso_blocks(sway: float, breath: float, base_pitch: float) -> void:
+	if rig == null:
+		return
+
+	var body: Node3D = rig.get_socket("body")
+	if body == null:
+		return
+
+	var front: Node3D = body.get_node_or_null("LizardTorsoFront") as Node3D
+	var rear: Node3D = body.get_node_or_null("LizardTorsoRear") as Node3D
+	if front == null or rear == null:
+		return
+
+	var flex: float = sin(walk_time) * lizard_torso_flex_amount * speed_ratio
+	var idle_flex: float = sin(_time * 1.6) * lizard_torso_flex_amount * 0.25 * (1.0 - speed_ratio)
+	var total_flex: float = flex + idle_flex + sway * 0.45
+	var wall_pitch: float = lizard_wall_climb_pitch * _lizard_wall_climb_blend
+	front.rotation = Vector3(base_pitch * 0.18 + wall_pitch * 0.55, total_flex, -total_flex * 0.35)
+	rear.rotation = Vector3(-base_pitch * 0.10 - wall_pitch * 0.25, -total_flex * 0.8, total_flex * 0.25)
+	front.position.y = -0.02 + breath * 0.4 + lizard_wall_climb_lift * 0.35 * _lizard_wall_climb_blend
+	rear.position.y = -0.04 - breath * 0.2 - lizard_wall_climb_lift * 0.12 * _lizard_wall_climb_blend
 
 
 func _swing(key: String, angle: float) -> void:

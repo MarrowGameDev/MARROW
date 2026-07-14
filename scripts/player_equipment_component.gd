@@ -76,6 +76,12 @@ func _equip_bone_in_slot(bone_id: String) -> bool:
 	if equipped.get(slot, "") == bone_id:
 		return false
 
+	var rig: ModularSkeletonRig = _get_player_rig()
+	if rig != null:
+		equipped[slot] = bone_id
+		_clear_equipped_visual(slot)
+		return true
+
 	var socket: Node3D = _get_socket_for_slot(slot)
 	if socket == null:
 		print("No socket for slot: ", slot)
@@ -83,10 +89,6 @@ func _equip_bone_in_slot(bone_id: String) -> bool:
 
 	equipped[slot] = bone_id
 	_clear_equipped_visual(slot)
-
-	var rig: ModularSkeletonRig = _get_player_rig()
-	if rig != null:
-		return true
 
 	var visual: Node3D = EQUIPPED_BONE_SCENE.instantiate() as Node3D
 	socket.add_child(visual)

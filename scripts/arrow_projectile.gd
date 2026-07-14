@@ -32,6 +32,8 @@ func configure(start_position: Vector3, launch_velocity: Vector3, hit_damage: in
 	damages_player = should_damage_player
 	projectile_gravity = gravity_value
 	projectile_style = visual_style
+	if projectile_style == "saliva":
+		radius = 0.13
 
 
 func _physics_process(delta: float) -> void:
@@ -76,7 +78,17 @@ func _build_visuals() -> void:
 		var visual: MeshInstance3D = MeshInstance3D.new()
 		visual.name = "Visual"
 		var material: StandardMaterial3D = StandardMaterial3D.new()
-		if projectile_style == "finger_bone":
+		if projectile_style == "saliva":
+			var saliva_mesh: SphereMesh = SphereMesh.new()
+			saliva_mesh.radius = 0.13
+			saliva_mesh.height = 0.22
+			visual.mesh = saliva_mesh
+			material.albedo_color = Color(0.48, 1.0, 0.28, 0.82)
+			material.emission_enabled = true
+			material.emission = Color(0.35, 1.0, 0.18, 1.0)
+			material.emission_energy_multiplier = 0.45
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		elif projectile_style == "finger_bone":
 			var finger_mesh: CapsuleMesh = CapsuleMesh.new()
 			finger_mesh.radius = 0.055
 			finger_mesh.height = 0.42
