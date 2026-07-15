@@ -42,10 +42,17 @@ Campos principales:
 - `bone_id`: id estable, por ejemplo `arm_bone`.
 - `display_name`: nombre visible.
 - `color`: color fisico del hueso.
-- `slot`: slot de equipamiento (`right_arm`, `left_arm`, `body`, `legs`,
-  `head`).
+- `slot`: slot de equipamiento canonico (`head`, `torso`, `left_arm`,
+  `right_arm`, `left_leg`, `right_leg`) o alias legacy aceptado durante
+  migracion (`body`, `legs`, `ribs`, `ribcage`, `chest`, `arm_left`,
+  `arm_right`, `leg_left`, `leg_right`).
 - `tags`: tags generales.
 - `description`: texto visible para UI.
+
+`EquipmentRulesService.normalize_slot_id` convierte aliases legacy a los ids
+canonicos que usa el runtime. Los Resources viejos pueden seguir declarando
+`body` o `legs`, pero los sistemas nuevos deben guardar y comparar slots
+canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 ## Calidad
 

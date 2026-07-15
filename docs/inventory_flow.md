@@ -69,6 +69,30 @@ modificar controles desde la seccion de settings.
 - Lee datos mediante metodos publicos del player.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
+- Muestra filtros por los seis slots canonicos de equipo: `head`, `torso`,
+  `left_arm`, `right_arm`, `left_leg` y `right_leg`.
+- Ordena los stacks visibles por slot corporal, rareza, calidad y nombre antes
+  de crear tiles.
+
+### Slots de inventario y equipamiento
+
+`EquipmentRulesService.CANONICAL_BODY_SLOTS` es la fuente de verdad para los
+slots de equipo que la UI debe mostrar. Los ids canonicos son:
+
+- `head`
+- `torso`
+- `left_arm`
+- `right_arm`
+- `left_leg`
+- `right_leg`
+
+`body`, `ribs`, `ribcage`, `chest`, `legs`, `arm_left`, `arm_right`,
+`leg_left` y `leg_right` son aliases legacy que se normalizan en
+`EquipmentRulesService.normalize_slot_id`. La UI puede leer huesos viejos con
+esos slots, pero no debe crear nuevas categorias ni nuevo estado con esos ids.
+`body` sigue existiendo como socket del rig; `torso` es el slot de equipamiento.
+Un hueso legacy `legs` puede equiparse en `right_leg` o `left_leg` mediante
+drag/drop dirigido al slot visual.
 
 ### Validacion estatica del preview
 
@@ -180,6 +204,9 @@ python -B tools/validate_inventory_stack_contract.py
   copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
   de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
   la ruta existente de `PlayerEquipmentComponent`.
+- Filtros: `All` muestra todos los huesos compatibles; las categorias de slot
+  usan `EquipmentRulesService.inventory_filter_matches_bone` para no duplicar
+  reglas entre UI y gameplay.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
 - El tutorial de controles debe leer los bindings actuales con
@@ -205,6 +232,12 @@ En `TESTING ENVIRONMENT`:
 7. Intentar equipar brazo/pierna sin torso y confirmar que se bloquea.
 8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
    solo las partes recuperadas.
+9. Arrastrar `arm_bone` a `Left Arm` y luego a `Right Arm`; debe aceptar ambos
+   lados si hay torso.
+10. Arrastrar `leg_bone` a `Left Leg` y luego a `Right Leg`; cada lado debe
+    mostrar solo su pierna correspondiente en jugador y preview.
+11. Cambiar filtros `Head`, `Torso`, `L. Arm`, `R. Arm`, `L. Leg` y `R. Leg`;
+    cada filtro debe mostrar solo piezas compatibles con ese slot.
 
 ## Historial de cambios
 
@@ -247,3 +280,7 @@ En `TESTING ENVIRONMENT`:
   settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
   reiniciar y confirmar que el binding persiste desde
   `user://control_settings.cfg`.
+- 2026-07-15: Se normalizo inventario/equipamiento a seis slots canonicos
+  (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`). Los slots
+  legacy siguen aceptandose como aliases de lectura, y la UI ahora filtra,
+  ordena y equipa por compatibilidad compartida desde `EquipmentRulesService`.

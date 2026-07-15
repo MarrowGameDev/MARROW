@@ -34,9 +34,13 @@ dependan directamente del componente.
 
 ## Flujo de equipar
 
-1. La UI o el input de equip next llama `player.equip_bone(bone_id)`.
+1. La UI o el input de equip next llama `player.equip_bone(bone_id)`. Si el
+   usuario suelta una pieza sobre un slot especifico, la UI pasa tambien
+   `target_slot`.
 2. `Player` delega a `PlayerEquipmentComponent.equip_bone`.
-3. El componente pregunta el slot con `EquipmentRulesService.slot_for_bone`.
+3. El componente resuelve compatibilidad con
+   `EquipmentRulesService.compatible_slots_for_bone` y normaliza el slot con
+   `EquipmentRulesService.normalize_slot_id`.
 4. Si el hueso ya esta equipado en ese slot, no hace nada.
 5. Si hay `ModularSkeletonRig`, el componente llama `rig.equip_bone`.
 6. Se incrementa `equip_swaps`.
@@ -60,11 +64,21 @@ dependan directamente del componente.
 El punto central es `EquipmentRulesService`.
 
 Slots principales:
-- `right_arm`
-- `left_arm`
-- `legs`
-- `body`
 - `head`
+- `torso`
+- `left_arm`
+- `right_arm`
+- `left_leg`
+- `right_leg`
+
+Aliases legacy aceptados:
+- `body`, `ribs`, `ribcage`, `chest` -> `torso`
+- `legs` -> compatible con `right_leg` y `left_leg`
+- `arm_left`, `arm_right`, `leg_left`, `leg_right` -> lado canonico
+
+`torso` es el slot de equipamiento. `body` sigue siendo un socket del rig y un
+valor legacy en datos viejos. No se debe mezclar socket del rig, slot de equipo
+y parte corporal sin pasar por `EquipmentRulesService`.
 
 Los huesos generados por limbs usan ids como:
 - `normal_right_arm_bone`
@@ -107,7 +121,8 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - El jugador inicia con `head_bone` equipado como nucleo fijo.
   - La cabeza no se puede reemplazar ni desequipar; si se rompe, el jugador
     muere.
-  - El torso (`body`) debe equiparse antes de brazos o piernas.
+  - El torso (`torso`, alias legacy `body`) debe equiparse antes de brazos o
+    piernas.
   - Si el torso se quita, las extremidades se desacoplan primero.
   - Brazos y piernas no tienen orden obligatorio entre si una vez equipado el
     torso.
@@ -120,6 +135,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
+- Las piezas legacy hechas a mano pueden seguir declarando `body` o `legs`
+  durante la migracion. El runtime debe normalizarlas antes de guardar estado
+  de equipamiento, pintar el rig o validar drops.
 - Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
   en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
   necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
@@ -222,7 +240,8 @@ En `TESTING ENVIRONMENT`:
 2. Confirmar que la cabeza inicial ya esta equipada y no se puede reemplazar.
 3. Equipar torso.
 4. Equipar huesos de brazo y piernas.
-5. Confirmar que el cuerpo del jugador cambia.
+5. Confirmar que `Left Arm`, `Right Arm`, `Left Leg` y `Right Leg` cambian solo
+   el lado correspondiente.
 6. Confirmar que el preview cambia igual que el jugador.
 7. Desequipar con right click o drag hacia zona vacia si aplica.
 8. Confirmar que stats en UI cambian.
@@ -265,3 +284,7 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: Equipamiento adopto seis slots canonicos (`head`, `torso`,
+  `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
+  aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus
+  sockets `body`/`body_lower` sin usarlos como ids de estado de equipo.
