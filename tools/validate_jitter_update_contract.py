@@ -123,6 +123,7 @@ def check_player(player_text: str) -> list[Finding]:
 def check_camera(camera_text: str) -> list[Finding]:
     findings: list[Finding] = []
     ready = function_body(camera_text, "_ready")
+    physics = function_body(camera_text, "_physics_process")
     process = function_body(camera_text, "_process")
 
     add_contains(
@@ -134,18 +135,22 @@ def check_camera(camera_text: str) -> list[Finding]:
     )
     add_contains(
         findings,
-        process,
+        physics,
         "global_position = global_position.lerp(_target_pivot_position(), follow_alpha)",
-        "Camera follow smoothing currently runs in _process.",
-        "Camera follow smoothing pattern was not found in _process.",
+        "Camera follow smoothing runs in _physics_process with Player movement.",
+        "Camera follow smoothing should run in _physics_process with Player movement.",
     )
     add_contains(
         findings,
-        process,
+        physics,
         "animation_follow_offset = animation_follow_offset.lerp(target_animation_follow_offset, animation_alpha)",
-        "Animation follow offset is smoothed before pivot follow.",
-        "Animation follow offset smoothing was not found before camera follow.",
+        "Animation follow offset is smoothed before pivot follow in physics.",
+        "Animation follow offset smoothing should run before camera follow in _physics_process.",
     )
+    if process and "global_position = global_position.lerp(_target_pivot_position(), follow_alpha)" in process:
+        findings.append(Finding("ERROR", "Camera follow smoothing must not also run in _process."))
+    else:
+        findings.append(Finding("PASS", "Camera follow smoothing is not duplicated in _process."))
     add_contains(
         findings,
         camera_text,
@@ -153,15 +158,6 @@ def check_camera(camera_text: str) -> list[Finding]:
         "Camera target position combines player global position, pivot height, and animation offset.",
         "Camera target pivot no longer combines player global position with animation offset as expected.",
     )
-
-    if process:
-        findings.append(
-            Finding(
-                "WARN",
-                "Jitter hypothesis to isolate manually: Player moves in _physics_process while camera follow runs in _process "
-                f"(camera line {line_number(camera_text, 'func _process')}).",
-            )
-        )
 
     return findings
 
