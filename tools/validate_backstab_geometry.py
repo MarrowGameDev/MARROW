@@ -2,8 +2,8 @@
 """Validate Marrow stealth-finish/backstab geometry cases.
 
 This is intentionally read-only and engine-free. It mirrors the current
-`Enemy._is_player_behind()` geometry so we can lock down the expected cases
-before changing gameplay code or touching the enemy hotspot.
+`BackstabRulesService.is_attacker_behind_target()` geometry so we can lock down
+the expected cases before changing gameplay code further.
 """
 
 from __future__ import annotations
@@ -71,8 +71,10 @@ def main() -> int:
 
     root = args.root.resolve()
     enemy_path = root / "scripts" / "enemy.gd"
+    service_path = root / "scripts" / "backstab_rules_service.gd"
     threshold = parse_stealth_behind_dot(enemy_path)
-    verify_enemy_formula_shape(enemy_path)
+    verify_backstab_service_shape(service_path)
+    verify_enemy_uses_backstab_service(enemy_path)
 
     results = [run_case(case, threshold) for case in build_cases()]
     failures = [result for result in results if result.actual != result.case.expected]
@@ -109,17 +111,33 @@ def parse_stealth_behind_dot(enemy_path: Path) -> float:
     return float(match.group(1))
 
 
-def verify_enemy_formula_shape(enemy_path: Path) -> None:
-    text = enemy_path.read_text(encoding="utf-8")
+def verify_backstab_service_shape(service_path: Path) -> None:
+    text = service_path.read_text(encoding="utf-8")
     required_snippets = [
-        "func _is_player_behind(player: Node3D) -> bool:",
-        "enemy_forward.normalized().dot(to_player.normalized()) <= -stealth_behind_dot",
-        "func _facing_from_rotation() -> Vector3:",
-        "Vector3(sin(rotation.y), 0.0, cos(rotation.y)).normalized()",
+        "class_name BackstabRulesService",
+        "static func is_attacker_behind_target(",
+        "to_attacker.y = 0.0",
+        "flat_forward.y = 0.0",
+        "flat_forward.normalized().dot(to_attacker.normalized()) <= -behind_dot",
     ]
     missing = [snippet for snippet in required_snippets if snippet not in text]
     if missing:
-        print("WARNING: Enemy backstab implementation shape changed:")
+        print("WARNING: BackstabRulesService implementation shape changed:")
+        for snippet in missing:
+            print(f"- missing snippet: {snippet}")
+
+
+def verify_enemy_uses_backstab_service(enemy_path: Path) -> None:
+    text = enemy_path.read_text(encoding="utf-8")
+    required_snippets = [
+        "func _is_player_behind(player: Node3D) -> bool:",
+        "enemy_forward = _facing_from_rotation()",
+        "BackstabRulesService.is_attacker_behind_target(",
+        "stealth_behind_dot",
+    ]
+    missing = [snippet for snippet in required_snippets if snippet not in text]
+    if missing:
+        print("WARNING: Enemy backstab service call shape changed:")
         for snippet in missing:
             print(f"- missing snippet: {snippet}")
 
