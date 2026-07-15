@@ -3,6 +3,7 @@ extends Node
 
 const INVENTORY_EMPTY_SLOT_SCRIPT: Script = preload("res://scripts/ui_inventory_empty_slot.gd")
 const CONTROL_SETTINGS_PATH := "user://control_settings.cfg"
+const INVENTORY_PREVIEW_BASE_SIZE := Vector2i(210, 276)
 const CONTROL_BINDINGS: Array = [
 	{"action": "move_forward", "label": "Move Forward"},
 	{"action": "move_back", "label": "Move Back"},
@@ -48,6 +49,7 @@ var inventory_preview_panel: PanelContainer = null
 var inventory_preview_area: MarginContainer = null
 var inventory_preview_container: SubViewportContainer = null
 var inventory_preview_viewport: SubViewport = null
+var inventory_preview_equipment_snapshot: Dictionary = {}
 var inventory_details_panel: PanelContainer = null
 var inventory_paper_doll: Control = null
 var inventory_footer: HBoxContainer = null
@@ -699,7 +701,10 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 
 	if inventory_preview_container != null:
 		inventory_preview_container.position = Vector2(98.0, 15.0) * doll_scale
-		inventory_preview_container.size = Vector2(210.0, 276.0) * doll_scale
+		var preview_size := _inventory_preview_base_size() * doll_scale
+		inventory_preview_container.custom_minimum_size = preview_size
+		inventory_preview_container.size = preview_size
+		_sync_preview_viewport_size()
 
 	var slot_positions := {
 		"left_arm": Vector2(0.0, 12.0),
@@ -913,12 +918,13 @@ func _build_character_preview_panel() -> Control:
 	inventory_preview_container = SubViewportContainer.new()
 	inventory_preview_container.name = "CharacterPreview"
 	inventory_preview_container.position = Vector2(98.0, 15.0)
-	inventory_preview_container.size = Vector2(210.0, 276.0)
+	inventory_preview_container.custom_minimum_size = _inventory_preview_base_size()
+	inventory_preview_container.size = _inventory_preview_base_size()
 	inventory_preview_container.stretch = true
 	inventory_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	inventory_preview_viewport = SubViewport.new()
-	inventory_preview_viewport.size = Vector2i(210, 276)
+	inventory_preview_viewport.size = INVENTORY_PREVIEW_BASE_SIZE
 	inventory_preview_viewport.transparent_bg = false
 	inventory_preview_viewport.world_3d = World3D.new()
 	inventory_preview_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
@@ -960,6 +966,7 @@ func _build_character_preview_panel() -> Control:
 	rig_holder.add_child(inventory_preview_rig)
 	if inventory_preview_rig.has_method("set_body_progression_enabled"):
 		inventory_preview_rig.set_body_progression_enabled(true)
+	inventory_preview_equipment_snapshot = {}
 
 	var camera := Camera3D.new()
 	camera.name = "PreviewCamera"
@@ -970,6 +977,28 @@ func _build_character_preview_panel() -> Control:
 
 	call_deferred("sync_preview")
 	return inventory_preview_container
+
+
+func _sync_preview_viewport_size() -> void:
+	if inventory_preview_container == null or inventory_preview_viewport == null:
+		return
+
+	var target_size := inventory_preview_container.size
+	if target_size.x <= 0.0 or target_size.y <= 0.0:
+		target_size = inventory_preview_container.custom_minimum_size
+	if target_size.x <= 0.0 or target_size.y <= 0.0:
+		target_size = _inventory_preview_base_size()
+
+	var viewport_size := Vector2i(
+		maxi(1, roundi(target_size.x)),
+		maxi(1, roundi(target_size.y))
+	)
+	if inventory_preview_viewport.size != viewport_size:
+		inventory_preview_viewport.size = viewport_size
+
+
+func _inventory_preview_base_size() -> Vector2:
+	return Vector2(float(INVENTORY_PREVIEW_BASE_SIZE.x), float(INVENTORY_PREVIEW_BASE_SIZE.y))
 
 
 func _build_preview_room(parent: Node3D) -> void:
@@ -1003,15 +1032,39 @@ func sync_preview() -> void:
 	if inventory_preview_rig == null or not is_instance_valid(inventory_preview_rig):
 		return
 
+	var next_snapshot := _preview_equipment_snapshot()
+	if _preview_snapshot_matches(next_snapshot):
+		return
+	inventory_preview_equipment_snapshot = next_snapshot.duplicate()
+
 	var current_slots: Array = inventory_preview_rig.equipped_ids.keys()
 	for slot_id in current_slots:
 		inventory_preview_rig.unequip_slot(str(slot_id))
 
-	for slot in equipped:
-		var bone_id: String = str(equipped[slot])
+	for slot in next_snapshot:
+		var bone_id: String = str(next_snapshot[slot])
 		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id)
 		if not bone_def.is_empty():
 			inventory_preview_rig.equip_bone(bone_id, bone_def)
+
+
+func _preview_equipment_snapshot() -> Dictionary:
+	var snapshot: Dictionary = {}
+	for slot in equipped:
+		var bone_id := str(equipped[slot])
+		if bone_id == "":
+			continue
+		snapshot[str(slot)] = bone_id
+	return snapshot
+
+
+func _preview_snapshot_matches(next_snapshot: Dictionary) -> bool:
+	if inventory_preview_equipment_snapshot.size() != next_snapshot.size():
+		return false
+	for slot in next_snapshot:
+		if str(inventory_preview_equipment_snapshot.get(slot, "")) != str(next_snapshot[slot]):
+			return false
+	return true
 
 
 func _build_paper_doll() -> Control:

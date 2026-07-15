@@ -69,6 +69,10 @@ modificar controles desde la seccion de settings.
 - Lee datos mediante metodos publicos del player.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
+- Cachea el snapshot de equipamiento ya renderizado para evitar recrear piezas
+  del rig preview cuando llegan eventos redundantes.
+- Sincroniza el tamano del `SubViewport` con el container responsive y conserva
+  un minimo de 1 px por eje durante relayouts.
 
 ### Validacion estatica del preview
 
@@ -235,6 +239,10 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
+- 2026-07-15: El preview 3D cachea el equipamiento ya renderizado, omite syncs
+  redundantes y ajusta el tamano real del `SubViewport` desde el layout
+  responsive. Esto evita recreaciones innecesarias del rig y renders de viewport
+  con tamano cero durante abrir/cerrar o cambios de resolucion.
 - 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
   agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
   hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
