@@ -44,11 +44,11 @@ func _resize_base_ground() -> void:
 func _place_player_start() -> void:
 	var player := get_node_or_null("../Player") as Node3D
 	if player != null:
-		player.global_position = Vector3(0.0, 1.05, 38.0)
+		player.position = Vector3(0.0, 1.05, 38.0)
 
 	var wisp := get_node_or_null("../GuideWisp") as Node3D
 	if wisp != null:
-		wisp.global_position = Vector3(-2.0, 2.0, 40.0)
+		wisp.position = Vector3(-2.0, 2.0, 40.0)
 
 
 func _spawn_starter_torso_pickup() -> void:
@@ -62,7 +62,7 @@ func _spawn_starter_torso_pickup() -> void:
 		pickup.call("set_bone_id", "torso_bone")
 	var pickup_body: Node3D = pickup as Node3D
 	if pickup_body != null:
-		pickup_body.global_position = Vector3(0.0, 0.45, 34.5)
+		pickup_body.position = Vector3(0.0, 0.45, 34.5)
 	scene_root.add_child(pickup)
 
 
@@ -81,7 +81,7 @@ func _configure_stage(node_name: String, pos: Vector3, trigger_size: Vector3, st
 	if stage == null:
 		return
 
-	stage.global_position = pos
+	stage.position = pos
 	stage.set("stage_name", stage_name)
 	stage.set("difficulty", difficulty)
 	stage.set("recommended_bone", recommended)
@@ -118,13 +118,13 @@ func _layout_story_nodes() -> void:
 
 	var sight_walls := get_node_or_null("../SightTestWalls") as Node3D
 	if sight_walls != null:
-		sight_walls.global_position = Vector3(0.0, 0.0, 20.0)
+		sight_walls.position = Vector3(0.0, 0.0, 20.0)
 
 
 func _move_node(path: String, pos: Vector3) -> void:
 	var node := get_node_or_null(path) as Node3D
 	if node != null:
-		node.global_position = pos
+		node.position = pos
 
 
 func _build_island_visuals() -> void:
@@ -334,7 +334,7 @@ func _spawn_enemy(enemy_name: String, pos: Vector3, bone_id: String, overrides: 
 		enemy.set(key, overrides[key])
 	var enemy_body := enemy as Node3D
 	if enemy_body != null:
-		enemy_body.global_position = pos
+		enemy_body.position = pos
 	scene_root.add_child(enemy)
 	return enemy
 

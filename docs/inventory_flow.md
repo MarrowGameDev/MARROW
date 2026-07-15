@@ -158,7 +158,8 @@ Campos de ataque/combo:
   `DropPickupRulesService.action_binding_text`, para que el texto visible siga
   los cambios hechos en settings.
 - Interaccion: si el jugador esta en rango de pickup, el inventario no debe
-  abrirse con la misma tecla de interact.
+  abrirse con la misma tecla de interact. Como inventario usa `Tab` e interact
+  usa `E`, Tab no se bloquea por pickups cercanos.
 - Progresion corporal: el inventario puede contener torso/extremidades, pero el
   slot de cabeza es fijo. Si se intenta equipar brazos o piernas sin torso,
   `PlayerEquipmentComponent` bloquea la accion y emite hint.
@@ -199,3 +200,7 @@ En `TESTING ENVIRONMENT`:
   cambiar todavia limites de carga.
 - 2026-07-14: Se agregaron campos de set/sinergia para futuras vistas y reglas
   de combinacion.
+- 2026-07-14: Se reforzo el arranque de controles. El menu y el player limpian
+  pausa residual al entrar, la UI valida `user://control_settings.cfg`, y
+  `Player` tiene fallback directo de teclado/mouse para WASD, Tab, Space,
+  Shift, ataques y acciones principales si `InputMap` queda incompleto.

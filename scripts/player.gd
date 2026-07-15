@@ -99,6 +99,8 @@ var stealth_prompt_label: Label
 var stealth_target: Node3D = null
 var noise_timer: float = 0.0
 var sprinting_this_frame: bool = false
+var fallback_input_previous: Dictionary = {}
+var fallback_input_current: Dictionary = {}
 
 # Sockets are empty Node3D children on the player, one per equip slot.
 # Adding a visible bone as a child of a socket makes it move with the player.
@@ -118,6 +120,9 @@ func _ready() -> void:
 	# Keep processing while the tree is paused, so the inventory screen (which
 	# pauses the game) can still be closed and browsed.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().paused = false
+	inventory_open = false
+	_reset_fallback_input_state()
 	health = max_health
 	bow_equipped = start_with_bow_equipped
 	stats_component = PlayerStatsComponent.new()
@@ -154,18 +159,20 @@ func _input(event: InputEvent) -> void:
 # Godot calls _physics_process many times per second on a steady physics clock.
 # Movement and collision code belongs here because it needs consistent timing.
 func _physics_process(delta: float) -> void:
+	_refresh_fallback_input_state()
+
 	# The inventory toggle and equipping work even while paused, so you can open
 	# the inventory, study your build, and rearrange it with the game frozen.
 	if inventory_open and Input.is_action_just_pressed("ui_cancel") and not is_dead:
 		_toggle_inventory()
-	elif Input.is_action_just_pressed("inventory") and nearby_bone_pickups == 0 and not is_dead:
+	elif _input_just_pressed("inventory") and not is_dead:
 		_toggle_inventory()
 
 	if inventory_open and Input.is_action_just_pressed("ui_focus_next") and not Input.is_action_just_pressed("inventory") and not is_dead:
 		if inventory_ui != null:
 			inventory_ui.cycle_category()
 
-	if Input.is_action_just_pressed("equip") and not is_dead:
+	if _input_just_pressed("equip") and not is_dead:
 		_equip_next_bone()
 
 	# While the inventory is open (paused) or the player is dead, stop here:
@@ -176,9 +183,9 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_update_stealth_finish_prompt()
-	if Input.is_action_just_pressed("stealth_finish"):
+	if _input_just_pressed("stealth_finish"):
 		_try_stealth_finish()
-	if Input.is_action_just_pressed("toggle_bow"):
+	if _input_just_pressed("toggle_bow"):
 		_toggle_bow_equipped()
 	if bow_aiming:
 		bow_charge_time = minf(bow_charge_time + delta, maxf(bow_full_charge_time, 0.01))
@@ -194,30 +201,30 @@ func _physics_process(delta: float) -> void:
 	elif combo_animation_step != 0:
 		combo_animation_step = 0
 
-	if Input.is_action_just_pressed("attack"):
+	if _input_just_pressed("attack"):
 		if bow_equipped:
 			_start_bow_aim()
 		else:
 			_try_attack()
-	if Input.is_action_just_released("attack") and bow_aiming:
+	if _input_just_released("attack") and bow_aiming:
 		_release_bow_shot()
-	if Input.is_action_just_pressed("ranged_attack") and not bow_equipped:
+	if _input_just_pressed("ranged_attack") and not bow_equipped:
 		_try_bow_shot()
 
 	# Space gives the player a clean hop. The floor check prevents air-jumping.
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if _input_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
 
 	# If the player is in the air, build up downward speed over time.
 	# delta means "how much time passed since the last physics frame."
 	if not is_on_floor():
 		velocity.y -= gravity * delta
-	elif not Input.is_action_just_pressed("jump"):
+	elif not _input_just_pressed("jump"):
 		velocity.y = 0.0
 
 	# Input.get_vector reads four named input actions from project.godot.
 	# W makes the y value negative, S makes it positive, A makes x negative, and D makes x positive.
-	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input_vector := _get_move_input_vector()
 
 	var direction := _get_camera_relative_move_direction(input_vector)
 	current_move_direction = direction
@@ -237,7 +244,7 @@ func _physics_process(delta: float) -> void:
 		last_facing_direction = direction
 
 	var current_move_speed := move_speed
-	sprinting_this_frame = Input.is_action_pressed("sprint") and direction.length() > 0.01
+	sprinting_this_frame = _input_pressed("sprint") and direction.length() > 0.01
 	if sprinting_this_frame:
 		current_move_speed *= sprint_multiplier
 		noise_timer = maxf(noise_timer, 0.18)
@@ -266,6 +273,68 @@ func _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3:
 	if direction.length() > 1.0:
 		return direction.normalized()
 	return direction
+
+
+func _reset_fallback_input_state() -> void:
+	fallback_input_previous = {}
+	fallback_input_current = _read_fallback_input_state()
+
+
+func _refresh_fallback_input_state() -> void:
+	fallback_input_previous = fallback_input_current.duplicate()
+	fallback_input_current = _read_fallback_input_state()
+
+
+func _read_fallback_input_state() -> Dictionary:
+	return {
+		"move_forward": Input.is_key_pressed(KEY_W),
+		"move_back": Input.is_key_pressed(KEY_S),
+		"move_left": Input.is_key_pressed(KEY_A),
+		"move_right": Input.is_key_pressed(KEY_D),
+		"jump": Input.is_key_pressed(KEY_SPACE),
+		"sprint": Input.is_key_pressed(KEY_SHIFT),
+		"attack": Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT),
+		"ranged_attack": Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT),
+		"toggle_bow": Input.is_key_pressed(KEY_1),
+		"inventory": Input.is_key_pressed(KEY_TAB),
+		"equip": Input.is_key_pressed(KEY_Q),
+		"stealth_finish": Input.is_key_pressed(KEY_F),
+	}
+
+
+func _input_pressed(action: String) -> bool:
+	return Input.is_action_pressed(action) or bool(fallback_input_current.get(action, false))
+
+
+func _input_just_pressed(action: String) -> bool:
+	if Input.is_action_just_pressed(action):
+		return true
+	return bool(fallback_input_current.get(action, false)) and not bool(fallback_input_previous.get(action, false))
+
+
+func _input_just_released(action: String) -> bool:
+	if Input.is_action_just_released(action):
+		return true
+	return not bool(fallback_input_current.get(action, false)) and bool(fallback_input_previous.get(action, false))
+
+
+func _get_move_input_vector() -> Vector2:
+	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input_vector.length() > 0.01:
+		return input_vector
+
+	var fallback_vector := Vector2.ZERO
+	if bool(fallback_input_current.get("move_left", false)):
+		fallback_vector.x -= 1.0
+	if bool(fallback_input_current.get("move_right", false)):
+		fallback_vector.x += 1.0
+	if bool(fallback_input_current.get("move_forward", false)):
+		fallback_vector.y -= 1.0
+	if bool(fallback_input_current.get("move_back", false)):
+		fallback_vector.y += 1.0
+	if fallback_vector.length() > 1.0:
+		return fallback_vector.normalized()
+	return fallback_vector
 
 
 func _get_camera_forward_direction() -> Vector3:

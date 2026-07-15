@@ -52,3 +52,9 @@ Those are not terrain geometry. They are labels and progression metadata. The te
 ## Next Coder Step
 
 Once the layout feels readable, move enemies/trials into the matching stage regions and add stage-specific spawn points. Do not create real art yet; first confirm the overworld route makes players naturally understand where each bone matters.
+
+## Change History
+
+- 2026-07-14: Tutorial island builder now uses local positions for existing
+  scene nodes and generated spawns. This avoids `global_transform` errors before
+  nodes are fully inside the scene tree.

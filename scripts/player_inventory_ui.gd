@@ -963,11 +963,10 @@ func _build_character_preview_panel() -> Control:
 
 	var camera := Camera3D.new()
 	camera.name = "PreviewCamera"
-	camera.position = Vector3(0.0, 0.10, 4.15)
 	camera.fov = 36.0
-	camera.look_at(Vector3(0.0, -0.08, 0.0), Vector3.UP)
 	camera.current = true
 	preview_scene.add_child(camera)
+	camera.look_at_from_position(Vector3(0.0, 0.10, 4.15), Vector3(0.0, -0.08, 0.0), Vector3.UP)
 
 	call_deferred("sync_preview")
 	return inventory_preview_container
@@ -1265,17 +1264,19 @@ func _save_control_settings() -> void:
 func _load_control_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load(CONTROL_SETTINGS_PATH) != OK:
+		_ensure_required_control_bindings()
 		return
 	for binding in CONTROL_BINDINGS:
 		var action := String(binding.get("action", ""))
 		if action == "" or not InputMap.has_action(action) or not config.has_section(action):
 			continue
 		var event := _event_from_config(config, action)
-		if event == null:
+		if event == null or not _control_event_is_usable(event):
 			continue
 		_remove_control_event_from_other_actions(action, event)
 		InputMap.action_erase_events(action)
 		InputMap.action_add_event(action, event)
+	_ensure_required_control_bindings()
 
 
 func _event_from_config(config: ConfigFile, action: String) -> InputEvent:
@@ -1299,6 +1300,53 @@ func _event_from_config(config: ConfigFile, action: String) -> InputEvent:
 		config_mouse_event.meta_pressed = bool(config.get_value(action, "meta", false))
 		return config_mouse_event
 	return null
+
+
+func _control_event_is_usable(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		return key_event.keycode != 0 or key_event.physical_keycode != 0 or key_event.key_label != 0
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		return mouse_event.button_index > 0
+	return false
+
+
+func _ensure_required_control_bindings() -> void:
+	_ensure_default_control_key("move_forward", KEY_W)
+	_ensure_default_control_key("move_back", KEY_S)
+	_ensure_default_control_key("move_left", KEY_A)
+	_ensure_default_control_key("move_right", KEY_D)
+	_ensure_default_control_key("jump", KEY_SPACE)
+	_ensure_default_control_key("sprint", KEY_SHIFT)
+	_ensure_default_control_mouse("attack", MOUSE_BUTTON_LEFT)
+	_ensure_default_control_key("toggle_bow", KEY_1)
+	_ensure_default_control_mouse("ranged_attack", MOUSE_BUTTON_RIGHT)
+	_ensure_default_control_key("inventory", KEY_TAB)
+	_ensure_default_control_key("interact", KEY_E)
+	_ensure_default_control_key("equip", KEY_Q)
+	_ensure_default_control_key("stealth_finish", KEY_F)
+
+
+func _ensure_default_control_key(action: String, keycode: int) -> void:
+	if _action_has_usable_event(action):
+		return
+	_set_default_control_key(action, keycode)
+
+
+func _ensure_default_control_mouse(action: String, button_index: int) -> void:
+	if _action_has_usable_event(action):
+		return
+	_set_default_control_mouse(action, button_index)
+
+
+func _action_has_usable_event(action: String) -> bool:
+	if not InputMap.has_action(action):
+		return false
+	for event in InputMap.action_get_events(action):
+		if _control_event_is_usable(event):
+			return true
+	return false
 
 
 func _reset_control_defaults() -> void:

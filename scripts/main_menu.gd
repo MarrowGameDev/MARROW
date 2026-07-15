@@ -5,6 +5,7 @@ const TESTING_SCENE_PATH: String = "res://scenes/testing_environment.tscn"
 
 
 func _ready() -> void:
+	get_tree().paused = false
 	_build_menu()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -77,8 +78,10 @@ func _make_menu_button(text: String, callback: Callable) -> Button:
 
 
 func _open_demo() -> void:
+	get_tree().paused = false
 	get_tree().change_scene_to_file(DEMO_SCENE_PATH)
 
 
 func _open_testing_environment() -> void:
+	get_tree().paused = false
 	get_tree().change_scene_to_file(TESTING_SCENE_PATH)
