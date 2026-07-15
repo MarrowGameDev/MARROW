@@ -73,8 +73,38 @@ extends Node3D
 @export var env_smoothing := 8.0
 
 @export_group("Attack overlay")
-@export var attack_overlay_duration := 0.16
+# A melee swing takes this long.
+#
+# CEILING, do not raise alone: the finisher and arm-sword steps run 1.15x, so this
+# must satisfy duration * 1.15 < Player.attack_cooldown. Normal melee has no
+# anti-stacking gate (that is head-launch only), so a swing longer than the cooldown
+# lets the next click restart the pose mid-swing — you would see the windup over and
+# over and never the hit. Raising this means raising attack_cooldown too.
+# At 0.70: 0.70 * 1.15 = 0.805 < 0.85.
+@export var attack_overlay_duration := 0.70
 @export var attack_overlay_blend_speed := 18.0
+
+# Shape of the swing: wind back, strike, follow through. Impact comes from the
+# CONTRAST between a slow wind-back and a fast strike, which is why these are
+# fractions of the duration rather than seconds — retiming the swing keeps the feel.
+@export var attack_windup_portion := 0.38    # fraction spent winding back
+@export var attack_strike_portion := 0.13    # fraction spent striking. Short = snappy.
+# Fraction HELD at full extension after the strike. Without this the pose spikes
+# through its peak in a couple of frames and the hit is over before it reads — snap
+# and readability pull opposite ways, and this is what buys both.
+@export var attack_strike_hold := 0.16
+@export var attack_anticipation := 0.35      # how far BACK the windup pulls, as -strength
+
+# Overlapping action. Every joint driven by the same value on the same frame is
+# what reads as ROBOTIC — a real limb drags: the torso leads, the shoulder follows
+# it, the hand trails last. These are phase offsets: a joint samples the swing
+# curve EARLIER, so it lags.
+@export var attack_overlap_arm := 0.07       # phase the shoulder trails the torso
+@export var attack_overlap_elbow := 0.13     # extra phase the elbow trails the shoulder
+# Radians the elbow cocks on the windup and whips straight through the strike.
+# Without it the arm is one rigid stick: _animate_joints only ever gives the elbow
+# the WALK bend, so it ignores the swing entirely.
+@export var attack_elbow_whip := 0.9
 @export var attack_arm_forward := 1.1       # radians the right arm swings forward
 @export var attack_torso_twist := 0.35      # radians the torso twists into the swing
 @export var attack_lunge := 0.22            # radians the body leans into the swing
@@ -125,6 +155,19 @@ const COMBO_STEP_ARM_SWORD := 4
 @export var arm_sword_lunge := 0.30
 # Radians the torn-off arm is levelled to, from hanging (0) to blade-forward.
 @export var arm_sword_blade_pitch := -1.57
+# Swings the arm stays off for before it goes back on.
+@export var arm_sword_swing_count := 3
+@export var arm_sword_hold_speed := 14.0    # how fast it tears free / snaps home
+# Let go if no further swing lands within this long, so stopping mid-combo does
+# not leave the arm off forever.
+@export var arm_sword_hold_timeout := 1.6
+
+# Swings taken since the arm came off. 0 == the arm is on.
+var _arm_sword_swings := 0
+# 0..1 blend of "in the hand". Its own state, NOT the per-attack strength: strength
+# falls to 0 between swings, and the arm must stay off across all three.
+var _arm_sword_hold := 0.0
+var _arm_sword_idle_timer := 0.0
 
 @export var combo_left_arm_forward := 1.0
 @export var combo_finisher_arm_forward := 0.85
@@ -327,6 +370,10 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 		_update_demo_procedural(delta)
 	if _demo_mode != DemoMode.OFF:
 		_apply_demo_pose()
+	# After the attack overlay, so the hand it reads has already swung. Before the
+	# waist, so the carry rotates the blade and the arm holding it as one rigid
+	# piece and the blade stays in the hand.
+	_update_arm_sword(delta)
 	# LAST, after every other socket writer, for the same reason the demo is last:
 	# _apply_waist_carry stands in for a parent transform, so it has to see the
 	# final pose. A writer added below this line would silently escape the carry
@@ -731,6 +778,8 @@ func trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void
 		_torso_head_miss_fall_active = false
 		_torso_head_miss_fall_timer = 0.0
 		_torso_head_miss_body_hold_transform_ready = false
+	if _attack_combo_step == COMBO_STEP_ARM_SWORD and _both_arms_equipped():
+		note_arm_sword_swing()
 	if _attack_combo_step >= 3 and not _is_head_only() and not _is_torso_spring_only():
 		_attack_duration_current *= 1.15
 	_attack_timer = _attack_duration_current
@@ -1536,9 +1585,43 @@ func _combo_step_for_equipped_arms() -> int:
 func _attack_pose_strength() -> float:
 	if _attack_duration_current <= 0.001:
 		return _attack_blend
-	var phase: float = _attack_phase()
-	var snap: float = sin(phase * PI)
-	return maxf(_attack_blend * 0.35, snap * _attack_blend)
+	return _attack_strike_curve(_attack_phase()) * _attack_blend
+
+
+# Anticipation -> strike -> follow-through.
+#
+# This used to be sin(phase * PI): a symmetric arc that eased in and out at the
+# same rate, with no wind-back and no snap, which is exactly what made a hit read
+# as floaty. A strike lands because the fast part is fast RELATIVE to a slow part
+# before it, so the swing now spends ~45% winding back, ~18% striking, and the rest
+# following through.
+#
+# Returns NEGATIVE during the windup. That is the anticipation: every combo pose
+# subtracts strength * amount from a rotation, so a negative value swings the arm
+# BACK before it comes forward, for free, with no per-pose changes.
+func _attack_strike_curve(phase: float) -> float:
+	var windup_end: float = clampf(attack_windup_portion, 0.05, 0.70)
+	var strike_end: float = minf(windup_end + maxf(attack_strike_portion, 0.02), 0.95)
+	var hold_end: float = minf(strike_end + maxf(attack_strike_hold, 0.0), 0.99)
+
+	if phase < windup_end:
+		# Wind back, decelerating into the top of the swing.
+		var wind_t: float = phase / windup_end
+		return -attack_anticipation * sin(wind_t * PI * 0.5)
+
+	if phase < strike_end:
+		# The strike: accelerate out of the windup into full extension.
+		var strike_t: float = (phase - windup_end) / maxf(strike_end - windup_end, 0.001)
+		return lerpf(-attack_anticipation, 1.0, strike_t * strike_t)
+
+	if phase < hold_end:
+		# Hold full extension. The strike is deliberately only a few frames, so
+		# without this the hit pose is never on screen long enough to read.
+		return 1.0
+
+	# Follow-through: settle back, slower than the strike went out.
+	var settle_t: float = (phase - hold_end) / maxf(1.0 - hold_end, 0.001)
+	return pow(1.0 - settle_t, 2.0)
 
 
 func _attack_phase() -> float:
@@ -1780,11 +1863,38 @@ func _apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void:
 	_torso_head_attack_world_offset = _torso_head_attack_direction * torso_head_attack_lunge * (1.0 - eased)
 
 
+# The swing curve sampled EARLIER by `lag`, so this joint trails whatever drives
+# it. Clamped at 0, so a lagging joint simply has not started yet rather than
+# reading the windup backwards.
+func _attack_strength_lagged(lag: float) -> float:
+	if _attack_duration_current <= 0.001:
+		return _attack_blend
+	return _attack_strike_curve(clampf(_attack_phase() - lag, 0.0, 1.0)) * _attack_blend
+
+
+# Adds the attack's elbow motion ON TOP of the walk bend _animate_joints assigned.
+# Negative strength (the windup) cocks it further; positive (the strike) whips it
+# straight. No-ops on an unsplit rig, which has no elbow.
+func _whip_elbow(joint_key: String, strength: float) -> void:
+	if is_zero_approx(strength):
+		return
+	var elbow: Node3D = rig.get_socket(joint_key)
+	if elbow == null:
+		return
+	elbow.rotation.x += attack_elbow_whip * strength
+
+
 func _apply_right_combo_pose(strength: float) -> void:
+	# `strength` drives the TORSO — it leads. The shoulder trails it and the elbow
+	# trails the shoulder, so the limb drags instead of snapping as one piece.
+	var arm_strength: float = _attack_strength_lagged(attack_overlap_arm)
+	var elbow_strength: float = _attack_strength_lagged(attack_overlap_arm + attack_overlap_elbow)
+
 	var arm := rig.get_socket("right_arm")
 	if arm != null:
-		arm.rotation.x -= attack_arm_forward * strength
-		arm.rotation.z -= 0.18 * strength
+		arm.rotation.x -= attack_arm_forward * arm_strength
+		arm.rotation.z -= 0.18 * arm_strength
+	_whip_elbow("right_arm_lower", elbow_strength)
 	var body := rig.get_socket("body")
 	if body != null:
 		body.rotation.y += attack_torso_twist * strength
@@ -1792,46 +1902,88 @@ func _apply_right_combo_pose(strength: float) -> void:
 
 
 func _apply_left_combo_pose(strength: float) -> void:
+	var arm_strength: float = _attack_strength_lagged(attack_overlap_arm)
+	var elbow_strength: float = _attack_strength_lagged(attack_overlap_arm + attack_overlap_elbow)
+
 	var arm := rig.get_socket("left_arm")
 	if arm != null:
-		arm.rotation.x -= combo_left_arm_forward * strength
-		arm.rotation.z += 0.22 * strength
+		arm.rotation.x -= combo_left_arm_forward * arm_strength
+		arm.rotation.z += 0.22 * arm_strength
+	_whip_elbow("left_arm_lower", elbow_strength)
 	var counter_arm := rig.get_socket("right_arm")
 	if counter_arm != null:
-		counter_arm.rotation.x += attack_arm_forward * 0.25 * strength
+		counter_arm.rotation.x += attack_arm_forward * 0.25 * arm_strength
 	var body := rig.get_socket("body")
 	if body != null:
 		body.rotation.y -= attack_torso_twist * 0.9 * strength
 		body.rotation.x -= attack_lunge * 0.8 * strength
 
 
-# Combo step 4: the right hand grabs the left arm, rips it off the shoulder and
-# swings it like a sword.
+# Combo step 4: the right arm swings the torn-off left arm like a sword.
 #
-# Nothing is unequipped and nothing is reparented. `strength` comes from
-# _attack_pose_strength(), which rises to 1 mid-attack and falls back to 0, so
-# lerping the left arm toward the hand by it gives tear-free -> swing -> snap-back
-# for free: at strength 0 the arm is exactly where the normal animator put it.
+# This is the per-SWING motion only. Holding the arm in the hand is _update_arm_sword,
+# because the arm stays off across all three swings while `strength` drops to 0
+# between them — riding strength here would snap it home after the first one.
 func _apply_arm_sword_pose(strength: float) -> void:
-	var right_arm: Node3D = rig.get_socket("right_arm")
-	var left_arm: Node3D = rig.get_socket("left_arm")
-	if right_arm == null or left_arm == null:
-		return
+	var arm_strength: float = _attack_strength_lagged(attack_overlap_arm)
+	var elbow_strength: float = _attack_strength_lagged(attack_overlap_arm + attack_overlap_elbow)
 
-	# Swing FIRST: the hand position below is read off the swung forearm, so the
-	# blade travels with the arm holding it.
-	right_arm.rotation.x -= arm_sword_swing * strength
-	right_arm.rotation.z -= 0.18 * strength
+	var right_arm: Node3D = rig.get_socket("right_arm")
+	if right_arm == null:
+		return
+	right_arm.rotation.x -= arm_sword_swing * arm_strength
+	right_arm.rotation.z -= 0.18 * arm_strength
+	# The elbow trails hardest here: a rigid stick swinging another rigid stick is
+	# the most robotic thing the rig can do.
+	_whip_elbow("right_arm_lower", elbow_strength)
 	var body: Node3D = rig.get_socket("body")
 	if body != null:
 		body.rotation.y += arm_sword_torso_twist * strength
 		body.rotation.x -= arm_sword_lunge * strength
 
-	# The torn-off arm rides in the hand, levelled from hanging to blade-forward.
+
+func is_arm_sword_held() -> bool:
+	return _arm_sword_swings > 0
+
+
+# Counts a swing. The Player keeps feeding step 4 while is_arm_sword_held(), so
+# the combo does not advance until the arm has gone back.
+func note_arm_sword_swing() -> void:
+	_arm_sword_swings += 1
+	_arm_sword_idle_timer = 0.0
+
+
+# Keeps the torn-off arm in the right hand between swings, and puts it back once
+# it has landed its swings. Runs every frame — unlike the combo pose, which stops
+# being called the moment _attack_blend decays.
+func _update_arm_sword(delta: float) -> void:
+	if _arm_sword_swings > 0:
+		_arm_sword_idle_timer += delta
+		var finished: bool = _arm_sword_swings >= arm_sword_swing_count and _attack_timer <= 0.0
+		var abandoned: bool = _arm_sword_idle_timer > arm_sword_hold_timeout
+		# Release only once the LAST swing has finished playing, not the instant it
+		# starts, or the arm snaps home mid-swing.
+		if finished or abandoned or not _both_arms_equipped():
+			_arm_sword_swings = 0
+
+	var target: float = 1.0 if _arm_sword_swings > 0 else 0.0
+	_arm_sword_hold = lerp(_arm_sword_hold, target, 1.0 - exp(-arm_sword_hold_speed * delta))
+	if _arm_sword_hold <= 0.001:
+		return  # arm is home; leave the normal animator's write alone
+
+	var left_arm: Node3D = rig.get_socket("left_arm")
+	if left_arm == null:
+		return
+	# Read the hand AFTER the swing has been applied this frame, so the blade
+	# travels with the arm holding it.
 	var hand: Vector3 = _right_hand_rig_position()
-	left_arm.position = left_arm.position.lerp(hand, strength)
+	left_arm.position = left_arm.position.lerp(hand, _arm_sword_hold)
 	left_arm.rotation = left_arm.rotation.lerp(
-		Vector3(arm_sword_blade_pitch, 0.0, 0.0), strength)
+		Vector3(arm_sword_blade_pitch, 0.0, 0.0), _arm_sword_hold)
+
+
+func _both_arms_equipped() -> bool:
+	return _is_slot_equipped("right_arm") and _is_slot_equipped("left_arm")
 
 
 # The right hand — the far end of the forearm — in the left arm socket's parent
@@ -1848,14 +2000,19 @@ func _right_hand_rig_position() -> Vector3:
 
 
 func _apply_finisher_combo_pose(strength: float) -> void:
+	var arm_strength: float = _attack_strength_lagged(attack_overlap_arm)
+	var elbow_strength: float = _attack_strength_lagged(attack_overlap_arm + attack_overlap_elbow)
+
 	var right_arm := rig.get_socket("right_arm")
 	if right_arm != null:
-		right_arm.rotation.x -= combo_finisher_arm_forward * strength
-		right_arm.rotation.z -= 0.28 * strength
+		right_arm.rotation.x -= combo_finisher_arm_forward * arm_strength
+		right_arm.rotation.z -= 0.28 * arm_strength
 	var left_arm := rig.get_socket("left_arm")
 	if left_arm != null:
-		left_arm.rotation.x -= combo_finisher_arm_forward * strength
-		left_arm.rotation.z += 0.28 * strength
+		left_arm.rotation.x -= combo_finisher_arm_forward * arm_strength
+		left_arm.rotation.z += 0.28 * arm_strength
+	_whip_elbow("right_arm_lower", elbow_strength)
+	_whip_elbow("left_arm_lower", elbow_strength)
 	var body := rig.get_socket("body")
 	if body != null:
 		body.rotation.y += combo_finisher_torso_twist * strength
