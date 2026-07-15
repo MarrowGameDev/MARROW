@@ -117,7 +117,11 @@ var _attack_blend := 0.0
 var _attack_duration_current := 0.16
 var _attack_combo_step := 1
 var _head_only_attack_contacted := true
-var _head_only_attack_forward_offset := 0.0
+var _head_only_attack_landed := true
+var _head_only_base_world_offset := Vector3.ZERO
+var _head_only_attack_world_offset := Vector3.ZERO
+var _head_only_attack_direction := Vector3.FORWARD
+var _head_only_last_facing_direction := Vector3.FORWARD
 var _aim_requested := false
 var _aim_blend := 0.0
 var _lizard_wall_climb_blend := 0.0
@@ -140,6 +144,7 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 		_capture_rest()
 
 	_time += delta
+	_update_head_only_facing_direction(facing_direction)
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	var target_ratio: float = clamp(horizontal.length() / max(max_speed, 0.001), 0.0, 1.0)
@@ -152,6 +157,7 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 	var weight_slowdown: float = clamp(1.0 / max(total_equipped_weight, 1.0), heavy_weight_swing_slowdown, 1.0)
 
 	walk_time += delta * walk_cycle_speed * speed_ratio * weight_slowdown
+	_animate_facing(delta, facing_direction)
 
 	if crawl_mode:
 		_animate_crawl_body()
@@ -165,9 +171,8 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 	_update_aim_overlay(delta)
 	_apply_aim_overlay()
 	_update_attack_overlay(delta)
-	_head_only_attack_forward_offset = 0.0
+	_head_only_attack_world_offset = Vector3.ZERO
 	_apply_attack_overlay()
-	_animate_facing(delta, facing_direction)
 	if foot_placement_enabled:
 		_animate_feet(delta)
 
@@ -181,9 +186,12 @@ func trigger_attack(combo_step: int = 0) -> void:
 	if _is_head_only():
 		_attack_duration_current = head_only_attack_duration
 		_head_only_attack_contacted = false
+		_head_only_attack_landed = false
+		_head_only_attack_direction = _head_only_last_facing_direction
 	else:
 		_attack_duration_current = attack_overlay_duration
 		_head_only_attack_contacted = true
+		_head_only_attack_landed = true
 	if _attack_combo_step == 3 and not _is_head_only():
 		_attack_duration_current *= 1.15
 	_attack_timer = _attack_duration_current
@@ -200,7 +208,30 @@ func confirm_head_only_attack_contact() -> void:
 
 
 func get_head_only_attack_forward_offset() -> float:
-	return _head_only_attack_forward_offset
+	if not _is_head_only():
+		return 0.0
+	return get_head_only_attack_world_offset().length()
+
+
+func get_head_only_attack_world_offset() -> Vector3:
+	if not _is_head_only():
+		return Vector3.ZERO
+	return _head_only_base_world_offset + _head_only_attack_world_offset
+
+
+func _update_head_only_facing_direction(facing_direction: Vector3) -> void:
+	var flat: Vector3 = Vector3(facing_direction.x, 0.0, facing_direction.z)
+	if flat.length() > 0.01:
+		_head_only_last_facing_direction = flat.normalized()
+
+
+func _world_horizontal_offset_to_local(world_offset: Vector3) -> Vector3:
+	if rig == null:
+		return Vector3.ZERO
+	var flat: Vector3 = Vector3(world_offset.x, 0.0, world_offset.z)
+	var local_offset: Vector3 = rig.global_transform.basis.inverse() * flat
+	local_offset.y = 0.0
+	return local_offset
 
 
 func set_crawl_mode(enabled: bool) -> void:
@@ -294,8 +325,9 @@ func _animate_head_only(sway: float, breath: float) -> void:
 
 	var hop: float = absf(sin(walk_time)) * head_only_hop_amount * speed_ratio
 	var rest: Vector3 = _get_rest_pos("head")
+	var base_local_offset: Vector3 = _world_horizontal_offset_to_local(_head_only_base_world_offset)
 	head.scale = Vector3.ONE
-	head.position = Vector3(rest.x + sway * 0.8, head_only_ground_socket_y + hop, rest.z)
+	head.position = Vector3(rest.x + sway * 0.8, head_only_ground_socket_y + hop, rest.z) + base_local_offset
 	head.rotation = _get_rest_rot("head") + Vector3(_head_only_roll_angle, 0.0, sway * head_only_roll_amount)
 
 
@@ -599,12 +631,26 @@ func _apply_head_only_attack_pose() -> void:
 		return
 
 	var phase: float = _attack_phase()
+	if phase >= 0.999 and not _head_only_attack_landed:
+		_head_only_base_world_offset += _head_only_attack_direction * head_only_attack_lunge
+		_head_only_attack_world_offset = Vector3.ZERO
+		_head_only_attack_landed = true
+		_head_only_attack_contacted = true
+		head.scale = Vector3.ONE
+		return
+	if _head_only_attack_landed:
+		_head_only_attack_world_offset = Vector3.ZERO
+		head.scale = Vector3.ONE
+		return
+
 	var charge_end: float = clampf(head_only_attack_charge_portion, 0.05, 0.75)
 	if phase < charge_end:
 		var charge_t: float = phase / charge_end
 		var charge: float = sin(charge_t * PI * 0.5) * _attack_blend
+		_head_only_attack_world_offset = _head_only_attack_direction * (-head_only_attack_lunge * 0.14 * charge)
+		var charge_local_offset: Vector3 = _world_horizontal_offset_to_local(_head_only_attack_world_offset)
 		head.position.y -= head_only_attack_charge_squash * charge
-		head.position.z -= head_only_attack_lunge * 0.14 * charge
+		head.position += charge_local_offset
 		head.rotation.x -= head_only_attack_roll * 0.22 * charge
 		head.scale = Vector3(
 			1.0 + head_only_attack_charge_squash * 0.55 * charge,
@@ -616,8 +662,9 @@ func _apply_head_only_attack_pose() -> void:
 	var jump_t: float = (phase - charge_end) / maxf(1.0 - charge_end, 0.001)
 	var arc: float = sin(jump_t * PI) * _attack_blend
 	var commit: float = sin(jump_t * PI * 0.5) * _attack_blend
-	_head_only_attack_forward_offset = head_only_attack_lunge * commit
-	head.position.z += head_only_attack_lunge * commit
+	_head_only_attack_world_offset = _head_only_attack_direction * (head_only_attack_lunge * commit)
+	var jump_local_offset: Vector3 = _world_horizontal_offset_to_local(_head_only_attack_world_offset)
+	head.position += jump_local_offset
 	head.position.y += head_only_attack_arc * arc
 	head.rotation.x += head_only_attack_roll * commit
 	var stretch: float = arc * 0.12

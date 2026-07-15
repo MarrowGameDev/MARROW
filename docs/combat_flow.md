@@ -124,13 +124,15 @@ Ataque/combo por hueso:
 - Si el jugador sigue solo como cabeza, `trigger_attack` usa una duracion visual
   propia y reemplaza las poses de brazos por un salto de cabeza: primero
   comprime/carga hacia atras, luego salta hacia adelante y arriba hasta una
-  altura cercana a medio torso. La cabeza solo vuelve visualmente a la posicion
-  original cuando `AttackHitbox` confirma contacto con otro cuerpo o hurtbox
-  enemigo; si falla, mantiene la pose lanzada. El salto usa Z local positivo
-  porque esa es la direccion visual hacia adelante del rig del jugador.
+  altura cercana a medio torso. Al caer, esa posicion adelantada se guarda como
+  nuevo inicio local del ciclo; el siguiente golpe empieza desde donde quedo la
+  cabeza y no desde el rest original. El salto usa Z local positivo porque esa
+  es la direccion visual hacia adelante del rig del jugador. La posicion
+  acumulada se guarda en mundo horizontal y luego se convierte a local del rig,
+  para evitar teleports cuando el jugador se mueve o gira lateralmente.
 - Mientras ese ataque esta activo, `Player` lee
-  `get_head_only_attack_forward_offset()` y se lo pasa a la camara como offset
-  horizontal. La camara no sigue el arco vertical de la cabeza.
+  `get_head_only_attack_world_offset()` y se lo pasa a la camara como offset
+  horizontal acumulado. La camara no sigue el arco vertical de la cabeza.
 - Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
   activar combos con gameplay real se debe crear una regla de combate explicita
   y probarla en `TESTING ENVIRONMENT`.

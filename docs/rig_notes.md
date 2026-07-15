@@ -52,13 +52,16 @@ Combo overlay:
 - Step 3 uses both arms, deeper lunge, and a small head dip.
 - If the player is only a head, combo arm poses are skipped. The head instead
   squashes backward to charge, jumps forward/up toward the target direction,
-  reaches roughly mid-torso height, and only falls back to its original rolling
-  position after the melee hitbox confirms contact with another body or enemy
-  hurtbox. The launch uses the rig's positive local Z direction so it moves
-  forward in game view. Misses hold the launched pose instead of snapping home.
+  reaches roughly mid-torso height, and lands forward into a new rolling start
+  point. The next head-only attack starts from that landed position instead of
+  snapping back to the original rest spot. The launch uses the rig's positive
+  local Z direction so it moves forward in game view. The landed offset is
+  stored as a world-horizontal vector and converted into rig-local space each
+  frame, so turning or strafing sideways does not rotate the old landing offset
+  and teleport the head.
 - During that head-only attack, the animator exposes
-  `get_head_only_attack_forward_offset()` so the camera can follow only the
-  horizontal forward motion. The vertical arc stays visual on the head socket.
+  `get_head_only_attack_world_offset()` so the camera can follow the accumulated
+  horizontal motion directly. The vertical arc stays visual on the head socket.
 - This is visual only; melee damage and hitbox behavior are unchanged.
 
 ## Current player body progression

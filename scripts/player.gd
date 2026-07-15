@@ -745,18 +745,23 @@ func _update_procedural_animation(delta: float, max_speed: float) -> void:
 func _update_camera_animation_follow_offset() -> void:
 	if camera_controller == null or animator == null:
 		return
-	var forward_offset := 0.0
-	if animator.has_method("get_head_only_attack_forward_offset"):
-		forward_offset = float(animator.call("get_head_only_attack_forward_offset"))
-	var follow_direction := last_facing_direction
-	follow_direction.y = 0.0
-	if follow_direction.length() < 0.01:
-		follow_direction = _get_camera_forward_direction()
-	follow_direction.y = 0.0
-	if follow_direction.length() > 0.01:
-		follow_direction = follow_direction.normalized()
+	var animation_offset := Vector3.ZERO
+	if animator.has_method("get_head_only_attack_world_offset"):
+		var offset_value: Variant = animator.call("get_head_only_attack_world_offset")
+		if offset_value is Vector3:
+			animation_offset = offset_value
+	elif animator.has_method("get_head_only_attack_forward_offset"):
+		var forward_offset := float(animator.call("get_head_only_attack_forward_offset"))
+		var follow_direction := last_facing_direction
+		follow_direction.y = 0.0
+		if follow_direction.length() < 0.01:
+			follow_direction = _get_camera_forward_direction()
+		follow_direction.y = 0.0
+		if follow_direction.length() > 0.01:
+			follow_direction = follow_direction.normalized()
+		animation_offset = follow_direction * forward_offset
 	if camera_controller.has_method("set_animation_follow_offset"):
-		camera_controller.set_animation_follow_offset(follow_direction * forward_offset)
+		camera_controller.set_animation_follow_offset(animation_offset)
 
 
 # Bone pickups call this when the player walks into them.

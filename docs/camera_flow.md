@@ -61,11 +61,13 @@ un punto de disparo consistente desde el centro de pantalla.
 1. `ProceduralPlayerAnimator` calcula el offset hacia adelante del ataque cuando
    el jugador sigue siendo solo cabeza.
 2. `Player._update_procedural_animation` lee
-   `get_head_only_attack_forward_offset`.
-3. `Player` lo convierte a mundo usando `last_facing_direction`, con Y en cero.
-4. `PlayerCameraController.set_animation_follow_offset` suaviza ese offset en
+   `get_head_only_attack_world_offset`.
+3. Ese offset ya viene en mundo horizontal e incluye tanto el salto actual como
+   la posicion adelantada acumulada por golpes anteriores.
+4. `Player` lo entrega a la camara con Y en cero.
+5. `PlayerCameraController.set_animation_follow_offset` suaviza ese offset en
    el pivot de camara.
-5. La camara sigue solo la distancia horizontal del salto; el arco vertical se
+6. La camara sigue solo la distancia horizontal del salto; el arco vertical se
    queda en la animacion del socket de cabeza.
 
 ## Flujo de mouse
