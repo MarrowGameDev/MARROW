@@ -9,7 +9,9 @@ signal hit_confirmed(target: Node)
 @export var damage: int = 1
 @export var lifetime: float = 0.16
 @export var visual_enabled: bool = true
+@export_enum("Box", "Sphere") var override_shape_type: String = "Box"
 @export var override_shape_size: Vector3 = Vector3.ZERO
+@export var override_sphere_radius: float = 0.0
 
 const ENEMY_BODY_HURTBOX_GROUP := "enemy_body_hurtboxes"
 
@@ -67,19 +69,36 @@ func _physics_process(_delta: float) -> void:
 
 
 func _apply_shape_override() -> void:
-	if override_shape_size == Vector3.ZERO:
+	if override_shape_size == Vector3.ZERO and override_sphere_radius <= 0.0:
 		return
 
 	var shape_node := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if shape_node != null:
-		var box := BoxShape3D.new()
-		box.size = override_shape_size
-		shape_node.shape = box
+		if override_shape_type == "Sphere":
+			var sphere := SphereShape3D.new()
+			sphere.radius = _override_sphere_radius()
+			shape_node.shape = sphere
+		else:
+			var box := BoxShape3D.new()
+			box.size = override_shape_size
+			shape_node.shape = box
 
 	if _visual != null:
-		var box_mesh := BoxMesh.new()
-		box_mesh.size = override_shape_size
-		_visual.mesh = box_mesh
+		if override_shape_type == "Sphere":
+			var sphere_mesh := SphereMesh.new()
+			sphere_mesh.radius = _override_sphere_radius()
+			sphere_mesh.height = _override_sphere_radius() * 2.0
+			_visual.mesh = sphere_mesh
+		else:
+			var box_mesh := BoxMesh.new()
+			box_mesh.size = override_shape_size
+			_visual.mesh = box_mesh
+
+
+func _override_sphere_radius() -> float:
+	if override_sphere_radius > 0.0:
+		return override_sphere_radius
+	return maxf(maxf(override_shape_size.x, override_shape_size.y), override_shape_size.z) * 0.5
 
 
 func _update_follow_position() -> void:

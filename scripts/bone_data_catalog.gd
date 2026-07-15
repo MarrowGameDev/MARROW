@@ -86,6 +86,7 @@ const DEFINITIONS := {
 			"physical_weight": 1.2,
 			"equipment_weight": 1.2,
 			"inventory_weight": 1.0,
+			"head_socket_offset": Vector3(0.0, 0.42, 0.0),
 		},
 		"attack_combo": {
 			"attack_type": "guard",
@@ -263,6 +264,7 @@ const DEFINITIONS := {
 			"equipment_weight": 2.0,
 			"inventory_weight": 2.2,
 			"visual_scale": Vector3(1.3, 1.3, 1.3),
+			"head_socket_offset": Vector3(0.0, 0.5, -0.03),
 		},
 		"attack_combo": {
 			"attack_type": "melee",
@@ -391,6 +393,7 @@ const DEFINITIONS := {
 			"physical_weight": 1.4,
 			"equipment_weight": 1.4,
 			"inventory_weight": 1.1,
+			"head_socket_offset": Vector3(0.0, 0.46, 0.0),
 		},
 		"attack_combo": {
 			"attack_type": "hybrid",

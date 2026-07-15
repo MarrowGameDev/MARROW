@@ -41,6 +41,7 @@ weight_class = "medium"
 physical_weight = 1.4
 equipment_weight = 1.4
 inventory_weight = 1.1
+head_socket_offset = Vector3(0, 0.46, 0)
 set_id = "hybrid_bones"
 set_name = "Hybrid Bones"
 set_piece_key = "body"

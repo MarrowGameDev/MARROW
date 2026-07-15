@@ -95,6 +95,7 @@ const MUTATION_HYBRID := "hibrido"
 @export var visual_scale: Vector3 = Vector3.ONE
 @export var visual_offset: Vector3 = Vector3.ZERO
 @export var visual_rotation: Vector3 = Vector3.ZERO
+@export var head_socket_offset: Vector3 = Vector3.ZERO
 @export var hitbox_size: Vector3 = Vector3.ZERO
 @export var hitbox_offset: Vector3 = Vector3.ZERO
 @export var hitbox_scale: Vector3 = Vector3.ONE
@@ -114,6 +115,8 @@ func to_clean_dictionary() -> Dictionary:
 		visual["visual_offset"] = visual_offset
 	if visual_rotation != Vector3.ZERO:
 		visual["visual_rotation"] = visual_rotation
+	if head_socket_offset != Vector3.ZERO:
+		visual["head_socket_offset"] = head_socket_offset
 	if hitbox_size != Vector3.ZERO:
 		visual["hitbox_size"] = hitbox_size
 	if hitbox_offset != Vector3.ZERO:
@@ -258,6 +261,8 @@ func to_legacy_dictionary() -> Dictionary:
 		legacy["visual_offset"] = visual_offset
 	if visual_rotation != Vector3.ZERO:
 		legacy["visual_rotation"] = visual_rotation
+	if head_socket_offset != Vector3.ZERO:
+		legacy["head_socket_offset"] = head_socket_offset
 	if hitbox_size != Vector3.ZERO:
 		legacy["hitbox_size"] = hitbox_size
 	if hitbox_offset != Vector3.ZERO:
@@ -347,6 +352,7 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.visual_scale = _vector3(visual.get("visual_scale", definition.visual_scale), definition.visual_scale)
 	definition.visual_offset = _vector3(visual.get("visual_offset", definition.visual_offset), definition.visual_offset)
 	definition.visual_rotation = _vector3(visual.get("visual_rotation", definition.visual_rotation), definition.visual_rotation)
+	definition.head_socket_offset = _vector3(visual.get("head_socket_offset", definition.head_socket_offset), definition.head_socket_offset)
 	definition.hitbox_size = _vector3(visual.get("hitbox_size", definition.hitbox_size), definition.hitbox_size)
 	definition.hitbox_offset = _vector3(visual.get("hitbox_offset", definition.hitbox_offset), definition.hitbox_offset)
 	definition.hitbox_scale = _vector3(visual.get("hitbox_scale", definition.hitbox_scale), definition.hitbox_scale)

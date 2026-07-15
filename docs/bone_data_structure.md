@@ -197,10 +197,17 @@ Campos:
 - `visual_scale`
 - `visual_offset`
 - `visual_rotation`
+- `head_socket_offset`
 - `hitbox_size`
 - `hitbox_offset`
 - `hitbox_scale`
 - `hitbox_rotation`
+
+`head_socket_offset` aplica a torsos (`slot = body`). Define donde debe vivir
+el socket/origen de la cabeza relativo al torso equipado durante estados donde
+la cabeza depende directamente del torso, como torso-only spring y ataques que
+lanzan la cabeza desde el torso. Si queda en `Vector3.ZERO`, el animador usa su
+fallback actual para mantener compatibilidad con huesos viejos.
 
 `hitbox_*` controla las cajas de dano por parte del cuerpo en
 `ModularSkeletonRig`. Si `hitbox_size` queda en `Vector3.ZERO`, el rig calcula

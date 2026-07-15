@@ -133,6 +133,15 @@ Ataque/combo por hueso:
 - Mientras ese ataque esta activo, `Player` lee
   `get_head_only_attack_world_offset()` y se lo pasa a la camara como offset
   horizontal acumulado. La camara no sigue el arco vertical de la cabeza.
+- Si el jugador tiene torso pero no piernas, `trigger_attack` usa el flujo
+  `torso_head_attack_*`: el torso se comprime como resorte, prepara el disparo,
+  lanza la cabeza hacia la direccion del enemigo y el hitbox esferico del craneo
+  sigue ese socket durante `torso_head_attack_hitbox_lifetime`. Cuando hay
+  contacto, la cabeza entra en un recoil alto y vuelve al socket guardado del
+  torso.
+- Para camera follow, `Player` primero consulta
+  `get_head_launch_attack_world_offset()`, que cubre tanto cabeza-sola como
+  torso-solo. Si no existe, mantiene el fallback anterior de cabeza-sola.
 - Si `AttackHitbox` confirma contacto real, `Player` llama
   `confirm_head_only_attack_contact`. El animator entra en una pose separada de
   recoil: captura el punto de impacto, hace que la cabeza rebote/caiga hacia
@@ -143,6 +152,9 @@ Ataque/combo por hueso:
   socket real de `head` durante toda la animacion. El dano se aplica donde esta
   la cabeza visible: si ese hitbox toca un body, limb hurtbox u objeto, se
   confirma contacto y la cabeza entra en recoil desde su posicion real.
+- Ese hitbox de cabeza sola ahora usa una esfera centrada en el socket `head`
+  (`head_only_attack_hitbox_radius`) en vez de una caja, para que el golpe siga
+  mejor la silueta redonda del craneo.
 - El recoil ya no borra el offset de ataque al confirmar contacto; empieza desde
   la posicion actual de la cabeza. El hitbox de cabeza ignora cuerpos tipo
   ground/floor/ramp para evitar que la cabeza vuelva al inicio por tocar el piso.
@@ -192,6 +204,9 @@ Hurtboxes del jugador:
 Hurtboxes de enemigos:
 - `Enemy._setup_procedural_character()` registra al enemigo como owner de los
   hurtboxes del rig usando el grupo `enemy_body_hurtboxes`.
+- Al registrar ese owner, `ModularSkeletonRig` reaplica los hurtboxes con
+  `ENEMY_HITBOX_ACCURACY_SCALE`, reduciendo el aire alrededor de cabeza, torso,
+  brazos, piernas y pies sin cambiar los hurtboxes del jugador.
 - `AttackHitbox` escucha `area_entered` y llama
   `take_enemy_body_part_damage(body_part, ...)` para melee.
 - Flechas y finger bones del jugador tambien escuchan `enemy_body_hurtboxes`.
@@ -298,3 +313,15 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-15: Se aumento la altura general del ataque de cabeza sola:
   `head_only_attack_arc` 0.92, `head_only_hit_recoil_arc` 0.64 y
   `head_only_hit_recoil_lift` 0.46.
+- 2026-07-15: El melee de cabeza sola usa hitbox esferico para coincidir mejor
+  con el craneo, y los hurtboxes enemigos se recortan por parte con
+  `ENEMY_HITBOX_ACCURACY_SCALE`.
+- 2026-07-15: Se agrego ataque torso-solo: el torso se enrolla, lanza la cabeza
+  hacia el enemigo y, al contactar, la cabeza hace recoil alto antes de volver a
+  su socket.
+- 2026-07-15: Se corrigio el snap post-recoil de torso-solo: al aterrizar, la
+  cabeza queda fijada al socket vivo del torso y no vuelve a ejecutar el launch
+  durante el blend-out.
+- 2026-07-15: Los torsos pueden definir `head_socket_offset`; el ataque
+  torso-solo usa ese socket vivo para lanzar y regresar la cabeza segun la
+  forma del torso equipado.

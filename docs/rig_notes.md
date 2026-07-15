@@ -112,11 +112,19 @@ Combo overlay:
   `ProceduralPlayerAnimator` enters a torso-spring state. The torso compresses,
   launches upward/forward and settles like a spring from
   `torso_spring_ground_socket_y`, with the head placed from
-  `torso_spring_head_offset` relative to the springing torso. The head adds a
-  delayed `torso_spring_head_pop_amount` bounce so it rises a bit higher than
-  the torso and settles back into place by the end of the cycle. The head uses
-  extra side drift and rotation during this state so the torso-only movement
-  reads more exaggerated than the full-body animation.
+  the equipped torso's `head_socket_offset` relative to the springing torso. If
+  a torso has no socket data, the animator falls back to
+  `torso_spring_head_offset`. The head adds a delayed
+  `torso_spring_head_pop_amount` bounce so it rises a bit higher than the torso
+  and settles back into place by the end of the cycle. The head uses extra side
+  drift and rotation during this state so the torso-only movement reads more
+  exaggerated than the full-body animation.
+- Torso-only attack uses separate `torso_head_attack_*` tuning. The torso coils
+  down, the head launches forward from the current torso spring socket, and the
+  skull sphere hitbox follows the launched head. On confirmed contact, the head
+  recoils high into the air and returns to the live torso socket position. Once
+  landed, the overlay pins the head to that socket so it cannot replay the launch
+  branch during blend-out.
 - Enemies use `ProceduralEnemyAnimator`, a thin subclass that keeps player body
   progression disabled. This prevents enemies without player equipment records
   from being treated as head-only bodies.
@@ -132,6 +140,9 @@ Combo overlay:
 - `set_body_hitbox_owner(owner, group)` labels the same socket boxes for the
   owning actor. Player boxes use `player_body_hurtboxes`; enemy boxes use
   `enemy_body_hurtboxes`.
+- Enemy-owned hurtboxes are trimmed with `ENEMY_HITBOX_ACCURACY_SCALE` after
+  ownership is assigned, so enemy damage checks hug each body part more tightly
+  without shrinking the player's own recovery/progression hurtboxes.
 - When a bone is equipped, `equip_bone()` reads `hitbox_size`,
   `hitbox_offset`, `hitbox_scale` and `hitbox_rotation`. If no explicit
   `hitbox_size` is provided, the rig derives the box from the part's visual

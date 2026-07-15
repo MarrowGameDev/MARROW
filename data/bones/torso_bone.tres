@@ -33,6 +33,7 @@ weight_class = "medium"
 physical_weight = 1.2
 equipment_weight = 1.2
 inventory_weight = 1.0
+head_socket_offset = Vector3(0, 0.42, 0)
 set_id = "core_body"
 set_name = "Core Body"
 set_piece_key = "body"

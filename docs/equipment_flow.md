@@ -165,9 +165,14 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   `hitbox_rotation`. `ModularSkeletonRig` consume esos campos al equipar para
   ajustar el hurtbox de cada socket individual. Si no hay `hitbox_size`, el rig
   deriva el tamano desde la geometria base y `visual_scale`.
+- Los torsos pueden definir `head_socket_offset`. `ProceduralPlayerAnimator`
+  lee ese valor desde el hueso equipado en `body` para colocar el origen de la
+  cabeza segun la forma del torso. Esto permite que un torso pesado, largo o
+  lizard-like cambie la altura/profundidad de la cabeza sin tocar el player.
 - El mismo contrato de `hitbox_*` aplica para jugador y enemigos. La diferencia
   vive en el grupo de dano (`player_body_hurtboxes` o `enemy_body_hurtboxes`),
-  no en datos duplicados.
+  no en datos duplicados. Los enemigos aplican un recorte adicional de precision
+  mediante `ENEMY_HITBOX_ACCURACY_SCALE` despues de registrar su owner.
 
 ## Como probar
 

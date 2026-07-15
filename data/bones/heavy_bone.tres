@@ -45,6 +45,7 @@ weight_class = "heavy"
 physical_weight = 2.0
 equipment_weight = 2.0
 inventory_weight = 2.2
+head_socket_offset = Vector3(0, 0.5, -0.03)
 set_id = "power_bones"
 set_name = "Power Bones"
 set_piece_key = "body"

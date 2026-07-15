@@ -161,6 +161,7 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"visual_scale": _generated_limb_visual_scale(source_profile, limb_key),
 		"visual_offset": Vector3.ZERO,
 		"visual_rotation": Vector3.ZERO,
+		"head_socket_offset": _generated_limb_head_socket_offset(source_profile, limb_key),
 		"hitbox_size": Vector3.ZERO,
 		"hitbox_offset": Vector3.ZERO,
 		"hitbox_scale": _generated_limb_visual_scale(source_profile, limb_key),
@@ -511,3 +512,16 @@ static func _generated_limb_visual_scale(source_profile: String, limb_key: Strin
 				"head":
 					return Vector3(0.9, 0.75, 1.25)
 	return Vector3.ONE
+
+
+static func _generated_limb_head_socket_offset(source_profile: String, limb_key: String) -> Vector3:
+	if limb_key != "body":
+		return Vector3.ZERO
+
+	match source_profile:
+		"gorilla":
+			return Vector3(0.0, 0.54, -0.08)
+		"lizard":
+			return Vector3(0.0, 0.32, -0.36)
+		_:
+			return Vector3(0.0, 0.42, 0.0)

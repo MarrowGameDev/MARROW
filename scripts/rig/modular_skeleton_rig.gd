@@ -55,6 +55,16 @@ const PLAYER_BODY_HITBOX_GROUP := "player_body_hurtboxes"
 const ENEMY_BODY_HITBOX_GROUP := "enemy_body_hurtboxes"
 const DAMAGE_HITBOX_GROUPS := [PLAYER_BODY_HITBOX_GROUP, ENEMY_BODY_HITBOX_GROUP]
 const MIN_HITBOX_SIZE := Vector3(0.08, 0.08, 0.08)
+const ENEMY_HITBOX_ACCURACY_SCALE := {
+	"body": Vector3(0.90, 0.92, 0.90),
+	"head": Vector3(0.88, 0.88, 0.88),
+	"right_arm": Vector3(0.80, 0.96, 0.80),
+	"left_arm": Vector3(0.80, 0.96, 0.80),
+	"right_leg": Vector3(0.82, 0.96, 0.82),
+	"left_leg": Vector3(0.82, 0.96, 0.82),
+	"right_foot": Vector3(0.90, 0.84, 0.94),
+	"left_foot": Vector3(0.90, 0.84, 0.94),
+}
 
 # Optional: show a real 3D model as the whole body instead of grey boxes.
 # The model is a single un-rigged mesh, so it gets whole-body motion (the grey
@@ -85,6 +95,7 @@ var equipped_ids: Dictionary = {}    # slot id -> bone_id
 var limb_joints: Dictionary = {}     # socket key -> {skel, bone, rest_rot} for bending
 var body_hitboxes: Dictionary = {}    # socket key -> Area3D
 var body_hitbox_shapes: Dictionary = {} # socket key -> CollisionShape3D
+var body_hitbox_configs: Dictionary = {} # socket key -> raw size/offset/rotation
 var body_hitbox_owner: Node = null
 var body_hitbox_damage_group: String = ""
 var body_progression_enabled: bool = false
@@ -374,6 +385,7 @@ func set_body_hitbox_owner(owner_body: Node, damage_group: String = PLAYER_BODY_
 	body_hitbox_damage_group = damage_group
 	for socket_key in body_hitboxes:
 		_configure_body_hitbox_owner(str(socket_key))
+	_refresh_body_hitbox_shapes()
 
 
 func has_body_part_hitboxes() -> bool:
@@ -614,6 +626,15 @@ func _apply_equipped_body_hitbox(socket_key: String, explicit_size: Vector3, sca
 
 
 func _apply_body_hitbox(socket_key: String, size_value: Vector3, offset_value: Vector3, rotation_value: Vector3) -> void:
+	body_hitbox_configs[socket_key] = {
+		"size": size_value,
+		"offset": offset_value,
+		"rotation": rotation_value,
+	}
+	_apply_body_hitbox_shape(socket_key, size_value, offset_value, rotation_value)
+
+
+func _apply_body_hitbox_shape(socket_key: String, size_value: Vector3, offset_value: Vector3, rotation_value: Vector3) -> void:
 	var shape_node: CollisionShape3D = body_hitbox_shapes.get(socket_key) as CollisionShape3D
 	if shape_node == null:
 		return
@@ -623,9 +644,27 @@ func _apply_body_hitbox(socket_key: String, size_value: Vector3, offset_value: V
 		box = BoxShape3D.new()
 		shape_node.shape = box
 
-	box.size = _positive_vector3(size_value, MIN_HITBOX_SIZE)
+	box.size = _positive_vector3(_enemy_adjusted_hitbox_size(socket_key, size_value), MIN_HITBOX_SIZE)
 	shape_node.position = offset_value
 	shape_node.rotation = rotation_value
+
+
+func _refresh_body_hitbox_shapes() -> void:
+	for socket_key in body_hitbox_configs:
+		var config: Dictionary = body_hitbox_configs.get(socket_key, {})
+		_apply_body_hitbox_shape(
+			str(socket_key),
+			_as_vector3(config.get("size", Vector3.ZERO), Vector3.ZERO),
+			_as_vector3(config.get("offset", Vector3.ZERO), Vector3.ZERO),
+			_as_vector3(config.get("rotation", Vector3.ZERO), Vector3.ZERO)
+		)
+
+
+func _enemy_adjusted_hitbox_size(socket_key: String, size_value: Vector3) -> Vector3:
+	if body_hitbox_damage_group != ENEMY_BODY_HITBOX_GROUP:
+		return size_value
+	var scale_value: Vector3 = _as_vector3(ENEMY_HITBOX_ACCURACY_SCALE.get(socket_key, Vector3(0.88, 0.92, 0.88)), Vector3(0.88, 0.92, 0.88))
+	return _scale_vector3(size_value, scale_value)
 
 
 func _refresh_body_hitbox_enabled() -> void:
