@@ -25,6 +25,8 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/combat_targeting_service.gd`: reglas puras de auto-target para
   ataques head-launch (head-only y torso-only). No accede a la escena: recibe
   posiciones candidatas y devuelve el indice del mejor objetivo.
+- `scripts/backstab_rules_service.gd`: regla pura de cono trasero para stealth
+  finish/backstab. Recibe posicion, facing y threshold; no accede a la escena.
 - `scripts/ballistics_service.gd`: regla pura de lanzamiento para proyectiles con
   gravedad (saliva, flecha enemiga, roca de gorilla). Recibe posiciones y tuning,
   devuelve la velocidad de lanzamiento. Ver "Solve balistico compartido".
@@ -215,7 +217,8 @@ compromete al jugador en el lugar mientras dura la animacion.
 ## Flujo stealth
 
 1. `Player` busca target con `can_be_stealth_finished_by`.
-2. El enemigo valida distancia y que el player este detras.
+2. El enemigo valida distancia y delega el cono trasero en
+   `BackstabRulesService.is_attacker_behind_target()`.
 3. UI muestra `get_stealth_prompt_text`.
 4. Al presionar stealth:
    - Si enemy health <= threshold, muere.
@@ -229,12 +232,12 @@ Antes de cambiar la regla de stealth finish, ejecutar:
 python tools/validate_backstab_geometry.py
 ```
 
-El arnes reproduce la formula actual de `Enemy._is_player_behind()` sin abrir
-Godot. Cubre frente, detras, laterales, enemigos rotados, angulos del cono
-trasero y posiciones con offset vertical. Esta validacion es estatica; la
-confirmacion visual/runtime de que `facing_direction` coincide con el frente
-real del enemigo debe hacerse en `TESTING ENVIRONMENT` antes de una correccion
-funcional.
+El arnes reproduce la formula de `BackstabRulesService` sin abrir Godot y
+comprueba que `Enemy._is_player_behind()` delegue en ese servicio. Cubre frente,
+detras, laterales, enemigos rotados, angulos del cono trasero y posiciones con
+offset vertical. Esta validacion es estatica; la confirmacion visual/runtime de
+que `facing_direction` coincide con el frente real del enemigo debe hacerse en
+`TESTING ENVIRONMENT` antes de una correccion funcional o de animacion.
 
 ## Flujo de dano enemigo
 
