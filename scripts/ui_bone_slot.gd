@@ -123,12 +123,12 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	if typeof(data) != TYPE_DICTIONARY or not data.has("bone_id"):
 		return false
-	return EquipmentRulesService.slot_for_bone(data["bone_id"]) == slot_name
+	return EquipmentRulesService.can_equip_bone_in_slot(str(data["bone_id"]), slot_name)
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
-	if player != null and player.has_method("equip_bone"):
-		player.equip_bone(data["bone_id"])
+	if player != null and player.has_method("equip_bone_in_slot"):
+		player.equip_bone_in_slot(str(data["bone_id"]), slot_name)
 
 
 # Right-click clears this slot.

@@ -121,7 +121,10 @@ func set_open(open: bool) -> void:
 
 
 func cycle_category() -> void:
-	var categories: Array[String] = ["all", "right_arm", "legs", "body", "head", "settings"]
+	var categories: Array[String] = ["all"]
+	for slot_id in EquipmentRulesService.CANONICAL_BODY_SLOTS:
+		categories.append(str(slot_id))
+	categories.append("settings")
 	var index: int = categories.find(inventory_category)
 	if index < 0:
 		index = 0
@@ -169,6 +172,11 @@ func has_bone_equipped(bone_id: String) -> bool:
 func equip_bone(bone_id: String) -> void:
 	if player != null:
 		player.call("equip_bone", bone_id)
+
+
+func equip_bone_in_slot(bone_id: String, slot: String) -> void:
+	if player != null:
+		player.call("equip_bone", bone_id, slot)
 
 
 func unequip_slot(slot: String) -> void:
@@ -311,7 +319,7 @@ func _build_inventory_ui() -> void:
 	inventory_grid_margin.add_child(items_grid)
 
 	inventory_sort_label = Label.new()
-	inventory_sort_label.text = "Sort: Newest    Empty slots show room for new pieces"
+	inventory_sort_label.text = "Sort: Body slot, rarity, quality, name"
 	inventory_sort_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inventory_sort_label.add_theme_font_size_override("font_size", 16)
 	inventory_sort_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
@@ -426,10 +434,12 @@ func _build_inventory_tabs(parent: VBoxContainer) -> void:
 	parent.add_child(inventory_tabs_container)
 
 	_add_inventory_tab(inventory_tabs_container, "all", "All")
-	_add_inventory_tab(inventory_tabs_container, "right_arm", "Arms")
-	_add_inventory_tab(inventory_tabs_container, "legs", "Legs")
-	_add_inventory_tab(inventory_tabs_container, "body", "Torsos")
-	_add_inventory_tab(inventory_tabs_container, "head", "Heads")
+	_add_inventory_tab(inventory_tabs_container, "head", "Head")
+	_add_inventory_tab(inventory_tabs_container, "torso", "Torso")
+	_add_inventory_tab(inventory_tabs_container, "left_arm", "L. Arm")
+	_add_inventory_tab(inventory_tabs_container, "right_arm", "R. Arm")
+	_add_inventory_tab(inventory_tabs_container, "left_leg", "L. Leg")
+	_add_inventory_tab(inventory_tabs_container, "right_leg", "R. Leg")
 	_add_inventory_tab(inventory_tabs_container, "settings", "Settings")
 	_refresh_inventory_tabs()
 
@@ -1009,8 +1019,9 @@ func sync_preview() -> void:
 
 	for slot in equipped:
 		var bone_id: String = str(equipped[slot])
-		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id)
+		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id).duplicate(true)
 		if not bone_def.is_empty():
+			bone_def["slot"] = EquipmentRulesService.normalize_slot_id(str(slot))
 			inventory_preview_rig.equip_bone(bone_id, bone_def)
 
 
@@ -1038,11 +1049,13 @@ func _build_paper_doll() -> Control:
 	doll.add_child(ring)
 
 	doll.add_child(_build_character_preview_panel())
-	var equip_slot_size := Vector2(96, 96)
-	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 12), equip_slot_size)
-	_place_slot(doll, "right_arm", "R. Arm", Vector2(310, 12), equip_slot_size)
-	_place_slot(doll, "body", "Torso", Vector2(0, 128), equip_slot_size)
-	_place_slot(doll, "legs", "Legs", Vector2(310, 128), equip_slot_size)
+	var equip_slot_size := Vector2(88, 88)
+	_place_slot(doll, "head", "Head", Vector2(0, 0), equip_slot_size)
+	_place_slot(doll, "torso", "Torso", Vector2(318, 0), equip_slot_size)
+	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 104), equip_slot_size)
+	_place_slot(doll, "right_arm", "R. Arm", Vector2(318, 104), equip_slot_size)
+	_place_slot(doll, "left_leg", "L. Leg", Vector2(0, 208), equip_slot_size)
+	_place_slot(doll, "right_leg", "R. Leg", Vector2(318, 208), equip_slot_size)
 	return doll
 
 
@@ -1413,6 +1426,7 @@ func rebuild_item_tiles() -> void:
 		visible_counts[id] = int(visible_counts[id]) + 1
 
 	var shown := 0
+	visible_order.sort_custom(Callable(self, "_compare_inventory_items"))
 	for id in visible_order:
 		var tile := BoneItemTile.new()
 		tile.setup(id, self, int(visible_counts.get(id, 1)))
@@ -1427,10 +1441,11 @@ func rebuild_item_tiles() -> void:
 func _bone_matches_inventory_category(bone_id: String) -> bool:
 	if inventory_category == "all":
 		return true
-	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
-	if inventory_category == "right_arm":
-		return slot == "right_arm" or slot == "left_arm"
-	return slot == inventory_category
+	return EquipmentRulesService.inventory_filter_matches_bone(inventory_category, bone_id)
+
+
+func _compare_inventory_items(a: String, b: String) -> bool:
+	return EquipmentRulesService.compare_bones_for_inventory(a, b)
 
 
 func update_inventory_ui() -> void:
