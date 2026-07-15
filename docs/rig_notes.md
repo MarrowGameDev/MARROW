@@ -15,6 +15,34 @@ Open `scenes/rig_test.tscn` in Godot and run it (F6 / "Run Current Scene").
 - Walk **forward onto the ramp** (in front of spawn) to see foot placement (Phase F):
   each foot raycasts down and plants on the surface, tilting to the slope.
 
+### Animation A/B demo (rig sandbox only)
+`2` and `3` play the SAME head lunge authored two ways, so the two styles can be
+compared. Both read the `head_only_attack_*` tuning, so retuning moves them
+together and any difference is the authoring style, not the numbers.
+
+Lives in `scripts/rig/rig_test_player.gd`, so it is confined to `rig_test.tscn`
+and never reaches the shipping `Player`. The animator keeps the demo poses
+(`trigger_demo_attack_procedural` / `trigger_demo_attack_tween` /
+`set_demo_target_world_position`) because that is animation code and both scenes
+share the animator, but nothing triggers them outside the sandbox.
+
+- **2** — `ProceduralPlayerAnimator.trigger_demo_attack_procedural()`: per-frame
+  math with hand-written easing helpers (`_ease_out_quad` and friends).
+- **3** — `ProceduralPlayerAnimator.trigger_demo_attack_tween()`: a `Tween` chain,
+  easing by name (`TRANS_QUAD` + `EASE_OUT`).
+
+An orange ball spawns on first press and orbits the player as a moving target.
+Key `2` re-aims mid-flight and tracks it; key `3` commits to wherever the ball was
+when the tween was built and misses by ~40 deg. That is the real trade: identical
+output, the tween is nicer to author, only the procedural version can react to a
+runtime target. Measured headless: both trace the same arc (peak 0.9199 vs 0.9197).
+
+Because `_animate_body()` rebuilds `head.position` from rest every frame, the
+tween cannot own the socket — it drives values that `_apply_demo_pose()` writes at
+the end of the animator's frame. An `AnimationPlayer` would hit the same wall.
+The demo hijacks the head socket regardless of equipped state, and settles back to
+a pose captured at trigger time, so it may pop slightly if triggered mid-sprint.
+
 ## Architecture (animate sockets, not meshes)
 - `scripts/rig/modular_skeleton_rig.gd` (`ModularSkeletonRig`) — builds Node3D
   sockets in `_ready()` and hangs a grey box on each. `equip_bone(id, def)` /
@@ -42,11 +70,28 @@ attack_torso_twist 0.35 · foot_raycast_up/down 0.6/1.4 · foot_lift 0.06 ·
 foot_smoothing 14 · foot_align_to_normal true (uncheck foot_placement_enabled to disable).
 Head-only attack tuning: `head_only_attack_duration`,
 `head_only_attack_charge_portion`, `head_only_attack_lunge`,
-`head_only_attack_arc`, `head_only_attack_charge_squash` and
-`head_only_attack_roll`. Hit recoil tuning: `head_only_hit_recoil_duration`,
+`head_only_attack_arc`, `head_only_attack_charge_squash`,
+`head_only_attack_roll`, `head_only_attack_release_portion` 0.25 (fraction of the
+jump over which the charge compression unwinds; 0 restores the old one-frame
+snap) and `head_only_attack_roll_damping` 0.2 (how much rolling spin survives
+while the head is airborne mid-attack; 1.0 restores the old behaviour).
+Hit recoil tuning: `head_only_hit_recoil_duration`,
 `head_only_hit_recoil_hold`, `head_only_hit_recoil_arc`,
 `head_only_hit_recoil_lift`, `head_only_hit_recoil_horizontal_push`,
 `head_only_hit_recoil_roll` and `head_only_hit_recoil_settle`.
+
+Head-launch auto-aim:
+- `Player` pushes a world-space aim into
+  `ProceduralPlayerAnimator.set_head_launch_attack_aim(direction, valid)` every
+  frame (before `update_from_player`). `valid = false` restores the old behaviour
+  of launching down the player's facing direction.
+- `trigger_attack` seeds `_head_only_attack_direction` /
+  `_torso_head_attack_direction` from that aim, and
+  `_update_head_launch_attack_aim()` keeps re-reading it every frame while the
+  launch is in the air, so an enemy that moves mid-attack is tracked. The
+  direction freezes on landing so the landing offset matches the pose reached.
+- The animator knows nothing about enemies. Enemy lookup and range rules live in
+  `Player` + `CombatTargetingService` (see `docs/combat_flow.md`).
 
 Combo overlay:
 - `Player` passes a combo step into `ProceduralPlayerAnimator.trigger_attack`.
@@ -56,8 +101,15 @@ Combo overlay:
 - If the player is only a head, combo arm poses are skipped. The head instead
   squashes backward to charge, jumps forward/up toward the target direction,
   reaches above mid-torso height, and lands forward into a new rolling start
-  point. The next head-only attack starts from that landed position instead of
-  snapping back to the original rest spot. The launch uses the rig's positive
+  point. That forward landing is now a real displacement of the PLAYER: on
+  landing the animator raises `has_head_only_body_catch_up_request()` and the
+  Player consumes it the same frame, moving the capsule to the head with
+  `move_and_collide` (so lunging into a wall stops at the wall). Previously the
+  landing accumulated into `_head_only_base_world_offset` and only the head
+  visual moved, so the head drifted 0.85 m further from the capsule on every
+  attack, forever — and that drift also leaked into the camera follow offset via
+  `get_head_launch_attack_world_offset()`. A hit does not displace the player:
+  the recoil returns the head to the body instead. The launch uses the rig's positive
   local Z direction so it moves forward in game view. The landed offset is
   stored as a world-horizontal vector and converted into rig-local space each
   frame, so turning or strafing sideways does not rotate the old landing offset

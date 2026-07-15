@@ -84,6 +84,12 @@ extends Node3D
 @export var head_only_attack_arc := 0.92
 @export var head_only_attack_charge_squash := 0.22
 @export var head_only_attack_roll := 1.4
+# Fraction of the jump over which the charge compression unwinds. Lower is a
+# snappier spring; 0 would restore the old one-frame snap.
+@export var head_only_attack_release_portion := 0.25
+# How much of the rolling spin survives while the head is airborne mid-attack.
+# 1.0 restores the old behaviour (attack roll buried under locomotion spin).
+@export var head_only_attack_roll_damping := 0.2
 @export var head_only_hit_recoil_duration := 0.58
 @export var head_only_hit_recoil_hold := 0.14
 @export var head_only_hit_recoil_arc := 0.64
@@ -113,6 +119,12 @@ extends Node3D
 @export var combo_finisher_arm_forward := 0.85
 @export var combo_finisher_torso_twist := 0.5
 @export var combo_finisher_lunge := 0.34
+
+@export_group("Animation demo")
+# A/B harness: keys 2 and 3 play the SAME head lunge, authored two different ways.
+# Both read the head_only_attack_* tuning above, so retuning moves them together
+# and any difference you see is the authoring style, not the numbers.
+@export var demo_settle_time := 0.12
 
 @export_group("Aim overlay")
 @export var aim_overlay_blend_speed := 14.0
@@ -198,6 +210,33 @@ var _rest_rot: Dictionary = {}
 var _captured := false
 var _body: Node3D = null
 
+enum DemoMode {OFF, PROCEDURAL, TWEEN}
+
+var _demo_mode: DemoMode = DemoMode.OFF
+var _demo_timer := 0.0
+var _demo_tween: Tween = null
+var _demo_forward := Vector3.FORWARD
+var _demo_start_position := Vector3.ZERO
+var _demo_start_rotation := Vector3.ZERO
+# The demo writes these; _apply_demo_pose() is the single place they reach the
+# socket. The Tween cannot touch head.position directly because _animate_body()
+# rebuilds it from rest every frame and would overwrite the tween mid-flight.
+var _demo_head_position := Vector3.ZERO
+var _demo_head_rotation := Vector3.ZERO
+var _demo_head_scale := Vector3.ONE
+var _demo_target_world_position := Vector3.ZERO
+var _demo_target_valid := false
+
+# Auto-aim for head-launch attacks. The Player owns enemy lookup and pushes a
+# world-space direction here every frame; the animator just steers the launch.
+var _head_launch_aim_direction := Vector3.ZERO
+var _head_launch_aim_valid := false
+
+# Pending body displacement from a landed head-only lunge. The Player consumes
+# this and moves the capsule, so the head and the body stay together.
+var _head_only_body_catch_up_offset := Vector3.ZERO
+var _head_only_body_catch_up_requested := false
+
 const ANIMATED_KEYS := ["body", "head", "right_arm", "left_arm", "right_leg", "left_leg"]
 const FOOT_KEYS := ["left_foot", "right_foot"]
 
@@ -217,7 +256,13 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 	speed_ratio = lerp(speed_ratio, target_ratio, 1.0 - exp(-speed_smoothing * delta))
 	if _is_head_only():
 		var roll_radius: float = maxf(head_only_roll_radius, 0.01)
-		_head_only_roll_angle += (horizontal.length() * delta / roll_radius) * head_only_roll_speed_scale
+		var roll_scale: float = head_only_roll_speed_scale
+		# Mid-lunge the head is off the ground, so it should not keep winding up
+		# ground roll on top of the attack's own roll. Without this, attacking at
+		# full speed spun the head ~671 degrees in a 0.34 s attack instead of ~189.
+		if _head_only_attack_airborne():
+			roll_scale *= head_only_attack_roll_damping
+		_head_only_roll_angle += (horizontal.length() * delta / roll_radius) * roll_scale
 	if _detached_head_landing_timer > 0.0:
 		_detached_head_landing_timer = maxf(_detached_head_landing_timer - delta, 0.0)
 	if _torso_head_miss_fall_timer > 0.0:
@@ -244,11 +289,285 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 	_update_aim_overlay(delta)
 	_apply_aim_overlay()
 	_update_attack_overlay(delta)
+	_update_head_launch_attack_aim()
 	_head_only_attack_world_offset = Vector3.ZERO
 	_torso_head_attack_world_offset = Vector3.ZERO
 	_apply_attack_overlay()
 	if foot_placement_enabled:
 		_animate_feet(delta)
+	# Runs last so the demo wins the head socket for its duration. The tween
+	# variant has already advanced its own values by the time we get here.
+	if _demo_mode == DemoMode.PROCEDURAL:
+		_update_demo_procedural(delta)
+	if _demo_mode != DemoMode.OFF:
+		_apply_demo_pose()
+
+
+# --- Animation demo: same lunge, two authoring styles -------------------------
+# Key 2 -> trigger_demo_attack_procedural(): per-frame math, easing by hand.
+# Key 3 -> trigger_demo_attack_tween(): declarative steps, easing by name.
+# Shared beats: charge (squash back) -> rise to apex -> fall to landing ->
+# settle back to the start pose so the demo can be replayed from one spot.
+
+func trigger_demo_attack_procedural() -> void:
+	var head: Node3D = _demo_begin()
+	if head == null:
+		return
+	_demo_mode = DemoMode.PROCEDURAL
+
+
+func trigger_demo_attack_tween() -> void:
+	var head: Node3D = _demo_begin()
+	if head == null:
+		return
+	_demo_mode = DemoMode.TWEEN
+
+	var k: Dictionary = _demo_keyframes()
+	var charge_time: float = _demo_charge_time()
+	var air_time: float = _demo_air_time()
+	var rise: float = air_time * 0.5
+	var fall: float = air_time * 0.5
+	var settle: float = maxf(demo_settle_time, 0.01)
+
+	_demo_tween = create_tween()
+	# Physics mode keeps the tween stepping in lockstep with update_from_player,
+	# which is driven from the player's _physics_process.
+	_demo_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+
+	# 1. Charge: squash down and pull back.
+	_demo_tween.tween_property(self, "_demo_head_position", k["charge_pos"], charge_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_demo_tween.parallel().tween_property(self, "_demo_head_rotation", k["charge_rot"], charge_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_demo_tween.parallel().tween_property(self, "_demo_head_scale", k["charge_scale"], charge_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	# 2. Rise: launch toward the apex, decelerating into it.
+	_demo_tween.tween_property(self, "_demo_head_position", k["apex_pos"], rise).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_demo_tween.parallel().tween_property(self, "_demo_head_rotation", k["apex_rot"], rise).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_demo_tween.parallel().tween_property(self, "_demo_head_scale", k["apex_scale"], rise).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	# 3. Fall: accelerate into the landing.
+	_demo_tween.tween_property(self, "_demo_head_position", k["land_pos"], fall).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_demo_tween.parallel().tween_property(self, "_demo_head_rotation", k["land_rot"], fall).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_demo_tween.parallel().tween_property(self, "_demo_head_scale", Vector3.ONE, fall).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+	# 4. Settle back to the start pose.
+	_demo_tween.tween_property(self, "_demo_head_position", _demo_start_position, settle).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_demo_tween.parallel().tween_property(self, "_demo_head_rotation", _demo_start_rotation, settle).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	_demo_tween.tween_callback(_demo_on_tween_finished)
+
+
+# The procedural twin of the tween chain above. Same four beats, but the phase
+# bookkeeping and the easing curves are spelled out by hand.
+func _update_demo_procedural(delta: float) -> void:
+	_demo_timer += delta
+	# The one thing the tween cannot do: re-aim at a target that moved after the
+	# animation started. Every keyframe below is derived from _demo_forward, so
+	# refreshing it here swings the whole trajectory to follow.
+	_demo_forward = _demo_local_forward()
+	var k: Dictionary = _demo_keyframes()
+	var charge_time: float = _demo_charge_time()
+	var air_time: float = _demo_air_time()
+	var rise: float = air_time * 0.5
+	var fall: float = air_time * 0.5
+	var settle: float = maxf(demo_settle_time, 0.01)
+	var t: float = _demo_timer
+
+	if t < charge_time:
+		var p: float = _ease_out_sine(t / charge_time)
+		_demo_head_position = _demo_start_position.lerp(k["charge_pos"], p)
+		_demo_head_rotation = _demo_start_rotation.lerp(k["charge_rot"], p)
+		_demo_head_scale = Vector3.ONE.lerp(k["charge_scale"], p)
+		return
+	t -= charge_time
+
+	if t < rise:
+		var p: float = _ease_out_quad(t / rise)
+		_demo_head_position = (k["charge_pos"] as Vector3).lerp(k["apex_pos"], p)
+		_demo_head_rotation = (k["charge_rot"] as Vector3).lerp(k["apex_rot"], p)
+		_demo_head_scale = (k["charge_scale"] as Vector3).lerp(k["apex_scale"], p)
+		return
+	t -= rise
+
+	if t < fall:
+		var p: float = _ease_in_quad(t / fall)
+		_demo_head_position = (k["apex_pos"] as Vector3).lerp(k["land_pos"], p)
+		_demo_head_rotation = (k["apex_rot"] as Vector3).lerp(k["land_rot"], p)
+		_demo_head_scale = (k["apex_scale"] as Vector3).lerp(Vector3.ONE, p)
+		return
+	t -= fall
+
+	if t < settle:
+		var p: float = _ease_in_out_sine(t / settle)
+		_demo_head_position = (k["land_pos"] as Vector3).lerp(_demo_start_position, p)
+		_demo_head_rotation = (k["land_rot"] as Vector3).lerp(_demo_start_rotation, p)
+		_demo_head_scale = Vector3.ONE
+		return
+
+	_demo_stop()
+
+
+# Both styles converge here: the demo owns the head socket while it runs.
+func _apply_demo_pose() -> void:
+	if rig == null:
+		return
+	var head: Node3D = rig.get_socket("head")
+	if head == null:
+		return
+	head.position = _demo_head_position
+	head.rotation = _demo_head_rotation
+	head.scale = _demo_head_scale
+
+
+# Targets are baked once at trigger time so the two styles stay comparable. The
+# procedural version could recompute these live against a moving target; the
+# tween cannot, because its steps are authored up front.
+func _demo_keyframes() -> Dictionary:
+	var lunge: float = head_only_attack_lunge
+	var squash: float = head_only_attack_charge_squash
+	var roll: float = head_only_attack_roll
+	# Peak stretch matches _apply_head_only_attack_pose()'s arc * 0.12 at apex.
+	var stretch: float = 0.12
+	return {
+		"charge_pos": _demo_start_position - _demo_forward * lunge * 0.14 + Vector3(0.0, -squash, 0.0),
+		"charge_rot": _demo_start_rotation + Vector3(-roll * 0.22, 0.0, 0.0),
+		"charge_scale": Vector3(1.0 + squash * 0.55, 1.0 - squash * 0.75, 1.0 + squash * 0.45),
+		"apex_pos": _demo_start_position + _demo_forward * lunge * 0.5 + Vector3(0.0, head_only_attack_arc, 0.0),
+		"apex_rot": _demo_start_rotation + Vector3(roll * 0.5, 0.0, 0.0),
+		"apex_scale": Vector3(1.0 - stretch * 0.5, 1.0 + stretch, 1.0 - stretch * 0.35),
+		"land_pos": _demo_start_position + _demo_forward * lunge,
+		"land_rot": _demo_start_rotation + Vector3(roll, 0.0, 0.0),
+	}
+
+
+func _demo_charge_time() -> float:
+	return maxf(head_only_attack_duration * clampf(head_only_attack_charge_portion, 0.05, 0.75), 0.01)
+
+
+func _demo_air_time() -> float:
+	return maxf(head_only_attack_duration - _demo_charge_time(), 0.02)
+
+
+func _demo_begin() -> Node3D:
+	if rig == null:
+		return null
+	var head: Node3D = rig.get_socket("head")
+	if head == null:
+		return null
+	_demo_stop()
+	_demo_start_position = head.position
+	_demo_start_rotation = head.rotation
+	_demo_head_position = _demo_start_position
+	_demo_head_rotation = _demo_start_rotation
+	_demo_head_scale = Vector3.ONE
+	_demo_forward = _demo_local_forward()
+	_demo_timer = 0.0
+	return head
+
+
+# Aims at the demo target when the player supplies one, else at current facing.
+func _demo_local_forward() -> Vector3:
+	if _demo_target_valid and rig != null:
+		var to_target: Vector3 = rig.to_local(_demo_target_world_position) - _demo_start_position
+		to_target.y = 0.0
+		if to_target.length() > 0.001:
+			return to_target.normalized()
+	var local: Vector3 = _world_horizontal_offset_to_local(_head_only_last_facing_direction)
+	if local.length() > 0.001:
+		return local.normalized()
+	return Vector3.FORWARD
+
+
+# The player pushes the orbiting demo target here every frame.
+func set_demo_target_world_position(world_position: Vector3) -> void:
+	_demo_target_world_position = world_position
+	_demo_target_valid = true
+
+
+# Releases the head socket back to the normal animator on the next frame.
+# Cancels an in-flight tween, so it must not be used as the tween's own callback.
+func _demo_stop() -> void:
+	if _demo_tween != null and _demo_tween.is_valid():
+		_demo_tween.kill()
+	_demo_tween = null
+	_demo_mode = DemoMode.OFF
+	_demo_timer = 0.0
+
+
+# Runs from inside the tween's final step, where killing it would be re-entrant.
+func _demo_on_tween_finished() -> void:
+	_demo_tween = null
+	_demo_mode = DemoMode.OFF
+	_demo_timer = 0.0
+
+
+# Hand-written equivalents of Tween's TRANS_*/EASE_* pairs, so both styles trace
+# the exact same curve.
+func _ease_out_sine(t: float) -> float:
+	return sin(clampf(t, 0.0, 1.0) * PI * 0.5)
+
+
+func _ease_out_quad(t: float) -> float:
+	var c: float = clampf(t, 0.0, 1.0)
+	return 1.0 - (1.0 - c) * (1.0 - c)
+
+
+func _ease_in_quad(t: float) -> float:
+	var c: float = clampf(t, 0.0, 1.0)
+	return c * c
+
+
+func _ease_in_out_sine(t: float) -> float:
+	return -(cos(PI * clampf(t, 0.0, 1.0)) - 1.0) * 0.5
+
+
+# True while a head-launch attack is still resolving: in flight, in hit recoil,
+# falling after a miss, or waiting for the Player to consume a detach request.
+# The Player gates new attacks on this, because `attack_cooldown` alone is shorter
+# than these animations and a new trigger would restart the pose mid-air.
+func is_head_launch_attack_busy() -> bool:
+	if _is_head_only():
+		return not _head_only_attack_landed or _head_only_hit_recoil_timer > 0.0
+	if _is_torso_spring_only():
+		return (
+			not _torso_head_attack_landed
+			or _torso_head_recoil_timer > 0.0
+			or _torso_head_miss_fall_active
+			or _torso_head_miss_detach_requested
+		)
+	return false
+
+
+# Auto-aim for head-launch attacks, pushed by the Player every frame. Passing
+# valid = false (no enemy in range) falls back to the player's facing direction,
+# which is the original behaviour.
+func set_head_launch_attack_aim(direction: Vector3, valid: bool) -> void:
+	var flat: Vector3 = Vector3(direction.x, 0.0, direction.z)
+	if not valid or flat.length() < 0.001:
+		_head_launch_aim_valid = false
+		_head_launch_aim_direction = Vector3.ZERO
+		return
+	_head_launch_aim_valid = true
+	_head_launch_aim_direction = flat.normalized()
+
+
+func _head_launch_aim_or(fallback: Vector3) -> Vector3:
+	if _head_launch_aim_valid:
+		return _head_launch_aim_direction
+	return fallback
+
+
+# Steers an in-flight launch toward the target. This is the whole reason the
+# launch is procedural rather than a baked clip: the direction is re-read every
+# frame, so an enemy that moves mid-attack is still tracked. Once the attack has
+# landed the direction is frozen, so the landing offset stays consistent with the
+# offset the pose actually reached.
+func _update_head_launch_attack_aim() -> void:
+	if not _head_launch_aim_valid:
+		return
+	if _is_head_only() and not _head_only_attack_landed:
+		_head_only_attack_direction = _head_launch_aim_direction
+	elif _is_torso_spring_only() and not _torso_head_attack_landed:
+		_torso_head_attack_direction = _head_launch_aim_direction
 
 
 # The player calls this when an attack fires (Phase E).
@@ -261,7 +580,7 @@ func trigger_attack(combo_step: int = 0) -> void:
 		_attack_duration_current = head_only_attack_duration
 		_head_only_attack_contacted = false
 		_head_only_attack_landed = false
-		_head_only_attack_direction = _head_only_last_facing_direction
+		_head_only_attack_direction = _head_launch_aim_or(_head_only_last_facing_direction)
 		_head_only_hit_recoil_timer = 0.0
 		_torso_head_attack_contacted = true
 		_torso_head_attack_landed = true
@@ -277,7 +596,7 @@ func trigger_attack(combo_step: int = 0) -> void:
 		_head_only_hit_recoil_timer = 0.0
 		_torso_head_attack_contacted = false
 		_torso_head_attack_landed = false
-		_torso_head_attack_direction = _head_only_last_facing_direction
+		_torso_head_attack_direction = _head_launch_aim_or(_head_only_last_facing_direction)
 		_torso_head_recoil_timer = 0.0
 		_torso_head_miss_detach_requested = false
 		_torso_head_detach_world_offset = Vector3.ZERO
@@ -356,6 +675,21 @@ func get_head_launch_attack_world_offset() -> Vector3:
 	if _is_torso_spring_only():
 		return _torso_head_attack_world_offset
 	return Vector3.ZERO
+
+
+# A landed head-only lunge asks the Player to bring the capsule to the head.
+# Consumed the same frame it is raised (see Player._update_procedural_animation).
+func has_head_only_body_catch_up_request() -> bool:
+	return _head_only_body_catch_up_requested
+
+
+func consume_head_only_body_catch_up_offset() -> Vector3:
+	if not _head_only_body_catch_up_requested:
+		return Vector3.ZERO
+	_head_only_body_catch_up_requested = false
+	var offset: Vector3 = _head_only_body_catch_up_offset
+	_head_only_body_catch_up_offset = Vector3.ZERO
+	return offset
 
 
 func has_torso_head_miss_detach_request() -> bool:
@@ -628,6 +962,14 @@ func _animate_body() -> void:
 
 func _is_head_only() -> bool:
 	return player_body_progression_enabled and rig != null and rig.has_method("has_equipped_slot") and not bool(rig.call("has_equipped_slot", "body"))
+
+
+# True from the moment a head-only attack fires until the head is back down,
+# including the hit recoil, which is also played in the air.
+func _head_only_attack_airborne() -> bool:
+	if not _is_head_only():
+		return false
+	return not _head_only_attack_landed or _head_only_hit_recoil_timer > 0.0
 
 
 func _is_torso_spring_only() -> bool:
@@ -1030,7 +1372,13 @@ func _apply_head_only_attack_pose() -> void:
 
 	var phase: float = _attack_phase()
 	if phase >= 0.999 and not _head_only_attack_landed:
-		_head_only_base_world_offset += _head_only_attack_direction * head_only_attack_lunge
+		# The lunge has to move the PLAYER, not just the head visual. Accumulating
+		# it into _head_only_base_world_offset instead left the head drifting
+		# 0.85 m further from the capsule on every attack, forever. The Player
+		# consumes this request in the same frame, so the head does not pop: it
+		# stays where the launch left it and the body arrives underneath it.
+		_head_only_body_catch_up_offset += _head_only_attack_direction * head_only_attack_lunge
+		_head_only_body_catch_up_requested = true
 		_head_only_attack_world_offset = Vector3.ZERO
 		_head_only_attack_landed = true
 		_head_only_attack_contacted = true
@@ -1063,13 +1411,24 @@ func _apply_head_only_attack_pose() -> void:
 	var jump_t: float = (phase - charge_end) / maxf(1.0 - charge_end, 0.001)
 	var arc: float = sin(jump_t * PI) * _attack_blend
 	var commit: float = sin(jump_t * PI * 0.5) * _attack_blend
-	_head_only_attack_world_offset = _head_only_attack_direction * (head_only_attack_lunge * commit)
+	# The charge compression has to unwind INTO the launch. Reading the launch
+	# straight off the rest pose snapped the squash/pullback off in a single
+	# frame, which teleported the head ~0.23 m and read as a speed spike.
+	var release_t: float = clampf(jump_t / maxf(head_only_attack_release_portion, 0.001), 0.0, 1.0)
+	var release: float = (1.0 - release_t) * _attack_blend
+	_head_only_attack_world_offset = _head_only_attack_direction * head_only_attack_lunge * (commit - 0.14 * release)
 	var jump_local_offset: Vector3 = _world_horizontal_offset_to_local(_head_only_attack_world_offset)
 	head.position += jump_local_offset
-	head.position.y += head_only_attack_arc * arc
-	head.rotation.x += head_only_attack_roll * commit
+	head.position.y += head_only_attack_arc * arc - head_only_attack_charge_squash * release
+	head.rotation.x += head_only_attack_roll * (commit - 0.22 * release)
 	var stretch: float = arc * 0.12
-	head.scale = Vector3(1.0 - stretch * 0.5, 1.0 + stretch, 1.0 - stretch * 0.35)
+	var launch_scale := Vector3(1.0 - stretch * 0.5, 1.0 + stretch, 1.0 - stretch * 0.35)
+	var charge_scale := Vector3(
+		1.0 + head_only_attack_charge_squash * 0.55 * _attack_blend,
+		1.0 - head_only_attack_charge_squash * 0.75 * _attack_blend,
+		1.0 + head_only_attack_charge_squash * 0.45 * _attack_blend
+	)
+	head.scale = charge_scale.lerp(launch_scale, release_t)
 
 
 func _apply_head_only_hit_recoil_pose(head: Node3D) -> void:

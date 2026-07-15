@@ -28,8 +28,22 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 # attack_cooldown stops repeated clicks from blurring the test (plan suggests 0.35-0.6s).
 # forward_offset/height place the swing box just in front of and slightly above the player.
 @export var attack_cooldown: float = 0.45
+# Extra breathing room after a head-launch attack has fully resolved, on top of
+# waiting for the animation itself. Head-launch animations run longer than
+# attack_cooldown (torso launch 0.56s, recoils 0.58-0.66s), so the cooldown alone
+# let a new jump start before the previous one landed and the poses stacked.
+@export var head_launch_attack_recovery: float = 0.12
+# Commit the player in place for the duration of a head-only attack, so the body's
+# velocity cannot stack on top of the head's launch. Turn off to restore free
+# movement while attacking.
+@export var head_only_attack_locks_movement: bool = true
 @export var attack_forward_offset: float = 1.15
 @export var attack_height: float = 0.65
+# Auto-target range for head-launch attacks. Keep it near the actual lunge reach
+# (torso_head_attack_lunge 1.05 + head_only_attack_hitbox_radius 0.28); acquiring
+# an enemy further away than the head can travel would still whiff and, in
+# torso-only mode, still detach the head.
+@export var head_launch_target_range: float = 1.9
 @export var head_only_attack_hitbox_lifetime: float = 0.42
 @export var head_only_attack_hitbox_height: float = 0.02
 @export var head_only_attack_hitbox_radius: float = 0.28
@@ -111,6 +125,11 @@ var noise_timer: float = 0.0
 var sprinting_this_frame: bool = false
 var fallback_input_previous: Dictionary = {}
 var fallback_input_current: Dictionary = {}
+
+# Enemy the current head-launch attack is aimed at, if any.
+var head_launch_target: Node3D = null
+# Counts down only once the head-launch animation has fully resolved.
+var head_launch_recovery_timer: float = 0.0
 var head_detached_from_torso: bool = false
 var detached_torso_bone_id: String = ""
 var detached_torso_marker: Node3D = null
@@ -209,6 +228,7 @@ func _physics_process(delta: float) -> void:
 		_try_stealth_finish()
 	if _input_just_pressed("toggle_bow") and not detached_torso_reattaching:
 		_toggle_bow_equipped()
+	_update_head_launch_recovery(delta)
 	if bow_aiming:
 		bow_charge_time = minf(bow_charge_time + delta, maxf(bow_full_charge_time, 0.01))
 		_update_aim_reticle_ui()
@@ -249,7 +269,7 @@ func _physics_process(delta: float) -> void:
 	# Input.get_vector reads four named input actions from project.godot.
 	# W makes the y value negative, S makes it positive, A makes x negative, and D makes x positive.
 	var input_vector := _get_move_input_vector()
-	if detached_torso_reattaching:
+	if detached_torso_reattaching or _is_head_only_attack_locking_movement():
 		input_vector = Vector2.ZERO
 
 	var direction := _get_camera_relative_move_direction(input_vector)
@@ -377,10 +397,18 @@ func _try_attack() -> void:
 	# Respect the cooldown so holding or mashing left click does not blur the test.
 	if not can_attack:
 		return
+	# Head-launch jumps outlast attack_cooldown, so they get their own gate: the
+	# previous jump must finish and recover before another can start.
+	if _is_head_launch_combat_mode() and _is_head_launch_attack_blocked():
+		return
 	can_attack = false
 	noise_timer = maxf(noise_timer, 0.55)
 	if _is_head_only_combat_mode():
 		_force_head_only_single_visual()
+	# Head-launch attacks auto-aim at a nearby enemy BEFORE the animator is
+	# triggered, so the launch starts aimed instead of correcting a frame later.
+	_acquire_head_launch_target()
+	_push_head_launch_attack_aim()
 	var combo_step: int = _next_combo_animation_step()
 	if animator != null:
 		animator.trigger_attack(combo_step)
@@ -391,6 +419,10 @@ func _try_attack() -> void:
 		forward = _get_camera_forward_direction()
 	forward.y = 0.0
 	forward = forward.normalized()
+	# ...unless an enemy was acquired, in which case aim at it.
+	var target_aim := _head_launch_target_aim()
+	if target_aim != Vector3.ZERO:
+		forward = target_aim
 
 	# Create the attack box and hand it this attack's damage. attack_damage
 	# already includes bone bonuses, so the Heavy Bone really does hit harder.
@@ -442,6 +474,97 @@ func _try_attack() -> void:
 func _on_attack_hit_confirmed(_target: Node) -> void:
 	if animator != null and animator.has_method("confirm_head_only_attack_contact"):
 		animator.confirm_head_only_attack_contact()
+
+
+# --- Head-launch auto-target ---------------------------------------------------
+# Head-only and torso-only attacks launch the head off the body. They used to aim
+# down current_move_direction, so strafing around an enemy threw the head into
+# empty space; in torso-only mode a miss detaches the head from the torso, which
+# cost the player their head mid-fight. Picking the nearest enemy keeps the launch
+# pointed at what the player is actually fighting.
+func _acquire_head_launch_target() -> void:
+	head_launch_target = null
+	if not _is_head_launch_combat_mode():
+		return
+	var candidates: Array[Node] = []
+	var positions: Array = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy is Node3D) or not is_instance_valid(enemy):
+			continue
+		# A missing `alive` property means the node does not model death, so it
+		# stays targetable rather than being silently skipped.
+		var alive_value: Variant = enemy.get("alive")
+		if alive_value is bool and not bool(alive_value):
+			continue
+		candidates.append(enemy)
+		positions.append((enemy as Node3D).global_position)
+	if candidates.is_empty():
+		return
+	var best: int = CombatTargetingService.best_target_index(
+		global_position,
+		last_facing_direction,
+		positions,
+		head_launch_target_range
+	)
+	if best >= 0:
+		head_launch_target = candidates[best] as Node3D
+
+
+# Live aim at the acquired target, or ZERO when there is none to aim at.
+func _head_launch_target_aim() -> Vector3:
+	if head_launch_target == null or not is_instance_valid(head_launch_target):
+		return Vector3.ZERO
+	var alive_value: Variant = head_launch_target.get("alive")
+	if alive_value is bool and not bool(alive_value):
+		return Vector3.ZERO
+	return CombatTargetingService.aim_direction(global_position, head_launch_target.global_position)
+
+
+# Re-pushed every frame so an enemy that moves mid-attack is still tracked.
+func _push_head_launch_attack_aim() -> void:
+	if animator == null or not animator.has_method("set_head_launch_attack_aim"):
+		return
+	var aim := _head_launch_target_aim()
+	animator.call("set_head_launch_attack_aim", aim, aim != Vector3.ZERO)
+
+
+func _is_head_launch_combat_mode() -> bool:
+	return _is_head_only_combat_mode() or _is_torso_only_combat_mode()
+
+
+# Head-only attacks launch the head off the ground. The launch is applied as an
+# offset ON TOP of the body's motion, so a body still running at move_speed added
+# its velocity to the launch and the head read as teleporting. Committing the
+# player in place for the attack keeps the head's world speed equal to the
+# animation's own speed, whatever the player was doing beforehand.
+# Knockback still applies: only steering input is dropped, not velocity.
+func _is_head_only_attack_locking_movement() -> bool:
+	if not head_only_attack_locks_movement:
+		return false
+	if not _is_head_only_combat_mode():
+		return false
+	return _is_head_launch_attack_busy()
+
+
+func _is_head_launch_attack_busy() -> bool:
+	if animator == null or not animator.has_method("is_head_launch_attack_busy"):
+		return false
+	return bool(animator.call("is_head_launch_attack_busy"))
+
+
+func _is_head_launch_attack_blocked() -> bool:
+	return _is_head_launch_attack_busy() or head_launch_recovery_timer > 0.0
+
+
+# Held at full while the jump is resolving, then counts down. Keeping the reset
+# here (rather than starting a timer on landing) means a miss, a hit recoil and a
+# clean landing all get the same recovery without tracking how the attack ended.
+func _update_head_launch_recovery(delta: float) -> void:
+	if _is_head_launch_attack_busy():
+		head_launch_recovery_timer = maxf(head_launch_attack_recovery, 0.0)
+		return
+	if head_launch_recovery_timer > 0.0:
+		head_launch_recovery_timer = maxf(head_launch_recovery_timer - delta, 0.0)
 
 
 func _get_head_only_hitbox_follow_target() -> Node3D:
@@ -830,7 +953,20 @@ func _update_procedural_animation(delta: float, max_speed: float) -> void:
 	if animator == null or rig == null:
 		return
 
+	# Refresh the aim before the animator runs, so an in-flight launch steers
+	# toward an enemy that moved since the attack started.
+	_push_head_launch_attack_aim()
 	animator.update_from_player(delta, velocity, max_speed, last_facing_direction, rig.get_equipped_bone_defs())
+	# Same frame as the request, so the head stays where the launch left it and the
+	# capsule arrives underneath instead of the head snapping.
+	if (
+		animator.has_method("has_head_only_body_catch_up_request")
+		and bool(animator.call("has_head_only_body_catch_up_request"))
+		and animator.has_method("consume_head_only_body_catch_up_offset")
+	):
+		var catch_up_value: Variant = animator.call("consume_head_only_body_catch_up_offset")
+		if catch_up_value is Vector3:
+			_apply_head_only_lunge_displacement(catch_up_value)
 	if (
 		animator.has_method("has_torso_head_miss_detach_request")
 		and bool(animator.call("has_torso_head_miss_detach_request"))
@@ -847,6 +983,16 @@ func _update_procedural_animation(delta: float, max_speed: float) -> void:
 		if detach_offset_value is Vector3:
 			_detach_head_from_torso_after_miss(detach_offset_value, body_transform, has_body_transform)
 	_update_camera_animation_follow_offset()
+
+
+# Brings the capsule to where the head-only lunge landed. Uses move_and_collide
+# rather than writing global_position directly, so a lunge into a wall stops at
+# the wall instead of tunnelling through it; the head lands short with the body.
+func _apply_head_only_lunge_displacement(offset: Vector3) -> void:
+	var flat := Vector3(offset.x, 0.0, offset.z)
+	if flat.length() < 0.001:
+		return
+	move_and_collide(flat)
 
 
 func _update_camera_animation_follow_offset() -> void:

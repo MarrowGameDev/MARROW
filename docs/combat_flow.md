@@ -22,6 +22,9 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/player_camera_controller.gd`: aim point para disparos.
 - `scripts/rig/procedural_player_animator.gd`: animaciones de ataque, aim,
   crawl y climb blend.
+- `scripts/combat_targeting_service.gd`: reglas puras de auto-target para
+  ataques head-launch (head-only y torso-only). No accede a la escena: recibe
+  posiciones candidatas y devuelve el indice del mejor objetivo.
 - `scripts/bone_definition.gd`, `scripts/bone_database.gd` y
   `scripts/bone_data_catalog.gd`: stats de huesos que modifican perfiles de
   combate del jugador y enemigos.
@@ -41,6 +44,62 @@ perdida de limbs, crawling, drops y reacciones de AI.
 5. `AttackHitbox` revisa overlaps y `body_entered`.
 6. Si el cuerpo tiene `take_damage`, llama `take_damage(damage, hit_pos, player)`.
 7. `Enemy.take_damage` aplica knockback, dano, limb loss y muerte si corresponde.
+
+## Auto-target de ataques head-launch
+
+Aplica solo a head-only y torso-only, donde la cabeza se lanza fuera del cuerpo.
+En torso-only un fallo detacha la cabeza del torso, asi que apuntar mal mientras
+uno se mueve costaba la cabeza en pleno combate.
+
+1. `Player._try_attack` llama `_acquire_head_launch_target()` antes de disparar
+   el animator, para que el lanzamiento arranque ya apuntado.
+2. Se juntan los nodos vivos del grupo `enemies` y sus posiciones. Un nodo sin
+   propiedad `alive` se considera targeteable.
+3. `CombatTargetingService.best_target_index()` elige el mas cercano dentro de
+   `Player.head_launch_target_range` (1.9). Empata a favor del que esta al frente
+   segun `DEFAULT_BEHIND_BIAS`, pero un enemigo detras sigue siendo valido.
+4. `Player._push_head_launch_attack_aim()` manda la direccion al animator en cada
+   frame desde `_update_procedural_animation`, antes de `update_from_player`.
+5. `ProceduralPlayerAnimator._update_head_launch_attack_aim()` reorienta el
+   lanzamiento en vuelo mientras no haya aterrizado. Al aterrizar la direccion se
+   congela para que el offset de aterrizaje sea consistente.
+6. El `AttackHitbox` sigue al socket `head` con `follow_forward_offset = 0`, asi
+   que al apuntar la cabeza el hitbox va con ella y el golpe conecta.
+7. Sin enemigo en rango no hay target: se usa el facing de siempre y un fallo al
+   aire sigue detachando la cabeza (ese castigo no cambio).
+
+### Delay entre saltos
+
+`attack_cooldown` (0.45) es mas corto que las animaciones head-launch (torso
+0.56, recoils 0.58-0.66), asi que por si solo dejaba arrancar un salto nuevo
+antes de que aterrizara el anterior y las poses se apilaban.
+
+- `ProceduralPlayerAnimator.is_head_launch_attack_busy()` es true mientras el
+  salto sigue resolviendo: en vuelo, en hit recoil, cayendo tras un fallo, o
+  esperando que el `Player` consuma el detach.
+- `Player._try_attack` corta temprano si el modo es head-launch y
+  `_is_head_launch_attack_blocked()`. Esto pasa antes de gastar `can_attack`, asi
+  que un click bloqueado no consume el cooldown normal.
+- `Player._update_head_launch_recovery(delta)` mantiene
+  `head_launch_recovery_timer` en `head_launch_attack_recovery` (0.12) mientras
+  esta busy y lo descuenta despues, asi que hit, fallo y aterrizaje limpio
+  reciben la misma recuperacion sin rastrear como termino el ataque.
+- El melee normal no cambia: solo se gatea cuando el modo es head-launch.
+
+### Lock de movimiento en head-only
+
+El salto se aplica como offset ENCIMA del movimiento del cuerpo, asi que un cuerpo
+corriendo a `move_speed` sumaba su velocidad al lanzamiento y la cabeza se veia
+teleportando. Con `Player.head_only_attack_locks_movement` (true) el ataque
+compromete al jugador en el lugar mientras dura la animacion.
+
+- `Player._is_head_only_attack_locking_movement()` pone `input_vector` en cero,
+  igual que ya hacia `detached_torso_reattaching`. Solo se descarta el input de
+  direccion: el knockback por dano sigue aplicando.
+- Solo aplica a head-only, no a torso-only ni al melee normal.
+- Medido en headless, atacando mientras se corre a 6 m/s: pico de la cabeza
+  18.78 m/s antes, 15.31 m/s con el lock (identico a atacar quieto). El lock dura
+  0.35s si el ataque falla y 0.68s si conecta (vuelo + hit recoil).
 
 ## Flujo ranged del jugador
 
@@ -350,3 +409,78 @@ En `TESTING ENVIRONMENT`:
   el player tiene ambos brazos equipados (`right_arm` y `left_arm`). Si falta
   cualquier brazo, el bow se apaga y el player conserva el fallback de finger
   bones.
+- 2026-07-15: `scripts/rig/procedural_player_animator.gd` — el ataque head-only
+  ya no se ve acelerado al atacar en movimiento. `_head_only_roll_angle` seguia
+  acumulando giro de rodada mientras la cabeza estaba en el aire, asi que un
+  ataque corriendo giraba ~671 grados en 0.34s contra ~189 quieto, tapando el
+  roll propio del ataque. Ahora `_head_only_attack_airborne()` amortigua ese giro
+  con `head_only_attack_roll_damping` (0.2) mientras dura el salto y el hit
+  recoil: corriendo baja a ~222 grados (1.17x contra 1.0 quieto). No cambia dano,
+  hitboxes ni cooldowns. Pruebas: en `TESTING ENVIRONMENT`, quedarse solo con la
+  cabeza y atacar quieto, caminando y esprintando; el giro debe leerse igual en
+  los tres casos.
+- 2026-07-15: `scripts/rig/procedural_player_animator.gd` — corregido un salto de
+  un frame en `_apply_head_only_attack_pose()`. La fase de carga hundia la cabeza
+  0.22 m y la echaba atras 0.119 m, pero la fase de salto leia la pose desde el
+  rest sin comprimir, asi que posicion, altura, rotacion y escala se soltaban de
+  golpe (~0.23 m en un frame, ~15.5 m/s). Ahora la compresion se libera dentro del
+  salto con `head_only_attack_release_portion` (0.25). El aterrizaje no cambia, asi
+  que el punto de partida rodante documentado en `rig_notes.md` sigue igual.
+  Pruebas: atacar quieto como cabeza y verificar que no haya tiron al pasar de
+  carga a salto.
+- 2026-07-15: Solo pruebas — `2` y `3` disparan un demo A/B de animacion (misma
+  embestida, una a mano y otra con `Tween`) con una bola naranja orbitando como
+  objetivo movil. Vive en `scripts/rig/rig_test_player.gd`, o sea solo en
+  `rig_test.tscn`; no toca el `Player` real ni el combate. Detalle en
+  `docs/rig_notes.md`.
+- 2026-07-15: `scripts/combat_targeting_service.gd` (nuevo), `scripts/player.gd`,
+  `scripts/rig/procedural_player_animator.gd` — los ataques head-launch
+  (head-only y torso-only) ahora auto-apuntan al enemigo vivo mas cercano dentro
+  de `head_launch_target_range` (1.9) en vez de lanzarse por
+  `current_move_direction`. Antes, atacar mientras se strafeaba tiraba la cabeza
+  al aire y en torso-only ese fallo la detachaba del torso. El animator reorienta
+  el lanzamiento en vuelo con `set_head_launch_attack_aim()`, asi que un enemigo
+  que se mueve durante el ataque se sigue rastreando; al aterrizar la direccion se
+  congela. El hitbox ya seguia al socket `head`, asi que conecta solo con apuntar
+  la cabeza. Sin enemigo en rango el comportamiento es el de antes. No cambia
+  dano, cooldowns, hitboxes ni el melee normal. Nuevo evento de `GameEvents`:
+  ninguno. Pruebas: en `TESTING ENVIRONMENT`, quedarse en torso-only, atacar a un
+  enemigo cercano mientras se camina en circulos y hacia los costados; la cabeza
+  debe conectar y volver al torso en vez de detacharse. Atacar al aire sin
+  enemigos cerca debe seguir detachando.
+- 2026-07-15: `scripts/player.gd`, `scripts/rig/procedural_player_animator.gd` —
+  se agrego un delay real entre saltos head-launch. `attack_cooldown` (0.45) es
+  mas corto que la animacion de torso (0.56) y que los recoils (0.58-0.66), asi
+  que se podia disparar un salto nuevo antes de aterrizar el anterior y las poses
+  se apilaban. Medido en headless spameando ataque 2s: antes 120 saltos, 119
+  arrancados en el aire; ahora 6 saltos, 0 en el aire. Nuevo
+  `is_head_launch_attack_busy()` en el animator y nuevo export
+  `Player.head_launch_attack_recovery` (0.12) de recuperacion extra. El click
+  bloqueado no consume `can_attack`, asi que no arruina el cooldown normal. El
+  melee normal no se toca. Pruebas: en `TESTING ENVIRONMENT`, en head-only y
+  torso-only, mantener/spamear click y verificar que cada salto termina antes de
+  empezar el siguiente y que la cabeza no se queda flotando.
+- 2026-07-15: `scripts/player.gd` — nuevo export `head_only_attack_locks_movement`
+  (true): los ataques head-only comprometen al jugador en el lugar mientras corre
+  la animacion, asi que la velocidad del cuerpo ya no se suma al lanzamiento de la
+  cabeza. Medido corriendo a 6 m/s: pico de la cabeza 18.78 -> 15.31 m/s, igual
+  que atacando quieto. Reusa el patron de `detached_torso_reattaching` (pone
+  `input_vector` en cero); el knockback por dano sigue aplicando. No toca
+  torso-only ni el melee normal. Pruebas: en `TESTING ENVIRONMENT`, quedar solo
+  como cabeza, correr y atacar; la cabeza debe moverse igual de rapido que
+  atacando quieto.
+- 2026-07-15: `scripts/player.gd`, `scripts/rig/procedural_player_animator.gd` —
+  el lunge head-only ahora mueve al jugador en vez de alejar la cabeza del
+  cuerpo. Antes cada ataque sumaba 0.85 m a `_head_only_base_world_offset` y nada
+  movia la capsula, asi que la cabeza se separaba sin limite (medido: 0.85, 1.70,
+  2.55, 3.40 m tras cuatro ataques) y ese drift ademas se filtraba al follow
+  offset de camara por `get_head_launch_attack_world_offset()`. Ahora al aterrizar
+  el animator levanta `has_head_only_body_catch_up_request()` y el `Player` lo
+  consume en el mismo frame con `_apply_head_only_lunge_displacement()`, que usa
+  `move_and_collide` para no atravesar paredes. Medido: la cabeza queda a 0.00 m
+  del cuerpo tras cada ataque, el cuerpo avanza 0.85 m por ataque y no hay pop al
+  aterrizar (peor frame 15.3 m/s, igual al pico del propio lanzamiento). Un golpe
+  que conecta no desplaza: el recoil devuelve la cabeza al cuerpo. Pruebas: en
+  `TESTING ENVIRONMENT`, quedar solo como cabeza y atacar al aire varias veces
+  seguidas; la cabeza y la capsula deben seguir juntas y la camara no debe
+  quedarse atras. Atacar contra una pared no debe atravesarla.
