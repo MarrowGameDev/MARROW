@@ -1618,6 +1618,10 @@ class Player:
         """GDScript function: _is_head_only_combat_mode() -> bool"""
         pass
 
+    def gd_func__force_head_only_single_visual(self):
+        """GDScript function: _force_head_only_single_visual() -> void"""
+        pass
+
     def gd_func__try_bow_shot(self):
         """GDScript function: _try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void"""
         pass
@@ -2598,6 +2602,14 @@ class ModularSkeletonRig:
 
     def gd_func_set_body_part_hitbox_enabled(self):
         """GDScript function: set_body_part_hitbox_enabled(socket_key: String, enabled: bool) -> void"""
+        pass
+
+    def gd_func_set_head_only_visual_guard(self):
+        """GDScript function: set_head_only_visual_guard(enabled: bool) -> void"""
+        pass
+
+    def gd_func__set_mesh_visibility_recursive(self):
+        """GDScript function: _set_mesh_visibility_recursive(root: Node, is_visible: bool) -> void"""
         pass
 
     def gd_func_has_equipped_slot(self):

@@ -787,7 +787,11 @@ Ataque/combo por hueso:
   horizontal acumulado. La camara no sigue el arco vertical de la cabeza.
 - En modo solo cabeza, `AttackHitbox` mantiene colision/dano pero apaga su mesh
   visual para que el flash del hitbox no parezca una segunda cabeza durante el
-  salto.
+  salto. El mesh `Visual` del hitbox esta oculto por defecto en la escena y el
+  script solo lo enciende para ataques normales, evitando un flash de un frame.
+- El player tambien omite `_flash_player_attack` en modo solo cabeza, y el rig
+  fuerza que solo el mesh de cabeza equipado sea visible bajo el socket de
+  cabeza.
 - Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
   activar combos con gameplay real se debe crear una regla de combate explicita
   y probarla en `TESTING ENVIRONMENT`.
@@ -2160,9 +2164,17 @@ Combo overlay:
   stored as a world-horizontal vector and converted into rig-local space each
   frame, so turning or strafing sideways does not rotate the old landing offset
   and teleport the head.
+- The landing frame applies the newly accumulated landed offset immediately,
+  instead of waiting for the next animation tick. This prevents a one-frame
+  snap/ghost where the head briefly appears at the previous start point.
 - During that head-only attack, the animator exposes
   `get_head_only_attack_world_offset()` so the camera can follow the accumulated
   horizontal motion directly. The vertical arc stays visual on the head socket.
+- `ModularSkeletonRig.set_head_only_visual_guard` runs during head-only movement
+  to keep the equipped/core head mesh as the only visible mesh under the head
+  socket. `Player` also calls the guard immediately when head-only melee starts,
+  before spawning the attack hitbox, so the fallback grey head cannot overlap
+  for the first rendered frame.
 - This is visual only; melee damage and hitbox behavior are unchanged.
 
 ## Current player body progression

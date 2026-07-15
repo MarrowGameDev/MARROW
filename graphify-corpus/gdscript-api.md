@@ -1536,6 +1536,7 @@
 - `_try_attack() -> void`
 - `_on_attack_hit_confirmed(_target: Node) -> void`
 - `_is_head_only_combat_mode() -> bool`
+- `_force_head_only_single_visual() -> void`
 - `_try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void`
 - `_start_bow_aim() -> void`
 - `_release_bow_shot() -> void`
@@ -2102,6 +2103,8 @@
 - `set_body_hitbox_owner(owner_body: Node, damage_group: String = PLAYER_BODY_HITBOX_GROUP) -> void`
 - `has_body_part_hitboxes() -> bool`
 - `set_body_part_hitbox_enabled(socket_key: String, enabled: bool) -> void`
+- `set_head_only_visual_guard(enabled: bool) -> void`
+- `_set_mesh_visibility_recursive(root: Node, is_visible: bool) -> void`
 - `has_equipped_slot(slot_id: String) -> bool`
 - `_make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D`
 - `equip_bone(bone_id: String, bone_def: Dictionary) -> void`
