@@ -280,6 +280,10 @@ class AttackHitbox:
         """GDScript function: _ready() -> void"""
         pass
 
+    def gd_func__apply_visual_state(self):
+        """GDScript function: _apply_visual_state() -> void"""
+        pass
+
     def gd_func__start_fade(self):
         """GDScript function: _start_fade() -> void"""
         pass
@@ -1608,6 +1612,10 @@ class Player:
 
     def gd_func__on_attack_hit_confirmed(self):
         """GDScript function: _on_attack_hit_confirmed(_target: Node) -> void"""
+        pass
+
+    def gd_func__is_head_only_combat_mode(self):
+        """GDScript function: _is_head_only_combat_mode() -> bool"""
         pass
 
     def gd_func__try_bow_shot(self):

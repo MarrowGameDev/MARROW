@@ -214,6 +214,7 @@
 ### Exported Tuning
 - `damage`
 - `lifetime`
+- `visual_enabled`
 
 ### Constants
 - `ENEMY_BODY_HURTBOX_GROUP`
@@ -229,6 +230,7 @@
 
 ### Functions
 - `_ready() -> void`
+- `_apply_visual_state() -> void`
 - `_start_fade() -> void`
 - `_hit_current_overlaps() -> void`
 - `_on_body_entered(body: Node) -> void`
@@ -1533,6 +1535,7 @@
 - `_get_camera_forward_direction() -> Vector3`
 - `_try_attack() -> void`
 - `_on_attack_hit_confirmed(_target: Node) -> void`
+- `_is_head_only_combat_mode() -> bool`
 - `_try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void`
 - `_start_bow_aim() -> void`
 - `_release_bow_shot() -> void`
