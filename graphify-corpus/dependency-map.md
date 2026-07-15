@@ -36,6 +36,7 @@
 - `scripts/enemy.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
 - `scripts/equipment_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/equipment_rules_service.gd` depends on `scripts/bone_definition.gd` because it references class BoneDefinition.
+- `scripts/equipment_rules_service.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/limb_bone_pickup.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/limb_bone_pickup.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/player.gd` depends on `scenes/attack_hitbox.tscn` because it loads resource.

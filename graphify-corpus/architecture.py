@@ -1311,6 +1311,10 @@ class EquipmentRulesService:
         """Relationship: references class BoneDefinition."""
         return BoneDefinition
 
+    def depends_on_DropPickupRulesService(self):
+        """Relationship: references class DropPickupRulesService."""
+        return DropPickupRulesService
+
 class ExitPortal:
     """Godot script: scripts/exit_portal.gd
     class_name: none
@@ -2918,8 +2922,32 @@ class ModularSkeletonRig:
         """GDScript function: _clear_damage_hitbox_groups(area: Area3D) -> void"""
         pass
 
+    def gd_func__build_socket_markers(self):
+        """GDScript function: _build_socket_markers() -> void"""
+        pass
+
+    def gd_func__make_socket_marker(self):
+        """GDScript function: _make_socket_marker(socket_key: String) -> MeshInstance3D"""
+        pass
+
     def gd_func__limb_geo_for(self):
         """GDScript function: _limb_geo_for(socket_key: String) -> Dictionary"""
+        pass
+
+    def gd_func__split_limbs_active(self):
+        """GDScript function: _split_limbs_active() -> bool"""
+        pass
+
+    def gd_func__foot_parent_key(self):
+        """GDScript function: _foot_parent_key(leg_key: String) -> String"""
+        pass
+
+    def gd_func_limb_socket_group(self):
+        """GDScript function: limb_socket_group(key: String) -> Array[String]"""
+        pass
+
+    def gd_func_get_limb_meshes(self):
+        """GDScript function: get_limb_meshes(key: String) -> Array[MeshInstance3D]"""
         pass
 
     def gd_func__as_vector3(self):

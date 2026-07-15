@@ -2210,6 +2210,10 @@
 - `head_model_offset`
 - `head_model_rotation_deg`
 - `head_model_keep_material`
+- `use_split_limbs`
+- `show_socket_markers`
+- `socket_marker_radius`
+- `socket_marker_color`
 - `show_torso`
 - `show_head`
 - `use_rigged_limbs`
@@ -2229,6 +2233,7 @@
 ### Key Variables
 - `_head_model_mesh`
 - `_head_model_mesh_loaded`
+- `socket_markers`
 - `sockets`
 - `base_visuals`
 - `equipped_parts`
@@ -2242,6 +2247,10 @@
 - `body_progression_enabled`
 - `socket`
 - `limb`
+- `lower_info`
+- `upper`
+- `joint`
+- `lower_limb`
 - `info`
 - `leg`
 - `foot`
@@ -2262,11 +2271,6 @@
 - `dir_skel`
 - `length_axis`
 - `r`
-- `fref`
-- `from_b`
-- `tlen`
-- `tref`
-- `to_b`
 
 ### Functions
 - `_ready() -> void`
@@ -2310,7 +2314,13 @@
 - `_refresh_body_hitbox_enabled() -> void`
 - `_body_hitbox_should_be_enabled(socket_key: String) -> bool`
 - `_clear_damage_hitbox_groups(area: Area3D) -> void`
+- `_build_socket_markers() -> void`
+- `_make_socket_marker(socket_key: String) -> MeshInstance3D`
 - `_limb_geo_for(socket_key: String) -> Dictionary`
+- `_split_limbs_active() -> bool`
+- `_foot_parent_key(leg_key: String) -> String`
+- `limb_socket_group(key: String) -> Array[String]`
+- `get_limb_meshes(key: String) -> Array[MeshInstance3D]`
 - `_as_vector3(value: Variant, fallback: Vector3) -> Vector3`
 - `_scale_vector3(size_value: Vector3, scale_value: Vector3) -> Vector3`
 - `_positive_vector3(value: Vector3, fallback: Vector3) -> Vector3`
