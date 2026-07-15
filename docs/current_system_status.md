@@ -59,15 +59,16 @@ refactor pass.
   they are intentionally separate from loot rarity.
 - Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
   `legendario`; UI can localize display text separately.
-- Quality percentage modifiers are stored as passive metadata for damage, speed,
-  health, drop and weight tuning; no automatic formula consumes them yet.
+- Quality percentage modifiers now feed the deterministic player stat formula
+  for damage, speed, health and equipped weight; drop tuning remains passive.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
   `legendario`; canonical mutation families are empty, `corrupto`, `maldito`,
   `especial` and `hibrido`.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
-  equipment load and inventory weight while keeping legacy `weight`.
+  equipment load and inventory weight while keeping legacy `weight`. Equipped
+  load can apply a capped movement-speed penalty through `BoneRulesService`.
 - Bone set/synergy fields are present as passive metadata; no automatic set
   bonuses are active yet.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
