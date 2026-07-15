@@ -1977,6 +1977,21 @@ modificar controles desde la seccion de settings.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
 
+### Validacion estatica del preview
+
+Antes de cambiar el preview del inventario, ejecutar:
+
+```bash
+python -B tools/validate_inventory_preview_contract.py
+```
+
+El validador confirma que la UI conserva el `SubViewportContainer`, el
+`SubViewport`, un `World3D` propio, luces/camara de preview, rig modular
+separado, sincronizacion desde eventos de equipamiento y escalado responsive del
+paper doll. Es una validacion estatica; render, lifecycle visual y
+sincronizacion real al equipar/desequipar siguen requiriendo prueba en
+`TESTING ENVIRONMENT`.
+
 `Player`:
 - Sigue siendo orquestador.
 - Decide cuando pausar el juego al abrir inventario.
