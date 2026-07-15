@@ -2059,6 +2059,15 @@ Campos de ataque/combo:
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
   filtrar solo las copias equipadas, no esconder todos los duplicados.
+- Contrato de stacks: hoy el grid muestra una tile por copia visible. Antes de
+  agregar un contador `xN`, mantener la misma semantica: contar equipados por id,
+  omitir solo esa cantidad de copias del inventario, y dejar visibles las copias
+  sobrantes. Validar con:
+
+```bash
+python -B tools/validate_inventory_stack_contract.py
+```
+
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
 - El tutorial de controles debe leer los bindings actuales con

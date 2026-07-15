@@ -880,7 +880,7 @@
       "source_location": "L386",
       "_origin": "ast",
       "id": "architecture_bone_gd_func_collect",
-      "community": 18,
+      "community": 23,
       "norm_label": ".gd_func__collect()"
     },
     {
@@ -930,7 +930,7 @@
       "source_location": "L406",
       "_origin": "ast",
       "id": "architecture_bone_uses_game_event_pickup_collected",
-      "community": 23,
+      "community": 18,
       "norm_label": ".uses_game_event_pickup_collected()"
     },
     {
@@ -3390,7 +3390,7 @@
       "source_location": "L1497",
       "_origin": "ast",
       "id": "architecture_limbbonepickup_gd_func_collect",
-      "community": 18,
+      "community": 23,
       "norm_label": ".gd_func__collect()"
     },
     {
@@ -3430,7 +3430,7 @@
       "source_location": "L1513",
       "_origin": "ast",
       "id": "architecture_limbbonepickup_uses_game_event_pickup_collected",
-      "community": 23,
+      "community": 18,
       "norm_label": ".uses_game_event_pickup_collected()"
     },
     {
@@ -6950,7 +6950,7 @@
       "source_location": "L2998",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_ease_out_sine",
-      "community": 47,
+      "community": 13,
       "norm_label": ".gd_func__ease_out_sine()"
     },
     {
@@ -6960,7 +6960,7 @@
       "source_location": "L3002",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_ease_out_quad",
-      "community": 47,
+      "community": 13,
       "norm_label": ".gd_func__ease_out_quad()"
     },
     {
@@ -6970,7 +6970,7 @@
       "source_location": "L3006",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_ease_in_quad",
-      "community": 47,
+      "community": 13,
       "norm_label": ".gd_func__ease_in_quad()"
     },
     {
@@ -6980,7 +6980,7 @@
       "source_location": "L3010",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_ease_in_out_sine",
-      "community": 47,
+      "community": 13,
       "norm_label": ".gd_func__ease_in_out_sine()"
     },
     {
@@ -7390,7 +7390,7 @@
       "source_location": "L3174",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_body",
-      "community": 13,
+      "community": 47,
       "norm_label": ".gd_func__animate_body()"
     },
     {
@@ -7510,7 +7510,7 @@
       "source_location": "L3222",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_limbs",
-      "community": 13,
+      "community": 47,
       "norm_label": ".gd_func__animate_limbs()"
     },
     {
@@ -7570,7 +7570,7 @@
       "source_location": "L3246",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_joints",
-      "community": 13,
+      "community": 47,
       "norm_label": ".gd_func__animate_joints()"
     },
     {
@@ -7590,7 +7590,7 @@
       "source_location": "L3254",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_gd_func_animate_wobble",
-      "community": 13,
+      "community": 47,
       "norm_label": ".gd_func__animate_wobble()"
     },
     {
@@ -10100,7 +10100,7 @@
       "source_location": "L387",
       "_origin": "ast",
       "id": "architecture_rationale_387",
-      "community": 18,
+      "community": 23,
       "norm_label": "gdscript function: _collect() -> void"
     },
     {
@@ -10140,7 +10140,7 @@
       "source_location": "L407",
       "_origin": "ast",
       "id": "architecture_rationale_407",
-      "community": 23,
+      "community": 18,
       "norm_label": "uses gameevents.pickup_collected."
     },
     {
@@ -13990,7 +13990,7 @@
       "source_location": "L2999",
       "_origin": "ast",
       "id": "architecture_rationale_2999",
-      "community": 47,
+      "community": 13,
       "norm_label": "gdscript function: _ease_out_sine(t: float) -> float"
     },
     {
@@ -14330,7 +14330,7 @@
       "source_location": "L3175",
       "_origin": "ast",
       "id": "architecture_rationale_3175",
-      "community": 13,
+      "community": 47,
       "norm_label": "gdscript function: _animate_body() -> void"
     },
     {
@@ -37184,5 +37184,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "09c69c5e6d5b2417aad61520ce011f3f8e67e880"
+  "built_at_commit": "346c96ff80055d5e5f765156ac1e3a617579c64c"
 }
