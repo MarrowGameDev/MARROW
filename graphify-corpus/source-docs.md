@@ -900,6 +900,21 @@ compromete al jugador en el lugar mientras dura la animacion.
    - Si enemy health <= threshold, muere.
    - Si tiene demasiada vida, recibe dano extra y responde atacando/buscando.
 
+### Validacion geometrica de backstab
+
+Antes de cambiar la regla de stealth finish, ejecutar:
+
+```bash
+python tools/validate_backstab_geometry.py
+```
+
+El arnes reproduce la formula actual de `Enemy._is_player_behind()` sin abrir
+Godot. Cubre frente, detras, laterales, enemigos rotados, angulos del cono
+trasero y posiciones con offset vertical. Esta validacion es estatica; la
+confirmacion visual/runtime de que `facing_direction` coincide con el frente
+real del enemigo debe hacerse en `TESTING ENVIRONMENT` antes de una correccion
+funcional.
+
 ## Flujo de dano enemigo
 
 `Enemy.take_hit`:
