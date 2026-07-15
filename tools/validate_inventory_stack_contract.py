@@ -16,6 +16,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 INVENTORY_UI = ROOT / "scripts" / "player_inventory_ui.gd"
 ITEM_TILE = ROOT / "scripts" / "ui_bone_item.gd"
+SLOT_WIDGET = ROOT / "scripts" / "ui_bone_slot.gd"
+EQUIPMENT_RULES = ROOT / "scripts" / "equipment_rules_service.gd"
+
+CANONICAL_SLOTS = ["head", "torso", "left_arm", "right_arm", "left_leg", "right_leg"]
 
 
 @dataclass(frozen=True)
@@ -119,6 +123,38 @@ def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
     return errors
 
 
+def check_body_slot_contract(
+    inventory_ui: str,
+    slot_widget: str,
+    equipment_rules: str,
+) -> list[str]:
+    errors: list[str] = []
+    for slot in CANONICAL_SLOTS:
+        if f'"{slot}"' not in equipment_rules:
+            errors.append(f"missing canonical slot in EquipmentRulesService: {slot}")
+        if f'"{slot}"' not in inventory_ui:
+            errors.append(f"missing canonical slot in PlayerInventoryUI: {slot}")
+
+    required_fragments = [
+        "EquipmentRulesService.inventory_filter_matches_bone",
+        "EquipmentRulesService.compare_bones_for_inventory",
+        "static func compatible_slots_for_bone(bone_id: String) -> Array[String]:",
+        "EquipmentRulesService.can_equip_bone_in_slot",
+        "player.equip_bone_in_slot",
+    ]
+    for fragment in required_fragments:
+        haystack = inventory_ui + "\n" + slot_widget + "\n" + equipment_rules
+        if fragment not in haystack:
+            errors.append(f"missing inventory equipment contract fragment: {fragment}")
+
+    if '"body": "torso"' not in equipment_rules:
+        errors.append("legacy body alias must normalize to torso")
+    if '"legs": "right_leg"' not in equipment_rules:
+        errors.append("legacy legs alias must normalize to right_leg")
+
+    return errors
+
+
 def run_cases() -> list[str]:
     errors: list[str] = []
     for case in CASES:
@@ -133,6 +169,8 @@ def run_cases() -> list[str]:
 def main() -> int:
     inventory_ui = read(INVENTORY_UI)
     item_tile = read(ITEM_TILE)
+    slot_widget = read(SLOT_WIDGET)
+    equipment_rules = read(EQUIPMENT_RULES)
 
     print("Inventory stack contract validation")
     print("-----------------------------------")
@@ -145,10 +183,18 @@ def main() -> int:
         print("  [PASS] Runtime UI still filters equipped copies by count.")
         print("  [PASS] Item tiles still represent carried copies without worn labels.")
 
+    slot_errors = check_body_slot_contract(inventory_ui, slot_widget, equipment_rules)
+    if slot_errors:
+        for error in slot_errors:
+            print(f"  [ERROR] {error}")
+    else:
+        print("  [PASS] Inventory exposes six canonical body slots through shared rules.")
+        print("  [PASS] Slot drops use shared compatibility instead of UI-local rules.")
+
     case_errors = run_cases()
 
     print("-----------------------------------")
-    errors = static_errors + case_errors
+    errors = static_errors + slot_errors + case_errors
     if errors:
         print(f"Result: FAIL ({len(errors)} error(s)).")
         return 1
