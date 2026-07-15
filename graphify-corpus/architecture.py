@@ -1792,6 +1792,10 @@ class Player:
         """GDScript function: _next_combo_animation_step() -> int"""
         pass
 
+    def gd_func__is_arm_sword_held(self):
+        """GDScript function: _is_arm_sword_held() -> bool"""
+        pass
+
     def gd_func__has_both_arms_equipped(self):
         """GDScript function: _has_both_arms_equipped() -> bool"""
         pass
@@ -3376,6 +3380,10 @@ class ProceduralPlayerAnimator:
         """GDScript function: _attack_pose_strength() -> float"""
         pass
 
+    def gd_func__attack_strike_curve(self):
+        """GDScript function: _attack_strike_curve(phase: float) -> float"""
+        pass
+
     def gd_func__attack_phase(self):
         """GDScript function: _attack_phase() -> float"""
         pass
@@ -3408,6 +3416,14 @@ class ProceduralPlayerAnimator:
         """GDScript function: _apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void"""
         pass
 
+    def gd_func__attack_strength_lagged(self):
+        """GDScript function: _attack_strength_lagged(lag: float) -> float"""
+        pass
+
+    def gd_func__whip_elbow(self):
+        """GDScript function: _whip_elbow(joint_key: String, strength: float) -> void"""
+        pass
+
     def gd_func__apply_right_combo_pose(self):
         """GDScript function: _apply_right_combo_pose(strength: float) -> void"""
         pass
@@ -3418,6 +3434,22 @@ class ProceduralPlayerAnimator:
 
     def gd_func__apply_arm_sword_pose(self):
         """GDScript function: _apply_arm_sword_pose(strength: float) -> void"""
+        pass
+
+    def gd_func_is_arm_sword_held(self):
+        """GDScript function: is_arm_sword_held() -> bool"""
+        pass
+
+    def gd_func_note_arm_sword_swing(self):
+        """GDScript function: note_arm_sword_swing() -> void"""
+        pass
+
+    def gd_func__update_arm_sword(self):
+        """GDScript function: _update_arm_sword(delta: float) -> void"""
+        pass
+
+    def gd_func__both_arms_equipped(self):
+        """GDScript function: _both_arms_equipped() -> bool"""
         pass
 
     def gd_func__right_hand_rig_position(self):
