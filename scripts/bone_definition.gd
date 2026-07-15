@@ -23,6 +23,9 @@ const MUTATION_CORRUPT := "corrupto"
 const MUTATION_CURSED := "maldito"
 const MUTATION_SPECIAL := "especial"
 const MUTATION_HYBRID := "hibrido"
+const DURABILITY_INTACT := "intact"
+const DURABILITY_CRACKED := "cracked"
+const DURABILITY_BROKEN := "broken"
 
 @export_group("Identity")
 @export var bone_id: String = ""
@@ -45,6 +48,12 @@ const MUTATION_HYBRID := "hibrido"
 @export var slot: String = ""
 @export var tags: Array[String] = []
 @export_multiline var description: String = ""
+
+@export_group("Durability")
+@export var durability_max: int = 100
+@export var durability_start: int = 100
+@export var durability_repair_cost: int = 1
+@export var durability_tags: Array[String] = []
 
 @export_group("Mutation")
 @export var mutation_id: String = ""
@@ -150,6 +159,12 @@ func to_clean_dictionary() -> Dictionary:
 			"drop_percent": quality_drop_percent,
 			"weight_percent": quality_weight_percent,
 		},
+		"durability": {
+			"max": durability_max,
+			"start": durability_start,
+			"repair_cost": durability_repair_cost,
+			"tags": durability_tags.duplicate(),
+		},
 		"player_stats": {
 			"move_speed": player_move_speed,
 			"attack_range": player_attack_range,
@@ -213,6 +228,10 @@ func to_legacy_dictionary() -> Dictionary:
 		"rarity_rank": rarity_rank,
 		"rarity_color": rarity_color,
 		"rarity_drop_weight": rarity_drop_weight,
+		"durability_max": durability_max,
+		"durability_start": durability_start,
+		"durability_repair_cost": durability_repair_cost,
+		"durability_tags": durability_tags.duplicate(),
 		"mutation_id": mutation_id,
 		"mutation_family": mutation_family,
 		"mutation_stage": mutation_stage,
@@ -281,6 +300,7 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 
 	var identity: Dictionary = _dictionary(clean, "identity")
 	var quality_modifiers: Dictionary = _dictionary(clean, "quality_modifiers")
+	var durability: Dictionary = _dictionary(clean, "durability")
 	var player_stats: Dictionary = _dictionary(clean, "player_stats")
 	var mutation: Dictionary = _dictionary(clean, "mutation")
 	var attack_combo: Dictionary = _dictionary(clean, "attack_combo")
@@ -308,6 +328,11 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.slot = str(identity.get("slot", definition.slot))
 	definition.tags = _string_array(identity.get("tags", []))
 	definition.description = str(identity.get("description", definition.description))
+
+	definition.durability_max = int(durability.get("max", identity.get("durability_max", definition.durability_max)))
+	definition.durability_start = int(durability.get("start", identity.get("durability_start", definition.durability_start)))
+	definition.durability_repair_cost = int(durability.get("repair_cost", identity.get("durability_repair_cost", definition.durability_repair_cost)))
+	definition.durability_tags = _string_array(durability.get("tags", identity.get("durability_tags", [])))
 
 	definition.mutation_id = str(mutation.get("id", definition.mutation_id))
 	definition.mutation_family = str(mutation.get("family", definition.mutation_family))

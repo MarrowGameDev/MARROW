@@ -19,6 +19,7 @@ const PLAYER_STAT_PERCENT_LIMIT := 0.75
 const EQUIPMENT_FREE_WEIGHT := 3.0
 const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06
 const EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30
+const DURABILITY_CRACKED_THRESHOLD := 0.4
 const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
 
@@ -136,6 +137,53 @@ static func rarity_drop_weight_for(bone_id: String) -> float:
 	return BoneDatabase.rarity_drop_weight(bone_id)
 
 
+static func durability_max_for(bone_id: String) -> int:
+	var definition: Dictionary = definition_for(bone_id)
+	return maxi(0, int(definition.get("durability_max", 100)))
+
+
+static func durability_start_for(bone_id: String) -> int:
+	var maximum := durability_max_for(bone_id)
+	var definition: Dictionary = definition_for(bone_id)
+	return clampi(int(definition.get("durability_start", maximum)), 0, maximum)
+
+
+static func durability_repair_cost_for(bone_id: String) -> int:
+	var definition: Dictionary = definition_for(bone_id)
+	return maxi(0, int(definition.get("durability_repair_cost", 1)))
+
+
+static func durability_tags_for(bone_id: String) -> Array:
+	var definition: Dictionary = definition_for(bone_id)
+	var value: Variant = definition.get("durability_tags", [])
+	if value is Array:
+		var tags: Array = value
+		return tags.duplicate()
+	return []
+
+
+static func durability_state_for(current_durability: int, max_durability: int) -> String:
+	if max_durability <= 0 or current_durability <= 0:
+		return BoneDefinition.DURABILITY_BROKEN
+	var ratio := float(current_durability) / float(max_durability)
+	if ratio <= DURABILITY_CRACKED_THRESHOLD:
+		return BoneDefinition.DURABILITY_CRACKED
+	return BoneDefinition.DURABILITY_INTACT
+
+
+static func durability_profile_for(bone_id: String, current_durability: int = -1) -> Dictionary:
+	var maximum := durability_max_for(bone_id)
+	var current := durability_start_for(bone_id) if current_durability < 0 else clampi(current_durability, 0, maximum)
+	return {
+		"max": maximum,
+		"current": current,
+		"ratio": 0.0 if maximum <= 0 else float(current) / float(maximum),
+		"state": durability_state_for(current, maximum),
+		"repair_cost": durability_repair_cost_for(bone_id),
+		"tags": durability_tags_for(bone_id),
+	}
+
+
 static func mutation_id_for(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
@@ -172,6 +220,16 @@ static func mutation_tags_for(bone_id: String) -> Array:
 			var tags: Array = value
 			return tags.duplicate()
 	return BoneDatabase.mutation_tags(bone_id)
+
+
+static func mutation_profile_for(bone_id: String) -> Dictionary:
+	return {
+		"id": mutation_id_for(bone_id),
+		"family": mutation_family_for(bone_id),
+		"stage": mutation_stage_for(bone_id),
+		"intensity": mutation_intensity_for(bone_id),
+		"tags": mutation_tags_for(bone_id),
+	}
 
 
 static func attack_type_for(bone_id: String) -> String:
@@ -287,6 +345,77 @@ static func synergy_tags_for(bone_id: String) -> Array:
 static func synergy_score_for(bone_id: String) -> float:
 	var definition: Dictionary = definition_for(bone_id)
 	return float(definition.get("synergy_score", 0.0))
+
+
+static func synergy_profile_for(bone_id: String) -> Dictionary:
+	return {
+		"set_id": set_id_for(bone_id),
+		"set_name": set_name_for(bone_id),
+		"set_piece_key": set_piece_key_for(bone_id),
+		"set_tags": set_tags_for(bone_id),
+		"synergy_ids": synergy_ids_for(bone_id),
+		"synergy_tags": synergy_tags_for(bone_id),
+		"synergy_score": synergy_score_for(bone_id),
+	}
+
+
+static func equipment_synergy_summary(equipment_state: Dictionary) -> Dictionary:
+	var set_counts: Dictionary = {}
+	var set_names: Dictionary = {}
+	var set_pieces: Dictionary = {}
+	var synergy_counts: Dictionary = {}
+	var tag_counts: Dictionary = {}
+	var mutation_counts: Dictionary = {}
+	var total_synergy_score := 0.0
+	var total_mutation_intensity := 0.0
+
+	for slot_id in equipment_state:
+		var bone_id: String = str(equipment_state[slot_id])
+		if bone_id == "":
+			continue
+
+		var set_id := set_id_for(bone_id)
+		if set_id != "":
+			set_counts[set_id] = int(set_counts.get(set_id, 0)) + 1
+			set_names[set_id] = set_name_for(bone_id)
+			if not set_pieces.has(set_id):
+				set_pieces[set_id] = []
+			var pieces: Array = set_pieces[set_id]
+			var piece_key := set_piece_key_for(bone_id)
+			if piece_key != "" and not pieces.has(piece_key):
+				pieces.append(piece_key)
+
+		for synergy_id in synergy_ids_for(bone_id):
+			var clean_synergy_id := str(synergy_id)
+			if clean_synergy_id == "":
+				continue
+			synergy_counts[clean_synergy_id] = int(synergy_counts.get(clean_synergy_id, 0)) + 1
+
+		for tag in set_tags_for(bone_id) + synergy_tags_for(bone_id):
+			var clean_tag := str(tag)
+			if clean_tag == "":
+				continue
+			tag_counts[clean_tag] = int(tag_counts.get(clean_tag, 0)) + 1
+
+		var mutation_family := mutation_family_for(bone_id)
+		if mutation_family != "":
+			mutation_counts[mutation_family] = int(mutation_counts.get(mutation_family, 0)) + 1
+			total_mutation_intensity += mutation_intensity_for(bone_id)
+
+		total_synergy_score += synergy_score_for(bone_id)
+
+	return {
+		"set_counts": set_counts,
+		"set_names": set_names,
+		"set_pieces": set_pieces,
+		"active_set_ids": _keys_with_min_count(set_counts, 2),
+		"synergy_counts": synergy_counts,
+		"active_synergy_ids": _keys_with_min_count(synergy_counts, 2),
+		"tag_counts": tag_counts,
+		"mutation_counts": mutation_counts,
+		"total_synergy_score": total_synergy_score,
+		"total_mutation_intensity": total_mutation_intensity,
+	}
 
 
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
@@ -477,3 +606,12 @@ static func _format_signed_int(value: int) -> String:
 	if value > 0:
 		return "+" + str(value)
 	return str(value)
+
+
+static func _keys_with_min_count(counts: Dictionary, minimum: int) -> Array[String]:
+	var result: Array[String] = []
+	for key in counts:
+		if int(counts[key]) >= minimum:
+			result.append(str(key))
+	result.sort()
+	return result

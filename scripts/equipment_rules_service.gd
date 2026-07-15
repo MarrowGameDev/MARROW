@@ -141,6 +141,10 @@ static func generated_limb_definition_for(bone_id: String) -> Dictionary:
 		"rarity_rank": _generated_limb_rarity_rank(source_profile),
 		"rarity_color": _generated_limb_rarity_color(source_profile),
 		"rarity_drop_weight": _generated_limb_rarity_drop_weight(source_profile),
+		"durability_max": _generated_limb_durability_max(source_profile, limb_key),
+		"durability_start": _generated_limb_durability_start(source_profile, limb_key),
+		"durability_repair_cost": _generated_limb_durability_repair_cost(source_profile, limb_key),
+		"durability_tags": _generated_limb_durability_tags(source_profile, limb_key),
 		"mutation_id": _generated_limb_mutation_id(source_profile, limb_key),
 		"mutation_family": _generated_limb_mutation_family(source_profile),
 		"mutation_stage": _generated_limb_mutation_stage(source_profile),
@@ -299,6 +303,51 @@ static func _generated_limb_rarity_color(source_profile: String) -> Color:
 
 static func _generated_limb_rarity_drop_weight(source_profile: String) -> float:
 	return BoneDefinition.default_rarity_drop_weight(_generated_limb_rarity(source_profile))
+
+
+static func _generated_limb_durability_max(source_profile: String, limb_key: String) -> int:
+	var base := 80
+	match limb_key:
+		"body":
+			base = 120
+		"head":
+			base = 100
+		"right_leg", "left_leg":
+			base = 85
+
+	match source_profile:
+		"gorilla":
+			return roundi(float(base) * 1.25)
+		"lizard":
+			return roundi(float(base) * 0.85)
+		_:
+			return base
+
+
+static func _generated_limb_durability_start(source_profile: String, limb_key: String) -> int:
+	return _generated_limb_durability_max(source_profile, limb_key)
+
+
+static func _generated_limb_durability_repair_cost(source_profile: String, limb_key: String) -> int:
+	match source_profile:
+		"gorilla":
+			return 3
+		"lizard":
+			return 1
+		_:
+			return 2 if limb_key == "body" else 1
+
+
+static func _generated_limb_durability_tags(source_profile: String, limb_key: String) -> Array[String]:
+	var tags: Array[String] = [limb_key]
+	match source_profile:
+		"gorilla":
+			tags.append("reinforced")
+		"lizard":
+			tags.append("fragile")
+	if limb_key == "body" or limb_key == "head":
+		tags.append("core")
+	return tags
 
 
 static func _generated_limb_mutation_id(source_profile: String, limb_key: String) -> String:
