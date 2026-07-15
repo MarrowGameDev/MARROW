@@ -71,7 +71,7 @@ func _ready() -> void:
 		capture_mouse()
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	var animation_alpha := 1.0 - exp(-animation_follow_smoothing * delta)
 	animation_follow_offset = animation_follow_offset.lerp(target_animation_follow_offset, animation_alpha)
 
@@ -79,6 +79,8 @@ func _process(delta: float) -> void:
 		var follow_alpha := 1.0 - exp(-follow_smoothing * delta)
 		global_position = global_position.lerp(_target_pivot_position(), follow_alpha)
 
+
+func _process(delta: float) -> void:
 	if spring_arm == null:
 		return
 
