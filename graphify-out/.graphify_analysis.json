@@ -434,21 +434,21 @@
     ],
     "13": [
       "architecture_proceduralplayeranimator",
-      "architecture_proceduralplayeranimator_gd_func_animate_body",
       "architecture_proceduralplayeranimator_gd_func_animate_head_only",
-      "architecture_proceduralplayeranimator_gd_func_animate_joints",
-      "architecture_proceduralplayeranimator_gd_func_animate_limbs",
-      "architecture_proceduralplayeranimator_gd_func_animate_wobble",
       "architecture_proceduralplayeranimator_gd_func_apply_head_only_attack_pose",
       "architecture_proceduralplayeranimator_gd_func_apply_head_only_hit_recoil_pose",
       "architecture_proceduralplayeranimator_gd_func_attack_phase",
       "architecture_proceduralplayeranimator_gd_func_demo_local_forward",
+      "architecture_proceduralplayeranimator_gd_func_ease_in_out_sine",
+      "architecture_proceduralplayeranimator_gd_func_ease_in_quad",
+      "architecture_proceduralplayeranimator_gd_func_ease_out_quad",
+      "architecture_proceduralplayeranimator_gd_func_ease_out_sine",
       "architecture_proceduralplayeranimator_gd_func_enter_detached_head_state",
       "architecture_proceduralplayeranimator_gd_func_get_stable_body_attach_local_position",
       "architecture_rationale_2983",
+      "architecture_rationale_2999",
       "architecture_rationale_3079",
       "architecture_rationale_3103",
-      "architecture_rationale_3175",
       "architecture_rationale_3203",
       "architecture_rationale_3287",
       "architecture_rationale_3291",
@@ -840,11 +840,11 @@
       "architecture_sceneenemy_contains_proceduralenemyanimator"
     ],
     "47": [
-      "architecture_proceduralplayeranimator_gd_func_ease_in_out_sine",
-      "architecture_proceduralplayeranimator_gd_func_ease_in_quad",
-      "architecture_proceduralplayeranimator_gd_func_ease_out_quad",
-      "architecture_proceduralplayeranimator_gd_func_ease_out_sine",
-      "architecture_rationale_2999"
+      "architecture_proceduralplayeranimator_gd_func_animate_body",
+      "architecture_proceduralplayeranimator_gd_func_animate_joints",
+      "architecture_proceduralplayeranimator_gd_func_animate_limbs",
+      "architecture_proceduralplayeranimator_gd_func_animate_wobble",
+      "architecture_rationale_3175"
     ],
     "48": [
       "architecture_rationale_19",
