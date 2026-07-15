@@ -595,7 +595,7 @@ func trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void
 		_torso_head_miss_fall_active = false
 		_torso_head_miss_fall_timer = 0.0
 		_torso_head_miss_body_hold_transform_ready = false
-	elif _is_torso_spring_only() and allow_head_launch:
+	elif _torso_head_launch_available() and allow_head_launch:
 		_attack_duration_current = torso_head_attack_duration
 		_head_only_attack_contacted = true
 		_head_only_attack_landed = true
@@ -988,6 +988,23 @@ func _is_torso_spring_only() -> bool:
 	)
 
 
+func _is_slot_equipped(slot: String) -> bool:
+	return rig != null and rig.has_method("has_equipped_slot") and bool(rig.call("has_equipped_slot", slot))
+
+
+# One arm is enough to punch with.
+func _has_any_arm_equipped() -> bool:
+	return _is_slot_equipped("right_arm") or _is_slot_equipped("left_arm")
+
+
+# The torso only throws its head when it has no arm to swing. Launching the head
+# while an arm is available is both worse-looking and a worse deal: a launch that
+# misses detaches the head, which is a heavy price for a swing the player could
+# have thrown with a fist.
+func _torso_head_launch_available() -> bool:
+	return _is_torso_spring_only() and not _has_any_arm_equipped()
+
+
 func _animate_head_only(sway: float, breath: float) -> void:
 	var head: Node3D = rig.get_socket("head")
 	if head == null or not _rest_pos.has("head"):
@@ -1079,7 +1096,25 @@ func _animate_torso_spring(sway: float, breath: float) -> void:
 		head.position = body.position + _torso_head_socket_offset + Vector3(sway * 0.38, compression * 0.32 + head_pop, forward_shove * 0.45)
 		_torso_head_socket_local_position = head.position
 		head.rotation = _get_rest_rot("head") + Vector3(-spring_tilt * 0.55, 0.0, sway * 0.42)
+	# Sockets are siblings of the body socket, not children of it, so nothing pulls
+	# the arms down when the torso drops to torso_spring_ground_socket_y. The head
+	# is re-anchored above; without the same treatment the arms hang at their
+	# standing rest height, floating detached above the torso.
+	_anchor_socket_to_body("right_arm", body)
+	_anchor_socket_to_body("left_arm", body)
 	_apply_detached_head_reattach_finish_blend(body, head)
+
+
+# Keeps a socket at its normal offset from the torso while the torso itself is
+# displaced. Derived from the captured rest layout rather than a tuned constant,
+# so it stays correct if ModularSkeletonRig.SOCKET_LAYOUT changes.
+func _anchor_socket_to_body(key: String, body: Node3D) -> void:
+	if body == null or not _rest_pos.has(key) or not _rest_pos.has("body"):
+		return
+	var socket: Node3D = rig.get_socket(key)
+	if socket == null:
+		return
+	socket.position = body.position + (_get_rest_pos(key) - _get_rest_pos("body"))
 
 
 func _animate_limbs() -> void:
@@ -1259,7 +1294,11 @@ func _animate_wobble() -> void:
 		# Slide the bone in and out along its outward direction from the body.
 		var rest_pos: Vector3 = _get_rest_pos(key)
 		var base_pos: Vector3 = rest_pos
-		if crawl_mode and (key == "head" or key == "right_arm" or key == "left_arm"):
+		# Modes that displace a socket away from its standing rest must keep the
+		# pose set earlier this frame, or the slide snaps it back to rest. Crawl
+		# already did this; torso-spring drops the body ~0.58 m and needs it too,
+		# otherwise the arms strand themselves at standing shoulder height.
+		if (crawl_mode or _is_torso_spring_only()) and (key == "head" or key == "right_arm" or key == "left_arm"):
 			base_pos = s.position
 		var out_dir: Vector3 = rest_pos
 		if out_dir.length() > 0.01:
@@ -1340,17 +1379,31 @@ func _apply_attack_overlay() -> void:
 	if _is_head_only():
 		_apply_head_only_attack_pose()
 		return
-	if _is_torso_spring_only():
+	if _torso_head_launch_available():
 		_apply_torso_head_attack_pose()
 		return
 	var punch: float = _attack_pose_strength()
-	match _attack_combo_step:
+	match _combo_step_for_equipped_arms():
 		2:
 			_apply_left_combo_pose(punch)
 		3:
 			_apply_finisher_combo_pose(punch)
 		_:
 			_apply_right_combo_pose(punch)
+
+
+# The combo normally alternates right -> left -> both arms. With only one arm
+# equipped every step has to swing THAT arm, or the swing plays on an empty
+# socket and the attack reads as doing nothing. With progression off (rig
+# sandbox, enemies) every grey-box limb is present, so the normal cycle stands.
+func _combo_step_for_equipped_arms() -> int:
+	if not player_body_progression_enabled:
+		return _attack_combo_step
+	var has_right: bool = _is_slot_equipped("right_arm")
+	var has_left: bool = _is_slot_equipped("left_arm")
+	if has_right == has_left:
+		return _attack_combo_step
+	return 1 if has_right else 2
 
 
 func _attack_pose_strength() -> float:

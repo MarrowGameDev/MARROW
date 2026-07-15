@@ -39,6 +39,13 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var head_only_attack_locks_movement: bool = true
 @export var attack_forward_offset: float = 1.15
 @export var attack_height: float = 0.65
+@export_group("Stealth noise")
+# Distance in metres at which an enemy can hear the player while noise_timer is
+# running. Sprinting must be the louder of the two.
+@export var noise_radius_normal: float = 6.5
+@export var noise_radius_sprinting: float = 9.0
+
+@export_group("")
 # Auto-target range for head-launch attacks. Keep it near the actual lunge reach
 # (torso_head_attack_lunge 1.05 + head_only_attack_hitbox_radius 0.28); acquiring
 # an enemy further away than the head can travel would still whiff and, in
@@ -123,8 +130,6 @@ var stealth_prompt_label: Label
 var stealth_target: Node3D = null
 var noise_timer: float = 0.0
 var sprinting_this_frame: bool = false
-var fallback_input_previous: Dictionary = {}
-var fallback_input_current: Dictionary = {}
 
 # Enemy the current head-launch attack is aimed at, if any.
 var head_launch_target: Node3D = null
@@ -158,7 +163,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().paused = false
 	inventory_open = false
-	_reset_fallback_input_state()
 	health = max_health
 	bow_equipped = false
 	stats_component = PlayerStatsComponent.new()
@@ -197,7 +201,6 @@ func _input(event: InputEvent) -> void:
 # Godot calls _physics_process many times per second on a steady physics clock.
 # Movement and collision code belongs here because it needs consistent timing.
 func _physics_process(delta: float) -> void:
-	_refresh_fallback_input_state()
 
 	# The inventory toggle and equipping work even while paused, so you can open
 	# the inventory, study your build, and rearrange it with the game frozen.
@@ -321,67 +324,25 @@ func _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3:
 	return direction
 
 
-func _reset_fallback_input_state() -> void:
-	fallback_input_previous = {}
-	fallback_input_current = _read_fallback_input_state()
-
-
-func _refresh_fallback_input_state() -> void:
-	fallback_input_previous = fallback_input_current.duplicate()
-	fallback_input_current = _read_fallback_input_state()
-
-
-func _read_fallback_input_state() -> Dictionary:
-	return {
-		"move_forward": Input.is_key_pressed(KEY_W),
-		"move_back": Input.is_key_pressed(KEY_S),
-		"move_left": Input.is_key_pressed(KEY_A),
-		"move_right": Input.is_key_pressed(KEY_D),
-		"jump": Input.is_key_pressed(KEY_SPACE),
-		"sprint": Input.is_key_pressed(KEY_SHIFT),
-		"attack": Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT),
-		"ranged_attack": Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT),
-		"toggle_bow": Input.is_key_pressed(KEY_1),
-		"inventory": Input.is_key_pressed(KEY_TAB),
-		"equip": Input.is_key_pressed(KEY_Q),
-		"interact": Input.is_key_pressed(KEY_E),
-		"stealth_finish": Input.is_key_pressed(KEY_F),
-	}
-
-
+# These read the InputMap and nothing else. There used to be a second layer that
+# OR'd in hardcoded physical keys (KEY_W, KEY_E, ...), which meant the rebinding
+# UI in player_inventory_ui.gd could never unbind a default: rebinding Move
+# Forward off W left W walking forever. Every action it shadowed is declared in
+# project.godot, so the layer was pure redundancy.
 func _input_pressed(action: String) -> bool:
-	return Input.is_action_pressed(action) or bool(fallback_input_current.get(action, false))
+	return Input.is_action_pressed(action)
 
 
 func _input_just_pressed(action: String) -> bool:
-	if Input.is_action_just_pressed(action):
-		return true
-	return bool(fallback_input_current.get(action, false)) and not bool(fallback_input_previous.get(action, false))
+	return Input.is_action_just_pressed(action)
 
 
 func _input_just_released(action: String) -> bool:
-	if Input.is_action_just_released(action):
-		return true
-	return not bool(fallback_input_current.get(action, false)) and bool(fallback_input_previous.get(action, false))
+	return Input.is_action_just_released(action)
 
 
 func _get_move_input_vector() -> Vector2:
-	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	if input_vector.length() > 0.01:
-		return input_vector
-
-	var fallback_vector := Vector2.ZERO
-	if bool(fallback_input_current.get("move_left", false)):
-		fallback_vector.x -= 1.0
-	if bool(fallback_input_current.get("move_right", false)):
-		fallback_vector.x += 1.0
-	if bool(fallback_input_current.get("move_forward", false)):
-		fallback_vector.y -= 1.0
-	if bool(fallback_input_current.get("move_back", false)):
-		fallback_vector.y += 1.0
-	if fallback_vector.length() > 1.0:
-		return fallback_vector.normalized()
-	return fallback_vector
+	return Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 
 
 func _get_camera_forward_direction() -> Vector3:
@@ -430,7 +391,7 @@ func _try_attack() -> void:
 	hitbox.damage = attack_damage
 	hitbox.owner_player = self
 	var head_only_attack := _is_head_only_combat_mode()
-	var torso_head_attack := _is_torso_only_combat_mode()
+	var torso_head_attack := _is_torso_head_launch_combat_mode()
 	var head_launch_attack := head_only_attack or torso_head_attack
 	hitbox.visual_enabled = not head_launch_attack
 	if head_launch_attack:
@@ -529,7 +490,7 @@ func _push_head_launch_attack_aim() -> void:
 
 
 func _is_head_launch_combat_mode() -> bool:
-	return _is_head_only_combat_mode() or _is_torso_only_combat_mode()
+	return _is_head_only_combat_mode() or _is_torso_head_launch_combat_mode()
 
 
 # Head-only attacks launch the head off the ground. The launch is applied as an
@@ -587,12 +548,25 @@ func _is_head_only_combat_mode() -> bool:
 	return rig != null and rig.has_method("has_equipped_slot") and not bool(rig.call("has_equipped_slot", "body"))
 
 
-func _is_torso_only_combat_mode() -> bool:
+func _is_slot_equipped(slot: String) -> bool:
+	return rig != null and rig.has_method("has_equipped_slot") and bool(rig.call("has_equipped_slot", slot))
+
+
+# One arm is enough to punch with.
+func _has_any_arm_equipped() -> bool:
+	return _is_slot_equipped("right_arm") or _is_slot_equipped("left_arm")
+
+
+# A legless torso throws its head ONLY when it has no arm to swing. With an arm
+# equipped the animator plays the arm combo instead, so this must go false in
+# lockstep: it routes the hitbox (head-following sphere vs normal melee box), the
+# movement lock, the anti-stacking gate, and the miss-detach. Leaving it true
+# would aim the hitbox at the head while the arm does the swinging.
+func _is_torso_head_launch_combat_mode() -> bool:
 	return (
-		rig != null
-		and rig.has_method("has_equipped_slot")
-		and bool(rig.call("has_equipped_slot", "body"))
-		and not bool(rig.call("has_equipped_slot", "legs"))
+		_is_slot_equipped("body")
+		and not _is_slot_equipped("legs")
+		and not _has_any_arm_equipped()
 	)
 
 
@@ -720,28 +694,58 @@ func _fire_player_projectile(forward: Vector3, projectile_damage: int, projectil
 	var start_position: Vector3 = global_position + Vector3.UP * bow_arrow_spawn_height + muzzle_forward * 0.7
 	if projectile_style == "arrow" and bow_equipped and bow_visual != null:
 		start_position = bow_visual.global_position
-	var launch_direction: Vector3 = forward.normalized()
-	if projectile_style == "arrow" and bow_equipped:
-		launch_direction = _get_pointer_aim_direction(start_position, muzzle_forward)
-	var launch_velocity: Vector3 = launch_direction * projectile_speed
+	var launch_velocity: Vector3 = forward.normalized() * projectile_speed
 	if projectile_style != "arrow":
+		# Finger bones are a short underhand lob with no reticle promising anything,
+		# so they keep their flat loft rather than gaining a solve.
 		launch_velocity.y = 0.65
+	elif bow_equipped:
+		# The reticle is a fixed dot the aim ray is cast through — it promises the
+		# arrow lands on the crosshair. Firing straight down that ray while gravity
+		# pulls the arrow down broke that promise by 0.64 m at 10 m, and the miss
+		# grew with range and shrank with charge, so no hold-over was learnable.
+		# Solve the ANGLE, not the vertical speed: charge must keep meaning speed.
+		var aim_point: Vector3 = _get_pointer_aim_point(start_position, muzzle_forward)
+		var solved: Vector3 = BallisticsService.solve_launch_velocity_fixed_speed(
+			start_position,
+			aim_point,
+			projectile_speed,
+			projectile_gravity,
+			BallisticsService.physics_step()
+		)
+		if solved != Vector3.ZERO:
+			launch_velocity = solved
+		else:
+			# Out of ballistic reach (open sky, or too far/too steep to arc onto).
+			# Fire straight down the aim line rather than inventing energy.
+			launch_velocity = _aim_direction_to(start_position, aim_point, muzzle_forward) * projectile_speed
 	if projectile.has_method("configure"):
 		projectile.call("configure", start_position, launch_velocity, projectile_damage, self, false, projectile_gravity, projectile_style)
 	get_tree().current_scene.add_child(projectile)
 
 
-func _get_pointer_aim_direction(start_position: Vector3, fallback_direction: Vector3) -> Vector3:
+# Where the centre-screen ray lands: a real surface hit, or ray_end when it hits
+# nothing. The ballistic solve needs the POINT, not just a direction, because a
+# direction carries no distance and therefore no time of flight.
+func _get_pointer_aim_point(start_position: Vector3, fallback_direction: Vector3) -> Vector3:
 	if camera_controller != null and camera_controller.has_method("get_center_aim_point"):
 		var exclude: Array[RID] = []
 		var player_collision: CollisionObject3D = self as CollisionObject3D
 		if player_collision != null:
 			exclude.append(player_collision.get_rid())
 		var aim_point: Vector3 = camera_controller.get_center_aim_point(bow_aim_ray_distance, exclude)
-		var aim_direction: Vector3 = aim_point - start_position
-		if aim_direction.length() > 0.01:
-			return aim_direction.normalized()
+		if start_position.distance_to(aim_point) > 0.01:
+			return aim_point
 
+	if fallback_direction.length() > 0.01:
+		return start_position + fallback_direction.normalized() * bow_aim_ray_distance
+	return start_position + Vector3.FORWARD * bow_aim_ray_distance
+
+
+func _aim_direction_to(start_position: Vector3, aim_point: Vector3, fallback_direction: Vector3) -> Vector3:
+	var aim_direction: Vector3 = aim_point - start_position
+	if aim_direction.length() > 0.01:
+		return aim_direction.normalized()
 	if fallback_direction.length() > 0.01:
 		return fallback_direction.normalized()
 	return Vector3.FORWARD
@@ -1126,14 +1130,17 @@ func is_player_dead() -> bool:
 	return is_dead
 
 
+# Enemies hear the player when their distance is <= this radius, so a BIGGER
+# radius means louder. Sprinting used to return the SMALLER value, which made
+# sprinting quieter than walking.
 func get_noise_radius() -> float:
 	if is_dead:
 		return 0.0
 	if noise_timer <= 0.0:
 		return 0.0
 	if sprinting_this_frame:
-		return 6.5
-	return 9.0
+		return noise_radius_sprinting
+	return noise_radius_normal
 
 
 func _die_player() -> void:
@@ -1253,7 +1260,7 @@ func is_head_detached_from_torso() -> bool:
 func _detach_head_from_torso_after_miss(detach_offset: Vector3, detached_body_transform: Transform3D = Transform3D.IDENTITY, use_detached_body_transform: bool = false) -> void:
 	if head_detached_from_torso or equipment_component == null:
 		return
-	if not _is_torso_only_combat_mode():
+	if not _is_torso_head_launch_combat_mode():
 		return
 
 	var body_bone_id: String = equipment_component.get_equipped_bone_for_slot("body")

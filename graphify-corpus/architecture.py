@@ -328,6 +328,10 @@ class AttackHitbox:
         """GDScript function: _is_ground_like_body(body: Node) -> bool"""
         pass
 
+    def gd_func__body_top_y(self):
+        """GDScript function: _body_top_y(body: Node) -> float"""
+        pass
+
     def gd_func__try_hit_enemy_area(self):
         """GDScript function: _try_hit_enemy_area(area: Area3D) -> void"""
         pass
@@ -347,6 +351,19 @@ class AttackHitbox:
     def signal_hit_confirmed(self):
         """Godot signal: hit_confirmed(target: Node)"""
         pass
+
+class BallisticsService:
+    """Godot script: scripts/ballistics_service.gd
+    class_name: BallisticsService
+    extends: unknown
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/ballistics_service.gd'
+    godot_class_name = 'BallisticsService'
+    godot_extends = ''
+    gameplay_system = 'Supporting gameplay'
+
+    pass
 
 class Bone:
     """Godot script: scripts/bone.gd
@@ -1208,6 +1225,10 @@ class Enemy:
         """Relationship: loads resource."""
         return ArrowProjectile
 
+    def depends_on_BallisticsService(self):
+        """Relationship: references class BallisticsService."""
+        return BallisticsService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -1631,18 +1652,6 @@ class Player:
         """GDScript function: _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3"""
         pass
 
-    def gd_func__reset_fallback_input_state(self):
-        """GDScript function: _reset_fallback_input_state() -> void"""
-        pass
-
-    def gd_func__refresh_fallback_input_state(self):
-        """GDScript function: _refresh_fallback_input_state() -> void"""
-        pass
-
-    def gd_func__read_fallback_input_state(self):
-        """GDScript function: _read_fallback_input_state() -> Dictionary"""
-        pass
-
     def gd_func__input_pressed(self):
         """GDScript function: _input_pressed(action: String) -> bool"""
         pass
@@ -1715,8 +1724,16 @@ class Player:
         """GDScript function: _is_head_only_combat_mode() -> bool"""
         pass
 
-    def gd_func__is_torso_only_combat_mode(self):
-        """GDScript function: _is_torso_only_combat_mode() -> bool"""
+    def gd_func__is_slot_equipped(self):
+        """GDScript function: _is_slot_equipped(slot: String) -> bool"""
+        pass
+
+    def gd_func__has_any_arm_equipped(self):
+        """GDScript function: _has_any_arm_equipped() -> bool"""
+        pass
+
+    def gd_func__is_torso_head_launch_combat_mode(self):
+        """GDScript function: _is_torso_head_launch_combat_mode() -> bool"""
         pass
 
     def gd_func__force_head_only_single_visual(self):
@@ -1755,8 +1772,12 @@ class Player:
         """GDScript function: _fire_player_projectile(forward: Vector3, projectile_damage: int, projectile_speed: float, projectile_gravity: float, projectile_style: String) -> void"""
         pass
 
-    def gd_func__get_pointer_aim_direction(self):
-        """GDScript function: _get_pointer_aim_direction(start_position: Vector3, fallback_direction: Vector3) -> Vector3"""
+    def gd_func__get_pointer_aim_point(self):
+        """GDScript function: _get_pointer_aim_point(start_position: Vector3, fallback_direction: Vector3) -> Vector3"""
+        pass
+
+    def gd_func__aim_direction_to(self):
+        """GDScript function: _aim_direction_to(start_position: Vector3, aim_point: Vector3, fallback_direction: Vector3) -> Vector3"""
         pass
 
     def gd_func__try_stealth_finish(self):
@@ -2058,6 +2079,10 @@ class Player:
     def depends_on_ArrowProjectile(self):
         """Relationship: loads resource."""
         return ArrowProjectile
+
+    def depends_on_BallisticsService(self):
+        """Relationship: references class BallisticsService."""
+        return BallisticsService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -3187,6 +3212,18 @@ class ProceduralPlayerAnimator:
         """GDScript function: _is_torso_spring_only() -> bool"""
         pass
 
+    def gd_func__is_slot_equipped(self):
+        """GDScript function: _is_slot_equipped(slot: String) -> bool"""
+        pass
+
+    def gd_func__has_any_arm_equipped(self):
+        """GDScript function: _has_any_arm_equipped() -> bool"""
+        pass
+
+    def gd_func__torso_head_launch_available(self):
+        """GDScript function: _torso_head_launch_available() -> bool"""
+        pass
+
     def gd_func__animate_head_only(self):
         """GDScript function: _animate_head_only(sway: float, breath: float) -> void"""
         pass
@@ -3201,6 +3238,10 @@ class ProceduralPlayerAnimator:
 
     def gd_func__animate_torso_spring(self):
         """GDScript function: _animate_torso_spring(sway: float, breath: float) -> void"""
+        pass
+
+    def gd_func__anchor_socket_to_body(self):
+        """GDScript function: _anchor_socket_to_body(key: String, body: Node3D) -> void"""
         pass
 
     def gd_func__animate_limbs(self):
@@ -3257,6 +3298,10 @@ class ProceduralPlayerAnimator:
 
     def gd_func__apply_attack_overlay(self):
         """GDScript function: _apply_attack_overlay() -> void"""
+        pass
+
+    def gd_func__combo_step_for_equipped_arms(self):
+        """GDScript function: _combo_step_for_equipped_arms() -> int"""
         pass
 
     def gd_func__attack_pose_strength(self):

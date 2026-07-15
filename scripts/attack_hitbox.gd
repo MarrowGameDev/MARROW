@@ -15,6 +15,10 @@ signal hit_confirmed(target: Node)
 
 const ENEMY_BODY_HURTBOX_GROUP := "enemy_body_hurtboxes"
 
+# How far below a surface's top face the hitbox may sit and still count as
+# standing on it rather than striking its side.
+const GROUND_CONTACT_TOLERANCE := 0.05
+
 # The player that created this hitbox.
 # We use this so the attack does not accidentally hit the player.
 var owner_player: Node = null
@@ -182,15 +186,38 @@ func _body_should_confirm_contact(body: Node) -> bool:
 	return false
 
 
+# A static body counts as ground when this hitbox sits at or above its top face:
+# the head is resting on the surface rather than bonking into its side.
+#
+# This used to substring-match the body's NAME against ground/floor/terrain/
+# stagebody/ramp, which mis-classified every walkable surface not literally
+# called one of those — VillageBridge, FieldBridge, NorthBridge, VillageCliff,
+# RigPosePlatform — so standing on one and attacking confirmed contact instantly
+# and the head recoiled as if it had struck an enemy.
+#
+# Geometry also settles the case no name or group can express: VillageCliff is
+# 1 m tall, so its top is ground and its side is a wall. The same body has to be
+# both, depending on where the head is.
 func _is_ground_like_body(body: Node) -> bool:
-	var body_name := String(body.name).to_lower()
-	return (
-		body_name.contains("ground")
-		or body_name.contains("floor")
-		or body_name.contains("terrain")
-		or body_name.contains("stagebody")
-		or body_name.contains("ramp")
-	)
+	var top: float = _body_top_y(body)
+	if top == -INF:
+		# No usable shape: fall back to treating it as an obstacle, which is the
+		# behaviour walls rely on.
+		return false
+	return global_position.y >= top - GROUND_CONTACT_TOLERANCE
+
+
+# World-space Y of the body's highest collision surface, or -INF if it has none.
+func _body_top_y(body: Node) -> float:
+	var top := -INF
+	for node in body.find_children("*", "CollisionShape3D", true, false):
+		var collider := node as CollisionShape3D
+		if collider == null or collider.shape == null or collider.disabled:
+			continue
+		var bounds: AABB = collider.shape.get_debug_mesh().get_aabb()
+		var world_bounds: AABB = collider.global_transform * bounds
+		top = maxf(top, world_bounds.position.y + world_bounds.size.y)
+	return top
 
 
 func _try_hit_enemy_area(area: Area3D) -> void:

@@ -60,9 +60,16 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var gorilla_rock_throw_range: float = 10.0
 @export var gorilla_rock_throw_cooldown: float = 3.5
 @export var gorilla_rock_throw_windup: float = 0.55
-@export var gorilla_rock_throw_speed: float = 10.5
-@export var gorilla_rock_throw_upward_boost: float = 2.6
-@export var gorilla_rock_gravity: float = 24.0
+# Horizontal speed at arc 0. The vertical solve derives from this, so changing it
+# re-aims the throw automatically — it cannot make the rock miss.
+@export var gorilla_rock_throw_speed: float = 12.0
+# Extra hang time as a fraction of the flat flight (0.15 = 15% longer, lobbed
+# higher and slower). Replaces gorilla_rock_throw_upward_boost, which lofted the
+# rock by breaking the aim instead of by extending the flight.
+@export var gorilla_rock_throw_arc: float = 0.15
+# A heavy rock falls hard. This drives the descent AND the arc height, because the
+# solve raises the launch to keep the same hang time under stronger gravity.
+@export var gorilla_rock_gravity: float = 32.0
 @export var gorilla_rock_damage: int = 1
 @export_group("")
 @export_group("Lizard Profile")
@@ -498,9 +505,14 @@ func _fire_saliva_spit() -> void:
 	if horizontal.length() < 0.1:
 		return
 
-	var travel_time: float = horizontal.length() / maxf(lizard_saliva_speed, 0.1)
-	var launch_velocity: Vector3 = horizontal.normalized() * lizard_saliva_speed
-	launch_velocity.y = (to_target.y / maxf(travel_time, 0.1)) + (lizard_saliva_gravity * 0.5 * travel_time)
+	var launch_velocity: Vector3 = BallisticsService.solve_launch_velocity(
+		start_position,
+		target_position,
+		lizard_saliva_speed,
+		lizard_saliva_gravity,
+		0.0,
+		BallisticsService.physics_step()
+	)
 
 	var saliva: Area3D = ARROW_PROJECTILE_SCRIPT.new() as Area3D
 	if saliva == null:
@@ -559,9 +571,14 @@ func _fire_enemy_arrow() -> void:
 	if horizontal.length() < 0.1:
 		return
 
-	var travel_time: float = horizontal.length() / maxf(ranged_arrow_speed, 0.1)
-	var launch_velocity: Vector3 = horizontal.normalized() * ranged_arrow_speed
-	launch_velocity.y = (to_target.y / maxf(travel_time, 0.1)) + (ranged_arrow_gravity * 0.5 * travel_time)
+	var launch_velocity: Vector3 = BallisticsService.solve_launch_velocity(
+		start_position,
+		target_position,
+		ranged_arrow_speed,
+		ranged_arrow_gravity,
+		0.0,
+		BallisticsService.physics_step()
+	)
 
 	var arrow: Area3D = ARROW_PROJECTILE_SCRIPT.new() as Area3D
 	if arrow == null:
@@ -624,9 +641,14 @@ func _throw_held_rock() -> void:
 	if horizontal.length() < 0.1:
 		return
 
-	var travel_time: float = horizontal.length() / maxf(gorilla_rock_throw_speed, 0.1)
-	var launch_velocity: Vector3 = horizontal.normalized() * gorilla_rock_throw_speed
-	launch_velocity.y = (to_target.y / maxf(travel_time, 0.1)) + gorilla_rock_throw_upward_boost + (gorilla_rock_gravity * 0.5 * travel_time)
+	var launch_velocity: Vector3 = BallisticsService.solve_launch_velocity(
+		start_position,
+		target_position,
+		gorilla_rock_throw_speed,
+		gorilla_rock_gravity,
+		gorilla_rock_throw_arc,
+		BallisticsService.physics_step()
+	)
 
 	var rock: Area3D = ROCK_PROJECTILE_SCRIPT.new() as Area3D
 	if rock == null:

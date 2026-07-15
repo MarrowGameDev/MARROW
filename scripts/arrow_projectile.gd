@@ -14,9 +14,17 @@ var owner_body: Node = null
 var damages_player: bool = false
 var projectile_style: String = "arrow"
 var _has_hit: bool = false
+# Spawn point recorded by configure(), applied once the node is in the tree.
+var _spawn_position: Vector3 = Vector3.ZERO
+var _has_spawn_position: bool = false
 
 
 func _ready() -> void:
+	# Applied here rather than in configure(): callers must configure BEFORE
+	# add_child so _build_visuals() below can see projectile_style and radius, but
+	# at that point the node is not in the tree and global_position is unusable.
+	if _has_spawn_position:
+		global_position = _spawn_position
 	collision_layer = 0
 	collision_mask = 1
 	body_entered.connect(_on_body_entered)
@@ -28,8 +36,14 @@ func _ready() -> void:
 		queue_free()
 
 
+# Safe to call before OR after add_child. Every caller currently calls it before,
+# so writing global_position here logged
+# `Condition "!is_inside_tree()" is true` for every projectile fired.
 func configure(start_position: Vector3, launch_velocity: Vector3, hit_damage: int, source_body: Node, should_damage_player: bool, gravity_value: float = 6.0, visual_style: String = "arrow") -> void:
-	global_position = start_position
+	_spawn_position = start_position
+	_has_spawn_position = true
+	if is_inside_tree():
+		global_position = start_position
 	arrow_velocity = launch_velocity
 	damage = hit_damage
 	owner_body = source_body

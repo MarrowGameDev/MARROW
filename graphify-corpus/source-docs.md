@@ -492,6 +492,16 @@ con el centro/orientacion de la caja base.
 5. Probar equipamiento/drops en `scenes/testing_environment.tscn`.
 6. Actualizar docs relevantes si el hueso introduce una regla nueva.
 
+Antes de abrir PR, ejecutar la validacion read-only de datos:
+
+```bash
+python tools/validate_bone_data.py
+```
+
+El validador revisa rutas del catalogo, IDs duplicados, Resources `.tres` sin
+referencia, slots, calidades, rarezas, familias de mutacion y rangos numericos
+basicos. No modifica Resources ni requiere abrir Godot.
+
 ## Compatibilidad
 
 `BoneDefinition.to_clean_dictionary()` mantiene el esquema organizado.
@@ -694,6 +704,9 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/combat_targeting_service.gd`: reglas puras de auto-target para
   ataques head-launch (head-only y torso-only). No accede a la escena: recibe
   posiciones candidatas y devuelve el indice del mejor objetivo.
+- `scripts/ballistics_service.gd`: regla pura de lanzamiento para proyectiles con
+  gravedad (saliva, flecha enemiga, roca de gorilla). Recibe posiciones y tuning,
+  devuelve la velocidad de lanzamiento. Ver "Solve balistico compartido".
 - `scripts/bone_definition.gd`, `scripts/bone_database.gd` y
   `scripts/bone_data_catalog.gd`: stats de huesos que modifican perfiles de
   combate del jugador y enemigos.
@@ -713,6 +726,59 @@ perdida de limbs, crawling, drops y reacciones de AI.
 5. `AttackHitbox` revisa overlaps y `body_entered`.
 6. Si el cuerpo tiene `take_damage`, llama `take_damage(damage, hit_pos, player)`.
 7. `Enemy.take_damage` aplica knockback, dano, limb loss y muerte si corresponde.
+
+## Solve balistico compartido
+
+Los tres proyectiles con gravedad usan `BallisticsService.solve_launch_velocity()`:
+saliva de lizard (`enemy.gd:508`), flecha enemiga (`:574`) y roca de gorilla
+(`:644`). Antes el mismo solve estaba copiado en los tres, y las copias
+DERIVARON — cada una fallaba distinto:
+
+- La roca sumaba `+ gorilla_rock_throw_upward_boost` ENCIMA de la solucion, o sea
+  llegaba (boost * travel_time) alta: +2.29 m a 10 m.
+- Saliva y flecha clampeaban `travel_time` en la division pero usaban el valor
+  crudo en el termino de gravedad, asi que por debajo de `0.1 * speed` metros los
+  dos terminos no coincidian y el tiro salia ALTO: medido +0.44 m a 0.3 m con la
+  saliva. `lizard_saliva_min_range` (2.2) solo gatea el INICIO del ataque; el
+  windup re-apunta cada frame, asi que correrle encima al lizard cae justo en esa
+  zona.
+- Ninguna de las dos compensaba el paso de fisica (ver abajo).
+
+Reglas del servicio:
+
+- `arc` loftea alargando el VUELO, nunca sumando velocidad vertical. Cualquier
+  termino sumado encima falla por exactamente (velocidad_sumada * travel_time).
+- `travel_time` se clampea AL DECLARARLO y la velocidad horizontal se deriva de
+  ese valor ya clampeado, asi que de cerca el proyectil simplemente vuela mas
+  lento en vez de irse alto.
+- `physics_step_seconds` compensa el integrador: los proyectiles corren
+  `velocity.y -= g*dt` y despues `position += velocity*dt` (Euler semi-implicito),
+  que pierde 0.5*g*T*dt contra la parabola analitica. La correccion es
+  `v0 = dy/T + 0.5*g*(T + dt)`. OJO: el signo depende del orden — con Euler
+  explicito (posicion con la velocidad VIEJA) seria `(T - dt)`. El error escala
+  con la gravedad: ~1 cm en la saliva (g 1.5), ~6 cm en la flecha (g 5), ~22 cm en
+  la roca (g 32).
+- Cambiar speed/gravity/arc no puede desviar el tiro: el solve se re-deriva.
+
+El bow del jugador usa el OTRO metodo del servicio,
+`solve_launch_velocity_fixed_speed()`, y la diferencia importa:
+
+- Los enemigos apuntan a un objetivo conocido y pueden inflar la velocidad
+  vertical libremente. En el bow la VELOCIDAD significa algo: `player.gd:606`
+  hace `charged_speed = bow_arrow_speed * lerpf(0.9, 1.15, charge_ratio)`, asi
+  que resolver la vertical como los enemigos le daria a un tiro a medio cargar la
+  energia de uno completo. Por eso el bow resuelve el ANGULO con la velocidad fija.
+- Devolver ZERO cuando el objetivo esta fuera de alcance no es un fallo, es la
+  respuesta: le avisa al `Player` que dispare derecho en vez de inventar energia.
+  Eso es lo que evita que apuntar al cielo abierto (el raycast devuelve `ray_end`
+  a 90 m) se convierta en un morterazo. Alcance maximo plano a v=18, g=4 es
+  v^2/g = 81 m.
+- Se elige la raiz PLANA de las dos posibles (a 10 m son 3.7 grados); la otra es
+  un lob de mortero.
+- Los finger bones NO usan el servicio: siguen con su `launch_velocity.y = 0.65`.
+  Es el mismo anti-patron de constante aditiva, pero no hay reticle para ellos
+  (`_start_bow_aim` solo corre con `bow_equipped`), asi que no rompen ninguna
+  promesa; son un lob corto a ~6.6 m.
 
 ## Auto-target de ataques head-launch
 
@@ -754,6 +820,28 @@ antes de que aterrizara el anterior y las poses se apilaban.
   esta busy y lo descuenta despues, asi que hit, fallo y aterrizaje limpio
   reciben la misma recuperacion sin rastrear como termino el ataque.
 - El melee normal no cambia: solo se gatea cuando el modo es head-launch.
+
+### Torso sin piernas: brazo o cabeza
+
+Un torso sin piernas lanza la cabeza SOLO si no tiene ningun brazo equipado.
+Alcanza con UN brazo para que el ataque pase a ser el combo de brazo.
+
+- `ProceduralPlayerAnimator._torso_head_launch_available()` = torso-spring y
+  `not _has_any_arm_equipped()`. Gobierna `trigger_attack()` y
+  `_apply_attack_overlay()`.
+- `Player._is_torso_head_launch_combat_mode()` (antes `_is_torso_only_combat_mode`)
+  agrega la misma condicion de brazo, y tiene que moverse en conjunto con el
+  animator: rutea el hitbox (esfera que sigue al socket `head` vs caja melee
+  normal), el lock de movimiento, el gate anti-stacking y el detach por fallo. Si
+  quedara en true con un brazo equipado, el hitbox apuntaria a la cabeza mientras
+  el brazo hace el swing.
+- Con un solo brazo, `_combo_step_for_equipped_arms()` fuerza el paso del combo al
+  brazo que existe (derecho -> paso 1, izquierdo -> paso 2). El combo normal
+  alterna derecho/izquierdo/ambos, y un paso sobre un socket vacio se ve como si
+  el ataque no hiciera nada. Con progression apagada (rig sandbox, enemigos) todos
+  los grey-box estan presentes y el ciclo normal se mantiene.
+- Consecuencia buscada: con un brazo no hay lanzamiento, asi que tampoco hay
+  detach de cabeza por fallar ni desplazamiento del cuerpo.
 
 ### Que ataques lanzan la cabeza
 
@@ -1189,6 +1277,128 @@ En `TESTING ENVIRONMENT`:
   `TESTING ENVIRONMENT`, quedar solo como cabeza y atacar al aire varias veces
   seguidas; la cabeza y la capsula deben seguir juntas y la camara no debe
   quedarse atras. Atacar contra una pared no debe atravesarla.
+- 2026-07-15: `scripts/player.gd`, `scripts/ballistics_service.gd` — el bow del
+  jugador ahora pega donde apunta el reticle. Era el unico tirador del juego sin
+  solve: disparaba en linea recta al punto del raycast mientras la gravedad (4.0)
+  tiraba la flecha abajo, asi que caia 0.64 m bajo el reticle a 10 m, 2.51 m a
+  20 m y 5.61 m a 30 m. Peor: como la carga escala la velocidad (0.9x-1.15x), la
+  caida variaba 62% con cuanto se mantenia el click, o sea no existia un hold-over
+  aprendible; y tirando plano desde 0.85 m la flecha tocaba el piso a ~11-13 m
+  mientras los enemigos ranged atacan desde 13 m CON solve correcto. Nuevo
+  `solve_launch_velocity_fixed_speed()`: resuelve el ANGULO con la velocidad fija
+  en vez de la vertical, asi la carga sigue significando velocidad (medido: la
+  velocidad se preserva a 0.01 m/s y el punto de impacto NO se mueve entre carga
+  0.0, 0.5 y 1.0). Fuera de alcance devuelve ZERO y el `Player` dispara derecho,
+  que es lo que evita que apuntar al cielo se vuelva un morterazo. Medido: error
+  vertical 0.000 m a 5/10/20/30 m y con el objetivo +-6 m de altura; rechaza 200 m,
+  cielo empinado y apuntar recto arriba; elige la raiz plana (3.7 grados a 10 m).
+  Los finger bones no cambian (no tienen reticle). Se borro
+  `_get_pointer_aim_direction()`, que quedo sin uso. Pruebas: en
+  `TESTING ENVIRONMENT`, equipar ambos brazos, tomar el bow (`1`) y disparar a un
+  enemigo a ~10 m y a ~20 m; debe pegar en el punto del reticle a cualquier carga.
+- 2026-07-15: `scripts/ballistics_service.gd` (nuevo), `scripts/enemy.gd` — el
+  solve balistico estaba copiado en tres lugares y las copias derivaron, cada una
+  fallando distinto; ahora los tres usan `BallisticsService`. La saliva y la
+  flecha enemiga ganan dos correcciones: (1) el clamp de `travel_time` estaba
+  aplicado solo en la division y no en el termino de gravedad, asi que por debajo
+  de `0.1 * speed` metros el tiro salia ALTO — medido +0.44 m a 0.3 m con la
+  saliva, o sea el lizard escupia por encima de la cabeza si le corrias encima
+  (`lizard_saliva_min_range` 2.2 solo gatea el inicio del ataque, pero el windup
+  de 0.28 s re-apunta cada frame); (2) compensacion del paso de fisica, que en la
+  saliva son ~1 cm a 12 m y en la flecha ~6 cm a 18 m — real pero invisible, muy
+  lejos de los 22 cm de la roca, porque el error escala con la gravedad (1.5 vs
+  32). La formula `v0 = dy/T + 0.5*g*(T + dt)` se verifico con tres derivaciones
+  independientes que intentaron refutarla (3/3 la confirmaron exacta, no
+  aproximada, para Euler semi-implicito) y ademas por simulacion. Medido con el
+  servicio: peor error 1.1 mm en 60 combinaciones de rango x altura para saliva y
+  roca, y 0.2 mm para la flecha. Pruebas: en `TESTING ENVIRONMENT`, spawnear un
+  lizard (`3`) y correrle encima hasta ~0.5 m; la saliva debe pegar y no pasar por
+  arriba. Un gorilla (`2`) y un ranged (`4`) deben seguir pegando a distancia.
+- 2026-07-15: `scripts/enemy.gd`, `scripts/enemy_rock_projectile.gd` — la roca de
+  gorilla ahora pega donde esta el jugador y se siente pesada.
+  `_throw_held_rock()` sumaba `gorilla_rock_throw_upward_boost` (2.6) ENCIMA de la
+  solucion balistica, asi que la roca llegaba (boost * travel_time) metros ALTA:
+  medido +0.91 m a 4 m y +2.29 m a 10 m, o sea pasaba por arriba de la cabeza
+  siempre. La saliva hace el mismo solve pero sin ese termino, por eso si pegaba.
+  Ahora el boost se reemplaza por `gorilla_rock_throw_arc` (0.15), que loftea
+  alargando el VUELO en vez de romper la punteria, y el solve ademas compensa el
+  paso de fisica: el proyectil integra con Euler semi-implicito (velocidad antes
+  que posicion), que pierde 0.5*g*T*step contra la parabola analitica — sin
+  compensar quedaba ~0.26 m bajo a 10 m. Medido: error < 1 mm de 4 a 10 m, y
+  tambien con el objetivo 2 m arriba o abajo. Peso: `gorilla_rock_gravity`
+  24 -> 32 (cae mas fuerte; tambien sube el arco, porque el solve compensa para
+  mantener el hang time), `gorilla_rock_throw_speed` 10.5 -> 12.0 (mantiene el
+  angulo de lanzamiento ~48 grados con la gravedad nueva) y nuevo export
+  `EnemyRockProjectile.tumble_speed` 0.22 (antes 0.8 hardcodeado, giraba ~1.3
+  vueltas por segundo y se leia como piedrita). Cambiar speed/gravity/arc no puede
+  desviar el tiro: el solve se re-deriva de ellos. NOTA: la saliva
+  (`enemy.gd:509`) comparte el mismo error de discretizacion de Euler y queda un
+  poco baja; no se toco en este cambio. Pruebas: en `TESTING ENVIRONMENT`,
+  spawnear un gorilla (`2`), dejarse ver a ~8-10 m y confirmar que la roca pega en
+  el cuerpo y no pasa por encima.
+- 2026-07-15: `scripts/arrow_projectile.gd`, `scripts/enemy_rock_projectile.gd` —
+  `configure()` escribia `global_position` cuando el nodo todavia no estaba en el
+  arbol. Los cuatro llamadores configuran ANTES de `add_child` (`enemy.gd:509`
+  saliva, `:570` flecha, `:636` roca, y `player.gd:704` bow) y tienen que hacerlo,
+  porque `_ready()` -> `_build_visuals()` necesita `projectile_style` y `radius`
+  ya seteados; invertir el orden construiria el visual equivocado. Cada proyectil
+  disparado loggeaba `Condition "!is_inside_tree()" is true. Returning:
+  Transform3D()`. Ahora `configure()` guarda el punto de spawn y `_ready()` lo
+  aplica con el nodo ya en el arbol; sigue funcionando si algun dia se llama
+  despues de `add_child`. Son DOS scripts distintos con el mismo bug: la roca usa
+  `enemy_rock_projectile.gd`, la saliva y la flecha usan `arrow_projectile.gd`.
+  Verificado: posicion mundial correcta incluso con el padre desplazado y rotado
+  (guardar una posicion local se habria offseteado en silencio). Pruebas: en
+  `TESTING ENVIRONMENT`, spawnear un lizard (saliva), un ranged (flecha) y un
+  gorilla (roca) y confirmar que no hay errores en consola y que los proyectiles
+  salen del cuerpo del enemigo.
+- 2026-07-15: `scripts/attack_hitbox.gd` — los ataques ya no registran hits
+  fantasma contra el piso. `_is_ground_like_body()` clasificaba por substring del
+  NOMBRE del nodo (`ground/floor/terrain/stagebody/ramp`), asi que toda superficie
+  caminable que no se llamara asi contaba como pared: `VillageBridge`,
+  `FieldBridge`, `NorthBridge`, `VillageCliff` (tutorial_island_builder) y
+  `RigPosePlatform` (testing_environment). Parado sobre cualquiera de ellas, la
+  esfera del hitbox head-launch tocaba el StaticBody3D y disparaba
+  `_confirm_contact` -> `hit_confirmed` -> `confirm_head_only_attack_contact()`,
+  o sea la cabeza rebotaba como si hubiera golpeado a un enemigo y, en torso-only,
+  ese falso hit tapaba el detach por fallo. Ahora la clasificacion es geometrica:
+  es piso si el hitbox esta a la altura de la cara superior del cuerpo o mas
+  arriba (`GROUND_CONTACT_TOLERANCE` 0.05), leyendo el AABB de sus
+  `CollisionShape3D`. Esto ademas resuelve el caso que ningun nombre ni grupo
+  puede expresar: `VillageCliff` mide 1 m, su techo es piso y su costado es pared.
+  Sin shape usable se lo trata como obstaculo, que es lo que las paredes esperan.
+  Medido con la geometria real: parado sobre bridge/cliff/platform no hay hit;
+  chocar contra `VillageKeep` o el costado del cliff si lo hay. Pruebas: en la
+  isla tutorial, pararse en un puente y atacar como cabeza; no debe haber recoil.
+- 2026-07-15: `scripts/player.gd` — `get_noise_radius()` estaba invertido:
+  devolvia 6.5 esprintando y 9.0 caminando, y `Enemy._can_hear_player()` compara
+  `dist <= noise_radius`, asi que esprintar te hacia MAS silencioso que caminar.
+  Los valores estaban al reves. Ahora son los exports
+  `noise_radius_normal` (6.5) y `noise_radius_sprinting` (9.0), configurables
+  como pide AGENTS.md para cambios de feel; enterrarlos como literales es lo que
+  tapo la inversion. Pruebas: en `TESTING ENVIRONMENT`, atacar cerca de un enemigo
+  caminando y esprintando; esprintar debe alertarlo desde mas lejos.
+- 2026-07-15: `scripts/rig/procedural_player_animator.gd` — corregida la posicion
+  de los brazos con torso sin piernas. Los sockets son hermanos del socket `body`,
+  no hijos, y `_swing()` solo escribe rotacion, asi que cuando
+  `_animate_torso_spring()` baja el torso a `torso_spring_ground_socket_y` (-0.58)
+  la cabeza se re-ancla pero los brazos se quedaban a su altura de hombro parado
+  (0.30), flotando ~0.88 m arriba del torso. Ahora `_anchor_socket_to_body()` los
+  re-ancla con el offset de rest respecto del body. Segunda causa en
+  `_animate_wobble()`: el slide reseteaba `base_pos` al rest, pisando la pose;
+  `crawl_mode` ya tenia esa excepcion y ahora tambien `_is_torso_spring_only()`.
+  Medido: brazo a 0.302 sobre el torso (antes 0.877). Pruebas: en
+  `TESTING ENVIRONMENT`, equipar torso sin piernas y mirar los hombros.
+- 2026-07-15: `scripts/player.gd`, `scripts/rig/procedural_player_animator.gd` —
+  con torso sin piernas y al menos UN brazo equipado, el ataque usa el combo de
+  brazo en vez de lanzar la cabeza. Detalle en la seccion "Torso sin piernas:
+  brazo o cabeza". `Player._is_torso_only_combat_mode()` se renombro a
+  `_is_torso_head_launch_combat_mode()` y ahora excluye el caso con brazo, asi que
+  el hitbox vuelve a ser la caja melee normal y no hay lock, gate ni detach.
+  Medido: sin brazos lanza la cabeza; con un brazo no lanza, no desplaza el cuerpo
+  y el paso del combo cae en el brazo equipado. Pruebas: en
+  `TESTING ENVIRONMENT`, torso sin piernas, atacar sin brazos (embestida de
+  cabeza) y despues equipar un solo brazo y atacar (swing de ese brazo).
 - 2026-07-15: `scripts/player.gd`, `scripts/rig/procedural_player_animator.gd` —
   los ataques ranged y el stealth finish ya no lanzan la cabeza. `_try_bow_shot()`
   y `_try_stealth_finish()` llamaban `animator.trigger_attack()`, el mismo punto
@@ -1776,6 +1986,14 @@ gameplay debe actualizar el archivo de flujo correspondiente.
 7. `docs/tutorial_flow.md`
    - Tutorial de controles, hints del demo y checklist de onboarding.
 
+## Seguimiento y QA
+
+1. `docs/manual_gameplay_qa_checklist.md`
+   - Pasada manual repetible para validar gameplay, UI, combate, camara, rig y
+     evidencia de PR.
+2. `docs/roadmap_progress.md`
+   - Tabla operativa de lotes, ramas, evidencia, PRs y pendientes.
+
 ## Politica
 
 Leer `docs/change_documentation_policy.md` antes de cerrar cualquier cambio
@@ -2060,6 +2278,189 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
+- 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
+  agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
+  hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
+  `_input_pressed` / `_input_just_pressed` / `_input_just_released` /
+  `_get_move_input_vector`, asi que el rebinding de la UI nunca podia
+  DESasignar un default: rebindear Move Forward fuera de W dejaba W caminando
+  para siempre, y lo mismo para las otras 12 acciones. Verificado que las 13
+  acciones estan declaradas en `project.godot`, o sea que el fallback era
+  redundante. Ahora los helpers leen solo el `InputMap`. Pruebas: abrir
+  settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
+  reiniciar y confirmar que el binding persiste desde
+  `user://control_settings.cfg`.
+
+## docs/manual_gameplay_qa_checklist.md
+
+# Manual Gameplay QA Checklist
+
+Fecha base: 2026-07-15
+
+Este checklist define una pasada manual repetible para validar que MARROW sigue
+jugable despues de cambios pequenos. No reemplaza pruebas automatizadas ni una
+revision en Godot; sirve para dejar evidencia consistente antes de abrir o
+cerrar un PR.
+
+## Alcance
+
+- Escena principal y menu.
+- Movimiento, camara y estados basicos del jugador.
+- Inventario, equipamiento y preview.
+- Pickups, drops y recuperacion de huesos.
+- Combate cuerpo a cuerpo, rango, backstab y enemigos.
+- Rig modular y progresion visual del cuerpo.
+- Layout de UI en resoluciones comunes.
+
+## Preflight
+
+1. Confirmar rama de trabajo:
+   - `git status --short --branch`
+   - La rama no debe ser `main` para cambios de Codex.
+2. Confirmar que no hay conflictos:
+   - `git diff --name-only --diff-filter=U`
+3. Confirmar higiene de diff:
+   - `git diff --check`
+4. Confirmar si Godot CLI esta disponible:
+   - `godot --version`
+   - `godot4 --version`
+
+Si Godot no esta disponible en terminal, registrar que la validacion runtime
+queda pendiente en editor.
+
+## Arranque
+
+1. Abrir `project.godot`.
+2. Ejecutar desde `scenes/main_menu.tscn`.
+3. Entrar al demo jugable.
+4. Volver al menu si existe flujo de regreso.
+5. Entrar a `scenes/testing_environment.tscn` desde el menu.
+
+Resultado esperado:
+- El menu carga sin errores visibles.
+- El demo y la escena de prueba cargan sin bloqueo.
+- No aparecen errores nuevos de scripts o nodos faltantes en la consola.
+
+## Movimiento Y Camara
+
+Validar en demo y en testing environment:
+
+1. Movimiento en todas las direcciones.
+2. Movimiento relativo a la camara.
+3. Salto o movimiento especial disponible en el estado actual.
+4. Rotacion de camara con mouse.
+5. Colision de camara contra geometria cercana.
+6. Pausa o apertura de inventario libera/captura el mouse segun corresponda.
+7. Ataque o animacion no provoca desplazamiento involuntario persistente.
+
+Resultado esperado:
+- El jugador mantiene control despues de atacar, abrir inventario y cerrar
+  inventario.
+- No hay jitter persistente de camara o cuerpo en reposo.
+- No hay teletransportes ni hundimiento en geometria.
+
+## Inventario, Equipamiento Y Preview
+
+1. Abrir inventario.
+2. Cambiar entre pestanas o filtros disponibles.
+3. Seleccionar un hueso y revisar panel de detalle.
+4. Equipar una pieza compatible.
+5. Desequipar una pieza.
+6. Intentar equipar una pieza incompatible si existe una disponible.
+7. Confirmar que la pieza equipada no se duplica en la grilla de inventario.
+8. Confirmar que copias duplicadas validas siguen listadas como copias
+   separadas.
+9. Revisar que el preview se mantiene dentro de su viewport.
+10. Cerrar inventario y verificar que gameplay retoma control normal.
+
+Resultado esperado:
+- La UI delega validaciones a los sistemas de equipamiento.
+- El preview no aparece en el mundo jugable.
+- No hay texto cortado en controles principales.
+- El estado equipado coincide con el rig visible.
+
+## Pickups, Drops Y Huesos
+
+1. Spawnear o encontrar pickups.
+2. Recoger un pickup valido.
+3. Confirmar que aparece en inventario.
+4. Derrotar o danar un enemigo hasta provocar drop si la escena lo permite.
+5. Recoger el drop.
+6. Revisar que nombre, slot y rareza/calidad se muestran de forma coherente.
+
+Resultado esperado:
+- Los pickups no se duplican al recogerlos.
+- El inventario se actualiza sin abrir/cerrar forzado.
+- Los nombres de drops son slot-aware cuando aplica.
+
+## Combate Y Enemigos
+
+1. Atacar a un dummy o enemigo cuerpo a cuerpo.
+2. Confirmar cooldown y feedback visual.
+3. Recibir dano de un enemigo activo.
+4. Validar muerte o estado bajo vida si aplica.
+5. Usar ataque a distancia si el estado/equipamiento lo permite.
+6. Probar backstab desde detras del enemigo.
+7. Probar que el backstab no se activa desde frente o lateral.
+8. Validar comportamiento basico de busqueda/persecucion.
+9. Para lizard, validar climb contra pared si esta presente.
+
+Resultado esperado:
+- Los enemigos no dependen de rutas fragiles del jugador.
+- El backstab respeta posicion y direccion del enemigo.
+- La animacion de ataque no deja al jugador bloqueado.
+
+## Rig Y Progresion Visual
+
+1. Revisar estado head-only si el flujo lo permite.
+2. Equipar torso y confirmar que cambia la progresion visual.
+3. Equipar brazos y piernas.
+4. Observar animacion en reposo, movimiento, salto/crawl y ataque.
+5. Confirmar que sockets visibles corresponden a equipo activo.
+
+Resultado esperado:
+- Las partes no recuperadas permanecen ocultas.
+- El rig no muestra piezas duplicadas ni flotantes.
+- El preview y el jugador comparten la misma progresion visual esperada.
+
+## Resoluciones De UI
+
+Probar mentalmente o en editor, segun disponibilidad:
+
+- 1280x720
+- 1366x768
+- 1920x1080
+- Relacion ultrawide
+
+Resultado esperado:
+- Inventario y paneles caben en pantalla.
+- Labels criticos no se cortan sin alternativa.
+- Botones y slots mantienen alineacion y separacion consistente.
+
+## Registro De Evidencia
+
+Para cada PR, registrar:
+
+- Rama.
+- Commit.
+- Escena validada.
+- Resolucion usada.
+- Pasos ejecutados.
+- Resultado: pass, fail o pendiente.
+- Errores de consola relevantes.
+- Capturas o video si el cambio toca UI, camara, rig o animacion.
+
+Formato corto:
+
+```text
+Rama:
+Commit:
+Escena:
+Resolucion:
+Pasos:
+Resultado:
+Pendientes:
+```
 
 ## docs/open_world_map_layout.md
 
@@ -2743,6 +3144,61 @@ Combo overlay:
 - Foot placement done on flat ground + a ramp; steps not added (CharacterBody3D
   needs step-up logic to climb vertical steps).
 - Not merged into the real player (Phase G) — do that only after this feels good.
+
+## docs/roadmap_progress.md
+
+# Roadmap Progress
+
+Fecha base: 2026-07-15
+
+Este archivo mantiene una tabla operativa de lotes pequenos para MARROW. Su
+objetivo es que cada cambio tenga rama, evidencia y estado verificable sin
+tocar `main` directamente.
+
+## Reglas De Seguimiento
+
+- Cada lote debe vivir en una rama dedicada desde `origin/main`.
+- Evitar mezclar runtime, UI, datos y documentacion salvo que el cambio lo
+  requiera.
+- Preferir lotes de bajo conflicto antes de tocar hotspots como
+  `scripts/player.gd`, `scripts/enemy.gd`, `scripts/player_inventory_ui.gd`,
+  `scripts/rig/procedural_player_animator.gd`, `scripts/rig/modular_skeleton_rig.gd`,
+  `scenes/main.tscn` o `project.godot`.
+- Registrar validacion real. Si algo no se ejecuto, dejarlo como pendiente.
+- Abrir PR en borrador cuando el lote este listo para revision.
+
+## Estado De Lotes
+
+| Fecha | Rama | Tipo | Objetivo | Estado | Evidencia | Pendiente |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-07-15 | `codex/qa-validation-baseline` | Docs / QA | Crear checklist manual y tablero de seguimiento para futuros lotes. | En progreso | `git status`, `git diff --check`, revision documental. | Commit, push y PR draft. |
+
+## Backlog Tecnico Inmediato
+
+| Prioridad | Sistema | Lote sugerido | Riesgo | Validacion minima |
+| --- | --- | --- | --- | --- |
+| P0 | Git / proceso | Mantener trabajo de Codex fuera de `main` con ramas por lote. | Bajo | `git status --short --branch` antes y despues. |
+| P0 | QA | Ejecutar este checklist en `scenes/testing_environment.tscn` antes de PRs funcionales. | Bajo | Evidencia manual por escena y resolucion. |
+| P1 | Combate | Revisar backstab con casos frente/lateral/detras antes de cambiar reglas. | Medio | Dummy/enemigo activo, posiciones controladas, sin cambios especulativos. |
+| P1 | Movimiento / camara | Reproducir jitter o head movement antes de parchear. | Medio | Video o pasos exactos, escena y estado del jugador. |
+| P1 | Rig / preview | Verificar sincronizacion entre jugador y preview antes de tocar sockets. | Medio | Equip/unequip torso, brazos y piernas en inventario. |
+| P2 | Datos de huesos | Migrar mas definiciones a `.tres` sin romper `BoneDatabase`. | Medio | Cache reload, inventario, drops y equipamiento. |
+| P2 | Docs | Actualizar flujo afectado con cada cambio funcional. | Bajo | `docs/flow_index.md` apunta al flujo correcto. |
+
+## Plantilla De Lote
+
+```text
+Fecha:
+Rama:
+Tipo:
+Objetivo:
+Archivos previstos:
+Riesgo:
+Validacion:
+Resultado:
+PR:
+Pendientes:
+```
 
 ## docs/tutorial_flow.md
 

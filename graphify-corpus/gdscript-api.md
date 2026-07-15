@@ -168,6 +168,8 @@
 - `damages_player`
 - `projectile_style`
 - `_has_hit`
+- `_spawn_position`
+- `_has_spawn_position`
 - `damage_owner`
 - `call_args`
 - `shape`
@@ -221,6 +223,7 @@
 
 ### Constants
 - `ENEMY_BODY_HURTBOX_GROUP`
+- `GROUND_CONTACT_TOLERANCE`
 
 ### Key Variables
 - `owner_player`
@@ -243,7 +246,10 @@
 - `base_material`
 - `material`
 - `tween`
-- `body_name`
+- `top`
+- `collider`
+- `bounds`
+- `world_bounds`
 - `damage_owner`
 
 ### Functions
@@ -260,6 +266,7 @@
 - `_try_hit_body(body: Node) -> void`
 - `_body_should_confirm_contact(body: Node) -> bool`
 - `_is_ground_like_body(body: Node) -> bool`
+- `_body_top_y(body: Node) -> float`
 - `_try_hit_enemy_area(area: Area3D) -> void`
 - `_damage_owner_for_area(area: Area3D) -> Node`
 - `_body_part_for_area(area: Area3D) -> String`
@@ -276,6 +283,51 @@
 
 ### Node Path Lookups
 - `CollisionShape3D`
+
+## BallisticsService
+
+- Source file: `scripts/ballistics_service.gd`
+- Extends: `unknown`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- none
+
+### Key Variables
+- `arc_scale`
+- `to_target`
+- `horizontal`
+- `distance`
+- `travel_time`
+- `launch`
+- `height`
+- `angle`
+- `flight`
+- `effective_gravity`
+- `refined`
+- `speed_sq`
+- `discriminant`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
 
 ## bone
 
@@ -867,7 +919,7 @@
 - `gorilla_rock_throw_cooldown`
 - `gorilla_rock_throw_windup`
 - `gorilla_rock_throw_speed`
-- `gorilla_rock_throw_upward_boost`
+- `gorilla_rock_throw_arc`
 - `gorilla_rock_gravity`
 - `gorilla_rock_damage`
 - `lizard_profile_mode`
@@ -1119,6 +1171,7 @@
 - `lifetime`
 - `projectile_gravity`
 - `radius`
+- `tumble_speed`
 
 ### Constants
 - `PLAYER_BODY_HURTBOX_GROUP`
@@ -1127,6 +1180,8 @@
 - `velocity`
 - `owner_enemy`
 - `_has_hit`
+- `_spawn_position`
+- `_has_spawn_position`
 - `damage_owner`
 - `shape`
 - `sphere`
@@ -1530,6 +1585,8 @@
 - `head_only_attack_locks_movement`
 - `attack_forward_offset`
 - `attack_height`
+- `noise_radius_normal`
+- `noise_radius_sprinting`
 - `head_launch_target_range`
 - `head_only_attack_hitbox_lifetime`
 - `head_only_attack_hitbox_height`
@@ -1599,22 +1656,19 @@
 - `stealth_target`
 - `noise_timer`
 - `sprinting_this_frame`
-- `fallback_input_previous`
-- `fallback_input_current`
 - `head_launch_target`
 - `head_launch_recovery_timer`
 - `head_detached_from_torso`
 - `detached_torso_bone_id`
 - `detached_torso_marker`
+- `detached_torso_reattach_progress`
+- `detached_torso_reattaching`
 
 ### Functions
 - `_ready() -> void`
 - `_input(event: InputEvent) -> void`
 - `_physics_process(delta: float) -> void`
 - `_get_camera_relative_move_direction(input_vector: Vector2) -> Vector3`
-- `_reset_fallback_input_state() -> void`
-- `_refresh_fallback_input_state() -> void`
-- `_read_fallback_input_state() -> Dictionary`
 - `_input_pressed(action: String) -> bool`
 - `_input_just_pressed(action: String) -> bool`
 - `_input_just_released(action: String) -> bool`
@@ -1633,7 +1687,9 @@
 - `_update_head_launch_recovery(delta: float) -> void`
 - `_get_head_only_hitbox_follow_target() -> Node3D`
 - `_is_head_only_combat_mode() -> bool`
-- `_is_torso_only_combat_mode() -> bool`
+- `_is_slot_equipped(slot: String) -> bool`
+- `_has_any_arm_equipped() -> bool`
+- `_is_torso_head_launch_combat_mode() -> bool`
 - `_force_head_only_single_visual() -> void`
 - `_try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void`
 - `_start_bow_aim() -> void`
@@ -1643,7 +1699,8 @@
 - `_set_bow_equipped(enabled: bool) -> void`
 - `_can_use_bow() -> bool`
 - `_fire_player_projectile(forward: Vector3, projectile_damage: int, projectile_speed: float, projectile_gravity: float, projectile_style: String) -> void`
-- `_get_pointer_aim_direction(start_position: Vector3, fallback_direction: Vector3) -> Vector3`
+- `_get_pointer_aim_point(start_position: Vector3, fallback_direction: Vector3) -> Vector3`
+- `_aim_direction_to(start_position: Vector3, aim_point: Vector3, fallback_direction: Vector3) -> Vector3`
 - `_try_stealth_finish() -> void`
 - `_next_combo_animation_step() -> int`
 - `_combo_animation_window() -> float`
@@ -2524,10 +2581,14 @@
 - `_is_head_only() -> bool`
 - `_head_only_attack_airborne() -> bool`
 - `_is_torso_spring_only() -> bool`
+- `_is_slot_equipped(slot: String) -> bool`
+- `_has_any_arm_equipped() -> bool`
+- `_torso_head_launch_available() -> bool`
 - `_animate_head_only(sway: float, breath: float) -> void`
 - `_apply_detached_head_reattach_tornado(head: Node3D) -> void`
 - `_apply_detached_head_reattach_finish_blend(_body: Node3D, head: Node3D) -> void`
 - `_animate_torso_spring(sway: float, breath: float) -> void`
+- `_anchor_socket_to_body(key: String, body: Node3D) -> void`
 - `_animate_limbs() -> void`
 - `_animate_crawl_body() -> void`
 - `_animate_crawl_limbs() -> void`
@@ -2542,6 +2603,7 @@
 - `_apply_aim_overlay() -> void`
 - `_update_attack_overlay(delta: float) -> void`
 - `_apply_attack_overlay() -> void`
+- `_combo_step_for_equipped_arms() -> int`
 - `_attack_pose_strength() -> float`
 - `_attack_phase() -> float`
 - `_apply_head_only_attack_pose() -> void`

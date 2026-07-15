@@ -43,6 +43,7 @@
 ## Supporting gameplay
 
 - `scripts/_rt6.gd`
+- `scripts/ballistics_service.gd`
 - `scripts/combat_targeting_service.gd`
 - `scripts/drop_pickup_rules_service.gd`
 - `scripts/game_events.gd`
