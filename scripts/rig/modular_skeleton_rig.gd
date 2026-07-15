@@ -34,6 +34,16 @@ static var LOWER_UNDER_UPPER := {
 	"left_arm_lower": {"upper": "left_arm", "pos": Vector3(0.0, -0.29, 0.0)},
 	"right_leg_lower": {"upper": "right_leg", "pos": Vector3(0.0, -0.31, 0.0)},
 	"left_leg_lower": {"upper": "left_leg", "pos": Vector3(0.0, -0.31, 0.0)},
+	# Torso: chest stays on `body`, abdomen hangs below it. The waist sits at the
+	# body origin, so `pos` is ZERO.
+	#
+	# bend = false ON PURPOSE. The head and arm sockets are SIBLINGS of `body`,
+	# not children, so a bending waist would swing the chest away from the head and
+	# arms and tear the figure apart. This split is structural — a real attach point
+	# for swapping in a chest and an abdomen mesh — not an animated joint. Making
+	# it bend means first reparenting head/arms under the chest, which is a much
+	# larger change to the animator.
+	"body_lower": {"upper": "body", "pos": Vector3.ZERO, "bend": false},
 }
 
 # Upper-half geometry used ONLY when use_split_limbs is on: each is exactly half
@@ -42,14 +52,38 @@ static var LOWER_UNDER_UPPER := {
 static var SPLIT_UPPER_GEO := {
 	"right_arm": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
 	"left_arm": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
-	"right_leg": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
-	"left_leg": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
+	# THIGH: 0.16 square, matching the arms. It has to narrow from 0.18 so the leg
+	# fits inside the 0.40 waist at the inboard hip: 0.12 + 0.08 = 0.20 = 0.40/2.
+	"right_leg": {"size": Vector3(0.16, 0.31, 0.16), "offset": Vector3(0.0, -0.155, 0.0)},
+	"left_leg": {"size": Vector3(0.16, 0.31, 0.16), "offset": Vector3(0.0, -0.155, 0.0)},
+	# CHEST: the top half of the 0.7 torso, which is CENTRED on its socket rather
+	# than hanging from it — hence +0.175, not -0.175 like the limbs.
+	#
+	# Its width is NOT free: the arm sockets sit at x=+-0.28 and the arm is 0.16
+	# wide, so the arm spans x[0.20,0.36] and buries 0.05 of itself in the chest.
+	# That embed is what makes a shoulder read as a joint instead of a floating
+	# stick. Narrow the chest to 0.40 and the arms come away from the body.
+	"body": {"size": Vector3(0.5, 0.35, 0.28), "offset": Vector3(0.0, 0.175, 0.0)},
 }
 
 # Foot position once the knee exists: the old (0,-0.58,0.06) was measured from the
 # HIP. The knee sits at hip-space -0.31, so -0.27 knee-relative resolves to the
 # same -0.58 — an identical rest pose that now follows the shin.
 static var FOOT_UNDER_KNEE_POS := Vector3(0.0, -0.27, 0.06)
+
+# Hip positions used ONLY when split: the legs move inboard to sit under the
+# narrowed waist instead of hanging past it.
+#
+# A read-time override, NOT a write into SOCKET_LAYOUT. That dict is a `static
+# var` shared by every rig in the process, so assigning into it behind an
+# `if use_split_limbs` would be spawn-order dependent — enemies created after the
+# player would inherit the player's hips and enemies created before would not.
+# _socket_layout_for() consults this first and falls through, so nothing global
+# is ever mutated.
+static var SPLIT_SOCKET_LAYOUT := {
+	"right_leg": Vector3(0.12, -0.35, 0.0),
+	"left_leg": Vector3(-0.12, -0.35, 0.0),
+}
 
 # Grey-box geometry per socket: box size + local offset so arms/legs hang DOWN
 # from the shoulder/hip socket (so rotating the socket swings them naturally).
@@ -66,8 +100,14 @@ static var LIMB_GEO := {
 	# cube, and it feeds both _make_limb (equipped meshes) and the default hitbox.
 	"right_arm_lower": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
 	"left_arm_lower": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
-	"right_leg_lower": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
-	"left_leg_lower": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
+	# SHIN: matches the thigh, so upper + lower still rebuild the 0.62 leg exactly.
+	"right_leg_lower": {"size": Vector3(0.16, 0.31, 0.16), "offset": Vector3(0.0, -0.155, 0.0)},
+	"left_leg_lower": {"size": Vector3(0.16, 0.31, 0.16), "offset": Vector3(0.0, -0.155, 0.0)},
+	# ABDOMEN / WAIST: narrower than the 0.5x0.28 chest in BOTH X and Z. The waist
+	# does not bend, so static geometry is its only read — a width-only taper would
+	# vanish when seen from the side. Ratios: 0.40/0.50 = 0.80 wide, 0.22/0.28 =
+	# 0.79 deep, so the taper holds at any angle.
+	"body_lower": {"size": Vector3(0.40, 0.35, 0.22), "offset": Vector3(0.0, -0.175, 0.0)},
 }
 
 # Per-part placement for the rigged model's limb meshes: which socket, and the
@@ -101,6 +141,7 @@ const ENEMY_HITBOX_ACCURACY_SCALE := {
 	"left_arm_lower": Vector3(0.80, 0.96, 0.80),
 	"right_leg_lower": Vector3(0.82, 0.96, 0.82),
 	"left_leg_lower": Vector3(0.82, 0.96, 0.82),
+	"body_lower": Vector3(0.90, 0.92, 0.90),
 }
 
 # Optional: show a real 3D model as the whole body instead of grey boxes.
@@ -191,7 +232,7 @@ func _ready() -> void:
 	for key in SOCKET_LAYOUT:
 		var socket := Node3D.new()
 		socket.name = String(key) + "_socket"
-		socket.position = SOCKET_LAYOUT[key]
+		socket.position = _socket_layout_for(String(key))
 		add_child(socket)
 		sockets[key] = socket
 
@@ -217,8 +258,10 @@ func _ready() -> void:
 			joint.add_child(lower_limb)
 			base_visuals[lower_key] = lower_limb
 			# The bend pivot is the socket itself. `kind` discriminates this from
-			# the skinned entry _apply_rigged_limbs() writes.
-			limb_joints[lower_info["upper"]] = {"kind": "socket", "node": joint}
+			# the skinned entry _apply_rigged_limbs() writes. The torso opts out:
+			# its head/arm siblings would not follow the waist.
+			if bool(lower_info.get("bend", true)):
+				limb_joints[lower_info["upper"]] = {"kind": "socket", "node": joint}
 
 	# Feet hang UNDER the leg — the knee when split, else the hip — so they follow
 	# the swing AND the knee bend.
@@ -693,7 +736,7 @@ func _base_socket_should_show(socket_key: String) -> bool:
 		return false
 	if socket_key == "head":
 		return true
-	if socket_key == "body":
+	if socket_key == "body" or socket_key == "body_lower":
 		return equipped_ids.has("body")
 	# The lower halves follow their upper: without these branches they fall through
 	# to `return true` below and, with body progression on, an unearned forearm or
@@ -893,6 +936,15 @@ func _make_socket_marker(socket_key: String) -> MeshInstance3D:
 	marker.material_override = material
 	marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return marker
+
+
+# Rest position for a socket. Split rigs pull the hips inboard; everything else
+# reads the shared layout. See SPLIT_SOCKET_LAYOUT for why this is a lookup rather
+# than a write into the static.
+func _socket_layout_for(socket_key: String) -> Vector3:
+	if _split_limbs_active() and SPLIT_SOCKET_LAYOUT.has(socket_key):
+		return SPLIT_SOCKET_LAYOUT[socket_key]
+	return SOCKET_LAYOUT.get(socket_key, Vector3.ZERO)
 
 
 func _limb_geo_for(socket_key: String) -> Dictionary:

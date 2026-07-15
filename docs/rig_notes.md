@@ -95,6 +95,54 @@ Socket tree when split (right side; left mirrors):
         ├── MeshInstance3D  box(0.18, 0.31, 0.18) @ -0.155 -> base_visuals["right_leg_lower"]
         └── right_foot_socket   (0, -0.27, 0.06)  MOVED off the hip
 
+The torso splits too, into a chest and an abdomen meeting at a WAIST socket at the
+body origin (`body` keeps the chest, `body_lower` hangs the abdomen below it):
+
+    body_socket                 (0, 0, 0)        root / waist
+    ├── MeshInstance3D  box(0.5, 0.35, 0.28) @ +0.175  -> base_visuals["body"]        CHEST
+    └── body_lower_socket       (0, 0, 0)        WAIST — structural only
+        └── MeshInstance3D  box(0.5, 0.35, 0.28) @ -0.175 -> base_visuals["body_lower"] ABDOMEN
+
+Proportions (split rig only — enemies keep the old 0.5 torso / 0.18 legs):
+
+| part | size | note |
+|---|---|---|
+| chest (`body`) | 0.50 x 0.35 x 0.28 | UNCHANGED — width pinned by the arm sockets |
+| waist (`body_lower`) | 0.40 x 0.35 x 0.22 | 0.80 of the chest wide, 0.79 deep |
+| thigh / shin | 0.16 x 0.31 x 0.16 | narrowed from 0.18 to fit inside the waist |
+| hip socket X | +-0.12 | `SPLIT_SOCKET_LAYOUT`, was +-0.16 |
+
+The arithmetic that has to close, and why each number is what it is:
+- **Legs inside the waist:** hip 0.12 + half-leg 0.08 = 0.20 = waist half-width. Flush
+  by design, not a near miss — the thigh starts at y=-0.35 where the waist ends, so
+  there is no shared height and nothing to z-fight. The leg's outer wall simply
+  continues the waist's downward, which is what a hip looks like.
+- **The hip HAD to move.** Keeping it at 0.16 requires waist >= 0.32 + legWidth; even
+  at a 0.16 leg that is a 0.48 waist — a 0.01/side taper, invisible. There is no
+  version of this that keeps the sockets.
+- **The FOOT sets the floor.** `LIMB_GEO["*_foot"]` (0.2 wide) is shared with enemies
+  and has no split-only override, so foot width is immovable, and the foot centres on
+  its leg socket X. Hip 0.10 would put the feet at x[0.00,0.20] — touching at the
+  centreline and fusing into one slab. Hip 0.12 gives a 0.04 gap. That floor is what
+  fixes the waist at 0.40 rather than a slimmer 0.36.
+- **The 0.04 gap is stable:** legs only rotate about X, and crawl/wall-climb offsets
+  push them APART, so rest is the worst case.
+- **The chest cannot narrow.** Arm sockets sit at +-0.28 with a 0.16 arm, so the arm
+  buries 0.05 of itself in the chest. That embed is what makes a shoulder read as a
+  joint; at a 0.40 chest the arms come away from the body. Leaving it also gives the
+  waist its reference edge — a taper is contrast.
+- **Z tapers too** (0.28 -> 0.22). The waist has no bend, so static geometry is its
+  only cue; a width-only taper vanishes in profile.
+
+**The waist does NOT bend, deliberately** (`LOWER_UNDER_UPPER["body_lower"]` sets
+`bend: false`, so it is never registered in `limb_joints`). The head and arm
+sockets are SIBLINGS of `body`, not children, so a bending waist would swing the
+chest away from them and tear the figure apart. The split is an attach point for
+swapping in a chest and an abdomen mesh, not an animated joint. Making it bend
+means first reparenting head/arms under the chest — a much larger animator change.
+Note the torso box is CENTRED on its socket (offset +0.175 for the chest), unlike
+the limbs which hang from theirs (-0.145 / -0.155).
+
 Rules that keep this safe:
 
 - **Lower sockets are CHILDREN of their upper**, like `FOOT_UNDER_LEG` already

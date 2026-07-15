@@ -31,7 +31,7 @@ const SLOT_TO_SOCKETS := {
 	"right_arm": ["right_arm", "right_arm_lower"],
 	"left_arm": ["left_arm", "left_arm_lower"],
 	"legs": ["left_leg", "right_leg", "left_leg_lower", "right_leg_lower", "left_foot", "right_foot"],
-	"body": ["body"],
+	"body": ["body", "body_lower"],
 	"head": ["head"],
 }
 

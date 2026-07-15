@@ -953,6 +953,10 @@ func _build_character_preview_panel() -> Control:
 
 	inventory_preview_rig = ModularSkeletonRig.new()
 	inventory_preview_rig.name = "PreviewModularSkeletonRig"
+	# Must match the in-world player or the paper doll depicts a body the player
+	# does not have (fat waist, wide-set whole legs). Set BEFORE add_child: _ready
+	# fires on tree entry and builds the sockets from this flag.
+	inventory_preview_rig.use_split_limbs = true
 	rig_holder.add_child(inventory_preview_rig)
 	if inventory_preview_rig.has_method("set_body_progression_enabled"):
 		inventory_preview_rig.set_body_progression_enabled(true)

@@ -162,11 +162,33 @@ func _spawn_player() -> void:
 	_seed_testing_inventory()
 
 
+# Every NORMAL limb, one per slot, so a whole body can be assembled from the
+# inventory and the animation driven at every stage: head-only -> torso -> arms
+# -> legs. Ids follow EquipmentRulesService's generated-limb format
+# (<source_profile>_<limb_key>_bone), which is what enemies actually drop.
+const NORMAL_LIMB_BONES: Array[String] = [
+	"normal_head_bone",
+	"normal_body_bone",
+	"normal_right_arm_bone",
+	"normal_left_arm_bone",
+	"normal_right_leg_bone",
+	"normal_left_leg_bone",
+]
+
+# Hand-authored + enemy-profile pieces, kept for comparison against the normals.
+const EXTRA_TESTING_BONES: Array[String] = [
+	"arm_bone", "leg_bone", "heavy_bone", "rib_bone",
+	"gorilla_right_arm_bone", "lizard_body_bone",
+]
+
+
 func _seed_testing_inventory() -> void:
 	if player == null or not player.has_method("collect_bone"):
 		return
 
-	for bone_id in ["arm_bone", "leg_bone", "heavy_bone", "rib_bone", "gorilla_right_arm_bone", "lizard_body_bone"]:
+	for bone_id in NORMAL_LIMB_BONES:
+		player.call("collect_bone", bone_id)
+	for bone_id in EXTRA_TESTING_BONES:
 		player.call("collect_bone", bone_id)
 
 
