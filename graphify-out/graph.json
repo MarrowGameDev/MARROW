@@ -15191,7 +15191,7 @@
       "_origin": "ast",
       "id": "architecture_rationale_3672",
       "community": 22,
-      "norm_label": "gdscript function: setup(id: string, player_ref: node) -> void"
+      "norm_label": "gdscript function: setup(id: string, player_ref: node, quantity: int = 1) -> voi"
     },
     {
       "label": "GDScript function: _on_mouse_entered() -> void",
@@ -37452,5 +37452,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "bb3c9757d3f2d914ecea3bb188c8198535b63997"
+  "built_at_commit": "dacf28e63a5d4e1ffceb28e4ad10736089c500bf"
 }
