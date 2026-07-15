@@ -40,6 +40,7 @@
 - `scripts/player.gd` depends on `scenes/attack_hitbox.tscn` because it loads resource.
 - `scripts/player.gd` depends on `scripts/arrow_projectile.gd` because it loads resource.
 - `scripts/player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/player.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/player.gd` depends on `scripts/player_camera_controller.gd` because it references class PlayerCameraController.
 - `scripts/player.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/player.gd` depends on `scripts/player_inventory_component.gd` because it references class PlayerInventoryComponent.

@@ -984,6 +984,27 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-15: Los torsos pueden definir `head_socket_offset`; el ataque
   torso-solo usa ese socket vivo para lanzar y regresar la cabeza segun la
   forma del torso equipado.
+- 2026-07-15: Si el ataque torso-solo lanza la cabeza y no contacta ningun
+  enemigo, hurtbox u obstaculo valido, la cabeza se separa del torso. El player
+  pasa a movimiento head-only, el torso equipado queda como marcador en el
+  mundo, y solo se puede recuperar manteniendo `Interact` cerca de ese mismo
+  torso.
+- 2026-07-15: La separacion cabeza/torso ahora conserva la posicion visual de
+  la cabeza lanzada y la interpola hasta el suelo con una breve caida, evitando
+  el teleport antes de entrar al movimiento head-only.
+- 2026-07-15: Se suavizo la caida detached-head: menos bounce, easing continuo
+  sin pausa a media caida, menor roll extra y rotacion head-only amortiguada con
+  `head_only_roll_speed_scale`.
+- 2026-07-15: La transicion detached-head ahora cambia a modo head-only solo
+  cuando la cabeza toca el suelo. El animator conserva el punto futuro de
+  head-only para que el cambio de modo use la ultima ubicacion de la cabeza y no
+  teleporte.
+- 2026-07-15: Se acelero la caida detached-head (`detached_head_landing_duration`
+  0.18) y `Player` conserva brevemente el offset de camara de la cabeza durante
+  el cambio de modo para evitar que la camara salte al torso y vuelva.
+- 2026-07-15: El cambio final a modo head-only ahora pasa la posicion local
+  aterrizada a `enter_detached_head_state()` y hace un micro-blend de 0.08s hacia
+  la pose normal de rodar, evitando el pequeno teleport al tocar suelo.
 
 ## docs/current_system_status.md
 
@@ -1422,6 +1443,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   lee ese valor desde el hueso equipado en `body` para colocar el origen de la
   cabeza segun la forma del torso. Esto permite que un torso pesado, largo o
   lizard-like cambie la altura/profundidad de la cabeza sin tocar el player.
+- Cuando la cabeza se separa por fallar un ataque torso-solo, el slot `body`
+  queda bloqueado para nuevos equips. `PlayerEquipmentComponent` solo permite
+  restaurar el torso abandonado mediante `restore_detached_body()` cuando el
+  player vuelve al marcador y mantiene `Interact`.
 - El mismo contrato de `hitbox_*` aplica para jugador y enemigos. La diferencia
   vive en el grupo de dano (`player_body_hurtboxes` o `enemy_body_hurtboxes`),
   no en datos duplicados. Los enemigos aplican un recorte adicional de precision
@@ -2326,6 +2351,23 @@ Combo overlay:
   recoils high into the air and returns to the live torso socket position. Once
   landed, the overlay pins the head to that socket so it cannot replay the launch
   branch during blend-out.
+- If the torso-only launch finishes without a confirmed contact, the animator
+  exposes a detach request instead of snapping the head back. `Player` consumes
+  that request, moves the character capsule to the launched head position,
+  unequips the body slot, and leaves a simple detached torso marker in the
+  world. The animator keeps the player in torso-attack mode until the launched
+  skull reaches the future head-only ground position, then requests the actual
+  detach. That lets head-only movement start at the exact location where the
+  skull touched down. The landing uses a short
+  `detached_head_landing_duration` with a continuous fall ease and only a small
+  fading bounce; head-only rolling is damped by `head_only_roll_speed_scale` so
+  the skull does not over-rotate. After the capsule moves to the landed head,
+  `enter_detached_head_state()` receives that grounded local position and uses a
+  tiny `detached_head_mode_blend_duration` handoff into normal rolling sway,
+  avoiding the last ground-level pop. `Player` also carries the camera's
+  head-launch offset briefly during the detach handoff, preventing a one-frame
+  jump back to torso view. Holding `Interact` near that marker restores only the
+  abandoned torso.
 - Enemies use `ProceduralEnemyAnimator`, a thin subclass that keeps player body
   progression disabled. This prevents enemies without player equipment records
   from being treated as head-only bodies.

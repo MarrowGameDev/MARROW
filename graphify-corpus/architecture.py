@@ -1866,6 +1866,42 @@ class Player:
         """GDScript function: _update_stealth_finish_prompt() -> void"""
         pass
 
+    def gd_func_is_head_detached_from_torso(self):
+        """GDScript function: is_head_detached_from_torso() -> bool"""
+        pass
+
+    def gd_func__detach_head_from_torso_after_miss(self):
+        """GDScript function: _detach_head_from_torso_after_miss(detach_offset: Vector3) -> void"""
+        pass
+
+    def gd_func__detached_head_ground_local_position(self):
+        """GDScript function: _detached_head_ground_local_position(launch_offset: Vector3) -> Vector3"""
+        pass
+
+    def gd_func__spawn_detached_torso_marker(self):
+        """GDScript function: _spawn_detached_torso_marker(body_bone_id: String) -> void"""
+        pass
+
+    def gd_func__update_detached_torso_reattach(self):
+        """GDScript function: _update_detached_torso_reattach(delta: float) -> bool"""
+        pass
+
+    def gd_func__reattach_head_to_detached_torso(self):
+        """GDScript function: _reattach_head_to_detached_torso() -> void"""
+        pass
+
+    def gd_func__clear_detached_torso_marker(self):
+        """GDScript function: _clear_detached_torso_marker() -> void"""
+        pass
+
+    def gd_func__set_detached_torso_marker_prompt_visible(self):
+        """GDScript function: _set_detached_torso_marker_prompt_visible(is_visible: bool) -> void"""
+        pass
+
+    def gd_func__as_vector3(self):
+        """GDScript function: _as_vector3(value: Variant, fallback: Vector3) -> Vector3"""
+        pass
+
     def gd_func__find_stealth_target(self):
         """GDScript function: _find_stealth_target() -> Node3D"""
         pass
@@ -1937,6 +1973,10 @@ class Player:
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
+
+    def depends_on_DropPickupRulesService(self):
+        """Relationship: references class DropPickupRulesService."""
+        return DropPickupRulesService
 
     def depends_on_PlayerCameraController(self):
         """Relationship: references class PlayerCameraController."""
@@ -2058,6 +2098,10 @@ class PlayerEquipmentComponent:
 
     def gd_func_equip_bone(self):
         """GDScript function: equip_bone(bone_id: String) -> void"""
+        pass
+
+    def gd_func_restore_detached_body(self):
+        """GDScript function: restore_detached_body(bone_id: String) -> void"""
         pass
 
     def gd_func_unequip_slot(self):
@@ -2834,6 +2878,18 @@ class ProceduralPlayerAnimator:
         """GDScript function: get_head_launch_attack_world_offset() -> Vector3"""
         pass
 
+    def gd_func_has_torso_head_miss_detach_request(self):
+        """GDScript function: has_torso_head_miss_detach_request() -> bool"""
+        pass
+
+    def gd_func_consume_torso_head_miss_detach_offset(self):
+        """GDScript function: consume_torso_head_miss_detach_offset() -> Vector3"""
+        pass
+
+    def gd_func_enter_detached_head_state(self):
+        """GDScript function: enter_detached_head_state(start_local_position: Vector3 = Vector3.ZERO, use_start_position: bool = false) -> void"""
+        pass
+
     def gd_func__update_head_only_facing_direction(self):
         """GDScript function: _update_head_only_facing_direction(facing_direction: Vector3) -> void"""
         pass
@@ -2848,6 +2904,14 @@ class ProceduralPlayerAnimator:
 
     def gd_func__capture_socket_local_position(self):
         """GDScript function: _capture_socket_local_position(socket_key: String) -> Vector3"""
+        pass
+
+    def gd_func__capture_socket_local_rotation(self):
+        """GDScript function: _capture_socket_local_rotation(socket_key: String) -> Vector3"""
+        pass
+
+    def gd_func__capture_socket_local_scale(self):
+        """GDScript function: _capture_socket_local_scale(socket_key: String) -> Vector3"""
         pass
 
     def gd_func__get_head_only_grounded_local_position(self):
@@ -2984,6 +3048,14 @@ class ProceduralPlayerAnimator:
 
     def gd_func__apply_torso_head_attack_pose(self):
         """GDScript function: _apply_torso_head_attack_pose() -> void"""
+        pass
+
+    def gd_func__apply_torso_head_miss_fall_pose(self):
+        """GDScript function: _apply_torso_head_miss_fall_pose(head: Node3D) -> void"""
+        pass
+
+    def gd_func__future_head_only_ground_position(self):
+        """GDScript function: _future_head_only_ground_position() -> Vector3"""
         pass
 
     def gd_func__apply_torso_head_recoil_pose(self):

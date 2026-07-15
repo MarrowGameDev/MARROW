@@ -1491,6 +1491,9 @@
 - `head_only_attack_hitbox_radius`
 - `head_only_attack_hitbox_size`
 - `torso_head_attack_hitbox_lifetime`
+- `detached_head_reattach_range`
+- `detached_head_reattach_hold_time`
+- `detached_head_fallback_launch_distance`
 - `stealth_prompt_scan_range`
 - `bow_enabled`
 - `start_with_bow_equipped`
@@ -1551,11 +1554,11 @@
 - `sprinting_this_frame`
 - `fallback_input_previous`
 - `fallback_input_current`
-- `input_vector`
-- `direction`
-- `aim_forward`
-- `current_move_speed`
-- `forward`
+- `head_detached_from_torso`
+- `detached_torso_bone_id`
+- `detached_torso_marker`
+- `detached_torso_reattach_progress`
+- `detached_camera_offset_carry`
 
 ### Functions
 - `_ready() -> void`
@@ -1624,6 +1627,15 @@
 - `recalculate_inventory_stats() -> void`
 - `_recalculate_stats() -> void`
 - `_update_stealth_finish_prompt() -> void`
+- `is_head_detached_from_torso() -> bool`
+- `_detach_head_from_torso_after_miss(detach_offset: Vector3) -> void`
+- `_detached_head_ground_local_position(launch_offset: Vector3) -> Vector3`
+- `_spawn_detached_torso_marker(body_bone_id: String) -> void`
+- `_update_detached_torso_reattach(delta: float) -> bool`
+- `_reattach_head_to_detached_torso() -> void`
+- `_clear_detached_torso_marker() -> void`
+- `_set_detached_torso_marker_prompt_visible(is_visible: bool) -> void`
+- `_as_vector3(value: Variant, fallback: Vector3) -> Vector3`
 - `_find_stealth_target() -> Node3D`
 - `enter_interact_range() -> void`
 - `exit_interact_range() -> void`
@@ -1654,6 +1666,7 @@
 
 ### Node Path Lookups
 - `MeshInstance3D`
+- `DetachedTorsoPrompt`
 
 ## PlayerCameraController
 
@@ -1787,6 +1800,7 @@
 - `setup(player: Node) -> void`
 - `equip_starting_core() -> void`
 - `equip_bone(bone_id: String) -> void`
+- `restore_detached_body(bone_id: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `get_equipped_bone_id() -> String`
 - `get_equipped_bone_for_slot(slot: String) -> String`
@@ -2258,6 +2272,7 @@
 - `head_only_hop_amount`
 - `head_only_roll_amount`
 - `head_only_roll_radius`
+- `head_only_roll_speed_scale`
 - `head_only_ground_socket_y`
 - `torso_spring_hop_amount`
 - `torso_spring_compress_amount`
@@ -2305,6 +2320,10 @@
 - `torso_head_attack_recoil_arc`
 - `torso_head_attack_recoil_pullback`
 - `torso_head_attack_roll`
+- `detached_head_landing_duration`
+- `detached_head_landing_bounce`
+- `detached_head_landing_roll`
+- `detached_head_mode_blend_duration`
 - `combo_left_arm_forward`
 - `combo_finisher_arm_forward`
 - `combo_finisher_torso_twist`
@@ -2356,18 +2375,18 @@
 - `_torso_head_recoil_end_local_position`
 - `_torso_head_socket_local_position`
 - `_torso_head_socket_offset`
+- `_torso_head_miss_detach_requested`
+- `_torso_head_detach_world_offset`
+- `_torso_head_miss_fall_active`
+- `_torso_head_miss_fall_timer`
+- `_torso_head_miss_fall_start_position`
+- `_torso_head_miss_fall_start_rotation`
+- `_torso_head_miss_fall_start_scale`
+- `_detached_head_landing_timer`
+- `_detached_head_landing_start_position`
+- `_detached_head_landing_start_rotation`
+- `_detached_head_landing_start_scale`
 - `_aim_requested`
-- `_aim_blend`
-- `_lizard_wall_climb_blend`
-- `_head_only_roll_angle`
-- `_rest_pos`
-- `_rest_rot`
-- `_captured`
-- `_body`
-- `horizontal`
-- `target_ratio`
-- `roll_radius`
-- `weight_slowdown`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
@@ -2377,10 +2396,15 @@
 - `get_head_only_attack_forward_offset() -> float`
 - `get_head_only_attack_world_offset() -> Vector3`
 - `get_head_launch_attack_world_offset() -> Vector3`
+- `has_torso_head_miss_detach_request() -> bool`
+- `consume_torso_head_miss_detach_offset() -> Vector3`
+- `enter_detached_head_state(start_local_position: Vector3 = Vector3.ZERO, use_start_position: bool = false) -> void`
 - `_update_head_only_facing_direction(facing_direction: Vector3) -> void`
 - `_world_horizontal_offset_to_local(world_offset: Vector3) -> Vector3`
 - `_capture_head_only_recoil_start_local_position() -> Vector3`
 - `_capture_socket_local_position(socket_key: String) -> Vector3`
+- `_capture_socket_local_rotation(socket_key: String) -> Vector3`
+- `_capture_socket_local_scale(socket_key: String) -> Vector3`
 - `_get_head_only_grounded_local_position() -> Vector3`
 - `set_crawl_mode(enabled: bool) -> void`
 - `set_lizard_wall_climb_blend(blend: float) -> void`
@@ -2415,6 +2439,8 @@
 - `_apply_head_only_attack_pose() -> void`
 - `_apply_head_only_hit_recoil_pose(head: Node3D) -> void`
 - `_apply_torso_head_attack_pose() -> void`
+- `_apply_torso_head_miss_fall_pose(head: Node3D) -> void`
+- `_future_head_only_ground_position() -> Vector3`
 - `_apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void`
 - `_apply_right_combo_pose(strength: float) -> void`
 - `_apply_left_combo_pose(strength: float) -> void`
