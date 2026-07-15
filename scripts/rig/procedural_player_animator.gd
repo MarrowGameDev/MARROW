@@ -115,6 +115,17 @@ extends Node3D
 @export var detached_head_reattach_tornado_turns := 2.1
 @export var detached_head_reattach_tornado_lift := 0.36
 @export var detached_head_reattach_finish_blend_duration := 0.18
+# Combo step 4: the right arm tears the LEFT arm off and swings it like a sword.
+# Purely a pose — the left_arm slot stays equipped throughout, so stats, the paper
+# doll and the bow (which needs both arms) are untouched. The arm rides the
+# attack's strength curve, so it tears free and snaps back on its own.
+const COMBO_STEP_ARM_SWORD := 4
+@export var arm_sword_swing := 1.5          # radians the swinging arm carves through
+@export var arm_sword_torso_twist := 0.45
+@export var arm_sword_lunge := 0.30
+# Radians the torn-off arm is levelled to, from hanging (0) to blade-forward.
+@export var arm_sword_blade_pitch := -1.57
+
 @export var combo_left_arm_forward := 1.0
 @export var combo_finisher_arm_forward := 0.85
 @export var combo_finisher_torso_twist := 0.5
@@ -125,6 +136,21 @@ extends Node3D
 # Both read the head_only_attack_* tuning above, so retuning moves them together
 # and any difference you see is the authoring style, not the numbers.
 @export var demo_settle_time := 0.12
+
+@export_group("Waist")
+# The chest leans at the waist and the head/arms come with it, giving a
+# two-segment spine instead of a rigid plank. Set waist_bend_lean to 0 to switch
+# the whole feature off at runtime.
+#
+# NOT routed through _animate_joints: that writer was built for elbows and knees.
+# It ASSIGNS rotation (stomping any other writer), its joint_bend_base 0.12 +
+# joint_bend_swing 0.7 would give the chest a permanent 0.12-0.82 rad flex every
+# step, and its bend_sign keys off the substring "arm". A waist is not an elbow.
+@export var waist_bend_lean := 0.10       # steady lean while moving — the main read
+@export var waist_bend_step := 0.025      # slight pump at twice the stride
+@export var waist_bend_breath := 0.015    # idle only
+@export var waist_bend_limit := 0.35      # ~20 deg. A waist is not a hinge.
+@export var waist_response := 12.0        # smoothing rate
 
 @export_group("Aim overlay")
 @export var aim_overlay_blend_speed := 14.0
@@ -301,6 +327,90 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 		_update_demo_procedural(delta)
 	if _demo_mode != DemoMode.OFF:
 		_apply_demo_pose()
+	# LAST, after every other socket writer, for the same reason the demo is last:
+	# _apply_waist_carry stands in for a parent transform, so it has to see the
+	# final pose. A writer added below this line would silently escape the carry
+	# and its socket would stop following the chest.
+	_animate_waist(delta)
+
+
+# --- Waist ---------------------------------------------------------------------
+# The chest bends at the waist and the head/arms follow.
+#
+# WHY THE HEAD/ARMS ARE NOT REPARENTED UNDER THE CHEST, which is the obvious way
+# to make them follow: _capture_rest() stores every socket's PARENT-LOCAL rest
+# pose, so reparenting silently redefines what _rest_pos["head"] means, and every
+# site that mixes rig space with socket space breaks at once — torso-spring
+# (head.position = body.position + offset), the head-only ground constants
+# (rig-space -0.85 fused with chest-space rest.x/z), the 12
+# _world_horizontal_offset_to_local call sites (rig-basis directions applied in a
+# tilted frame), rig.to_local across the player.gd boundary, the doubled crawl
+# drops, and — the one nothing warns about — body.scale's squash-and-stretch,
+# which would suddenly squash the head and both arms.
+#
+# So instead of inheriting the chest transform, this ADDS the one transform a real
+# hierarchy would have contributed, by hand, after everyone else has written. No
+# socket changes parent, so no space changes, and all of the above is structurally
+# absent rather than fixed. The cost is order-coupling: this must run last.
+
+# Sockets a real chest parent would carry. The abdomen and legs stay on the pelvis.
+const WAIST_CARRIED := ["head", "right_arm", "left_arm"]
+
+var _waist_angle := 0.0
+
+
+# Zero in every mode that owns the head socket or already pitches the torso — a
+# waist bend would fight them. Returning exactly 0.0 lets _apply_waist_carry early
+# out, so those modes stay bit-identical to a build without a waist at all.
+func _waist_target_angle() -> float:
+	if _is_head_only():
+		return 0.0            # no torso equipped; nothing to bend
+	if _is_torso_spring_only():
+		return 0.0            # the hop/squash IS the read here, and body.scale is non-uniform
+	if crawl_mode:
+		return 0.0            # the body already pitches by crawl_body_pitch
+	if _reattach_tornado_active or _reattach_finish_blend_timer > 0.0:
+		return 0.0
+	if _detached_head_landing_timer > 0.0 or _torso_head_miss_fall_active:
+		return 0.0
+	if _demo_mode != DemoMode.OFF:
+		return 0.0            # the demo owns the head socket
+
+	var lean: float = waist_bend_lean * speed_ratio
+	var step: float = sin(walk_time * 2.0) * waist_bend_step * speed_ratio
+	var breath: float = sin(_time * 1.8) * waist_bend_breath * (1.0 - speed_ratio)
+	return clampf(lean + step + breath, -waist_bend_limit, waist_bend_limit)
+
+
+func _animate_waist(delta: float) -> void:
+	if rig == null or not rig.has_method("get_waist_joint"):
+		return
+	var waist: Node3D = rig.call("get_waist_joint") as Node3D
+	if waist == null:
+		return  # unsplit rig (every enemy) — no waist exists
+
+	_waist_angle = lerp(_waist_angle, _waist_target_angle(), 1.0 - exp(-waist_response * delta))
+	# Plain assign is right here: this node is new and has exactly one writer.
+	waist.rotation.x = _waist_angle
+	_apply_waist_carry(_waist_angle)
+
+
+# Applies the chest's rotation to the sockets a real hierarchy would carry.
+func _apply_waist_carry(angle: float) -> void:
+	if is_zero_approx(angle):
+		return  # the bit-identical guarantee: zeroed modes never touch a socket
+
+	# Pivot is the waist PLANE at rest, NOT body.position: the head and arms
+	# deliberately do not inherit the body's bob/sway today, and this must add the
+	# bend and nothing else.
+	var pivot: Vector3 = _get_rest_pos("body")
+	var bend := Basis(Vector3.RIGHT, angle)
+	for key in WAIST_CARRIED:
+		var socket: Node3D = rig.get_socket(key)
+		if socket == null:
+			continue
+		socket.position = pivot + bend * (socket.position - pivot)
+		socket.basis = bend * socket.basis
 
 
 # --- Animation demo: same lunge, two authoring styles -------------------------
@@ -581,7 +691,7 @@ func trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void
 	if combo_step <= 0:
 		_attack_combo_step = (_attack_combo_step % 3) + 1
 	else:
-		_attack_combo_step = clampi(combo_step, 1, 3)
+		_attack_combo_step = clampi(combo_step, 1, COMBO_STEP_ARM_SWORD)
 	if _is_head_only() and allow_head_launch:
 		_attack_duration_current = head_only_attack_duration
 		_head_only_attack_contacted = false
@@ -621,7 +731,7 @@ func trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void
 		_torso_head_miss_fall_active = false
 		_torso_head_miss_fall_timer = 0.0
 		_torso_head_miss_body_hold_transform_ready = false
-	if _attack_combo_step == 3 and not _is_head_only() and not _is_torso_spring_only():
+	if _attack_combo_step >= 3 and not _is_head_only() and not _is_torso_spring_only():
 		_attack_duration_current *= 1.15
 	_attack_timer = _attack_duration_current
 	_attack_blend = maxf(_attack_blend, 0.25)
@@ -1403,6 +1513,8 @@ func _apply_attack_overlay() -> void:
 			_apply_left_combo_pose(punch)
 		3:
 			_apply_finisher_combo_pose(punch)
+		COMBO_STEP_ARM_SWORD:
+			_apply_arm_sword_pose(punch)
 		_:
 			_apply_right_combo_pose(punch)
 
@@ -1691,6 +1803,48 @@ func _apply_left_combo_pose(strength: float) -> void:
 	if body != null:
 		body.rotation.y -= attack_torso_twist * 0.9 * strength
 		body.rotation.x -= attack_lunge * 0.8 * strength
+
+
+# Combo step 4: the right hand grabs the left arm, rips it off the shoulder and
+# swings it like a sword.
+#
+# Nothing is unequipped and nothing is reparented. `strength` comes from
+# _attack_pose_strength(), which rises to 1 mid-attack and falls back to 0, so
+# lerping the left arm toward the hand by it gives tear-free -> swing -> snap-back
+# for free: at strength 0 the arm is exactly where the normal animator put it.
+func _apply_arm_sword_pose(strength: float) -> void:
+	var right_arm: Node3D = rig.get_socket("right_arm")
+	var left_arm: Node3D = rig.get_socket("left_arm")
+	if right_arm == null or left_arm == null:
+		return
+
+	# Swing FIRST: the hand position below is read off the swung forearm, so the
+	# blade travels with the arm holding it.
+	right_arm.rotation.x -= arm_sword_swing * strength
+	right_arm.rotation.z -= 0.18 * strength
+	var body: Node3D = rig.get_socket("body")
+	if body != null:
+		body.rotation.y += arm_sword_torso_twist * strength
+		body.rotation.x -= arm_sword_lunge * strength
+
+	# The torn-off arm rides in the hand, levelled from hanging to blade-forward.
+	var hand: Vector3 = _right_hand_rig_position()
+	left_arm.position = left_arm.position.lerp(hand, strength)
+	left_arm.rotation = left_arm.rotation.lerp(
+		Vector3(arm_sword_blade_pitch, 0.0, 0.0), strength)
+
+
+# The right hand — the far end of the forearm — in the left arm socket's parent
+# space, which is the rig. Falls back to the whole arm's tip on an unsplit rig,
+# where there is no elbow socket.
+func _right_hand_rig_position() -> Vector3:
+	var forearm: Node3D = rig.get_socket("right_arm_lower")
+	if forearm != null:
+		return rig.to_local(forearm.global_transform * Vector3(0.0, -0.29, 0.0))
+	var arm: Node3D = rig.get_socket("right_arm")
+	if arm == null:
+		return Vector3.ZERO
+	return rig.to_local(arm.global_transform * Vector3(0.0, -0.58, 0.0))
 
 
 func _apply_finisher_combo_pose(strength: float) -> void:

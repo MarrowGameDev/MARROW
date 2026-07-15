@@ -34,15 +34,14 @@ static var LOWER_UNDER_UPPER := {
 	"left_arm_lower": {"upper": "left_arm", "pos": Vector3(0.0, -0.29, 0.0)},
 	"right_leg_lower": {"upper": "right_leg", "pos": Vector3(0.0, -0.31, 0.0)},
 	"left_leg_lower": {"upper": "left_leg", "pos": Vector3(0.0, -0.31, 0.0)},
-	# Torso: chest stays on `body`, abdomen hangs below it. The waist sits at the
-	# body origin, so `pos` is ZERO.
+	# Torso: chest hangs off the waist pivot on `body`, abdomen hangs below it.
+	# The waist plane IS the body origin, so `pos` is ZERO.
 	#
-	# bend = false ON PURPOSE. The head and arm sockets are SIBLINGS of `body`,
-	# not children, so a bending waist would swing the chest away from the head and
-	# arms and tear the figure apart. This split is structural — a real attach point
-	# for swapping in a chest and an abdomen mesh — not an animated joint. Making
-	# it bend means first reparenting head/arms under the chest, which is a much
-	# larger change to the animator.
+	# bend = false PERMANENTLY, and not for the reason it was first written.
+	# body_lower is the ABDOMEN: bending it would swing the belly while the chest
+	# stayed put — anatomically backwards. The waist bend belongs to the CHEST and
+	# is driven by _waist_joint (see _build_waist_joint and the animator's
+	# _animate_waist), not by this table.
 	"body_lower": {"upper": "body", "pos": Vector3.ZERO, "bend": false},
 }
 
@@ -215,6 +214,9 @@ var _head_model_mesh_loaded: bool = false
 
 var socket_markers: Dictionary = {}  # socket key -> MeshInstance3D (dev overlay)
 
+# Pivot between the torso root and the chest. Null on an unsplit rig.
+var _waist_joint: Node3D = null
+
 var sockets: Dictionary = {}         # socket key -> Node3D
 var base_visuals: Dictionary = {}    # socket key -> MeshInstance3D (grey default)
 var equipped_parts: Dictionary = {}  # slot id -> Array of Node3D
@@ -240,6 +242,11 @@ func _ready() -> void:
 		var limb := _make_limb(key, BASE_COLOR, Vector3.ONE)
 		socket.add_child(limb)
 		base_visuals[key] = limb
+
+	# Before the hurtboxes, so the chest's hurtbox lands on the pivot and bends
+	# with it instead of staying behind.
+	if _split_limbs_active():
+		_build_waist_joint()
 
 	# Elbow/knee sockets, BEFORE the feet (which reparent onto the knees) and
 	# before _ensure_body_hitboxes() (which creates a hurtbox per socket).
@@ -681,7 +688,9 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 		# head_model_rotation_deg, and assigning here would silently discard it.
 		part.position += vis_offset
 		part.rotation += vis_rotation
-		socket.add_child(part)
+		# Chest art parents to the waist pivot so equipped torso pieces bend with it.
+		var attach: Node3D = get_socket_attach(key)
+		(attach if attach != null else socket).add_child(part)
 		parts.append(part)
 		_apply_equipped_body_hitbox(key, hitbox_size, hitbox_scale, hitbox_offset, hitbox_rotation)
 
@@ -774,7 +783,8 @@ func _make_body_hitbox(socket_key: String) -> void:
 	if body_hitboxes.has(socket_key):
 		return
 
-	var socket: Node3D = sockets.get(socket_key) as Node3D
+	# Attach point, not raw socket: the chest hurtbox has to bend with the chest.
+	var socket: Node3D = get_socket_attach(socket_key)
 	if socket == null:
 		return
 
@@ -938,6 +948,50 @@ func _make_socket_marker(socket_key: String) -> MeshInstance3D:
 	return marker
 
 
+# The chest's bend pivot, or null when this rig has no waist (unsplit — i.e. every
+# enemy). The animator gates on THIS rather than on a flag, because the animator is
+# shared and has no per-rig flag of its own.
+func get_waist_joint() -> Node3D:
+	return _waist_joint
+
+
+# Where a visual/hurtbox for `socket_key` should be parented. Everything resolves
+# to its own socket except the CHEST, which hangs off the waist pivot so equipped
+# torso art and the chest hurtbox bend with it. Returns the plain socket when
+# there is no waist, so callers need no flag.
+func get_socket_attach(socket_key: String) -> Node3D:
+	if socket_key == "body" and _waist_joint != null:
+		return _waist_joint
+	return sockets.get(socket_key) as Node3D
+
+
+# Inserts the pivot between the torso root and the chest.
+#
+# The waist PLANE is the body socket's own origin (SOCKET_LAYOUT["body"] is
+# (0,0,0), and the chest mesh hangs off it at +0.175 while the abdomen hangs at
+# -0.175), so the pivot sits at ZERO and moving the chest mesh onto it is a
+# NUMERIC IDENTITY — the chest does not shift by a millimetre.
+#
+# Deliberately NOT registered in `sockets`. A new socket key would silently need
+# LIMB_GEO (else a 0.2 m cube), ENEMY_HITBOX_ACCURACY_SCALE (else a default
+# scale), and a _base_socket_should_show branch (else `return true`, rendering an
+# unearned chest). Keeping it out of the dict sidesteps all three, plus the
+# marker/equip/hitbox loops that walk it.
+func _build_waist_joint() -> void:
+	var body: Node3D = sockets.get("body") as Node3D
+	if body == null:
+		return
+
+	_waist_joint = Node3D.new()
+	_waist_joint.name = "waist_joint"
+	body.add_child(_waist_joint)
+
+	var chest: MeshInstance3D = base_visuals.get("body") as MeshInstance3D
+	if chest != null and chest.get_parent() == body:
+		body.remove_child(chest)
+		_waist_joint.add_child(chest)
+
+
 # Rest position for a socket. Split rigs pull the hips inboard; everything else
 # reads the shared layout. See SPLIT_SOCKET_LAYOUT for why this is a lookup rather
 # than a write into the static.
@@ -961,6 +1015,11 @@ func _split_limbs_active() -> bool:
 		return false
 	if use_rigged_limbs:
 		push_warning("ModularSkeletonRig: use_split_limbs ignored because use_rigged_limbs owns the joints.")
+		return false
+	if use_skeleton_model:
+		# That model parents as one piece to the torso root and would stand still
+		# while the chest bends — two silhouettes disagreeing.
+		push_warning("ModularSkeletonRig: use_split_limbs ignored because use_skeleton_model draws the body as one mesh.")
 		return false
 	return true
 

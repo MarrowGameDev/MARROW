@@ -101,6 +101,36 @@ El bow del jugador usa el OTRO metodo del servicio,
   (`_start_bow_aim` solo corre con `bow_equipped`), asi que no rompen ninguna
   promesa; son un lob corto a ~6.6 m.
 
+## Combo de brazos: el paso 4 (arm sword)
+
+El combo melee cicla derecha -> izquierda -> ambos -> **arrancarse el brazo
+izquierdo y usarlo de espada**.
+
+- `Player._next_combo_animation_step()` incluye el paso 4 SOLO con los dos brazos
+  equipados (`_has_both_arms_equipped()`). Con un brazo no hay nada que agarrar, y
+  ademas `_combo_step_for_equipped_arms()` remapea el paso al brazo que existe, asi
+  que el paso 4 nunca cae en un socket escondido.
+- `ProceduralPlayerAnimator._apply_arm_sword_pose()` es SOLO POSE: no desequipa
+  nada y no reparenta nada. El slot `left_arm` sigue equipado todo el tiempo, asi
+  que stats, paper doll y el bow (que exige ambos brazos) no se enteran.
+- El truco: `strength` viene de `_attack_pose_strength()`, que sube a 1 a mitad del
+  ataque y vuelve a 0. Lerpear el brazo izquierdo hacia la mano por ese valor da
+  arranque -> swing -> vuelta sola. En strength 0 el brazo esta exactamente donde
+  lo dejo el animator normal.
+- El swing se aplica ANTES de leer la mano, para que la "hoja" viaje con el brazo
+  que la sostiene. `_right_hand_rig_position()` devuelve la punta del antebrazo en
+  espacio del rig (el padre del socket del brazo izquierdo), con fallback a la
+  punta del brazo entero en un rig sin codo.
+- Medido: el brazo izquierdo se aleja hasta 0.648 m del hombro, llega a 0.100 m de
+  la mano derecha, y al terminar el combo vuelve a 0.00000 m de donde estaria un
+  brazo que nunca ataco. Equipamiento intacto.
+- Tuning: `arm_sword_swing` (1.5), `arm_sword_torso_twist` (0.45),
+  `arm_sword_lunge` (0.30), `arm_sword_blade_pitch` (-1.57, de colgando a
+  horizontal hacia adelante).
+- NOTA: es un floreo visual. Si alguna vez se quiere que el brazo QUEDE arrancado,
+  eso ya no es pose: hay que desequipar de verdad y entonces si cambian stats, el
+  bow deja de andar y el paper doll tiene que mostrar el slot vacio.
+
 ## Auto-target de ataques head-launch
 
 Aplica solo a head-only y torso-only, donde la cabeza se lanza fuera del cuerpo.

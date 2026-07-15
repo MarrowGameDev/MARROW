@@ -776,12 +776,23 @@ func _try_stealth_finish() -> void:
 	can_attack = true
 
 
+# right arm -> left arm -> both -> tear the left arm off and swing it.
+# The fourth step only joins the cycle with BOTH arms equipped: with one arm there
+# is nothing to grab, and the animator would pose a hidden socket.
+const COMBO_STEP_ARM_SWORD := 4
+
+
 func _next_combo_animation_step() -> int:
 	if combo_animation_timer <= 0.0:
 		combo_animation_step = 0
-	combo_animation_step = (combo_animation_step % 3) + 1
+	var step_count: int = COMBO_STEP_ARM_SWORD if _has_both_arms_equipped() else 3
+	combo_animation_step = (combo_animation_step % step_count) + 1
 	combo_animation_timer = _combo_animation_window()
 	return combo_animation_step
+
+
+func _has_both_arms_equipped() -> bool:
+	return _is_slot_equipped("right_arm") and _is_slot_equipped("left_arm")
 
 
 func _combo_animation_window() -> float:
