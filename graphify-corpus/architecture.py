@@ -42,6 +42,10 @@ class ArenaGoalManager:
         """GDScript function: _ready() -> void"""
         pass
 
+    def gd_func__process(self):
+        """GDScript function: _process(_delta: float) -> void"""
+        pass
+
     def gd_func__unhandled_input(self):
         """GDScript function: _unhandled_input(event: InputEvent) -> void"""
         pass
@@ -106,6 +110,14 @@ class ArenaGoalManager:
         """GDScript function: _on_bone_collected(bone_id: String, _collector: Node) -> void"""
         pass
 
+    def gd_func__on_bone_equipped(self):
+        """GDScript function: _on_bone_equipped(_bone_id: String, _slot: String, _player: Node) -> void"""
+        pass
+
+    def gd_func__on_inventory_open_changed(self):
+        """GDScript function: _on_inventory_open_changed(_player: Node, is_open: bool) -> void"""
+        pass
+
     def gd_func__on_camp_state_changed(self):
         """GDScript function: _on_camp_state_changed(camp: Node, unlocked: bool, opened: bool, _remaining_enemies: int) -> void"""
         pass
@@ -120,6 +132,42 @@ class ArenaGoalManager:
 
     def gd_func__default_help_text(self):
         """GDScript function: _default_help_text() -> String"""
+        pass
+
+    def gd_func__full_help_text(self):
+        """GDScript function: _full_help_text() -> String"""
+        pass
+
+    def gd_func__refresh_help_ui(self):
+        """GDScript function: _refresh_help_ui() -> void"""
+        pass
+
+    def gd_func__reset_control_tutorial(self):
+        """GDScript function: _reset_control_tutorial() -> void"""
+        pass
+
+    def gd_func__complete_control_tutorial_step(self):
+        """GDScript function: _complete_control_tutorial_step(step_id: String) -> void"""
+        pass
+
+    def gd_func__control_tutorial_text(self):
+        """GDScript function: _control_tutorial_text() -> String"""
+        pass
+
+    def gd_func__control_tutorial_line(self):
+        """GDScript function: _control_tutorial_line(step_id: String) -> String"""
+        pass
+
+    def gd_func__control_tutorial_label(self):
+        """GDScript function: _control_tutorial_label(step_id: String) -> String"""
+        pass
+
+    def gd_func__movement_binding_text(self):
+        """GDScript function: _movement_binding_text() -> String"""
+        pass
+
+    def gd_func__action_binding_text(self):
+        """GDScript function: _action_binding_text(action: String) -> String"""
         pass
 
     def gd_func__build_win_ui(self):
@@ -148,6 +196,14 @@ class ArenaGoalManager:
 
     def uses_game_event_bone_collected(self):
         """Uses GameEvents.bone_collected."""
+        pass
+
+    def uses_game_event_bone_equipped(self):
+        """Uses GameEvents.bone_equipped."""
+        pass
+
+    def uses_game_event_inventory_open_changed(self):
+        """Uses GameEvents.inventory_open_changed."""
         pass
 
     def uses_game_event_camp_state_changed(self):
@@ -1494,6 +1550,14 @@ class Player:
         """GDScript function: _try_stealth_finish() -> void"""
         pass
 
+    def gd_func__next_combo_animation_step(self):
+        """GDScript function: _next_combo_animation_step() -> int"""
+        pass
+
+    def gd_func__combo_animation_window(self):
+        """GDScript function: _combo_animation_window() -> float"""
+        pass
+
     def gd_func__flash_player_attack(self):
         """GDScript function: _flash_player_attack() -> void"""
         pass
@@ -1702,6 +1766,10 @@ class Player:
         """Relationship: loads resource."""
         return ArrowProjectile
 
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
     def depends_on_PlayerCameraController(self):
         """Relationship: references class PlayerCameraController."""
         return PlayerCameraController
@@ -1812,6 +1880,10 @@ class PlayerEquipmentComponent:
         """GDScript function: setup(player: Node) -> void"""
         pass
 
+    def gd_func_equip_starting_core(self):
+        """GDScript function: equip_starting_core() -> void"""
+        pass
+
     def gd_func_equip_bone(self):
         """GDScript function: equip_bone(bone_id: String) -> void"""
         pass
@@ -1841,7 +1913,15 @@ class PlayerEquipmentComponent:
         pass
 
     def gd_func__equip_bone_in_slot(self):
-        """GDScript function: _equip_bone_in_slot(bone_id: String) -> bool"""
+        """GDScript function: _equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool"""
+        pass
+
+    def gd_func__can_equip_slot(self):
+        """GDScript function: _can_equip_slot(slot: String, bone_id: String) -> bool"""
+        pass
+
+    def gd_func__emit_equipment_hint(self):
+        """GDScript function: _emit_equipment_hint(hint_id: String, text: String) -> void"""
         pass
 
     def gd_func__clear_equipped_visual(self):
@@ -1886,6 +1966,10 @@ class PlayerEquipmentComponent:
 
     def uses_game_event_bone_unequipped(self):
         """Uses GameEvents.bone_unequipped."""
+        pass
+
+    def uses_game_event_tutorial_hint_requested(self):
+        """Uses GameEvents.tutorial_hint_requested."""
         pass
 
     def uses_game_event_inventory_changed(self):
@@ -2364,6 +2448,14 @@ class ModularSkeletonRig:
         """GDScript function: get_socket(socket_key: String) -> Node3D"""
         pass
 
+    def gd_func_set_body_progression_enabled(self):
+        """GDScript function: set_body_progression_enabled(enabled: bool) -> void"""
+        pass
+
+    def gd_func_has_equipped_slot(self):
+        """GDScript function: has_equipped_slot(slot_id: String) -> bool"""
+        pass
+
     def gd_func__make_limb(self):
         """GDScript function: _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D"""
         pass
@@ -2378,6 +2470,18 @@ class ModularSkeletonRig:
 
     def gd_func_get_equipped_bone_defs(self):
         """GDScript function: get_equipped_bone_defs() -> Array"""
+        pass
+
+    def gd_func__refresh_body_progression_visibility(self):
+        """GDScript function: _refresh_body_progression_visibility() -> void"""
+        pass
+
+    def gd_func__base_socket_should_show(self):
+        """GDScript function: _base_socket_should_show(socket_key: String) -> bool"""
+        pass
+
+    def gd_func__socket_is_equipped(self):
+        """GDScript function: _socket_is_equipped(socket_key: String) -> bool"""
         pass
 
     def depends_on_BoneRulesService(self):
@@ -2404,7 +2508,7 @@ class ProceduralPlayerAnimator:
         pass
 
     def gd_func_trigger_attack(self):
-        """GDScript function: trigger_attack() -> void"""
+        """GDScript function: trigger_attack(combo_step: int = 0) -> void"""
         pass
 
     def gd_func_set_aiming(self):
@@ -2437,6 +2541,14 @@ class ProceduralPlayerAnimator:
 
     def gd_func__animate_body(self):
         """GDScript function: _animate_body() -> void"""
+        pass
+
+    def gd_func__is_head_only(self):
+        """GDScript function: _is_head_only() -> bool"""
+        pass
+
+    def gd_func__animate_head_only(self):
+        """GDScript function: _animate_head_only(sway: float, breath: float) -> void"""
         pass
 
     def gd_func__animate_limbs(self):
@@ -2493,6 +2605,22 @@ class ProceduralPlayerAnimator:
 
     def gd_func__apply_attack_overlay(self):
         """GDScript function: _apply_attack_overlay() -> void"""
+        pass
+
+    def gd_func__attack_pose_strength(self):
+        """GDScript function: _attack_pose_strength() -> float"""
+        pass
+
+    def gd_func__apply_right_combo_pose(self):
+        """GDScript function: _apply_right_combo_pose(strength: float) -> void"""
+        pass
+
+    def gd_func__apply_left_combo_pose(self):
+        """GDScript function: _apply_left_combo_pose(strength: float) -> void"""
+        pass
+
+    def gd_func__apply_finisher_combo_pose(self):
+        """GDScript function: _apply_finisher_combo_pose(strength: float) -> void"""
         pass
 
     def gd_func__animate_feet(self):
@@ -2676,6 +2804,10 @@ class TutorialIslandBuilder:
         """GDScript function: _place_player_start() -> void"""
         pass
 
+    def gd_func__spawn_starter_torso_pickup(self):
+        """GDScript function: _spawn_starter_torso_pickup() -> void"""
+        pass
+
     def gd_func__layout_stage_regions(self):
         """GDScript function: _layout_stage_regions() -> void"""
         pass
@@ -2759,6 +2891,10 @@ class TutorialIslandBuilder:
     def depends_on_SceneEnemy(self):
         """Relationship: loads resource."""
         return SceneEnemy
+
+    def depends_on_SceneBone(self):
+        """Relationship: loads resource."""
+        return SceneBone
 
     def depends_on_DemoEnemyCamp(self):
         """Relationship: loads resource."""

@@ -6,7 +6,7 @@ It is derived from source files and should be rebuilt before Graphify runs.
 ## Included Source
 - GDScript files: 36
 - Godot scenes: 13
-- Documentation files: 13
+- Documentation files: 14
 - Project/root files: 3
 
 ## Generated Maps

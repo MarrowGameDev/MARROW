@@ -283,6 +283,16 @@ Regla principal:
 6. `BoneRulesService.definition_for(id)` resuelve huesos hechos a mano y limbs
    generados de enemigos.
 
+Ids hechos a mano actuales:
+- `head_bone`: nucleo fijo inicial, slot `head`, no debe dropear como loot
+  normal.
+- `torso_bone`: torso starter, slot `body`, habilita acoplar extremidades.
+- `arm_bone`
+- `leg_bone`
+- `heavy_bone`
+- `dummy_bone`
+- `rib_bone`
+
 ## Identidad
 
 Campos principales:
@@ -377,8 +387,15 @@ Campos:
 - `combo_finisher`
 
 Ejemplo: un brazo puede declarar `attack_type = "melee"` y
-`combo_family = "starter_strikes"`. Eso no cambia cooldown, dano ni input hasta
-que el sistema de combate lo consuma explicitamente.
+`combo_family = "starter_strikes"`.
+
+Uso actual:
+- `combo_window` puede mantener viva una cadena visual de ataques.
+- `combo_step`/`combo_family` describen authoring, pero no cambian dano.
+- La animacion simple de combo vive en `ProceduralPlayerAnimator`.
+
+Esto no cambia cooldown, dano, input ni hitbox hasta que el sistema de combate
+lo consuma explicitamente.
 
 ## Set Y Sinergia
 
@@ -407,6 +424,10 @@ Campos legacy equivalentes:
 - `attack_range_bonus`
 - `attack_damage_bonus`
 - `max_health_bonus`
+
+El inicio del juego usa `head_bone` como pieza fija y `max_health` base bajo.
+`torso_bone`, brazos y piernas pueden aumentar `max_health`; al subir el maximo,
+`PlayerStatsComponent` recupera esa diferencia de vida.
 
 ## Stats De Enemigos
 
@@ -720,15 +741,27 @@ Ataque/combo por hueso:
   `combo_step`, `combo_window`, `combo_tags` y `combo_finisher`.
 - `BoneDatabase` y `BoneRulesService` entregan esos campos con compatibilidad
   para huesos hechos a mano y limbs generados.
+- `Player` usa `combo_window` como ventana visual para mantener una cadena de
+  animacion simple si el jugador vuelve a atacar a tiempo.
+- `ProceduralPlayerAnimator.trigger_attack(combo_step)` alterna tres poses:
+  golpe derecho, golpe izquierdo y finisher con ambos brazos/torso.
 - Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
-  activar combos reales se debe crear una regla de combate explicita y probarla
-  en `TESTING ENVIRONMENT`.
+  activar combos con gameplay real se debe crear una regla de combate explicita
+  y probarla en `TESTING ENVIRONMENT`.
 
 Modificadores porcentuales:
 - `quality_damage_percent`, `quality_speed_percent` y
   `quality_health_percent` describen intencion de balance por calidad.
 - Combate no multiplica dano, velocidad ni salud con esos campos todavia. Si se
   activan, debe hacerse en una formula documentada y testeada.
+
+Nucleo del jugador:
+- La cabeza es el nucleo fijo del jugador. La vida base representa sobrevivir
+  como cabeza.
+- Recuperar torso y extremidades aumenta `max_health`; la logica existente de
+  stats recupera la diferencia de vida cuando sube el maximo.
+- Si una regla futura destruye la cabeza del jugador, debe llamar a la muerte
+  del jugador directamente.
 
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
@@ -750,6 +783,8 @@ Lizard wall climb:
 - Si el ataque crea drops o limbs, actualizar tambien `drops_flow.md`.
 - Si un cambio de combate necesita ajustar stats de huesos hechos a mano,
   respetar `BoneDefinition` y mantener `BoneRulesService` como punto de lectura.
+- Si se agrega un nuevo input de combate, actualizar tambien
+  `docs/tutorial_flow.md` para que el tutorial de controles lo ensene.
 
 ## Como probar
 
@@ -780,6 +815,10 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se agregaron campos de ataque/combo a `BoneDefinition`,
   `BoneDatabase` y `BoneRulesService`; quedan como metadata hasta que exista
   una regla real de combos.
+- 2026-07-14: Se agregaron animaciones simples de combo en tres pasos. La cadena
+  es visual solamente y no cambia dano ni hitboxes.
+- 2026-07-14: Se documento el inicio como cabeza fija y la recuperacion de vida
+  al equipar torso/extremidades.
 
 ## docs/current_system_status.md
 
@@ -801,6 +840,8 @@ refactor pass.
 - The character preview is rendered in an isolated `SubViewport` world with its
   own small room backdrop, so the preview clone stays outside the playable
   world and can be framed independently.
+- The inventory preview uses the same body progression visibility as the player:
+  fixed head first, torso required, limbs visible only after recovery/equip.
 
 ## Combat
 
@@ -863,12 +904,25 @@ refactor pass.
 - `scenes/main_menu.tscn` exposes both the playable demo and testing
   environment.
 
+## Tutorial
+
+- `ArenaGoalManager` owns the demo help panel and now shows a live controls
+  tutorial checklist.
+- The checklist reads current bindings through `DropPickupRulesService`, so it
+  follows control remaps instead of hardcoded key text.
+- Tutorial progress listens to direct input plus `GameEvents` for pickup,
+  inventory open, and equip events.
+
 ## Rig
 
 - `ModularSkeletonRig` creates sockets and visual equipment parts.
 - `ProceduralPlayerAnimator` animates sockets from resolved movement velocity and
   equipped bone data.
 - Crawl mode lowers the body and uses stronger arm pulls with tucked legs.
+- Attack animation now supports a simple three-step combo overlay: right strike,
+  left strike, and two-arm finisher. It is visual only.
+- Player body progression mode hides unrecovered body parts. Head-only movement
+  uses a simple hop/roll pose until the torso is equipped.
 
 ## Documentation Boundary
 
@@ -1132,6 +1186,14 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 
 ## Puntos delicados
 
+- Inicio/progresion corporal:
+  - El jugador inicia con `head_bone` equipado como nucleo fijo.
+  - La cabeza no se puede reemplazar ni desequipar; si se rompe, el jugador
+    muere.
+  - El torso (`body`) debe equiparse antes de brazos o piernas.
+  - Si el torso se quita, las extremidades se desacoplan primero.
+  - Brazos y piernas no tienen orden obligatorio entre si una vez equipado el
+    torso.
 - `Player` debe seguir como orquestador. No mover input o UI directo al
   componente sin actualizar este documento.
 - Si se agregan nuevos slots, actualizar:
@@ -1169,8 +1231,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   regla de equipamiento que los consuma.
 - Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
   `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
-  una pieza podria participar en cadenas de combate. Son metadata pasiva por
-  ahora; equipar una pieza no debe activar combos sin una regla dedicada.
+  una pieza podria participar en cadenas de combate. Actualmente solo alimentan
+  una cadena visual simple; equipar una pieza no debe cambiar dano, cooldown ni
+  hitboxes sin una regla dedicada.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
@@ -1178,17 +1241,22 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
   combinaciones de piezas. No aplican bonuses automaticamente todavia.
+- `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
+  entra al inventario normal; `torso_bone` aparece como pickup starter en el
+  demo.
 
 ## Como probar
 
 En `TESTING ENVIRONMENT`:
 
 1. Abrir inventario con `Tab`.
-2. Equipar huesos de brazo, piernas, torso y cabeza.
-3. Confirmar que el cuerpo del jugador cambia.
-4. Confirmar que el preview cambia igual que el jugador.
-5. Desequipar con right click o drag hacia zona vacia si aplica.
-6. Confirmar que stats en UI cambian.
+2. Confirmar que la cabeza inicial ya esta equipada y no se puede reemplazar.
+3. Equipar torso.
+4. Equipar huesos de brazo y piernas.
+5. Confirmar que el cuerpo del jugador cambia.
+6. Confirmar que el preview cambia igual que el jugador.
+7. Desequipar con right click o drag hacia zona vacia si aplica.
+8. Confirmar que stats en UI cambian.
 
 ## Historial de cambios
 
@@ -1222,6 +1290,8 @@ En `TESTING ENVIRONMENT`:
   valores legacy `Common`, `Uncommon`, `Rare` y `hybrid_growth`.
 - 2026-07-14: Se agrego `docs/bone_data_structure.md` como referencia principal
   de estructura de datos de huesos para programadores.
+- 2026-07-14: El jugador ahora inicia como cabeza fija, necesita torso para
+  acoplar extremidades, y el rig muestra solo las partes recuperadas.
 
 ## docs/flow_index.md
 
@@ -1245,6 +1315,8 @@ gameplay debe actualizar el archivo de flujo correspondiente.
 6. `docs/bone_data_structure.md`
    - Estructura de `BoneDefinition`, compatibilidad, calidades, rarezas,
      mutaciones, ataque/combo, stats, peso y pasos para agregar huesos.
+7. `docs/tutorial_flow.md`
+   - Tutorial de controles, hints del demo y checklist de onboarding.
 
 ## Politica
 
@@ -1468,8 +1540,8 @@ Campos de ataque/combo:
 - `attack_tags` y `combo_tags` permiten filtros o detalles en UI.
 - `combo_family`, `combo_step`, `combo_window` y `combo_finisher` preparan la
   lectura de cadenas de ataque.
-- Inventario puede mostrar estos datos, pero no debe cambiar ataques ni combos
-  automaticamente.
+- Inventario puede mostrar estos datos, pero no debe cambiar ataques, hitboxes,
+  dano ni combos automaticamente.
 
 ## Puntos delicados
 
@@ -1477,8 +1549,14 @@ Campos de ataque/combo:
   filtrar solo las copias equipadas, no esconder todos los duplicados.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
+- El tutorial de controles debe leer los bindings actuales con
+  `DropPickupRulesService.action_binding_text`, para que el texto visible siga
+  los cambios hechos en settings.
 - Interaccion: si el jugador esta en rango de pickup, el inventario no debe
   abrirse con la misma tecla de interact.
+- Progresion corporal: el inventario puede contener torso/extremidades, pero el
+  slot de cabeza es fijo. Si se intenta equipar brazos o piernas sin torso,
+  `PlayerEquipmentComponent` bloquea la accion y emite hint.
 
 ## Como probar
 
@@ -1490,6 +1568,9 @@ En `TESTING ENVIRONMENT`:
 4. Cambiar categoria.
 5. Ir a settings y cambiar una tecla.
 6. Recoger un drop real y confirmar que aparece sin reiniciar la UI.
+7. Intentar equipar brazo/pierna sin torso y confirmar que se bloquea.
+8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
+   solo las partes recuperadas.
 
 ## Historial de cambios
 
@@ -1558,6 +1639,8 @@ Those are not terrain geometry. They are labels and progression metadata. The te
 ## Current Regions
 
 - `BonefieldHub`: Difficulty 1, safe center.
+  - Starter `torso_bone` pickup sits near player spawn so the opening order is
+    head first, then torso, then extremities.
 - `FirstHuntField`: Difficulty 2, starter enemies and first bones.
 - `ReachRidge`: Difficulty 3, Arm Bone / reach-focused area.
 - `QuickrootRun`: Difficulty 4, Leg Bone / speed-focused area.
@@ -1622,6 +1705,9 @@ Event relationships:
 - `OpenWorldStage._on_body_exited` emits `GameEvents.stage_exited`.
 - `DemoEnemyCamp._open_chest` emits `GameEvents.camp_chest_opened`.
 - `ArenaGoalManager` listens to `trial_completed`, `exit_reached`, and `player_died`.
+- `ArenaGoalManager` listens to `bone_collected`, `bone_equipped`,
+  `inventory_open_changed` and `tutorial_hint_requested` to update the controls
+  tutorial checklist.
 - `WorldMapManager` listens to `stage_entered` and `stage_exited`.
 
 ## Player
@@ -1655,6 +1741,8 @@ Player relationships:
 - `Player` uses `PlayerCameraController` for third-person mouse look.
 - `Player` owns inventory and equipment rules; `PlayerInventoryUI` owns inventory presentation.
 - `Player` spawns `AttackHitbox` for attacks.
+- `Player` starts with `head_bone` equipped as a fixed core and enables body
+  progression visibility on `ModularSkeletonRig`.
 
 ## Player Camera
 
@@ -1876,13 +1964,15 @@ dictionary entries only as temporary fallback.
 - maps gameplay slots to sockets through `SLOT_TO_SOCKETS`.
 - equips a bone by hiding base visuals and adding colored parts to matching sockets.
 - exposes `get_equipped_bone_defs` for animation weight response.
+- supports body progression visibility: head first, torso required, limbs only
+  when equipped.
 
 `scripts/rig/procedural_player_animator.gd` defines `ProceduralPlayerAnimator`.
 
 `ProceduralPlayerAnimator`:
 - animates the rig sockets based on velocity, facing, speed, and equipped bone defs.
 - uses a lower body pose, stronger arm pulls, and tucked legs in crawl mode.
-- responds to attack events.
+- responds to attack events and supports three simple combo poses.
 - bends limb joints when rigged limb data exists.
 
 ## Generated World
@@ -1891,6 +1981,7 @@ dictionary entries only as temporary fallback.
 
 It positions the player, creates or updates open world stages, places enemies,
 registers camp enemies, and configures stage metadata for the playable loop.
+It also spawns the starter `torso_bone` pickup near the player start.
 
 ## Guidance Docs
 
@@ -1902,6 +1993,9 @@ enemy, and rig boundaries before the component refactor.
 `docs/open_world_map_layout.md` describes the demo island route and stage regions.
 
 `docs/rig_notes.md` describes modular rig and procedural animation setup.
+
+`docs/tutorial_flow.md` describes the demo controls tutorial and onboarding
+checklist.
 
 ## docs/rig_notes.md
 
@@ -1915,8 +2009,8 @@ Open `scenes/rig_test.tscn` in Godot and run it (F6 / "Run Current Scene").
 
 - **WASD** — move. Body bobs, torso leans, arms/legs swing, and the whole figure
   turns smoothly toward the movement direction. Standing still = subtle idle breathing.
-- **Space** — attack: a quick forward arm thrust + torso twist that blends back out
-  (Phase E), readable while idle or walking.
+- **Attack** — cycles simple combo poses: right-arm strike, left-arm strike,
+  then a heavier two-arm/torso finisher.
 - **Q** — cycles equipping **Arm → Leg → Heavy** into their slots. The grey limb is
   swapped for a bone-colored one; Heavy is bigger (visual_scale) and heavier.
 - Walk **forward onto the ramp** (in front of spawn) to see foot placement (Phase F):
@@ -1948,6 +2042,13 @@ attack_overlay_duration 0.16 · attack_overlay_blend_speed 18 · attack_arm_forw
 attack_torso_twist 0.35 · foot_raycast_up/down 0.6/1.4 · foot_lift 0.06 ·
 foot_smoothing 14 · foot_align_to_normal true (uncheck foot_placement_enabled to disable).
 
+Combo overlay:
+- `Player` passes a combo step into `ProceduralPlayerAnimator.trigger_attack`.
+- Step 1 uses right arm + torso twist.
+- Step 2 uses left arm + opposite torso twist.
+- Step 3 uses both arms, deeper lunge, and a small head dip.
+- This is visual only; melee damage and hitbox behavior are unchanged.
+
 ## Known limitations / TODO
 - Socket positions & limb sizes are hand-estimated grey-box values — expect to
   nudge them once seen in a real window.
@@ -1960,4 +2061,96 @@ foot_smoothing 14 · foot_align_to_normal true (uncheck foot_placement_enabled t
 - Foot placement done on flat ground + a ramp; steps not added (CharacterBody3D
   needs step-up logic to climb vertical steps).
 - Not merged into the real player (Phase G) — do that only after this feels good.
+
+## docs/tutorial_flow.md
+
+# Tutorial Flow
+
+Este documento describe el tutorial de controles del demo.
+
+## Objetivo
+
+El jugador debe poder aprender controles basicos sin abrir documentacion externa
+ni depender de texto fijo que se desactualice cuando cambian keybinds.
+
+El inicio narrativo del demo ahora es:
+1. El jugador despierta como cabeza fija.
+2. Recoge/equipa el torso.
+3. Luego puede acoplar brazos y piernas en cualquier orden.
+4. Cada parte recuperada puede aumentar vida maxima y cambiar animacion.
+
+## Sistema Actual
+
+`ArenaGoalManager` construye el panel de ayuda del demo y escucha señales de
+`GameEvents`.
+
+El panel combina:
+- hint activo del demo;
+- checklist de controles;
+- objetivo general de la isla.
+
+La checklist usa bindings reales mediante
+`DropPickupRulesService.action_binding_text(action)`, asi que si el jugador
+cambia controles desde inventario/settings, el texto del tutorial puede mostrar
+la tecla o mouse button actual.
+
+## Pasos Del Tutorial De Controles
+
+Pasos actuales:
+- `move`: presionar cualquier input de movimiento.
+- `sprint`: moverse mientras se sostiene sprint.
+- `jump`: presionar salto.
+- `attack`: presionar ataque.
+- `bow`: presionar toggle de arco.
+- `pickup`: recoger un hueso, detectado por `GameEvents.bone_collected`.
+- `inventory`: abrir inventario, detectado por `GameEvents.inventory_open_changed`.
+- `equip`: equipar un hueso, detectado por `GameEvents.bone_equipped`.
+- Si el jugador intenta equipar una extremidad sin torso, el sistema emite un
+  hint explicando que primero debe recuperar el torso.
+
+Los pasos se muestran como `[ ]` pendiente y `[x]` completado.
+
+## Eventos
+
+Entradas directas revisadas por `ArenaGoalManager._process`:
+- `move_forward`
+- `move_back`
+- `move_left`
+- `move_right`
+- `sprint`
+- `jump`
+- `attack`
+- `toggle_bow`
+
+Eventos desacoplados:
+- `bone_collected`
+- `bone_equipped`
+- `inventory_open_changed`
+- `tutorial_hint_requested`
+
+## Reglas
+
+- No hardcodear texto de teclas como `Tab`, `E` o `Left Click` en tutoriales
+  nuevos si existe un action en `InputMap`.
+- Usar `DropPickupRulesService.action_binding_text(action)` para texto visible.
+- Si se agrega un control nuevo al demo, agregarlo a la checklist y actualizar
+  este documento.
+- Si el control pertenece a combate, actualizar tambien `docs/combat_flow.md`.
+- Si el control pertenece a inventario/equipamiento, actualizar
+  `docs/inventory_flow.md` o `docs/equipment_flow.md`.
+
+## Como Probar
+
+En el demo:
+
+1. Iniciar `scenes/main.tscn`.
+2. Confirmar que el panel muestra `Controls Tutorial`.
+3. Moverse, sprintar, saltar y atacar.
+4. Confirmar que esos pasos cambian a `[x]`.
+5. Presionar el toggle de arco y confirmar que `Bow` cambia a `[x]`.
+6. Recoger un hueso y confirmar que `Pick up bones` cambia a `[x]`.
+7. Abrir inventario y confirmar que `Inventory` cambia a `[x]`.
+8. Equipar un hueso y confirmar que `Equip a bone` cambia a `[x]`.
+9. Confirmar que el primer pickup de torso permite pasar de cabeza sola a cuerpo
+   con torso, y luego acoplar extremidades.
 

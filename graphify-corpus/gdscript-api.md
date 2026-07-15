@@ -51,7 +51,7 @@
 - `required_trials`
 
 ### Constants
-- none
+- `CONTROL_TUTORIAL_STEPS`
 
 ### Key Variables
 - `completed_trials`
@@ -63,6 +63,9 @@
 - `win_root`
 - `win_label`
 - `current_tutorial_priority`
+- `active_tutorial_hint`
+- `control_tutorial_done`
+- `is_moving`
 - `canvas`
 - `panel`
 - `margin`
@@ -73,11 +76,13 @@
 - `swaps`
 - `stats`
 - `names_text`
+- `marker`
 - `backdrop`
 - `center`
 
 ### Functions
 - `_ready() -> void`
+- `_process(_delta: float) -> void`
 - `_unhandled_input(event: InputEvent) -> void`
 - `register_trial_complete(trial_id: String, trial_name: String) -> void`
 - `is_exit_open() -> bool`
@@ -94,10 +99,21 @@
 - `_on_objective_updated(source: Node, _objective_id: String, title: String, body: String) -> void`
 - `_on_tutorial_hint_requested(_source: Node, _hint_id: String, text: String, _priority: int) -> void`
 - `_on_bone_collected(bone_id: String, _collector: Node) -> void`
+- `_on_bone_equipped(_bone_id: String, _slot: String, _player: Node) -> void`
+- `_on_inventory_open_changed(_player: Node, is_open: bool) -> void`
 - `_on_camp_state_changed(camp: Node, unlocked: bool, opened: bool, _remaining_enemies: int) -> void`
 - `_show_win_screen(player: Node, elapsed_ms: int) -> void`
 - `_build_help_ui() -> void`
 - `_default_help_text() -> String`
+- `_full_help_text() -> String`
+- `_refresh_help_ui() -> void`
+- `_reset_control_tutorial() -> void`
+- `_complete_control_tutorial_step(step_id: String) -> void`
+- `_control_tutorial_text() -> String`
+- `_control_tutorial_line(step_id: String) -> String`
+- `_control_tutorial_label(step_id: String) -> String`
+- `_movement_binding_text() -> String`
+- `_action_binding_text(action: String) -> String`
 - `_build_win_ui() -> void`
 
 ### Resource Dependencies
@@ -110,10 +126,19 @@
 - `objective_updated`
 - `tutorial_hint_requested`
 - `bone_collected`
+- `bone_equipped`
+- `inventory_open_changed`
 - `camp_state_changed`
 
 ### Input Actions
-- none
+- `move_forward`
+- `move_back`
+- `move_left`
+- `move_right`
+- `sprint`
+- `jump`
+- `attack`
+- `toggle_bow`
 
 ### Node Path Lookups
 - none
@@ -1441,6 +1466,8 @@
 - `can_shoot_bow`
 - `last_facing_direction`
 - `current_move_direction`
+- `combo_animation_step`
+- `combo_animation_timer`
 - `bow_visual`
 - `bow_equipped`
 - `bow_aiming`
@@ -1465,9 +1492,7 @@
 - `current_move_speed`
 - `forward`
 - `right`
-- `hitbox`
-- `reach_ratio`
-- `shot_cooldown`
+- `combo_step`
 
 ### Functions
 - `_ready() -> void`
@@ -1484,6 +1509,8 @@
 - `_fire_player_projectile(forward: Vector3, projectile_damage: int, projectile_speed: float, projectile_gravity: float, projectile_style: String) -> void`
 - `_get_pointer_aim_direction(start_position: Vector3, fallback_direction: Vector3) -> Vector3`
 - `_try_stealth_finish() -> void`
+- `_next_combo_animation_step() -> int`
+- `_combo_animation_window() -> float`
 - `_flash_player_attack() -> void`
 - `_setup_procedural_character() -> void`
 - `_build_bow_visual() -> void`
@@ -1660,6 +1687,10 @@
 
 ### Constants
 - `EQUIPPED_BONE_SCENE`
+- `CORE_HEAD_BONE_ID`
+- `CORE_HEAD_SLOT`
+- `CORE_TORSO_SLOT`
+- `TORSO_REQUIRED_SLOTS`
 
 ### Key Variables
 - `owner_player`
@@ -1678,6 +1709,7 @@
 
 ### Functions
 - `setup(player: Node) -> void`
+- `equip_starting_core() -> void`
 - `equip_bone(bone_id: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `get_equipped_bone_id() -> String`
@@ -1685,7 +1717,9 @@
 - `has_bone_equipped(bone_id: String) -> bool`
 - `get_equipment_state() -> Dictionary`
 - `get_swap_count() -> int`
-- `_equip_bone_in_slot(bone_id: String) -> bool`
+- `_equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool`
+- `_can_equip_slot(slot: String, bone_id: String) -> bool`
+- `_emit_equipment_hint(hint_id: String, text: String) -> void`
 - `_clear_equipped_visual(slot: String) -> void`
 - `_get_socket_for_slot(slot: String) -> Node3D`
 - `_get_player_rig() -> ModularSkeletonRig`
@@ -1702,6 +1736,7 @@
 ### GameEvents Usage
 - `bone_equipped`
 - `bone_unequipped`
+- `tutorial_hint_requested`
 - `inventory_changed`
 
 ### Input Actions
@@ -1968,6 +2003,7 @@
 - `equipped_parts`
 - `equipped_ids`
 - `limb_joints`
+- `body_progression_enabled`
 - `socket`
 - `limb`
 - `info`
@@ -2002,7 +2038,6 @@
 - `slot_id`
 - `socket_keys`
 - `color`
-- `vis_scale`
 
 ### Functions
 - `_ready() -> void`
@@ -2017,10 +2052,15 @@
 - `_hang_basis(l: Vector3) -> Basis`
 - `_top_ancestor_under(node: Node, ancestor: Node) -> Node`
 - `get_socket(socket_key: String) -> Node3D`
+- `set_body_progression_enabled(enabled: bool) -> void`
+- `has_equipped_slot(slot_id: String) -> bool`
 - `_make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D`
 - `equip_bone(bone_id: String, bone_def: Dictionary) -> void`
 - `unequip_slot(slot_id: String) -> void`
 - `get_equipped_bone_defs() -> Array`
+- `_refresh_body_progression_visibility() -> void`
+- `_base_socket_should_show(socket_key: String) -> bool`
+- `_socket_is_equipped(socket_key: String) -> bool`
 
 ### Resource Dependencies
 - none
@@ -2071,6 +2111,8 @@
 - `lizard_wall_climb_pitch`
 - `lizard_wall_climb_head_lift`
 - `lizard_wall_climb_limb_reach`
+- `head_only_hop_amount`
+- `head_only_roll_amount`
 - `joint_bend_base`
 - `joint_bend_swing`
 - `wobble_enabled`
@@ -2087,6 +2129,10 @@
 - `attack_arm_forward`
 - `attack_torso_twist`
 - `attack_lunge`
+- `combo_left_arm_forward`
+- `combo_finisher_arm_forward`
+- `combo_finisher_torso_twist`
+- `combo_finisher_lunge`
 - `aim_overlay_blend_speed`
 - `aim_right_arm_forward`
 - `aim_left_arm_forward`
@@ -2112,6 +2158,8 @@
 - `total_equipped_weight`
 - `_attack_timer`
 - `_attack_blend`
+- `_attack_duration_current`
+- `_attack_combo_step`
 - `_aim_requested`
 - `_aim_blend`
 - `_lizard_wall_climb_blend`
@@ -2130,6 +2178,8 @@
 - `breath`
 - `body`
 - `head`
+- `hop`
+- `idle`
 - `swing`
 - `pull`
 - `shove`
@@ -2142,14 +2192,10 @@
 - `left_leg`
 - `right_foot`
 - `left_foot`
-- `reach`
-- `front`
-- `rear`
-- `flex`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
-- `trigger_attack() -> void`
+- `trigger_attack(combo_step: int = 0) -> void`
 - `set_aiming(enabled: bool) -> void`
 - `set_crawl_mode(enabled: bool) -> void`
 - `set_lizard_wall_climb_blend(blend: float) -> void`
@@ -2158,6 +2204,8 @@
 - `_get_rest_rot(key: String) -> Vector3`
 - `_calculate_weight(equipped_defs: Array) -> float`
 - `_animate_body() -> void`
+- `_is_head_only() -> bool`
+- `_animate_head_only(sway: float, breath: float) -> void`
 - `_animate_limbs() -> void`
 - `_animate_crawl_body() -> void`
 - `_animate_crawl_limbs() -> void`
@@ -2172,6 +2220,10 @@
 - `_apply_aim_overlay() -> void`
 - `_update_attack_overlay(delta: float) -> void`
 - `_apply_attack_overlay() -> void`
+- `_attack_pose_strength() -> float`
+- `_apply_right_combo_pose(strength: float) -> void`
+- `_apply_left_combo_pose(strength: float) -> void`
+- `_apply_finisher_combo_pose(strength: float) -> void`
 - `_animate_feet(delta: float) -> void`
 - `_place_foot(space: PhysicsDirectSpaceState3D, key: String, delta: float) -> void`
 - `_find_body() -> Node3D`
@@ -2329,6 +2381,7 @@
 
 ### Constants
 - `ENEMY_SCENE`
+- `BONE_PICKUP_SCENE`
 - `CAMP_SCRIPT`
 
 ### Key Variables
@@ -2337,6 +2390,9 @@
 - `ground_collision`
 - `player`
 - `wisp`
+- `scene_root`
+- `pickup`
+- `pickup_body`
 - `stage`
 - `stage_mesh`
 - `mesh`
@@ -2358,7 +2414,6 @@
 - `overrides`
 - `enemy`
 - `value`
-- `scene_root`
 - `enemy_body`
 - `host`
 - `body`
@@ -2370,14 +2425,13 @@
 - `trunk_mesh`
 - `crown`
 - `crown_mesh`
-- `key`
-- `material`
 
 ### Functions
 - `_ready() -> void`
 - `_build_demo_island() -> void`
 - `_resize_base_ground() -> void`
 - `_place_player_start() -> void`
+- `_spawn_starter_torso_pickup() -> void`
 - `_layout_stage_regions() -> void`
 - `_configure_stage(node_name: String, pos: Vector3, trigger_size: Vector3, stage_name: String, difficulty: int, recommended: String, description: String, color: Color) -> void`
 - `_layout_story_nodes() -> void`
@@ -2401,6 +2455,7 @@
 
 ### Resource Dependencies
 - `scenes/enemy.tscn`
+- `scenes/bone.tscn`
 - `scripts/demo_enemy_camp.gd`
 
 ### GameEvents Usage
@@ -2414,6 +2469,7 @@
 - `../Ground/CollisionShape3D`
 - `../Player`
 - `../GuideWisp`
+- `StarterTorsoPickup`
 - `StageBody/StageMesh`
 - `StageLabel`
 - `../SightTestWalls`
