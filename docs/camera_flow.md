@@ -29,6 +29,8 @@ un punto de disparo consistente desde el centro de pantalla.
 - Cambia a aim zoom.
 - Aplica `set_animation_follow_offset` para seguir offsets visuales horizontales
   de animacion sin mover verticalmente la camara.
+- Actualiza follow y offsets de animacion en `_physics_process`, sincronizado
+  con `Player._physics_process`.
 - Expone `get_flat_forward`, `get_flat_right`.
 - Expone `get_center_aim_point`.
 
@@ -65,9 +67,10 @@ un punto de disparo consistente desde el centro de pantalla.
 3. Ese offset ya viene en mundo horizontal e incluye tanto el salto actual como
    la posicion adelantada acumulada por golpes anteriores.
 4. `Player` lo entrega a la camara con Y en cero.
-5. `PlayerCameraController.set_animation_follow_offset` suaviza ese offset en
-   el pivot de camara.
-6. La camara sigue solo la distancia horizontal del salto; el arco vertical se
+5. `PlayerCameraController.set_animation_follow_offset` actualiza el objetivo.
+6. `PlayerCameraController._physics_process` suaviza ese offset y mueve el
+   pivot de camara en el mismo reloj de fisica que el player.
+7. La camara sigue solo la distancia horizontal del salto; el arco vertical se
    queda en la animacion del socket de cabeza.
 
 ## Flujo de mouse
@@ -108,8 +111,15 @@ En `TESTING ENVIRONMENT`:
 
 ## Diagnostico de jitter
 
-El bug de jitter/vibracion no tiene causa confirmada. Antes de tocar
-`Player`, `PlayerCameraController` o el rig procedural, correr:
+La causa runtime del jitter debe confirmarse en Godot, pero el contrato estatico
+mostraba una fuente concreta de desincronizacion: `Player._physics_process`
+mueve con `move_and_slide`, actualiza el rig procedural y entrega el offset de
+animacion, mientras `PlayerCameraController` aplicaba el follow suavizado en
+`_process`. Esa mezcla de relojes podia muestrear el target entre ticks de
+fisica y producir vibracion visible, especialmente durante offsets de cabeza o
+cerca de colisiones.
+
+Antes de tocar `Player`, `PlayerCameraController` o el rig procedural, correr:
 
 ```bash
 python -B tools/validate_jitter_update_contract.py
@@ -117,22 +127,28 @@ python -B tools/validate_jitter_update_contract.py
 
 Ese validador es estatico y read-only. Confirma el contrato actual de update:
 `Player._physics_process` mueve con `move_and_slide`, luego llama
-`ProceduralPlayerAnimator.update_from_player`, y despues entrega offsets
-horizontales de animacion a `PlayerCameraController.set_animation_follow_offset`.
-Tambien marca como hipotesis a aislar que la camara suaviza follow en `_process`
-mientras el jugador se mueve en fisica.
+`ProceduralPlayerAnimator.update_from_player`, despues entrega offsets
+horizontales de animacion a `PlayerCameraController.set_animation_follow_offset`,
+y finalmente la camara suaviza follow y offset en `_physics_process`. El zoom
+del `SpringArm3D` permanece en `_process` porque no mueve el target del player.
 
 Para reproducir manualmente en `TESTING ENVIRONMENT`:
 
-1. Probar idle, caminar, sprintar, saltar y rozar paredes con camara activa.
-2. Repetir abriendo/cerrando inventario para confirmar que el bloqueo de look no
+1. Probar idle, caminar, sprintar, saltar y caer con camara activa.
+2. Repetir rozando paredes y esquinas para confirmar collision del SpringArm.
+3. Acercar y alejar con rueda para confirmar que el zoom sigue suave.
+4. Repetir abriendo/cerrando inventario para confirmar que el bloqueo de look no
    introduce vibracion.
-3. Comparar head-only, torso-only y cuerpo completo.
-4. Repetir ataques de head launch y reattach de torso, anotando si el jitter
+5. Comparar head-only, torso-only y cuerpo completo.
+6. Repetir ataques de head launch y reattach de torso, anotando si el jitter
    aparece durante el offset de animacion o despues de volver a cero.
-5. Aislar en una escena temporal deshabilitando solo camara follow, luego solo
-   offset de animacion, y luego solo rig procedural.
-6. Aplicar un fix solo cuando una de esas pruebas reproduzca y elimine la causa.
+7. Comparar smoothing normal contra smoothing bajo/casi apagado desde el
+   inspector.
+8. Comparar rig procedural habilitado contra deshabilitado temporalmente desde
+   la escena de prueba.
+9. Probar la misma ruta con FPS estable y FPS bajo si el editor lo permite.
+10. Confirmar que no existe doble interpolacion: el pivot de camara se mueve en
+    `_physics_process`, mientras `_process` solo ajusta `SpringArm3D.spring_length`.
 
 ## Historial de cambios
 
@@ -143,3 +159,6 @@ Para reproducir manualmente en `TESTING ENVIRONMENT`:
   se usa para acompanar el ataque de cabeza sin copiar su salto vertical.
 - 2026-07-15: Se agrego diagnostico estatico de contrato de update para jitter,
   sin modificar runtime ni confirmar todavia la causa.
+- 2026-07-15: Se sincronizo el follow de camara y el offset horizontal de
+  animacion con `_physics_process`; runtime queda pendiente de validacion en
+  Godot.
