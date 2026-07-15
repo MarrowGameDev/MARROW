@@ -50,7 +50,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "architecture_rt6_depends_on_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": ".depends_on_modularskeletonrig()"
     },
     {
@@ -2500,7 +2500,7 @@
       "source_location": "L1090",
       "_origin": "ast",
       "id": "architecture_enemy_depends_on_scenebone",
-      "community": 27,
+      "community": 28,
       "norm_label": ".depends_on_scenebone()"
     },
     {
@@ -2530,7 +2530,7 @@
       "source_location": "L1102",
       "_origin": "ast",
       "id": "architecture_enemy_depends_on_arrowprojectile",
-      "community": 27,
+      "community": 36,
       "norm_label": ".depends_on_arrowprojectile()"
     },
     {
@@ -2570,7 +2570,7 @@
       "source_location": "L1118",
       "_origin": "ast",
       "id": "architecture_enemy_depends_on_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": ".depends_on_modularskeletonrig()"
     },
     {
@@ -4100,7 +4100,7 @@
       "source_location": "L1793",
       "_origin": "ast",
       "id": "architecture_player_depends_on_arrowprojectile",
-      "community": 36,
+      "community": 28,
       "norm_label": ".depends_on_arrowprojectile()"
     },
     {
@@ -4170,7 +4170,7 @@
       "source_location": "L1821",
       "_origin": "ast",
       "id": "architecture_player_depends_on_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": ".depends_on_modularskeletonrig()"
     },
     {
@@ -4600,7 +4600,7 @@
       "source_location": "L2007",
       "_origin": "ast",
       "id": "architecture_playerequipmentcomponent_depends_on_sceneequippedbone",
-      "community": 27,
+      "community": 28,
       "norm_label": ".depends_on_sceneequippedbone()"
     },
     {
@@ -4630,7 +4630,7 @@
       "source_location": "L2019",
       "_origin": "ast",
       "id": "architecture_playerequipmentcomponent_depends_on_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": ".depends_on_modularskeletonrig()"
     },
     {
@@ -5520,7 +5520,7 @@
       "source_location": "L2389",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_depends_on_inventoryemptyslot",
-      "community": 12,
+      "community": 13,
       "norm_label": ".depends_on_inventoryemptyslot()"
     },
     {
@@ -5550,7 +5550,7 @@
       "source_location": "L2401",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_depends_on_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": ".depends_on_modularskeletonrig()"
     },
     {
@@ -5560,7 +5560,7 @@
       "source_location": "L2405",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_depends_on_boneitemtile",
-      "community": 19,
+      "community": 12,
       "norm_label": ".depends_on_boneitemtile()"
     },
     {
@@ -5570,7 +5570,7 @@
       "source_location": "L2409",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_depends_on_boneslotwidget",
-      "community": 13,
+      "community": 19,
       "norm_label": ".depends_on_boneslotwidget()"
     },
     {
@@ -5580,7 +5580,7 @@
       "source_location": "L2413",
       "_origin": "ast",
       "id": "architecture_playerinventoryui_depends_on_inventoryemptyslot2",
-      "community": 12,
+      "community": 13,
       "norm_label": ".depends_on_inventoryemptyslot2()"
     },
     {
@@ -5630,7 +5630,7 @@
       "source_location": "L2440",
       "_origin": "ast",
       "id": "architecture_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": "modularskeletonrig"
     },
     {
@@ -6220,7 +6220,7 @@
       "source_location": "L2690",
       "_origin": "ast",
       "id": "architecture_proceduralplayeranimator_depends_on_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": ".depends_on_modularskeletonrig()"
     },
     {
@@ -6280,7 +6280,7 @@
       "source_location": "L2721",
       "_origin": "ast",
       "id": "architecture_rigtestplayer_depends_on_modularskeletonrig",
-      "community": 28,
+      "community": 27,
       "norm_label": ".depends_on_modularskeletonrig()"
     },
     {
@@ -6510,7 +6510,7 @@
       "source_location": "L2820",
       "_origin": "ast",
       "id": "architecture_testingenvironment_depends_on_sceneplayer",
-      "community": 27,
+      "community": 28,
       "norm_label": ".depends_on_sceneplayer()"
     },
     {
@@ -6800,7 +6800,7 @@
       "source_location": "L2943",
       "_origin": "ast",
       "id": "architecture_tutorialislandbuilder_depends_on_scenebone",
-      "community": 27,
+      "community": 28,
       "norm_label": ".depends_on_scenebone()"
     },
     {
@@ -6810,7 +6810,7 @@
       "source_location": "L2947",
       "_origin": "ast",
       "id": "architecture_tutorialislandbuilder_depends_on_demoenemycamp",
-      "community": 27,
+      "community": 28,
       "norm_label": ".depends_on_demoenemycamp()"
     },
     {
@@ -6820,7 +6820,7 @@
       "source_location": "L2951",
       "_origin": "ast",
       "id": "architecture_boneitemtile",
-      "community": 19,
+      "community": 12,
       "norm_label": "boneitemtile"
     },
     {
@@ -6830,7 +6830,7 @@
       "source_location": "L2962",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_setup",
-      "community": 19,
+      "community": 12,
       "norm_label": ".gd_func_setup()"
     },
     {
@@ -6840,7 +6840,7 @@
       "source_location": "L2966",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_on_mouse_entered",
-      "community": 13,
+      "community": 19,
       "norm_label": ".gd_func__on_mouse_entered()"
     },
     {
@@ -6860,7 +6860,7 @@
       "source_location": "L2974",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_refresh",
-      "community": 19,
+      "community": 12,
       "norm_label": ".gd_func_refresh()"
     },
     {
@@ -6870,7 +6870,7 @@
       "source_location": "L2978",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_get_drag_data",
-      "community": 13,
+      "community": 19,
       "norm_label": ".gd_func__get_drag_data()"
     },
     {
@@ -6880,7 +6880,7 @@
       "source_location": "L2982",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_make_preview",
-      "community": 19,
+      "community": 12,
       "norm_label": ".gd_func__make_preview()"
     },
     {
@@ -6890,7 +6890,7 @@
       "source_location": "L2986",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_make_tile_style",
-      "community": 13,
+      "community": 12,
       "norm_label": ".gd_func__make_tile_style()"
     },
     {
@@ -6900,7 +6900,7 @@
       "source_location": "L2990",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_can_drop_data",
-      "community": 12,
+      "community": 13,
       "norm_label": ".gd_func__can_drop_data()"
     },
     {
@@ -6910,7 +6910,7 @@
       "source_location": "L2994",
       "_origin": "ast",
       "id": "architecture_boneitemtile_gd_func_drop_data",
-      "community": 12,
+      "community": 13,
       "norm_label": ".gd_func__drop_data()"
     },
     {
@@ -6920,7 +6920,7 @@
       "source_location": "L2998",
       "_origin": "ast",
       "id": "architecture_boneitemtile_depends_on_bonerulesservice",
-      "community": 19,
+      "community": 12,
       "norm_label": ".depends_on_bonerulesservice()"
     },
     {
@@ -6940,7 +6940,7 @@
       "source_location": "L3006",
       "_origin": "ast",
       "id": "architecture_boneitemtile_depends_on_playerinventoryui",
-      "community": 19,
+      "community": 12,
       "norm_label": ".depends_on_playerinventoryui()"
     },
     {
@@ -6950,7 +6950,7 @@
       "source_location": "L3010",
       "_origin": "ast",
       "id": "architecture_boneslotwidget",
-      "community": 13,
+      "community": 19,
       "norm_label": "boneslotwidget"
     },
     {
@@ -6960,7 +6960,7 @@
       "source_location": "L3021",
       "_origin": "ast",
       "id": "architecture_boneslotwidget_gd_func_on_mouse_entered",
-      "community": 13,
+      "community": 19,
       "norm_label": ".gd_func__on_mouse_entered()"
     },
     {
@@ -6980,7 +6980,7 @@
       "source_location": "L3029",
       "_origin": "ast",
       "id": "architecture_boneslotwidget_gd_func_refresh",
-      "community": 13,
+      "community": 19,
       "norm_label": ".gd_func_refresh()"
     },
     {
@@ -6990,7 +6990,7 @@
       "source_location": "L3033",
       "_origin": "ast",
       "id": "architecture_boneslotwidget_gd_func_get_drag_data",
-      "community": 13,
+      "community": 19,
       "norm_label": ".gd_func__get_drag_data()"
     },
     {
@@ -7000,7 +7000,7 @@
       "source_location": "L3037",
       "_origin": "ast",
       "id": "architecture_boneslotwidget_gd_func_can_drop_data",
-      "community": 12,
+      "community": 13,
       "norm_label": ".gd_func__can_drop_data()"
     },
     {
@@ -7010,7 +7010,7 @@
       "source_location": "L3041",
       "_origin": "ast",
       "id": "architecture_boneslotwidget_gd_func_drop_data",
-      "community": 12,
+      "community": 13,
       "norm_label": ".gd_func__drop_data()"
     },
     {
@@ -7030,7 +7030,7 @@
       "source_location": "L3049",
       "_origin": "ast",
       "id": "architecture_boneslotwidget_gd_func_make_slot_style",
-      "community": 13,
+      "community": 12,
       "norm_label": ".gd_func__make_slot_style()"
     },
     {
@@ -7050,7 +7050,7 @@
       "source_location": "L3057",
       "_origin": "ast",
       "id": "architecture_boneslotwidget_depends_on_bonerulesservice",
-      "community": 13,
+      "community": 19,
       "norm_label": ".depends_on_bonerulesservice()"
     },
     {
@@ -7070,7 +7070,7 @@
       "source_location": "L3065",
       "_origin": "ast",
       "id": "architecture_inventoryemptyslot",
-      "community": 12,
+      "community": 13,
       "norm_label": "inventoryemptyslot"
     },
     {
@@ -7080,7 +7080,7 @@
       "source_location": "L3076",
       "_origin": "ast",
       "id": "architecture_inventoryemptyslot_gd_func_setup",
-      "community": 12,
+      "community": 13,
       "norm_label": ".gd_func_setup()"
     },
     {
@@ -7090,7 +7090,7 @@
       "source_location": "L3080",
       "_origin": "ast",
       "id": "architecture_inventoryemptyslot_gd_func_can_drop_data",
-      "community": 12,
+      "community": 13,
       "norm_label": ".gd_func__can_drop_data()"
     },
     {
@@ -7100,7 +7100,7 @@
       "source_location": "L3084",
       "_origin": "ast",
       "id": "architecture_inventoryemptyslot_gd_func_drop_data",
-      "community": 12,
+      "community": 13,
       "norm_label": ".gd_func__drop_data()"
     },
     {
@@ -7110,7 +7110,7 @@
       "source_location": "L3088",
       "_origin": "ast",
       "id": "architecture_inventoryemptyslot_gd_func_make_slot_style",
-      "community": 13,
+      "community": 12,
       "norm_label": ".gd_func__make_slot_style()"
     },
     {
@@ -7290,7 +7290,7 @@
       "source_location": "L3168",
       "_origin": "ast",
       "id": "architecture_scenebone",
-      "community": 27,
+      "community": 28,
       "norm_label": "scenebone"
     },
     {
@@ -7370,7 +7370,7 @@
       "source_location": "L3203",
       "_origin": "ast",
       "id": "architecture_sceneequippedbone",
-      "community": 27,
+      "community": 28,
       "norm_label": "sceneequippedbone"
     },
     {
@@ -7700,7 +7700,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "architecture_rationale_23",
-      "community": 27,
+      "community": 28,
       "norm_label": "relationship: loads resource."
     },
     {
@@ -7710,7 +7710,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "architecture_rationale_27",
-      "community": 28,
+      "community": 27,
       "norm_label": "relationship: references class modularskeletonrig."
     },
     {
@@ -11210,7 +11210,7 @@
       "source_location": "L2406",
       "_origin": "ast",
       "id": "architecture_rationale_2406",
-      "community": 19,
+      "community": 12,
       "norm_label": "relationship: references class boneitemtile."
     },
     {
@@ -11220,7 +11220,7 @@
       "source_location": "L2414",
       "_origin": "ast",
       "id": "architecture_rationale_2414",
-      "community": 12,
+      "community": 13,
       "norm_label": "relationship: references class inventoryemptyslot."
     },
     {
@@ -11260,7 +11260,7 @@
       "source_location": "L2441",
       "_origin": "ast",
       "id": "architecture_rationale_2441",
-      "community": 28,
+      "community": 27,
       "norm_label": "godot script: scripts/rig/modular_skeleton_rig.gd     class_name: modularskeleto"
     },
     {
@@ -12080,7 +12080,7 @@
       "source_location": "L2952",
       "_origin": "ast",
       "id": "architecture_rationale_2952",
-      "community": 19,
+      "community": 12,
       "norm_label": "godot script: scripts/ui_bone_item.gd     class_name: boneitemtile     extends:"
     },
     {
@@ -12090,7 +12090,7 @@
       "source_location": "L2963",
       "_origin": "ast",
       "id": "architecture_rationale_2963",
-      "community": 19,
+      "community": 12,
       "norm_label": "gdscript function: setup(id: string, player_ref: node) -> void"
     },
     {
@@ -12100,7 +12100,7 @@
       "source_location": "L2967",
       "_origin": "ast",
       "id": "architecture_rationale_2967",
-      "community": 13,
+      "community": 19,
       "norm_label": "gdscript function: _on_mouse_entered() -> void"
     },
     {
@@ -12120,7 +12120,7 @@
       "source_location": "L2979",
       "_origin": "ast",
       "id": "architecture_rationale_2979",
-      "community": 13,
+      "community": 19,
       "norm_label": "gdscript function: _get_drag_data(_at_position: vector2) -> variant"
     },
     {
@@ -12130,7 +12130,7 @@
       "source_location": "L2983",
       "_origin": "ast",
       "id": "architecture_rationale_2983",
-      "community": 19,
+      "community": 12,
       "norm_label": "gdscript function: _make_preview() -> control"
     },
     {
@@ -12140,7 +12140,7 @@
       "source_location": "L2987",
       "_origin": "ast",
       "id": "architecture_rationale_2987",
-      "community": 13,
+      "community": 12,
       "norm_label": "gdscript function: _make_tile_style(bg: color, border: color, border_width: int)"
     },
     {
@@ -12150,7 +12150,7 @@
       "source_location": "L2991",
       "_origin": "ast",
       "id": "architecture_rationale_2991",
-      "community": 12,
+      "community": 13,
       "norm_label": "gdscript function: _can_drop_data(_at_position: vector2, data: variant) -> bool"
     },
     {
@@ -12160,7 +12160,7 @@
       "source_location": "L2995",
       "_origin": "ast",
       "id": "architecture_rationale_2995",
-      "community": 12,
+      "community": 13,
       "norm_label": "gdscript function: _drop_data(_at_position: vector2, data: variant) -> void"
     },
     {
@@ -12170,7 +12170,7 @@
       "source_location": "L3011",
       "_origin": "ast",
       "id": "architecture_rationale_3011",
-      "community": 13,
+      "community": 19,
       "norm_label": "godot script: scripts/ui_bone_slot.gd     class_name: boneslotwidget     extends"
     },
     {
@@ -12180,7 +12180,7 @@
       "source_location": "L3066",
       "_origin": "ast",
       "id": "architecture_rationale_3066",
-      "community": 12,
+      "community": 13,
       "norm_label": "godot script: scripts/ui_inventory_empty_slot.gd     class_name: inventoryemptys"
     },
     {
@@ -12190,7 +12190,7 @@
       "source_location": "L3077",
       "_origin": "ast",
       "id": "architecture_rationale_3077",
-      "community": 12,
+      "community": 13,
       "norm_label": "gdscript function: setup(owner_ref: node, requested_size: vector2) -> void"
     },
     {
@@ -12300,7 +12300,7 @@
       "source_location": "L3204",
       "_origin": "ast",
       "id": "architecture_rationale_3204",
-      "community": 27,
+      "community": 28,
       "norm_label": "godot scene: scenes/equipped_bone.tscn"
     },
     {
@@ -30462,5 +30462,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "23cd4587a5458e5cda9e5192a2b3c17c8d43d464"
+  "built_at_commit": "5bb6270e4067cfe3d76295195856c904fdefe4f1"
 }
