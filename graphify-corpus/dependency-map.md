@@ -39,6 +39,7 @@
 - `scripts/limb_bone_pickup.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/player.gd` depends on `scenes/attack_hitbox.tscn` because it loads resource.
 - `scripts/player.gd` depends on `scripts/arrow_projectile.gd` because it loads resource.
+- `scripts/player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player.gd` depends on `scripts/player_camera_controller.gd` because it references class PlayerCameraController.
 - `scripts/player.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/player.gd` depends on `scripts/player_inventory_component.gd` because it references class PlayerInventoryComponent.
@@ -69,6 +70,7 @@
 - `scripts/testing_environment.gd` depends on `scenes/player.tscn` because it loads resource.
 - `scripts/testing_environment.gd` depends on `scenes/enemy.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scenes/enemy.tscn` because it loads resource.
+- `scripts/tutorial_island_builder.gd` depends on `scenes/bone.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scripts/demo_enemy_camp.gd` because it loads resource.
 - `scripts/ui_bone_item.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/ui_bone_item.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
