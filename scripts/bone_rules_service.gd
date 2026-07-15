@@ -6,6 +6,19 @@ const PLAYER_BONUS_DEFAULTS := {
 	"attack_damage": 0,
 	"max_health": 0,
 }
+const PLAYER_STAT_MODIFIER_DEFAULTS := {
+	"damage_percent": 0.0,
+	"speed_percent": 0.0,
+	"health_percent": 0.0,
+	"weight_percent": 0.0,
+	"equipment_weight": 0.0,
+	"inventory_weight": 0.0,
+	"load_speed_penalty": 0.0,
+}
+const PLAYER_STAT_PERCENT_LIMIT := 0.75
+const EQUIPMENT_FREE_WEIGHT := 3.0
+const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06
+const EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30
 const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
 
@@ -327,11 +340,24 @@ static func player_bonus_for(bone_id: String) -> Dictionary:
 	}
 
 
+static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
+	var bonus := player_bonus_for(bone_id)
+	var multiplier := quality_multiplier_for(bone_id)
+	return {
+		"move_speed": float(bonus["move_speed"]) * multiplier,
+		"attack_range": float(bonus["attack_range"]) * multiplier,
+		"attack_damage": roundi(float(bonus["attack_damage"]) * multiplier),
+		"max_health": roundi(float(bonus["max_health"]) * multiplier),
+	}
+
+
 static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 	var total: Dictionary = PLAYER_BONUS_DEFAULTS.duplicate()
 	for slot_id in equipment_state:
 		var bone_id: String = str(equipment_state[slot_id])
-		var bonus: Dictionary = player_bonus_for(bone_id)
+		if bone_id == "":
+			continue
+		var bonus: Dictionary = adjusted_player_bonus_for(bone_id)
 		total["move_speed"] = float(total["move_speed"]) + float(bonus["move_speed"])
 		total["attack_range"] = float(total["attack_range"]) + float(bonus["attack_range"])
 		total["attack_damage"] = int(total["attack_damage"]) + int(bonus["attack_damage"])
@@ -339,13 +365,58 @@ static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 	return total
 
 
+static func aggregate_player_stat_modifiers(equipment_state: Dictionary) -> Dictionary:
+	var total: Dictionary = PLAYER_STAT_MODIFIER_DEFAULTS.duplicate()
+	for slot_id in equipment_state:
+		var bone_id: String = str(equipment_state[slot_id])
+		if bone_id == "":
+			continue
+		total["damage_percent"] = float(total["damage_percent"]) + quality_damage_percent_for(bone_id)
+		total["speed_percent"] = float(total["speed_percent"]) + quality_speed_percent_for(bone_id)
+		total["health_percent"] = float(total["health_percent"]) + quality_health_percent_for(bone_id)
+		total["weight_percent"] = float(total["weight_percent"]) + quality_weight_percent_for(bone_id)
+
+		var weight_multiplier := maxf(0.0, 1.0 + quality_weight_percent_for(bone_id))
+		total["equipment_weight"] = float(total["equipment_weight"]) + equipment_weight_for(bone_id) * weight_multiplier
+		total["inventory_weight"] = float(total["inventory_weight"]) + inventory_weight_for(bone_id) * weight_multiplier
+
+	total["damage_percent"] = clampf(float(total["damage_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+	total["speed_percent"] = clampf(float(total["speed_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+	total["health_percent"] = clampf(float(total["health_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+	total["weight_percent"] = clampf(float(total["weight_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+
+	var load_over_free := maxf(0.0, float(total["equipment_weight"]) - EQUIPMENT_FREE_WEIGHT)
+	total["load_speed_penalty"] = clampf(
+		load_over_free * EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT,
+		0.0,
+		EQUIPMENT_LOAD_SPEED_PENALTY_MAX
+	)
+	return total
+
+
 static func player_stats_with_equipment(base_move_speed: float, base_attack_range: float, base_attack_damage: int, base_max_health: int, equipment_state: Dictionary) -> Dictionary:
 	var bonus: Dictionary = aggregate_player_bonuses(equipment_state)
+	var modifiers: Dictionary = aggregate_player_stat_modifiers(equipment_state)
+
+	var move_before_percent := base_move_speed + float(bonus["move_speed"])
+	var move_multiplier := maxf(
+		0.1,
+		(1.0 + float(modifiers["speed_percent"])) * (1.0 - float(modifiers["load_speed_penalty"]))
+	)
+	var damage_before_percent := float(base_attack_damage + int(bonus["attack_damage"]))
+	var health_before_percent := float(base_max_health + int(bonus["max_health"]))
 	return {
-		"move_speed": base_move_speed + float(bonus["move_speed"]),
+		"move_speed": maxf(0.0, move_before_percent * move_multiplier),
 		"attack_range": base_attack_range + float(bonus["attack_range"]),
-		"attack_damage": base_attack_damage + int(bonus["attack_damage"]),
-		"max_health": base_max_health + int(bonus["max_health"]),
+		"attack_damage": maxi(0, roundi(damage_before_percent * maxf(0.1, 1.0 + float(modifiers["damage_percent"])))),
+		"max_health": maxi(1, roundi(health_before_percent * maxf(0.1, 1.0 + float(modifiers["health_percent"])))),
+		"equipment_weight": float(modifiers["equipment_weight"]),
+		"inventory_weight": float(modifiers["inventory_weight"]),
+		"load_speed_penalty": float(modifiers["load_speed_penalty"]),
+		"quality_damage_percent": float(modifiers["damage_percent"]),
+		"quality_speed_percent": float(modifiers["speed_percent"]),
+		"quality_health_percent": float(modifiers["health_percent"]),
+		"quality_weight_percent": float(modifiers["weight_percent"]),
 	}
 
 
