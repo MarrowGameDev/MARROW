@@ -209,7 +209,7 @@
 - System: Combat and enemies
 
 ### Signals
-- none
+- `hit_confirmed(target: Node)`
 
 ### Exported Tuning
 - `damage`
@@ -221,6 +221,7 @@
 ### Key Variables
 - `owner_player`
 - `already_hit`
+- `contact_confirmed`
 - `base_material`
 - `material`
 - `tween`
@@ -236,6 +237,7 @@
 - `_try_hit_enemy_area(area: Area3D) -> void`
 - `_damage_owner_for_area(area: Area3D) -> Node`
 - `_body_part_for_area(area: Area3D) -> String`
+- `_confirm_contact(target: Node) -> void`
 
 ### Resource Dependencies
 - none
@@ -1530,6 +1532,7 @@
 - `_get_move_input_vector() -> Vector2`
 - `_get_camera_forward_direction() -> Vector3`
 - `_try_attack() -> void`
+- `_on_attack_hit_confirmed(_target: Node) -> void`
 - `_try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void`
 - `_start_bow_aim() -> void`
 - `_release_bow_shot() -> void`
@@ -1552,6 +1555,7 @@
 - `_get_bow_charge_multiplier() -> float`
 - `_make_bow_piece(piece_name: String, size: Vector3, local_position: Vector3, color: Color) -> MeshInstance3D`
 - `_update_procedural_animation(delta: float, max_speed: float) -> void`
+- `_update_camera_animation_follow_offset() -> void`
 - `collect_bone(bone_id: String) -> void`
 - `get_equipped_bone_id() -> String`
 - `has_bone_equipped(bone_id: String) -> bool`
@@ -1633,6 +1637,7 @@
 - `spring_arm_margin`
 - `spring_arm_collision_mask`
 - `capture_mouse_on_ready`
+- `animation_follow_smoothing`
 - `aim_ray_distance`
 - `aim_left_shoulder_offset`
 - `aim_shoulder_height_offset`
@@ -1650,7 +1655,10 @@
 - `target`
 - `aim_zoom_active`
 - `pre_aim_zoom_distance`
+- `animation_follow_offset`
+- `target_animation_follow_offset`
 - `collision_target`
+- `animation_alpha`
 - `follow_alpha`
 - `alpha`
 - `button`
@@ -1677,6 +1685,7 @@
 - `release_mouse() -> void`
 - `set_look_enabled(enabled: bool) -> void`
 - `set_aim_zoom(enabled: bool, zoom_distance: float = 2.6) -> void`
+- `set_animation_follow_offset(offset: Vector3) -> void`
 - `get_flat_forward() -> Vector3`
 - `get_flat_right() -> Vector3`
 - `get_center_aim_point(max_distance: float = 90.0, exclude: Array[RID] = []) -> Vector3`
@@ -2224,6 +2233,12 @@
 - `attack_arm_forward`
 - `attack_torso_twist`
 - `attack_lunge`
+- `head_only_attack_duration`
+- `head_only_attack_charge_portion`
+- `head_only_attack_lunge`
+- `head_only_attack_arc`
+- `head_only_attack_charge_squash`
+- `head_only_attack_roll`
 - `combo_left_arm_forward`
 - `combo_finisher_arm_forward`
 - `combo_finisher_torso_twist`
@@ -2255,6 +2270,8 @@
 - `_attack_blend`
 - `_attack_duration_current`
 - `_attack_combo_step`
+- `_head_only_attack_contacted`
+- `_head_only_attack_forward_offset`
 - `_aim_requested`
 - `_aim_blend`
 - `_lizard_wall_climb_blend`
@@ -2285,13 +2302,13 @@
 - `spring_tilt`
 - `body_rest`
 - `head_phase`
-- `head_pop`
-- `swing`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
 - `trigger_attack(combo_step: int = 0) -> void`
 - `set_aiming(enabled: bool) -> void`
+- `confirm_head_only_attack_contact() -> void`
+- `get_head_only_attack_forward_offset() -> float`
 - `set_crawl_mode(enabled: bool) -> void`
 - `set_lizard_wall_climb_blend(blend: float) -> void`
 - `set_player_body_progression_enabled(enabled: bool) -> void`
@@ -2319,6 +2336,8 @@
 - `_update_attack_overlay(delta: float) -> void`
 - `_apply_attack_overlay() -> void`
 - `_attack_pose_strength() -> float`
+- `_attack_phase() -> float`
+- `_apply_head_only_attack_pose() -> void`
 - `_apply_right_combo_pose(strength: float) -> void`
 - `_apply_left_combo_pose(strength: float) -> void`
 - `_apply_finisher_combo_pose(strength: float) -> void`

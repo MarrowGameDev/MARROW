@@ -520,6 +520,8 @@ un punto de disparo consistente desde el centro de pantalla.
 - Controla zoom con rueda.
 - Usa `SpringArm3D` para collision de camara.
 - Cambia a aim zoom.
+- Aplica `set_animation_follow_offset` para seguir offsets visuales horizontales
+  de animacion sin mover verticalmente la camara.
 - Expone `get_flat_forward`, `get_flat_right`.
 - Expone `get_center_aim_point`.
 
@@ -546,6 +548,18 @@ un punto de disparo consistente desde el centro de pantalla.
 5. El raycast desde centro de pantalla devuelve punto de impacto o punto lejano.
 6. El proyectil se dispara hacia ese punto.
 7. `set_aim_zoom(false)` vuelve al zoom normal.
+
+## Flujo de camara por animacion
+
+1. `ProceduralPlayerAnimator` calcula el offset hacia adelante del ataque cuando
+   el jugador sigue siendo solo cabeza.
+2. `Player._update_procedural_animation` lee
+   `get_head_only_attack_forward_offset`.
+3. `Player` lo convierte a mundo usando `last_facing_direction`, con Y en cero.
+4. `PlayerCameraController.set_animation_follow_offset` suaviza ese offset en
+   el pivot de camara.
+5. La camara sigue solo la distancia horizontal del salto; el arco vertical se
+   queda en la animacion del socket de cabeza.
 
 ## Flujo de mouse
 
@@ -588,6 +602,8 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se documento el flujo actual de camara.
 - 2026-07-14: Se agrego `TESTING ENVIRONMENT` como escena unica para probar
   camara, enemigos, movimiento, animaciones y rig.
+- 2026-07-14: La camara ahora puede seguir offsets horizontales de animacion;
+  se usa para acompanar el ataque de cabeza sin copiar su salto vertical.
 
 ## docs/change_documentation_policy.md
 
@@ -755,6 +771,16 @@ Ataque/combo por hueso:
   animacion simple si el jugador vuelve a atacar a tiempo.
 - `ProceduralPlayerAnimator.trigger_attack(combo_step)` alterna tres poses:
   golpe derecho, golpe izquierdo y finisher con ambos brazos/torso.
+- Si el jugador sigue solo como cabeza, `trigger_attack` usa una duracion visual
+  propia y reemplaza las poses de brazos por un salto de cabeza: primero
+  comprime/carga hacia atras, luego salta hacia adelante y arriba hasta una
+  altura cercana a medio torso. La cabeza solo vuelve visualmente a la posicion
+  original cuando `AttackHitbox` confirma contacto con otro cuerpo o hurtbox
+  enemigo; si falla, mantiene la pose lanzada. El salto usa Z local positivo
+  porque esa es la direccion visual hacia adelante del rig del jugador.
+- Mientras ese ataque esta activo, `Player` lee
+  `get_head_only_attack_forward_offset()` y se lo pasa a la camara como offset
+  horizontal. La camara no sigue el arco vertical de la cabeza.
 - Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
   activar combos con gameplay real se debe crear una regla de combate explicita
   y probarla en `TESTING ENVIRONMENT`.
@@ -858,6 +884,9 @@ En `TESTING ENVIRONMENT`:
   parte del cuerpo de enemigos mediante `enemy_body_hurtboxes`.
 - 2026-07-14: Se limpio el ruteo de hurtboxes en melee/proyectiles con helpers
   pequenos para evitar duplicacion entre jugador y enemigos.
+- 2026-07-14: La cabeza sola ahora tiene overlay de ataque propio: carga,
+  salto hacia el enemigo y regreso visual al ciclo base. No cambia dano ni
+  hitbox.
 
 ## docs/current_system_status.md
 
@@ -2105,12 +2134,25 @@ turn_smoothing 12.0 · idle_breath_amount 0.025 · heavy_weight_swing_slowdown 0
 attack_overlay_duration 0.16 · attack_overlay_blend_speed 18 · attack_arm_forward 1.1 ·
 attack_torso_twist 0.35 · foot_raycast_up/down 0.6/1.4 · foot_lift 0.06 ·
 foot_smoothing 14 · foot_align_to_normal true (uncheck foot_placement_enabled to disable).
+Head-only attack tuning: `head_only_attack_duration`,
+`head_only_attack_charge_portion`, `head_only_attack_lunge`,
+`head_only_attack_arc`, `head_only_attack_charge_squash` and
+`head_only_attack_roll`.
 
 Combo overlay:
 - `Player` passes a combo step into `ProceduralPlayerAnimator.trigger_attack`.
 - Step 1 uses right arm + torso twist.
 - Step 2 uses left arm + opposite torso twist.
 - Step 3 uses both arms, deeper lunge, and a small head dip.
+- If the player is only a head, combo arm poses are skipped. The head instead
+  squashes backward to charge, jumps forward/up toward the target direction,
+  reaches roughly mid-torso height, and only falls back to its original rolling
+  position after the melee hitbox confirms contact with another body or enemy
+  hurtbox. The launch uses the rig's positive local Z direction so it moves
+  forward in game view. Misses hold the launched pose instead of snapping home.
+- During that head-only attack, the animator exposes
+  `get_head_only_attack_forward_offset()` so the camera can follow only the
+  horizontal forward motion. The vertical arc stays visual on the head socket.
 - This is visual only; melee damage and hitbox behavior are unchanged.
 
 ## Current player body progression

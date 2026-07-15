@@ -312,6 +312,14 @@ class AttackHitbox:
         """GDScript function: _body_part_for_area(area: Area3D) -> String"""
         pass
 
+    def gd_func__confirm_contact(self):
+        """GDScript function: _confirm_contact(target: Node) -> void"""
+        pass
+
+    def signal_hit_confirmed(self):
+        """Godot signal: hit_confirmed(target: Node)"""
+        pass
+
 class Bone:
     """Godot script: scripts/bone.gd
     class_name: none
@@ -1598,6 +1606,10 @@ class Player:
         """GDScript function: _try_attack() -> void"""
         pass
 
+    def gd_func__on_attack_hit_confirmed(self):
+        """GDScript function: _on_attack_hit_confirmed(_target: Node) -> void"""
+        pass
+
     def gd_func__try_bow_shot(self):
         """GDScript function: _try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void"""
         pass
@@ -1684,6 +1696,10 @@ class Player:
 
     def gd_func__update_procedural_animation(self):
         """GDScript function: _update_procedural_animation(delta: float, max_speed: float) -> void"""
+        pass
+
+    def gd_func__update_camera_animation_follow_offset(self):
+        """GDScript function: _update_camera_animation_follow_offset() -> void"""
         pass
 
     def gd_func_collect_bone(self):
@@ -1923,6 +1939,10 @@ class PlayerCameraController:
 
     def gd_func_set_aim_zoom(self):
         """GDScript function: set_aim_zoom(enabled: bool, zoom_distance: float = 2.6) -> void"""
+        pass
+
+    def gd_func_set_animation_follow_offset(self):
+        """GDScript function: set_animation_follow_offset(offset: Vector3) -> void"""
         pass
 
     def gd_func_get_flat_forward(self):
@@ -2710,6 +2730,14 @@ class ProceduralPlayerAnimator:
         """GDScript function: set_aiming(enabled: bool) -> void"""
         pass
 
+    def gd_func_confirm_head_only_attack_contact(self):
+        """GDScript function: confirm_head_only_attack_contact() -> void"""
+        pass
+
+    def gd_func_get_head_only_attack_forward_offset(self):
+        """GDScript function: get_head_only_attack_forward_offset() -> float"""
+        pass
+
     def gd_func_set_crawl_mode(self):
         """GDScript function: set_crawl_mode(enabled: bool) -> void"""
         pass
@@ -2816,6 +2844,14 @@ class ProceduralPlayerAnimator:
 
     def gd_func__attack_pose_strength(self):
         """GDScript function: _attack_pose_strength() -> float"""
+        pass
+
+    def gd_func__attack_phase(self):
+        """GDScript function: _attack_phase() -> float"""
+        pass
+
+    def gd_func__apply_head_only_attack_pose(self):
+        """GDScript function: _apply_head_only_attack_pose() -> void"""
         pass
 
     def gd_func__apply_right_combo_pose(self):
