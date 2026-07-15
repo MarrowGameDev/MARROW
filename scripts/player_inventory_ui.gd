@@ -572,8 +572,6 @@ func _apply_inventory_responsive_layout() -> void:
 	inventory_safe_area.size = Vector2(panel_width, panel_height)
 	inventory_safe_area.custom_minimum_size = Vector2(panel_width, panel_height)
 	inventory_panel.position = Vector2.ZERO
-	inventory_panel.size = Vector2(panel_width, panel_height)
-	inventory_panel_margin.size = Vector2(panel_width, panel_height)
 	_set_margin(inventory_panel_margin, inner_margin, top_inner_margin, inner_margin, bottom_inner_margin)
 	_set_margin(inventory_grid_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin)
 	_set_margin(inventory_preview_area, maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin))
@@ -702,8 +700,6 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 	if inventory_preview_container != null:
 		inventory_preview_container.position = Vector2(98.0, 15.0) * doll_scale
 		inventory_preview_container.size = Vector2(210.0, 276.0) * doll_scale
-	if inventory_preview_viewport != null:
-		inventory_preview_viewport.size = Vector2i(maxi(96, int(210.0 * doll_scale)), maxi(126, int(276.0 * doll_scale)))
 
 	var slot_positions := {
 		"left_arm": Vector2(0.0, 12.0),

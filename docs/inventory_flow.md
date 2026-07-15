@@ -204,3 +204,6 @@ En `TESTING ENVIRONMENT`:
   pausa residual al entrar, la UI valida `user://control_settings.cfg`, y
   `Player` tiene fallback directo de teclado/mouse para WASD, Tab, Space,
   Shift, ataques y acciones principales si `InputMap` queda incompleto.
+- 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
+  manualmente paneles con anchors ni el `SubViewport` cuando el container ya
+  esta en modo stretch.
