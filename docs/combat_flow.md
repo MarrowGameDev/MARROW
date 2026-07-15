@@ -343,8 +343,21 @@ compromete al jugador en el lugar mientras dura la animacion.
    `BackstabRulesService.is_attacker_behind_target()`.
 3. UI muestra `get_stealth_prompt_text`.
 4. Al presionar stealth:
-   - Si enemy health <= threshold, muere.
-   - Si tiene demasiada vida, recibe dano extra y responde atacando/buscando.
+   - `Player` bloquea ataques, inventario/equip y movimiento normal durante la
+     ejecucion corta.
+   - `Player` dispara la pose base de finisher con `trigger_attack(3, false)`.
+   - `Enemy.try_stealth_finish` solo inicia la ejecucion; no aplica dano todavia.
+   - `Player._update_backstab_execution` aplica el dano una sola vez cuando
+     vence `backstab_execution_impact_time`.
+   - `Enemy.apply_stealth_finish_impact` resuelve muerte o ambush y evita un
+     segundo impacto con `stealth_execution_impact_applied`.
+   - `finish_stealth_execution` o `cancel_stealth_execution` limpian el estado y
+     restauran control/IA.
+
+La animacion base ya queda sincronizada con un momento de impacto configurable,
+pero sigue pendiente de validacion runtime en Godot: revisar frente/lateral/
+detras, enemigo rotado, dano unico, reaccion enemiga, camara y recuperacion de
+control en `TESTING ENVIRONMENT`.
 
 ### Validacion geometrica de backstab
 
@@ -360,6 +373,8 @@ detras, laterales, enemigos rotados, angulos del cono trasero y posiciones con
 offset vertical. Esta validacion es estatica; la confirmacion visual/runtime de
 que `facing_direction` coincide con el frente real del enemigo debe hacerse en
 `TESTING ENVIRONMENT` antes de una correccion funcional o de animacion.
+Tambien comprueba de forma estatica que el backstab use un callback de impacto,
+un estado temporal de ejecucion y una guarda contra doble aplicacion de dano.
 
 ## Flujo de dano enemigo
 
@@ -861,6 +876,13 @@ En `TESTING ENVIRONMENT`:
   sin lock. Enemigos no afectados. Pruebas: en `DUMMY TESTING ENVIRONMENT`, como
   cabeza, click derecho no debe moverte ni congelarte; click izquierdo si debe
   embestir.
+- 2026-07-15: `scripts/player.gd`, `scripts/enemy.gd`,
+  `scripts/backstab_rules_service.gd` — stealth finish ahora separa deteccion,
+  inicio de ejecucion, momento de impacto y limpieza. `Player` bloquea ataque,
+  inventario/equip, salto y movimiento durante una ventana corta; `Enemy` pausa
+  IA/ataques mientras `stealth_execution_player` esta activo. El dano se aplica
+  desde `apply_stealth_finish_impact` una sola vez y queda pendiente validarlo en
+  runtime con las guias P0 de `TESTING ENVIRONMENT`.
 - 2026-07-15: `scripts/testing_environment.gd` — en `dummy_only_mode` el dummy
   ahora se respawnea con `2` en vez de `1` (`1` ya no hace nada ahi; en el
   `TESTING ENVIRONMENT` normal `2` sigue siendo gorilla). Nuevo `_try_spawn_dummy()`
