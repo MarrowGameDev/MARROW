@@ -225,6 +225,16 @@ con el centro/orientacion de la caja base.
 5. Probar equipamiento/drops en `scenes/testing_environment.tscn`.
 6. Actualizar docs relevantes si el hueso introduce una regla nueva.
 
+Antes de abrir PR, ejecutar la validacion read-only de datos:
+
+```bash
+python tools/validate_bone_data.py
+```
+
+El validador revisa rutas del catalogo, IDs duplicados, Resources `.tres` sin
+referencia, slots, calidades, rarezas, familias de mutacion y rangos numericos
+basicos. No modifica Resources ni requiere abrir Godot.
+
 ## Compatibilidad
 
 `BoneDefinition.to_clean_dictionary()` mantiene el esquema organizado.
