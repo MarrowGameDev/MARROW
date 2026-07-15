@@ -33,6 +33,8 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="ModularSkeletonRig" type="Node3D" parent="VisualRoot"]
 position = Vector3(0, 0.12, 0)
 script = ExtResource("2_rig")
+use_split_limbs = true
+show_socket_markers = true
 head_model_scene = ExtResource("5_skull")
 head_model_rotation_deg = Vector3(0, -90, 0)
 

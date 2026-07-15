@@ -78,6 +78,107 @@ The player's head is `assets/skull.glb` instead of a grey box. Wired in
 - Hitboxes are unchanged: `_apply_equipped_body_hitbox()` sizes from the bone
   data, not the visual.
 
+## Split limbs (elbows and knees)
+`ModularSkeletonRig.use_split_limbs` (on in `player.tscn`) splits each arm/leg
+into an upper and a lower half with a bending elbow/knee.
+
+Socket tree when split (right side; left mirrors):
+
+    right_arm_socket            (0.28, 0.30, 0)   shoulder — swing pivot
+    ├── MeshInstance3D  box(0.16, 0.29, 0.16) @ -0.145   -> base_visuals["right_arm"]
+    └── right_arm_lower_socket  (0, -0.29, 0)     ELBOW — bend pivot
+        └── MeshInstance3D  box(0.16, 0.29, 0.16) @ -0.145 -> base_visuals["right_arm_lower"]
+
+    right_leg_socket            (0.16, -0.35, 0)  hip
+    ├── MeshInstance3D  box(0.18, 0.31, 0.18) @ -0.155   -> base_visuals["right_leg"]
+    └── right_leg_lower_socket  (0, -0.31, 0)     KNEE
+        ├── MeshInstance3D  box(0.18, 0.31, 0.18) @ -0.155 -> base_visuals["right_leg_lower"]
+        └── right_foot_socket   (0, -0.27, 0.06)  MOVED off the hip
+
+Rules that keep this safe:
+
+- **Lower sockets are CHILDREN of their upper**, like `FOOT_UNDER_LEG` already
+  does for feet. They cannot go in `SOCKET_LAYOUT`: that loop `add_child()`s every
+  socket to the RIG, so a lower limb declared there would be a sibling and neither
+  the shoulder swing nor the elbow bend would carry it.
+- **`base_visuals[key]` stays a flat key -> MeshInstance3D map.** Each half gets
+  its OWN key. Do not make it a container: `enemy.gd:1366` casts
+  `base_visuals[limb_key] as MeshInstance3D` and reads `.mesh`, and a container
+  would null that cast and silently stop enemy limbs from spawning.
+- **Do not parent the elbow under the upper MESH.** Tempting (hiding a parent
+  hides descendants), but `equip_bone()` hides `base_visuals[key]`, so equipping
+  any arm bone would make the forearm vanish.
+- **All limb geometry goes through `_limb_geo_for()`, never `LIMB_GEO` directly.**
+  That helper is what swaps a split upper limb to its half-length
+  `SPLIT_UPPER_GEO` box. `_make_limb` originally read the dict directly, which
+  left the upper arm at full 0.58 with the forearm overlapping it — and desynced
+  the art from the hurtbox, because the hitbox builders already used the helper.
+- **Zero-diff invariant.** The halves reconstruct the original box exactly:
+  arm 0.29+0.29=0.58, leg 0.31+0.31=0.62, and the foot resolves to leg-space -0.58
+  either way. Verified: split and unsplit silhouettes match to 0.00000. If the
+  split is ever suspected of moving the pose, set `joint_bend_base` and
+  `joint_bend_swing` to 0 — the rig must then be identical to the unsplit one.
+  CAUTION: this invariant is necessary but NOT sufficient. It only measures how
+  DEEP a limb reaches, which is identical whether or not the upper half was
+  shortened — it passed while the uppers were still full length. Check each
+  segment's own LENGTH too (0.29 / 0.31), not just the limb's total extent.
+- **Vocabulary boundary.** The `*_lower` keys are a RENDER + HITBOX concern only.
+  They belong in `LIMB_GEO`, `SPLIT_UPPER_GEO`, `ENEMY_HITBOX_ACCURACY_SCALE` and
+  `SLOT_TO_SOCKETS`. Never in `LIMB_TO_SLOT`, `primary_limb_keys_for_slot`,
+  `LIMB_DISPLAY`, `DETACHABLE_LIMBS`/`PICKUP_ELIGIBLE_LIMBS` or
+  `detached_limb_keys` — a lower key there generates a bone id like
+  `normal_right_arm_lower_bone` that `slot_for_bone` cannot parse, so the drop
+  silently no-ops.
+- **`_base_socket_should_show()` must name the lower keys.** They otherwise fall
+  through to `return true`, and with body progression on an unearned forearm
+  renders alone while its upper half is correctly hidden.
+- **`_animate_joints()` reads `kind` FIRST.** The skinned entry has `"skel"`; the
+  socket entry does not, and `var skel: Skeleton3D = info["skel"]` HALTS the
+  script rather than failing soft like the rest of this codebase.
+- Equipment needed one constant: `SLOT_TO_SOCKETS` gained the lower keys, so
+  `equip_bone`'s existing per-socket loop paints both halves. No slot changed.
+
+`use_split_limbs` is a TEMPORARY migration adapter (AGENTS.md: "migraciones
+graduales y con adaptadores"). It is off for enemies so their paths stay
+byte-identical. Remaining cuts:
+- **Cut 2 — enemies.** `enemy.gd` fans `_set_rig_limb_visible`,
+  `_limb_recovery_group`, `_recovery_group_key` and `_spawn_detached_limb_piece`
+  over `rig.limb_socket_group()` / `rig.get_limb_meshes()`, THEN flip
+  `enemy.tscn`. Flip it first and a detached arm leaves a floating forearm with a
+  live hurtbox.
+- **Cut 3 — proportions + delete the flag.** `apply_gorilla_proportions` /
+  `apply_lizard_proportions` resize whole limbs; applied to a half they render a
+  ~1.3 m arm. Then remove the flag. If it outlives cut 3 it is permanent debt.
+- `foot_placement_enabled` (off by default) assigns `foot.position` in the foot's
+  parent space, which is now the ROTATING knee. Resolve that before enabling it.
+
+## Socket markers (model-swap build aid)
+`ModularSkeletonRig.show_socket_markers` (on in `player.tscn`) puts a small
+magenta ball on every socket ORIGIN — 12 of them: pelvis, neck, both shoulders,
+both elbows, both hips, both knees, both ankles.
+
+Why they are worth having: the animator only ever rotates and moves SOCKETS —
+`_swing()` turns the shoulder/hip, `_animate_joints()` turns the elbow/knee,
+`_anchor_socket_to_body()` re-anchors arms in torso-spring mode. So a socket
+origin is exactly the point a real model's joint has to land on. Line a model's
+shoulder up with the shoulder ball and the procedural animation needs no
+compensation; miss it and every pose is off by that offset forever.
+
+- Parented AT the socket, so a marker inherits every rotation the animator
+  applies. Verified: the elbow marker travels 0.618 m through a walk cycle.
+- Drawn unshaded with depth-test off, so a marker buried inside a limb box is
+  still readable. No shadow, no collision, no Area3D.
+- NOT registered in `base_visuals`. That dict is the limb registry: it drives
+  equip/progression visibility and enemy dismemberment clones
+  `base_visuals[key].mesh`, so a marker in there could ragdoll away as a limb.
+- Default OFF, because enemies share this rig. Verified: with the export off, no
+  marker nodes exist at all and the hurtbox count is unchanged.
+- Known interaction: `set_head_only_visual_guard(true)` hides every head-socket
+  child that is not an equipped head part, so the NECK marker disappears in
+  head-only mode. Harmless for an overlay; do not "fix" it by special-casing the
+  guard.
+- Tune with `socket_marker_radius` (0.035) and `socket_marker_color`.
+
 ## Architecture (animate sockets, not meshes)
 - `scripts/rig/modular_skeleton_rig.gd` (`ModularSkeletonRig`) — builds Node3D
   sockets in `_ready()` and hangs a grey box on each. `equip_bone(id, def)` /

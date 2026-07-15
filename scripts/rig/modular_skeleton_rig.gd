@@ -24,6 +24,33 @@ static var FOOT_UNDER_LEG := {
 	"right_foot": {"leg": "right_leg", "pos": Vector3(0.0, -0.58, 0.06)},
 }
 
+# Elbow/knee sockets, parented UNDER their upper segment the same way feet hang
+# under legs. They cannot live in SOCKET_LAYOUT: that loop add_child()s every
+# socket to the RIG, so a lower limb declared there would be a sibling — the
+# elbow bend and the shoulder swing would both fail to carry it.
+# `pos` is the joint, i.e. the bottom of the upper half.
+static var LOWER_UNDER_UPPER := {
+	"right_arm_lower": {"upper": "right_arm", "pos": Vector3(0.0, -0.29, 0.0)},
+	"left_arm_lower": {"upper": "left_arm", "pos": Vector3(0.0, -0.29, 0.0)},
+	"right_leg_lower": {"upper": "right_leg", "pos": Vector3(0.0, -0.31, 0.0)},
+	"left_leg_lower": {"upper": "left_leg", "pos": Vector3(0.0, -0.31, 0.0)},
+}
+
+# Upper-half geometry used ONLY when use_split_limbs is on: each is exactly half
+# the whole-limb box in LIMB_GEO, so upper + lower reconstruct the original
+# silhouette precisely (arm [-0.29,0] + [-0.58,-0.29] = [-0.58,0]).
+static var SPLIT_UPPER_GEO := {
+	"right_arm": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
+	"left_arm": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
+	"right_leg": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
+	"left_leg": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
+}
+
+# Foot position once the knee exists: the old (0,-0.58,0.06) was measured from the
+# HIP. The knee sits at hip-space -0.31, so -0.27 knee-relative resolves to the
+# same -0.58 — an identical rest pose that now follows the shin.
+static var FOOT_UNDER_KNEE_POS := Vector3(0.0, -0.27, 0.06)
+
 # Grey-box geometry per socket: box size + local offset so arms/legs hang DOWN
 # from the shoulder/hip socket (so rotating the socket swings them naturally).
 static var LIMB_GEO := {
@@ -35,6 +62,12 @@ static var LIMB_GEO := {
 	"left_leg": {"size": Vector3(0.18, 0.62, 0.18), "offset": Vector3(0.0, -0.31, 0.0)},
 	"right_foot": {"size": Vector3(0.2, 0.12, 0.34), "offset": Vector3(0.0, 0.0, 0.05)},
 	"left_foot": {"size": Vector3(0.2, 0.12, 0.34), "offset": Vector3(0.0, 0.0, 0.05)},
+	# Forearms/shins. These MUST be listed: _limb_geo_for() falls back to a 0.2 m
+	# cube, and it feeds both _make_limb (equipped meshes) and the default hitbox.
+	"right_arm_lower": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
+	"left_arm_lower": {"size": Vector3(0.16, 0.29, 0.16), "offset": Vector3(0.0, -0.145, 0.0)},
+	"right_leg_lower": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
+	"left_leg_lower": {"size": Vector3(0.18, 0.31, 0.18), "offset": Vector3(0.0, -0.155, 0.0)},
 }
 
 # Per-part placement for the rigged model's limb meshes: which socket, and the
@@ -64,6 +97,10 @@ const ENEMY_HITBOX_ACCURACY_SCALE := {
 	"left_leg": Vector3(0.82, 0.96, 0.82),
 	"right_foot": Vector3(0.90, 0.84, 0.94),
 	"left_foot": Vector3(0.90, 0.84, 0.94),
+	"right_arm_lower": Vector3(0.80, 0.96, 0.80),
+	"left_arm_lower": Vector3(0.80, 0.96, 0.80),
+	"right_leg_lower": Vector3(0.82, 0.96, 0.82),
+	"left_leg_lower": Vector3(0.82, 0.96, 0.82),
 }
 
 # Optional: show a real 3D model as the whole body instead of grey boxes.
@@ -96,6 +133,29 @@ const ENEMY_HITBOX_ACCURACY_SCALE := {
 @export var head_model_keep_material := true
 
 @export_group("")
+# Split each arm/leg into an upper and a lower half with a bending elbow/knee.
+# The grey-box rig has no skeleton, so `_animate_joints` (which poses a skinned
+# Skeleton3D bone) never reached it — this builds real child sockets instead.
+#
+# TEMPORARY MIGRATION ADAPTER, per AGENTS.md's "migraciones graduales y con
+# adaptadores". It exists only to land the player before the enemy: with it off,
+# _ready() creates no new sockets and every enemy path is byte-identical, so the
+# enemy blast radius is provably zero rather than argued. Delete it once enemies
+# and the gorilla/lizard proportions are migrated — two rig topologies is debt.
+@export var use_split_limbs := false
+
+@export_group("Socket markers")
+# Little balls at every socket ORIGIN — which is exactly the attach/detach point
+# a real model's joint has to land on. A build aid: line a model's shoulder up
+# with the shoulder ball and the procedural animation needs no compensation,
+# because the animator rotates these sockets and nothing else.
+#
+# Default OFF — enemies share this rig, and this is a dev overlay, not gameplay.
+@export var show_socket_markers := false
+@export var socket_marker_radius := 0.035
+@export var socket_marker_color := Color(1.0, 0.25, 0.85, 1.0)
+
+@export_group("")
 # Show/hide body parts. Used for the "limbs only" placeholder while a real rigged
 # skeleton is being made in Blender — leave the torso/head out, keep arms + legs.
 @export var show_torso := true
@@ -111,6 +171,8 @@ const ENEMY_HITBOX_ACCURACY_SCALE := {
 
 var _head_model_mesh: Mesh = null
 var _head_model_mesh_loaded: bool = false
+
+var socket_markers: Dictionary = {}  # socket key -> MeshInstance3D (dev overlay)
 
 var sockets: Dictionary = {}         # socket key -> Node3D
 var base_visuals: Dictionary = {}    # socket key -> MeshInstance3D (grey default)
@@ -138,15 +200,36 @@ func _ready() -> void:
 		socket.add_child(limb)
 		base_visuals[key] = limb
 
-	# Feet hang UNDER the leg sockets, so they follow the leg swing.
+	# Elbow/knee sockets, BEFORE the feet (which reparent onto the knees) and
+	# before _ensure_body_hitboxes() (which creates a hurtbox per socket).
+	if _split_limbs_active():
+		for lower_key in LOWER_UNDER_UPPER:
+			var lower_info: Dictionary = LOWER_UNDER_UPPER[lower_key]
+			var upper: Node3D = sockets.get(lower_info["upper"])
+			if upper == null:
+				continue
+			var joint := Node3D.new()
+			joint.name = String(lower_key) + "_socket"
+			joint.position = lower_info["pos"]
+			upper.add_child(joint)
+			sockets[lower_key] = joint
+			var lower_limb := _make_limb(lower_key, BASE_COLOR, Vector3.ONE)
+			joint.add_child(lower_limb)
+			base_visuals[lower_key] = lower_limb
+			# The bend pivot is the socket itself. `kind` discriminates this from
+			# the skinned entry _apply_rigged_limbs() writes.
+			limb_joints[lower_info["upper"]] = {"kind": "socket", "node": joint}
+
+	# Feet hang UNDER the leg — the knee when split, else the hip — so they follow
+	# the swing AND the knee bend.
 	for foot_key in FOOT_UNDER_LEG:
 		var info: Dictionary = FOOT_UNDER_LEG[foot_key]
-		var leg: Node3D = sockets.get(info["leg"])
+		var leg: Node3D = sockets.get(_foot_parent_key(info["leg"]))
 		if leg == null:
 			continue
 		var foot := Node3D.new()
 		foot.name = String(foot_key) + "_socket"
-		foot.position = info["pos"]
+		foot.position = FOOT_UNDER_KNEE_POS if _split_limbs_active() else info["pos"]
 		leg.add_child(foot)
 		sockets[foot_key] = foot
 		var foot_limb := _make_limb(foot_key, BASE_COLOR, Vector3.ONE)
@@ -154,6 +237,10 @@ func _ready() -> void:
 		base_visuals[foot_key] = foot_limb
 
 	_ensure_body_hitboxes()
+
+	# After every socket exists, so elbows/knees/ankles get one too.
+	if show_socket_markers:
+		_build_socket_markers()
 
 	# Limbs-only placeholder: optionally hide the torso and head.
 	if not show_torso and base_visuals.has("body"):
@@ -342,6 +429,7 @@ func _apply_rigged_limbs() -> void:
 			part.transform = Transform3D(_hang_basis(length_axis).scaled(limb_scale), Vector3.ZERO)
 			# Remember the mid joint (elbow/knee = bone 1) so the animator bends it.
 			limb_joints[cfg["socket"]] = {
+				"kind": "skin",
 				"skel": skel,
 				"bone": 1,
 				"rest_rot": skel.get_bone_rest(1).basis.get_rotation_quaternion(),
@@ -459,7 +547,12 @@ func has_equipped_slot(slot_id: String) -> bool:
 
 # Builds one grey-box MeshInstance3D for a socket, offset so it hangs correctly.
 func _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D:
-	var geo: Dictionary = LIMB_GEO.get(socket_key, {"size": Vector3(0.2, 0.2, 0.2), "offset": Vector3.ZERO})
+	# Must go through _limb_geo_for, not LIMB_GEO directly: that helper is what
+	# shortens a split upper limb to stop at its elbow/knee. Reading the dict here
+	# left the upper arm/thigh at full length with the lower half overlapping it —
+	# and silently desynced the art from the hurtbox, since the hitbox builders
+	# below DO use the helper.
+	var geo: Dictionary = _limb_geo_for(socket_key)
 	var mi := MeshInstance3D.new()
 
 	if socket_key == "head":
@@ -602,11 +695,18 @@ func _base_socket_should_show(socket_key: String) -> bool:
 		return true
 	if socket_key == "body":
 		return equipped_ids.has("body")
-	if socket_key == "right_arm":
+	# The lower halves follow their upper: without these branches they fall through
+	# to `return true` below and, with body progression on, an unearned forearm or
+	# shin renders on its own while the upper half is correctly hidden.
+	if socket_key == "right_arm" or socket_key == "right_arm_lower":
 		return equipped_ids.has("right_arm")
-	if socket_key == "left_arm":
+	if socket_key == "left_arm" or socket_key == "left_arm_lower":
 		return equipped_ids.has("left_arm")
-	if socket_key == "right_leg" or socket_key == "left_leg" or socket_key == "right_foot" or socket_key == "left_foot":
+	if (
+		socket_key == "right_leg" or socket_key == "left_leg"
+		or socket_key == "right_leg_lower" or socket_key == "left_leg_lower"
+		or socket_key == "right_foot" or socket_key == "left_foot"
+	):
 		return equipped_ids.has("legs")
 	return true
 
@@ -755,8 +855,91 @@ func _clear_damage_hitbox_groups(area: Area3D) -> void:
 			area.remove_from_group(group_name)
 
 
+# One ball per socket, parented AT the socket so it sits on the joint and inherits
+# every rotation the animator applies — a moving marker of the real pivot.
+#
+# Deliberately NOT registered in base_visuals: that dict is the limb registry.
+# It drives equip/progression visibility (_refresh_body_progression_visibility)
+# and enemy dismemberment (enemy.gd clones base_visuals[key].mesh), so a marker
+# in there would be mistaken for a limb and could ragdoll away as one.
+func _build_socket_markers() -> void:
+	for key in sockets:
+		var socket: Node3D = sockets[key] as Node3D
+		if socket == null:
+			continue
+		var marker := _make_socket_marker(String(key))
+		socket.add_child(marker)
+		socket_markers[key] = marker
+
+
+func _make_socket_marker(socket_key: String) -> MeshInstance3D:
+	var sphere := SphereMesh.new()
+	sphere.radius = socket_marker_radius
+	sphere.height = socket_marker_radius * 2.0
+	# Low poly on purpose: this is a gizmo, one per socket, drawn every frame.
+	sphere.radial_segments = 8
+	sphere.rings = 4
+
+	var marker := MeshInstance3D.new()
+	marker.name = socket_key + "_socket_marker"
+	marker.mesh = sphere
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = socket_marker_color
+	# Unshaded and depth-test off so a marker buried inside a limb box stays
+	# readable. The point is to SEE where the joint is, not to light it.
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.no_depth_test = true
+	marker.material_override = material
+	marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return marker
+
+
 func _limb_geo_for(socket_key: String) -> Dictionary:
+	# Split uppers are half-length; everything else keeps its whole-limb box.
+	if _split_limbs_active() and SPLIT_UPPER_GEO.has(socket_key):
+		return SPLIT_UPPER_GEO[socket_key]
 	return LIMB_GEO.get(socket_key, {"size": Vector3(0.2, 0.2, 0.2), "offset": Vector3.ZERO})
+
+
+# The rigged model drives its own skinned joints via _apply_rigged_limbs(), so the
+# two mechanisms must never both run: the split would fight the skeleton.
+func _split_limbs_active() -> bool:
+	if not use_split_limbs:
+		return false
+	if use_rigged_limbs:
+		push_warning("ModularSkeletonRig: use_split_limbs ignored because use_rigged_limbs owns the joints.")
+		return false
+	return true
+
+
+# Feet hang off the knee when the leg is split, the hip otherwise.
+func _foot_parent_key(leg_key: String) -> String:
+	if not _split_limbs_active():
+		return leg_key
+	var lower_key: String = leg_key + "_lower"
+	return lower_key if sockets.has(lower_key) else leg_key
+
+
+# Every socket that renders as part of `key`. The single owner of "right_leg means
+# thigh + shin". Returns just [key] when unsplit, so callers stay flag-agnostic.
+func limb_socket_group(key: String) -> Array[String]:
+	var group: Array[String] = [key]
+	var lower_key: String = key + "_lower"
+	if _split_limbs_active() and sockets.has(lower_key):
+		group.append(lower_key)
+	return group
+
+
+# Every mesh that renders as part of `key`, for callers that need to recolour,
+# hide, or clone a whole limb (see enemy.gd's dismemberment).
+func get_limb_meshes(key: String) -> Array[MeshInstance3D]:
+	var meshes: Array[MeshInstance3D] = []
+	for socket_key in limb_socket_group(key):
+		var mesh_instance: MeshInstance3D = base_visuals.get(socket_key) as MeshInstance3D
+		if mesh_instance != null:
+			meshes.append(mesh_instance)
+	return meshes
 
 
 func _as_vector3(value: Variant, fallback: Vector3) -> Vector3:

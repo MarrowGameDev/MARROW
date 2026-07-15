@@ -1244,15 +1244,30 @@ func _animate_joints() -> void:
 		return
 	for key in rig.limb_joints:
 		var info: Dictionary = rig.limb_joints[key]
+		var wave := 0.5 + 0.5 * sin(walk_time + _joint_phase(key))
+		var bend := joint_bend_base + joint_bend_swing * speed_ratio * wave
+		# Elbows bend forward, knees bend backward — flip the arm direction.
+		var bend_sign := -1.0 if ("arm" in key) else 1.0
+
+		# Read the discriminator BEFORE touching "skel": that key does not exist on
+		# a socket entry, and the typed assignment below would halt the script
+		# rather than fail soft like the rest of this codebase.
+		if String(info.get("kind", "skin")) == "socket":
+			# Grey-box rig: the elbow/knee IS a socket, so rotate it directly. Lower
+			# sockets rest at identity, hence the plain assign. Assigning (not +=)
+			# means anything else writing this node's rotation would be stomped —
+			# nothing does today; _animate_wobble only touches the upper sockets.
+			var joint_node: Node3D = info.get("node") as Node3D
+			if joint_node == null or not is_instance_valid(joint_node):
+				continue
+			joint_node.rotation = Vector3(bend * bend_sign, 0.0, 0.0)
+			continue
+
 		var skel: Skeleton3D = info["skel"]
 		if skel == null or not is_instance_valid(skel):
 			continue
 		var bone: int = info["bone"]
 		var rest_rot: Quaternion = info["rest_rot"]
-		var wave := 0.5 + 0.5 * sin(walk_time + _joint_phase(key))
-		var bend := joint_bend_base + joint_bend_swing * speed_ratio * wave
-		# Elbows bend forward, knees bend backward — flip the arm direction.
-		var bend_sign := -1.0 if ("arm" in key) else 1.0
 		skel.set_bone_pose_rotation(bone, rest_rot * Quaternion(Vector3(1.0, 0.0, 0.0), bend * bend_sign))
 
 

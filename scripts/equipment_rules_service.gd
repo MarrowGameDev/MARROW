@@ -16,10 +16,21 @@ const SLOT_DISPLAY := {
 	"head": "Head",
 }
 
+# Which SOCKETS a slot paints. The *_lower keys are the split forearms/shins, and
+# listing them here is the whole equipment change: equip_bone already loops these
+# per slot, so an equipped arm covers both halves in the bone's colour and scale
+# with no new branching, and unequip_slot restores both.
+#
+# Safe to list even when the rig is unsplit: equip_bone does sockets.get(key) and
+# skips nulls. Do NOT add the *_lower keys to LIMB_TO_SLOT, primary_limb_keys_for_slot,
+# LIMB_DISPLAY or DropPickupRulesService's limb lists — they are a render/hitbox
+# concern only. A lower key reaching the drop vocabulary generates a bone id like
+# "normal_right_arm_lower_bone", which slot_for_bone cannot parse, so the drop
+# silently no-ops.
 const SLOT_TO_SOCKETS := {
-	"right_arm": ["right_arm"],
-	"left_arm": ["left_arm"],
-	"legs": ["left_leg", "right_leg", "left_foot", "right_foot"],
+	"right_arm": ["right_arm", "right_arm_lower"],
+	"left_arm": ["left_arm", "left_arm_lower"],
+	"legs": ["left_leg", "right_leg", "left_leg_lower", "right_leg_lower", "left_foot", "right_foot"],
 	"body": ["body"],
 	"head": ["head"],
 }
