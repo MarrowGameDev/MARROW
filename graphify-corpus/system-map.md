@@ -11,6 +11,7 @@
 - `scripts/demo_enemy_camp.gd`
 - `scripts/enemy.gd`
 - `scripts/enemy_rock_projectile.gd`
+- `scripts/rig/procedural_enemy_animator.gd`
 
 ## Inventory, equipment, and bones
 
@@ -65,7 +66,7 @@
 - `scenes/attack_hitbox.tscn` composes `scripts/attack_hitbox.gd`.
 - `scenes/bone.tscn` composes `scripts/bone.gd`.
 - `scenes/bone_trial_gate.tscn` composes `scripts/bone_trial_gate.gd`.
-- `scenes/enemy.tscn` composes `scripts/enemy.gd`, `scripts/rig/modular_skeleton_rig.gd`, `scripts/rig/procedural_player_animator.gd`.
+- `scenes/enemy.tscn` composes `scripts/enemy.gd`, `scripts/rig/modular_skeleton_rig.gd`, `scripts/rig/procedural_enemy_animator.gd`.
 - `scenes/exit_portal.tscn` composes `scripts/exit_portal.gd`.
 - `scenes/guide_wisp.tscn` composes `scripts/guide_wisp.gd`.
 - `scenes/main.tscn` composes `scripts/arena_goal_manager.gd`, `scripts/world_map_manager.gd`, `scripts/tutorial_island_builder.gd`.

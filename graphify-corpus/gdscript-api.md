@@ -2079,6 +2079,39 @@
 ### Node Path Lookups
 - `LizardTail`
 
+## ProceduralEnemyAnimator
+
+- Source file: `scripts/rig/procedural_enemy_animator.gd`
+- Extends: `ProceduralPlayerAnimator`
+- System: Combat and enemies
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- none
+
+### Key Variables
+- none
+
+### Functions
+- `_ready() -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## ProceduralPlayerAnimator
 
 - Source file: `scripts/rig/procedural_player_animator.gd`
@@ -2091,6 +2124,7 @@
 ### Exported Tuning
 - `rig`
 - `turn_target`
+- `player_body_progression_enabled`
 - `walk_cycle_speed`
 - `body_bob_amount`
 - `body_sway_amount`
@@ -2118,6 +2152,8 @@
 - `lizard_wall_climb_limb_reach`
 - `head_only_hop_amount`
 - `head_only_roll_amount`
+- `head_only_roll_radius`
+- `head_only_ground_socket_y`
 - `joint_bend_base`
 - `joint_bend_swing`
 - `wobble_enabled`
@@ -2168,12 +2204,14 @@
 - `_aim_requested`
 - `_aim_blend`
 - `_lizard_wall_climb_blend`
+- `_head_only_roll_angle`
 - `_rest_pos`
 - `_rest_rot`
 - `_captured`
 - `_body`
 - `horizontal`
 - `target_ratio`
+- `roll_radius`
 - `weight_slowdown`
 - `s`
 - `value`
@@ -2184,7 +2222,7 @@
 - `body`
 - `head`
 - `hop`
-- `idle`
+- `rest`
 - `swing`
 - `pull`
 - `shove`
@@ -2195,8 +2233,6 @@
 - `left_arm`
 - `right_leg`
 - `left_leg`
-- `right_foot`
-- `left_foot`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
@@ -2204,6 +2240,7 @@
 - `set_aiming(enabled: bool) -> void`
 - `set_crawl_mode(enabled: bool) -> void`
 - `set_lizard_wall_climb_blend(blend: float) -> void`
+- `set_player_body_progression_enabled(enabled: bool) -> void`
 - `_capture_rest() -> void`
 - `_get_rest_pos(key: String) -> Vector3`
 - `_get_rest_rot(key: String) -> Vector3`

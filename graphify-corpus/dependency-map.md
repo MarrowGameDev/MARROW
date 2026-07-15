@@ -63,6 +63,7 @@
 - `scripts/player_stats_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/rig/procedural_enemy_animator.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
 - `scripts/rig/procedural_player_animator.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/rig/rig_test_player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/rig_test_player.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
@@ -85,7 +86,7 @@
 - `scenes/bone_trial_gate.tscn` uses script `scripts/bone_trial_gate.gd`.
 - `scenes/enemy.tscn` uses script `scripts/enemy.gd`.
 - `scenes/enemy.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
-- `scenes/enemy.tscn` uses script `scripts/rig/procedural_player_animator.gd`.
+- `scenes/enemy.tscn` uses script `scripts/rig/procedural_enemy_animator.gd`.
 - `scenes/exit_portal.tscn` uses script `scripts/exit_portal.gd`.
 - `scenes/guide_wisp.tscn` uses script `scripts/guide_wisp.gd`.
 - `scenes/main.tscn` uses script `scripts/arena_goal_manager.gd`.

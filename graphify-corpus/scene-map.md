@@ -47,7 +47,7 @@
 ### Attached Scripts
 - `scripts/enemy.gd`
 - `scripts/rig/modular_skeleton_rig.gd`
-- `scripts/rig/procedural_player_animator.gd`
+- `scripts/rig/procedural_enemy_animator.gd`
 
 ### Instanced Scenes
 - none

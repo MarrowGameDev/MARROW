@@ -2540,6 +2540,25 @@ class ModularSkeletonRig:
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
 
+class ProceduralEnemyAnimator:
+    """Godot script: scripts/rig/procedural_enemy_animator.gd
+    class_name: ProceduralEnemyAnimator
+    extends: ProceduralPlayerAnimator
+    system: Combat and enemies
+    """
+    source_file = 'scripts/rig/procedural_enemy_animator.gd'
+    godot_class_name = 'ProceduralEnemyAnimator'
+    godot_extends = 'ProceduralPlayerAnimator'
+    gameplay_system = 'Combat and enemies'
+
+    def gd_func__ready(self):
+        """GDScript function: _ready() -> void"""
+        pass
+
+    def depends_on_ProceduralPlayerAnimator(self):
+        """Relationship: references class ProceduralPlayerAnimator."""
+        return ProceduralPlayerAnimator
+
 class ProceduralPlayerAnimator:
     """Godot script: scripts/rig/procedural_player_animator.gd
     class_name: ProceduralPlayerAnimator
@@ -2569,6 +2588,10 @@ class ProceduralPlayerAnimator:
 
     def gd_func_set_lizard_wall_climb_blend(self):
         """GDScript function: set_lizard_wall_climb_blend(blend: float) -> void"""
+        pass
+
+    def gd_func_set_player_body_progression_enabled(self):
+        """GDScript function: set_player_body_progression_enabled(enabled: bool) -> void"""
         pass
 
     def gd_func__capture_rest(self):
@@ -3196,9 +3219,9 @@ class SceneEnemy:
         """Scene relationship: uses script."""
         return ModularSkeletonRig
 
-    def contains_ProceduralPlayerAnimator(self):
+    def contains_ProceduralEnemyAnimator(self):
         """Scene relationship: uses script."""
-        return ProceduralPlayerAnimator
+        return ProceduralEnemyAnimator
 
 class SceneEquippedBone:
     """Godot scene: scenes/equipped_bone.tscn"""
