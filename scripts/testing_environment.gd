@@ -15,6 +15,61 @@ var live_enemies: Array[Node] = []
 var spawn_cursor: int = 0
 var enemy_serial: int = 0
 var status_label: Label = null
+var validation_guide_index: int = 0
+
+
+const P0_VALIDATION_GUIDES: Array[Dictionary] = [
+	{
+		"title": "Movement, camera, and jitter",
+		"setup": "Use the walls, ramp, and open ground with the player in normal control.",
+		"steps": [
+			"Walk, sprint, stop, jump, and rotate the camera near tall and short walls.",
+			"Open and close inventory, then repeat movement and camera rotation.",
+			"Attack while moving and while idle, watching the body and camera follow.",
+		],
+		"expected": "No persistent camera/body jitter, no teleport, no stuck mouse capture, and control returns after inventory.",
+	},
+	{
+		"title": "Inventory, equipment, and preview",
+		"setup": "Open inventory with the seeded normal limbs and extra comparison bones.",
+		"steps": [
+			"Equip torso, arms, and legs, then deselect or unequip one piece at a time.",
+			"Confirm duplicate bones remain counted and equipped copies are hidden from carried tiles.",
+			"Watch the preview viewport while equipping and reopening inventory.",
+		],
+		"expected": "The preview stays isolated, reflects equipped parts, and does not duplicate nodes after reopen.",
+	},
+	{
+		"title": "Pickups, drops, and enemy profiles",
+		"setup": "Spawn normal, gorilla, lizard, ranged, and dummy enemies with number keys.",
+		"steps": [
+			"Defeat or damage each profile enough to observe drops or limb reactions.",
+			"Collect available drops and confirm inventory updates without reopening.",
+			"Remove latest enemy with Backspace and respawn to confirm scene recovery.",
+		],
+		"expected": "Drops stay slot-aware, pickups do not duplicate unexpectedly, and removed enemies do not leave stale UI state.",
+	},
+	{
+		"title": "Backstab runtime geometry",
+		"setup": "Use a dummy or normal enemy and approach from front, sides, and behind.",
+		"steps": [
+			"Try stealth finish from the front and both lateral angles.",
+			"Rotate or respawn enemies at different markers and repeat behind checks.",
+			"Confirm regular attack still works when stealth finish is unavailable.",
+		],
+		"expected": "Front and side attempts fail, behind succeeds, and no duplicate damage or stuck enemy state appears.",
+	},
+	{
+		"title": "Rig and body progression",
+		"setup": "Use seeded body parts and the RigPosePlatform area.",
+		"steps": [
+			"Observe head-only, torso, arms, and legs progression while equipping pieces.",
+			"Move, jump, crawl if available, and attack after each equipment stage.",
+			"Compare the world rig with the inventory preview state.",
+		],
+		"expected": "Sockets match equipped state, left/right parts are not swapped, and animation remains stable.",
+	},
+]
 
 
 func _ready() -> void:
@@ -62,6 +117,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				_remove_latest_enemy()
 			KEY_R:
 				get_tree().reload_current_scene()
+			KEY_F1:
+				_cycle_validation_guide(1)
+			KEY_F2:
+				_cycle_validation_guide(-1)
 
 
 func _build_world() -> void:
@@ -364,5 +423,31 @@ func _update_status() -> void:
 			status_label.text += "2 or 5: respawn dummy target\n"
 	else:
 		status_label.text += "1 Normal   2 Gorilla   3 Lizard   4 Ranged   5 Dummy\n"
+	status_label.text += "F1/F2: cycle P0 validation guide\n"
 	status_label.text += "Backspace: remove latest enemy   R: reset scene   Esc: menu\n"
 	status_label.text += "Edit EnemySpawnPoints in this scene to add/remove default enemy positions."
+	status_label.text += "\n\n" + _current_validation_guide_text()
+
+
+func _cycle_validation_guide(direction: int) -> void:
+	if P0_VALIDATION_GUIDES.is_empty():
+		return
+	validation_guide_index = posmod(validation_guide_index + direction, P0_VALIDATION_GUIDES.size())
+	_update_status()
+
+
+func _current_validation_guide_text() -> String:
+	if P0_VALIDATION_GUIDES.is_empty():
+		return "P0 validation guide: no sections configured."
+
+	var guide: Dictionary = P0_VALIDATION_GUIDES[validation_guide_index]
+	var text := "P0 CHECK " + str(validation_guide_index + 1) + "/" + str(P0_VALIDATION_GUIDES.size()) + ": "
+	text += str(guide.get("title", "Unnamed")) + "\n"
+	text += "Setup: " + str(guide.get("setup", "n/a")) + "\n"
+	text += "Steps:\n"
+	var steps: Array = guide.get("steps", [])
+	for i in range(steps.size()):
+		text += "  " + str(i + 1) + ". " + str(steps[i]) + "\n"
+	text += "Expected: " + str(guide.get("expected", "n/a")) + "\n"
+	text += "Record: scene, resolution, enabled systems, observed result, and console errors."
+	return text

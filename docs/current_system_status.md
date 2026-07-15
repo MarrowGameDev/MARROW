@@ -77,6 +77,9 @@ refactor pass.
 
 - `scenes/testing_environment.tscn` is the unified sandbox for camera, enemies,
   movement, animation, rig, drops, and equipment checks.
+- The testing environment status panel includes P0 validation guide sections
+  that can be cycled with F1/F2 for jitter, inventory/preview, pickups/drops,
+  backstab runtime geometry, and rig progression checks.
 - TESTING ENVIRONMENT can spawn a passive dummy target with `5`; it stays still,
   does not attack, and keeps normal damage/limb-loss reactions active.
 - `scenes/dummy_testing_environment.tscn` is a separate passive-target room that

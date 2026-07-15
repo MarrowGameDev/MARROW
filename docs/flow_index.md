@@ -32,6 +32,8 @@ gameplay debe actualizar el archivo de flujo correspondiente.
    - Fuente numerada y auditable del roadmap tecnico.
 4. `docs/repo_stability_and_graphify.md`
    - Politica de Graphify, line endings, caches y preflight de commits.
+5. `docs/p0_runtime_validation_suite.md`
+   - Guia especifica para la suite P0 dentro de `scenes/testing_environment.tscn`.
 
 ## Politica
 
