@@ -810,6 +810,128 @@ El bow del jugador usa el OTRO metodo del servicio,
   (`_start_bow_aim` solo corre con `bow_equipped`), asi que no rompen ninguna
   promesa; son un lob corto a ~6.6 m.
 
+## Peso del golpe: la curva de ataque
+
+`_attack_pose_strength()` define la FORMA del swing melee y es de donde sale la
+sensacion de impacto.
+
+Antes era `sin(phase * PI)`: un arco simetrico que entraba y salia a la misma
+velocidad, sin anticipacion y sin snap. Por eso se sentia flotado — un golpe pega
+porque la parte rapida es rapida EN RELACION a una parte lenta antes.
+
+Ahora `_attack_strike_curve()` hace anticipacion -> golpe -> follow-through:
+
+- `attack_windup_portion` (0.45): se echa para atras, desacelerando.
+- `attack_strike_portion` (0.18): sale disparado a extension completa. Corto = seco.
+- El resto: vuelve, mas lento de lo que fue.
+- `attack_anticipation` (0.35): cuanto se echa para atras.
+
+La curva devuelve NEGATIVO durante el windup, y ahi esta el truco: todas las poses
+de combo hacen `rotation -= strength * amount`, asi que un valor negativo echa el
+brazo para atras solo, sin tocar ninguna pose.
+
+Son FRACCIONES de la duracion, no segundos: retimear el swing conserva el feel.
+
+### El HOLD, o por que el golpe no se veia
+
+`attack_strike_hold` (0.16) mantiene la extension completa despues del golpe.
+Snap y legibilidad tiran para lados opuestos: un golpe corto se siente seco pero
+pasa por el pico en dos frames y no llega a leerse. El hold compra las dos cosas —
+el golpe sigue siendo rapido, pero la POSE se queda puesta.
+
+Medido a 0.70s: swing entero 42 frames (antes 10 a 0.16s), 8 frames cerca de
+extension completa, 7 frames clavado en el pico (phase 0.50 -> 0.70).
+
+### Duracion y cooldown se mueven JUNTOS
+
+`attack_overlay_duration` (0.70) y `Player.attack_cooldown` (0.85) estan acoplados:
+los pasos 3 y 4 corren 1.15x, o sea 0.805s, y eso tiene que terminar ANTES de que
+el siguiente click este permitido. El melee normal NO tiene gate anti-stacking (ese
+gate es solo para head-launch), asi que una animacion mas larga que el cooldown deja
+que el siguiente click reinicie la pose a mitad del swing: se ve el windup una y otra
+vez y el golpe nunca. Por eso subir uno solo no sirve.
+
+Historial: 0.16 (10 frames, invisible) -> 0.38 (primer intento, seguia siendo un
+pico instantaneo) -> 0.70 + hold. OJO: el cooldown 0.45 -> 0.85 es un cambio de
+ritmo de combate real, no solo visual — casi la mitad de ataques por segundo.
+
+Solo afecta al combo melee normal: head-only y torso-only tienen sus propias
+duraciones (`head_only_attack_duration`, `torso_head_attack_duration`).
+
+Se saco el piso `maxf(_attack_blend * 0.35, ...)` que tenia la curva vieja: mantenia
+el brazo a 35% de la pose entre golpes, lo que peleaba con la anticipacion y con la
+vuelta a descanso.
+
+### Por que se sentia robotico
+
+Dos causas, las dos estructurales, no de tuning:
+
+1. **El brazo era un palo rigido.** `_animate_joints()` ASIGNA el codo desde el
+   ciclo de CAMINATA (`walk_time`, `speed_ratio`), asi que durante un golpe el codo
+   seguia haciendo su bend de caminar e ignoraba el ataque por completo. Ahora
+   `_whip_elbow()` suma el movimiento del ataque ENCIMA: strength negativo (windup)
+   lo amartilla mas, positivo (golpe) lo estira. Medido: el codo se desvia 50.5
+   grados respecto de un codo que no atacó — antes era 0. Funciona porque
+   `_apply_attack_overlay` corre DESPUES de `_animate_joints`, y porque ahora hay
+   codos (ver `rig_notes.md`).
+2. **Todas las articulaciones se movian en lockstep.** Las poses manejaban brazo.x,
+   brazo.z, torso.y y torso.x con el MISMO `strength` en el MISMO frame. Un cuerpo
+   real arrastra: el torso lidera, el hombro lo sigue, la mano llega ultima.
+   `_attack_strength_lagged(lag)` samplea la misma curva mas temprano, asi que la
+   articulacion se retrasa. Medido: torso pico en phase 0.63, hombro 0.70, codo
+   0.83 — el miembro arrastra 76 ms de punta a punta.
+
+Tuning: `attack_overlap_arm` (0.07), `attack_overlap_elbow` (0.13),
+`attack_elbow_whip` (0.9). El lag se clampea en 0, asi que una articulacion
+retrasada simplemente todavia no arranco, no lee el windup al reves.
+`_whip_elbow` no hace nada en un rig sin split (enemigos): no hay codo.
+
+## Combo de brazos: el paso 4 (arm sword)
+
+El combo melee cicla derecha -> izquierda -> ambos -> **arrancarse el brazo
+izquierdo y usarlo de espada**.
+
+- `Player._next_combo_animation_step()` incluye el paso 4 SOLO con los dos brazos
+  equipados (`_has_both_arms_equipped()`). Con un brazo no hay nada que agarrar, y
+  ademas `_combo_step_for_equipped_arms()` remapea el paso al brazo que existe, asi
+  que el paso 4 nunca cae en un socket escondido.
+- `ProceduralPlayerAnimator._apply_arm_sword_pose()` es SOLO POSE: no desequipa
+  nada y no reparenta nada. El slot `left_arm` sigue equipado todo el tiempo, asi
+  que stats, paper doll y el bow (que exige ambos brazos) no se enteran.
+- El brazo queda ARRANCADO durante `arm_sword_swing_count` (3) golpes y recien
+  despues vuelve. Eso obliga a separar dos cosas que parecen una:
+  - `_apply_arm_sword_pose(strength)` es el movimiento POR GOLPE (brazo derecho +
+    torso), manejado por `_attack_pose_strength()`.
+  - `_update_arm_sword(delta)` es el AGARRE, con su propio blend
+    `_arm_sword_hold` y corriendo TODOS los frames. No puede depender de
+    `strength`: entre golpes strength cae a 0 y el brazo volveria al hombro
+    despues del primero. Ademas `_apply_attack_overlay` deja de llamarse cuando
+    `_attack_blend` decae, asi que el agarre no puede vivir ahi.
+- `Player._next_combo_animation_step()` devuelve el paso 4 mientras
+  `is_arm_sword_held()`: el combo no avanza hasta que el brazo vuelve.
+- Se suelta cuando el ULTIMO golpe termino de reproducirse
+  (`_arm_sword_swings >= count and _attack_timer <= 0`), no cuando empieza, o el
+  brazo se volveria al hombro a mitad del swing. Tambien se suelta por
+  `arm_sword_hold_timeout` (1.6 s sin golpes) para no quedar arrancado para
+  siempre si el jugador deja de atacar, y si se desequipa el brazo.
+- Orden en `update_from_player`: `_update_arm_sword` va DESPUES del attack overlay
+  (para leer la mano ya con el swing aplicado) y ANTES de `_animate_waist` (para
+  que el carry rote la hoja y el brazo que la sostiene como una pieza rigida y la
+  hoja no se despegue de la mano).
+- `_right_hand_rig_position()` devuelve la punta del antebrazo en espacio del rig
+  (el padre del socket del brazo izquierdo), con fallback a la punta del brazo
+  entero en un rig sin codo.
+- Medido: golpe 1 el brazo queda a 0.749 m del hombro; ENTRE golpes se queda a
+  0.813 m (hold 1.00, no vuelve); a mitad del golpe 3 sigue agarrado; al soltar
+  vuelve a 0.0085 m del hombro. Equipamiento intacto en todo momento.
+- Tuning: `arm_sword_swing` (1.5), `arm_sword_torso_twist` (0.45),
+  `arm_sword_lunge` (0.30), `arm_sword_blade_pitch` (-1.57, de colgando a
+  horizontal hacia adelante), `arm_sword_swing_count` (3),
+  `arm_sword_hold_speed` (14), `arm_sword_hold_timeout` (1.6).
+- NOTA: es un floreo visual. Si alguna vez se quiere que el brazo QUEDE arrancado,
+  eso ya no es pose: hay que desequipar de verdad y entonces si cambian stats, el
+  bow deja de andar y el paper doll tiene que mostrar el slot vacio.
+
 ## Auto-target de ataques head-launch
 
 Aplica solo a head-only y torso-only, donde la cabeza se lanza fuera del cuerpo.
@@ -3066,7 +3188,59 @@ The arithmetic that has to close, and why each number is what it is:
 - **Z tapers too** (0.28 -> 0.22). The waist has no bend, so static geometry is its
   only cue; a width-only taper vanishes in profile.
 
-**The waist does NOT bend, deliberately** (`LOWER_UNDER_UPPER["body_lower"]` sets
+### The waist bend
+The chest leans at the waist and the head and arms come with it, giving a
+two-segment spine instead of a rigid plank. Tuning lives in the animator's
+`Waist` export group (`waist_bend_lean` 0.10 is the main read; set it to 0 to
+disable the feature at runtime).
+
+- `_build_waist_joint()` inserts a `waist_joint` Node3D between the body socket
+  and the chest mesh. It sits at body-local ZERO because the waist plane IS the
+  body origin, which makes moving the chest mesh onto it a NUMERIC IDENTITY.
+- It is NOT in `sockets`, on purpose. A new socket key would silently need a
+  `LIMB_GEO` entry (else a 0.2 m cube), an `ENEMY_HITBOX_ACCURACY_SCALE` entry
+  (else a default scale) and a `_base_socket_should_show` branch (else `return
+  true`, rendering an unearned chest). Staying out of the dict sidesteps all three
+  plus the marker/equip/hitbox loops. `get_waist_joint()` returns null on an
+  unsplit rig, and that null IS the animator's gate — the animator is shared and
+  has no per-rig flag.
+- `get_socket_attach("body")` returns the pivot, so equipped torso art and the
+  chest hurtbox bend with it.
+- **NOT routed through `_animate_joints`.** That writer is for elbows and knees:
+  it ASSIGNS rotation (stomping other writers), its `joint_bend_base` 0.12 +
+  `joint_bend_swing` 0.7 would give the chest a permanent 0.12–0.82 rad flex every
+  step, and its `bend_sign` keys off the substring `"arm"`.
+
+**The head and arms are NOT reparented under the chest** — and that is the
+load-bearing decision. Reparenting is the obvious way to make them follow, but
+`_capture_rest()` stores every socket's PARENT-LOCAL rest pose, so it silently
+redefines what `_rest_pos["head"]` means and six families break at once:
+torso-spring (`head.position = body.position + offset`), the head-only ground
+constants (rig-space −0.85 fused with chest-space rest.x/z), the 12
+`_world_horizontal_offset_to_local` call sites (rig-basis directions applied in a
+tilted frame), `rig.to_local` across the player.gd boundary, the doubled crawl
+drops, and — the one nothing warns about — `body.scale`'s squash-and-stretch,
+which would suddenly squash the head and both arms.
+
+So `_apply_waist_carry()` ADDS the transform a hierarchy would have contributed,
+by hand, after every other writer. No socket changes parent, so no space changes
+and all six are structurally absent. **Verified equivalent:** the carried head and
+a real parent transform agree to 0.00000 m.
+
+Two consequences to respect:
+- **`_animate_waist(delta)` MUST stay last in `update_from_player`.** A writer
+  added below it escapes the carry, and the head silently stops following the
+  chest. This is the price of the carry over a real hierarchy.
+- `_waist_target_angle()` returns exactly 0.0 in head-only, torso-spring, crawl,
+  the detach/reattach states and the demo — every mode that owns the head socket
+  or already pitches the torso. `_apply_waist_carry` early-returns on
+  `is_zero_approx`, so those modes are bit-identical to a build with no waist.
+
+Do the real reparent only when something needs a writer BETWEEN the waist and the
+head/arms (IK, a skinned chest, per-socket physics), or when the ordering rule
+above actually bites.
+
+**The ABDOMEN (`body_lower`) does NOT bend, deliberately** (`LOWER_UNDER_UPPER["body_lower"]` sets
 `bend: false`, so it is never registered in `limb_joints`). The head and arm
 sockets are SIBLINGS of `body`, not children, so a bending waist would swing the
 chest away from them and tear the figure apart. The split is an attach point for
