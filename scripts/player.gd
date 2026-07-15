@@ -27,7 +27,10 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 # Tier 1D combat-feel tuning.
 # attack_cooldown stops repeated clicks from blurring the test (plan suggests 0.35-0.6s).
 # forward_offset/height place the swing box just in front of and slightly above the player.
-@export var attack_cooldown: float = 0.45
+# Must stay ABOVE attack_overlay_duration * 1.15 (the finisher / arm-sword length),
+# or the next click restarts the swing before it finishes and you only ever see the
+# windup. This is the ceiling on how long a swing can be, so the two move together.
+@export var attack_cooldown: float = 0.85
 # Extra breathing room after a head-launch attack has fully resolved, on top of
 # waiting for the animation itself. Head-launch animations run longer than
 # attack_cooldown (torso launch 0.56s, recoils 0.58-0.66s), so the cooldown alone
@@ -776,12 +779,36 @@ func _try_stealth_finish() -> void:
 	can_attack = true
 
 
+# right arm -> left arm -> both -> tear the left arm off and swing it.
+# The fourth step only joins the cycle with BOTH arms equipped: with one arm there
+# is nothing to grab, and the animator would pose a hidden socket.
+const COMBO_STEP_ARM_SWORD := 4
+
+
 func _next_combo_animation_step() -> int:
+	# While the arm is off, every attack keeps swinging it: the combo does not
+	# advance until it has landed its swings and gone back on.
+	if _is_arm_sword_held():
+		combo_animation_step = COMBO_STEP_ARM_SWORD
+		combo_animation_timer = _combo_animation_window()
+		return COMBO_STEP_ARM_SWORD
+
 	if combo_animation_timer <= 0.0:
 		combo_animation_step = 0
-	combo_animation_step = (combo_animation_step % 3) + 1
+	var step_count: int = COMBO_STEP_ARM_SWORD if _has_both_arms_equipped() else 3
+	combo_animation_step = (combo_animation_step % step_count) + 1
 	combo_animation_timer = _combo_animation_window()
 	return combo_animation_step
+
+
+func _is_arm_sword_held() -> bool:
+	if animator == null or not animator.has_method("is_arm_sword_held"):
+		return false
+	return bool(animator.call("is_arm_sword_held"))
+
+
+func _has_both_arms_equipped() -> bool:
+	return _is_slot_equipped("right_arm") and _is_slot_equipped("left_arm")
 
 
 func _combo_animation_window() -> float:

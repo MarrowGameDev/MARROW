@@ -1621,6 +1621,7 @@
 ### Constants
 - `ATTACK_HITBOX_SCENE`
 - `ARROW_PROJECTILE_SCRIPT`
+- `COMBO_STEP_ARM_SWORD`
 
 ### Key Variables
 - `move_speed`
@@ -1703,6 +1704,8 @@
 - `_aim_direction_to(start_position: Vector3, aim_point: Vector3, fallback_direction: Vector3) -> Vector3`
 - `_try_stealth_finish() -> void`
 - `_next_combo_animation_step() -> int`
+- `_is_arm_sword_held() -> bool`
+- `_has_both_arms_equipped() -> bool`
 - `_combo_animation_window() -> float`
 - `_flash_player_attack() -> void`
 - `_setup_procedural_character() -> void`
@@ -2234,6 +2237,7 @@
 - `_head_model_mesh`
 - `_head_model_mesh_loaded`
 - `socket_markers`
+- `_waist_joint`
 - `sockets`
 - `base_visuals`
 - `equipped_parts`
@@ -2270,7 +2274,6 @@
 - `limb_scale`
 - `dir_skel`
 - `length_axis`
-- `r`
 
 ### Functions
 - `_ready() -> void`
@@ -2316,6 +2319,9 @@
 - `_clear_damage_hitbox_groups(area: Area3D) -> void`
 - `_build_socket_markers() -> void`
 - `_make_socket_marker(socket_key: String) -> MeshInstance3D`
+- `get_waist_joint() -> Node3D`
+- `get_socket_attach(socket_key: String) -> Node3D`
+- `_build_waist_joint() -> void`
 - `_socket_layout_for(socket_key: String) -> Vector3`
 - `_limb_geo_for(socket_key: String) -> Dictionary`
 - `_split_limbs_active() -> bool`
@@ -2435,6 +2441,13 @@
 - `env_smoothing`
 - `attack_overlay_duration`
 - `attack_overlay_blend_speed`
+- `attack_windup_portion`
+- `attack_strike_portion`
+- `attack_strike_hold`
+- `attack_anticipation`
+- `attack_overlap_arm`
+- `attack_overlap_elbow`
+- `attack_elbow_whip`
 - `attack_arm_forward`
 - `attack_torso_twist`
 - `attack_lunge`
@@ -2471,11 +2484,23 @@
 - `detached_head_reattach_tornado_turns`
 - `detached_head_reattach_tornado_lift`
 - `detached_head_reattach_finish_blend_duration`
+- `arm_sword_swing`
+- `arm_sword_torso_twist`
+- `arm_sword_lunge`
+- `arm_sword_blade_pitch`
+- `arm_sword_swing_count`
+- `arm_sword_hold_speed`
+- `arm_sword_hold_timeout`
 - `combo_left_arm_forward`
 - `combo_finisher_arm_forward`
 - `combo_finisher_torso_twist`
 - `combo_finisher_lunge`
 - `demo_settle_time`
+- `waist_bend_lean`
+- `waist_bend_step`
+- `waist_bend_breath`
+- `waist_bend_limit`
+- `waist_response`
 - `aim_overlay_blend_speed`
 - `aim_right_arm_forward`
 - `aim_left_arm_forward`
@@ -2491,10 +2516,15 @@
 - `foot_align_to_normal`
 
 ### Constants
+- `COMBO_STEP_ARM_SWORD`
 - `ANIMATED_KEYS`
 - `FOOT_KEYS`
+- `WAIST_CARRIED`
 
 ### Key Variables
+- `_arm_sword_swings`
+- `_arm_sword_hold`
+- `_arm_sword_idle_timer`
 - `walk_time`
 - `_time`
 - `speed_ratio`
@@ -2532,12 +2562,12 @@
 - `_torso_head_miss_fall_start_scale`
 - `_torso_head_miss_body_hold_global_transform`
 - `_torso_head_detach_body_global_transform`
-- `_torso_head_miss_body_hold_transform_ready`
-- `_detached_head_landing_timer`
-- `_detached_head_landing_start_position`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
+- `_waist_target_angle() -> float`
+- `_animate_waist(delta: float) -> void`
+- `_apply_waist_carry(angle: float) -> void`
 - `trigger_demo_attack_procedural() -> void`
 - `trigger_demo_attack_tween() -> void`
 - `_update_demo_procedural(delta: float) -> void`
@@ -2622,6 +2652,7 @@
 - `_apply_attack_overlay() -> void`
 - `_combo_step_for_equipped_arms() -> int`
 - `_attack_pose_strength() -> float`
+- `_attack_strike_curve(phase: float) -> float`
 - `_attack_phase() -> float`
 - `_apply_head_only_attack_pose() -> void`
 - `_apply_head_only_hit_recoil_pose(head: Node3D) -> void`
@@ -2630,8 +2661,16 @@
 - `_apply_torso_head_miss_body_hold_pose(body: Node3D) -> void`
 - `_future_head_only_ground_position() -> Vector3`
 - `_apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void`
+- `_attack_strength_lagged(lag: float) -> float`
+- `_whip_elbow(joint_key: String, strength: float) -> void`
 - `_apply_right_combo_pose(strength: float) -> void`
 - `_apply_left_combo_pose(strength: float) -> void`
+- `_apply_arm_sword_pose(strength: float) -> void`
+- `is_arm_sword_held() -> bool`
+- `note_arm_sword_swing() -> void`
+- `_update_arm_sword(delta: float) -> void`
+- `_both_arms_equipped() -> bool`
+- `_right_hand_rig_position() -> Vector3`
 - `_apply_finisher_combo_pose(strength: float) -> void`
 - `_animate_feet(delta: float) -> void`
 - `_place_foot(space: PhysicsDirectSpaceState3D, key: String, delta: float) -> void`
