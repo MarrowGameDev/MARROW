@@ -7,6 +7,7 @@ extends Node3D
 
 @export var rig: ModularSkeletonRig
 @export var turn_target: Node3D            # usually VisualRoot; rotates toward facing
+@export var player_body_progression_enabled := false
 
 # --- Tuning (from the brief's suggested values) -------------------------------
 @export var walk_cycle_speed := 9.0
@@ -36,8 +37,10 @@ extends Node3D
 @export var lizard_wall_climb_pitch := 0.42
 @export var lizard_wall_climb_head_lift := 0.16
 @export var lizard_wall_climb_limb_reach := 0.34
-@export var head_only_hop_amount := 0.18
+@export var head_only_hop_amount := 0.0
 @export var head_only_roll_amount := 0.42
+@export var head_only_roll_radius := 0.16
+@export var head_only_ground_socket_y := -0.85
 
 # Bend at the limb mid-joint (elbow/knee) so limbs flex instead of staying stiff.
 @export var joint_bend_base := 0.12    # radians always bent a little (never a stick)
@@ -102,6 +105,7 @@ var _attack_combo_step := 1
 var _aim_requested := false
 var _aim_blend := 0.0
 var _lizard_wall_climb_blend := 0.0
+var _head_only_roll_angle := 0.0
 
 var _rest_pos: Dictionary = {}
 var _rest_rot: Dictionary = {}
@@ -124,6 +128,9 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	var target_ratio: float = clamp(horizontal.length() / max(max_speed, 0.001), 0.0, 1.0)
 	speed_ratio = lerp(speed_ratio, target_ratio, 1.0 - exp(-speed_smoothing * delta))
+	if _is_head_only():
+		var roll_radius: float = maxf(head_only_roll_radius, 0.01)
+		_head_only_roll_angle += horizontal.length() * delta / roll_radius
 
 	total_equipped_weight = _calculate_weight(equipped_defs)
 	var weight_slowdown: float = clamp(1.0 / max(total_equipped_weight, 1.0), heavy_weight_swing_slowdown, 1.0)
@@ -171,6 +178,12 @@ func set_crawl_mode(enabled: bool) -> void:
 
 func set_lizard_wall_climb_blend(blend: float) -> void:
 	_lizard_wall_climb_blend = clampf(blend, 0.0, 1.0)
+
+
+func set_player_body_progression_enabled(enabled: bool) -> void:
+	player_body_progression_enabled = enabled
+	if not enabled:
+		_head_only_roll_angle = 0.0
 
 
 func _capture_rest() -> void:
@@ -226,7 +239,7 @@ func _animate_body() -> void:
 
 
 func _is_head_only() -> bool:
-	return rig != null and rig.has_method("has_equipped_slot") and not bool(rig.call("has_equipped_slot", "body"))
+	return player_body_progression_enabled and rig != null and rig.has_method("has_equipped_slot") and not bool(rig.call("has_equipped_slot", "body"))
 
 
 func _animate_head_only(sway: float, breath: float) -> void:
@@ -235,9 +248,9 @@ func _animate_head_only(sway: float, breath: float) -> void:
 		return
 
 	var hop: float = absf(sin(walk_time)) * head_only_hop_amount * speed_ratio
-	var idle: float = breath * 0.6
-	head.position = _get_rest_pos("head") + Vector3(sway * 0.8, hop + idle - 0.22, 0.0)
-	head.rotation = _get_rest_rot("head") + Vector3(0.0, 0.0, -sin(walk_time) * head_only_roll_amount * speed_ratio)
+	var rest: Vector3 = _get_rest_pos("head")
+	head.position = Vector3(rest.x + sway * 0.8, head_only_ground_socket_y + hop, rest.z)
+	head.rotation = _get_rest_rot("head") + Vector3(_head_only_roll_angle, 0.0, sway * head_only_roll_amount)
 
 
 func _animate_limbs() -> void:
@@ -394,6 +407,9 @@ func _animate_wobble() -> void:
 		return
 
 	for key in ["right_arm", "left_arm", "right_leg", "left_leg", "left_foot", "right_foot", "head"]:
+		if _is_head_only() and key == "head":
+			continue
+
 		var s := rig.get_socket(key)
 		if s == null or not _rest_pos.has(key):
 			continue

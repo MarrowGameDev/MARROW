@@ -580,6 +580,8 @@ func _setup_procedural_character() -> void:
 
 	animator.rig = rig
 	animator.turn_target = visual_root
+	if animator.has_method("set_player_body_progression_enabled"):
+		animator.set_player_body_progression_enabled(true)
 
 
 func _build_bow_visual() -> void:

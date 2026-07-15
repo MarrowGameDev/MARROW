@@ -1760,6 +1760,8 @@ func _setup_procedural_character() -> void:
 		rig.apply_gorilla_proportions()
 	animator.rig = rig
 	animator.turn_target = null
+	if animator.has_method("set_player_body_progression_enabled"):
+		animator.set_player_body_progression_enabled(false)
 	if animator.has_method("set_crawl_mode"):
 		animator.set_crawl_mode(crawling_due_to_leg_loss)
 	_setup_ranged_bow_visual()

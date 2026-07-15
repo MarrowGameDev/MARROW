@@ -48,6 +48,28 @@ Combo overlay:
 - Step 3 uses both arms, deeper lunge, and a small head dip.
 - This is visual only; melee damage and hitbox behavior are unchanged.
 
+## Current player body progression
+- The real player now enables body progression on `ModularSkeletonRig`.
+- `Player._setup_procedural_character()` enables
+  `player_body_progression_enabled` on `ProceduralPlayerAnimator`; enemies keep
+  this disabled.
+- The head is the fixed core. Torso must be equipped before arms or legs can
+  attach.
+- When the torso is missing, `ProceduralPlayerAnimator` uses
+  `head_only_ground_socket_y` to place the head socket at ground height instead
+  of the normal full-body head rest pose.
+- Head-only movement increments `_head_only_roll_angle` from actual horizontal
+  travel distance and applies that as rotation, so the head rolls along the
+  ground instead of wobbling like a loose limb.
+- The head-only vertical hop defaults to `0.0`, keeping the head planted unless
+  designers intentionally tune bounce back in.
+- The wobble pass skips the head while it is the only equipped core, so it does
+  not reset the head back to the full-body rest height or overwrite the roll.
+- Enemies use `ProceduralEnemyAnimator`, a thin subclass that keeps player body
+  progression disabled. This prevents enemies without player equipment records
+  from being treated as head-only bodies.
+- Once the torso is equipped, the normal body/head rest pose takes over again.
+
 ## Known limitations / TODO
 - Socket positions & limb sizes are hand-estimated grey-box values — expect to
   nudge them once seen in a real window.
