@@ -28,6 +28,10 @@ gameplay debe actualizar el archivo de flujo correspondiente.
      evidencia de PR.
 2. `docs/roadmap_progress.md`
    - Tabla operativa de lotes, ramas, evidencia, PRs y pendientes.
+3. `docs/roadmap_1_165.md`
+   - Fuente numerada y auditable del roadmap tecnico.
+4. `docs/repo_stability_and_graphify.md`
+   - Politica de Graphify, line endings, caches y preflight de commits.
 
 ## Politica
 
