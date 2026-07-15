@@ -12,6 +12,8 @@ dependan directamente del componente.
 ## Scripts y escenas principales
 
 - `scripts/player_equipment_component.gd`: estado real de equipo por slot.
+- `scripts/player_equipment_builds_component.gd`: presets guardables de
+  equipamiento que delegan aplicacion real en `PlayerEquipmentComponent`.
 - `scripts/player_stats_component.gd`: calculo de stats finales del jugador.
 - `scripts/equipment_rules_service.gd`: reglas de slots, sockets, ids generados
   por limbs y escalas visuales.
@@ -58,6 +60,22 @@ dependan directamente del componente.
 5. Recalcula stats.
 6. Emite `inventory_changed`.
 7. Emite `bone_unequipped`.
+
+## Flujo de build presets
+
+1. La UI llama `player.save_equipment_build(index)` para capturar el equipo
+   actual no-core.
+2. `PlayerEquipmentBuildsComponent` normaliza slots, omite la cabeza fija y
+   guarda el build en `user://equipment_builds.cfg`.
+3. La UI llama `player.apply_equipment_build(index)`.
+4. El componente valida inventario disponible, slots compatibles y torso
+   requerido antes de tocar el equipo.
+5. Si la validacion falla, no aplica cambios parciales y devuelve un mensaje
+   para la UI.
+6. Si la validacion pasa, desequipa slots no presentes en el build y equipa en
+   orden estable: torso, brazos, piernas.
+7. `PlayerEquipmentComponent` recalcula stats, actualiza rig y emite eventos por
+   la ruta normal.
 
 ## Reglas de slots
 
@@ -176,6 +194,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
   combinaciones de piezas. No aplican bonuses automaticamente todavia.
+- Build presets no son una segunda fuente de estado. Solo persisten una
+  intencion de equipamiento y deben revalidarse contra inventario y reglas
+  actuales cada vez que se aplican.
 - `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
   entra al inventario normal; `torso_bone` aparece como pickup starter en el
   demo.
@@ -245,6 +266,9 @@ En `TESTING ENVIRONMENT`:
 6. Confirmar que el preview cambia igual que el jugador.
 7. Desequipar con right click o drag hacia zona vacia si aplica.
 8. Confirmar que stats en UI cambian.
+9. Guardar un build en Settings, modificar equipo y aplicar el build guardado.
+10. Intentar aplicar un build que necesita dos copias del mismo hueso teniendo
+    solo una copia; debe mostrar error y no dejar cambios parciales.
 
 ## Historial de cambios
 
@@ -288,3 +312,7 @@ En `TESTING ENVIRONMENT`:
   `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
   aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus
   sockets `body`/`body_lower` sin usarlos como ids de estado de equipo.
+- 2026-07-15: Se agregaron build presets de equipamiento. La persistencia vive
+  en `PlayerEquipmentBuildsComponent`, la aplicacion usa
+  `PlayerEquipmentComponent`, y cada apply revalida copias, torso y
+  compatibilidad de slots.

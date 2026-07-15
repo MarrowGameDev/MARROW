@@ -18,6 +18,8 @@ modificar controles desde la seccion de settings.
   `collect_bone`, expone snapshots y emite cambios por eventos.
 - `scripts/player_inventory_ui.gd`: construye la pantalla de inventario, tabs,
   grid, detalles, settings, paper doll y preview 3D.
+- `scripts/player_equipment_builds_component.gd`: guarda y aplica presets de
+  equipamiento usando el estado real de `PlayerEquipmentComponent`.
 - `scripts/ui_bone_item.gd`: tile arrastrable de un hueso en el grid.
 - `scripts/ui_bone_slot.gd`: slot visual del paper doll.
 - `scripts/ui_inventory_empty_slot.gd`: zona para soltar items/equipamiento
@@ -209,6 +211,14 @@ python -B tools/validate_inventory_stack_contract.py
   reglas entre UI y gameplay.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
+- Build presets: la pestaña de settings permite guardar y aplicar 3 builds de
+  equipamiento en `user://equipment_builds.cfg`. Cada build guarda slots
+  canonicos no-core; la cabeza fija no se reemplaza ni se guarda como pieza
+  aplicable.
+- Al aplicar un build, `PlayerEquipmentBuildsComponent` valida primero que las
+  copias necesarias existan en inventario, que los slots sean compatibles y que
+  cualquier extremidad venga acompanada de torso. La UI solo muestra el resultado
+  de esa validacion.
 - El tutorial de controles debe leer los bindings actuales con
   `DropPickupRulesService.action_binding_text`, para que el texto visible siga
   los cambios hechos en settings.
@@ -238,6 +248,11 @@ En `TESTING ENVIRONMENT`:
     mostrar solo su pierna correspondiente en jugador y preview.
 11. Cambiar filtros `Head`, `Torso`, `L. Arm`, `R. Arm`, `L. Leg` y `R. Leg`;
     cada filtro debe mostrar solo piezas compatibles con ese slot.
+12. En Settings, guardar un build con torso + extremidades, cambiar piezas y
+    aplicar el build; debe restaurar los slots guardados si existen copias.
+13. Guardar un build que use el mismo `bone_id` en dos lados y confirmar que al
+    aplicarlo sin dos copias disponibles muestra error sin cambiar parcialmente
+    el equipamiento.
 
 ## Historial de cambios
 
@@ -284,3 +299,6 @@ En `TESTING ENVIRONMENT`:
   (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`). Los slots
   legacy siguen aceptandose como aliases de lectura, y la UI ahora filtra,
   ordena y equipa por compatibilidad compartida desde `EquipmentRulesService`.
+- 2026-07-15: Se agregaron build presets de equipamiento con guardado local,
+  validacion de copias disponibles, compatibilidad de slots y aplicacion mediante
+  `PlayerEquipmentComponent`.
