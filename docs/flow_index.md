@@ -28,6 +28,8 @@ gameplay debe actualizar el archivo de flujo correspondiente.
      evidencia de PR.
 2. `docs/roadmap_progress.md`
    - Tabla operativa de lotes, ramas, evidencia, PRs y pendientes.
+3. `docs/p0_runtime_validation_suite.md`
+   - Guia especifica para la suite P0 dentro de `scenes/testing_environment.tscn`.
 
 ## Politica
 
