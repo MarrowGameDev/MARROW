@@ -1792,6 +1792,14 @@ class Player:
         """GDScript function: _next_combo_animation_step() -> int"""
         pass
 
+    def gd_func__is_arm_sword_held(self):
+        """GDScript function: _is_arm_sword_held() -> bool"""
+        pass
+
+    def gd_func__has_both_arms_equipped(self):
+        """GDScript function: _has_both_arms_equipped() -> bool"""
+        pass
+
     def gd_func__combo_animation_window(self):
         """GDScript function: _combo_animation_window() -> float"""
         pass
@@ -2930,6 +2938,18 @@ class ModularSkeletonRig:
         """GDScript function: _make_socket_marker(socket_key: String) -> MeshInstance3D"""
         pass
 
+    def gd_func_get_waist_joint(self):
+        """GDScript function: get_waist_joint() -> Node3D"""
+        pass
+
+    def gd_func_get_socket_attach(self):
+        """GDScript function: get_socket_attach(socket_key: String) -> Node3D"""
+        pass
+
+    def gd_func__build_waist_joint(self):
+        """GDScript function: _build_waist_joint() -> void"""
+        pass
+
     def gd_func__socket_layout_for(self):
         """GDScript function: _socket_layout_for(socket_key: String) -> Vector3"""
         pass
@@ -3010,6 +3030,18 @@ class ProceduralPlayerAnimator:
 
     def gd_func_update_from_player(self):
         """GDScript function: update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void"""
+        pass
+
+    def gd_func__waist_target_angle(self):
+        """GDScript function: _waist_target_angle() -> float"""
+        pass
+
+    def gd_func__animate_waist(self):
+        """GDScript function: _animate_waist(delta: float) -> void"""
+        pass
+
+    def gd_func__apply_waist_carry(self):
+        """GDScript function: _apply_waist_carry(angle: float) -> void"""
         pass
 
     def gd_func_trigger_demo_attack_procedural(self):
@@ -3348,6 +3380,10 @@ class ProceduralPlayerAnimator:
         """GDScript function: _attack_pose_strength() -> float"""
         pass
 
+    def gd_func__attack_strike_curve(self):
+        """GDScript function: _attack_strike_curve(phase: float) -> float"""
+        pass
+
     def gd_func__attack_phase(self):
         """GDScript function: _attack_phase() -> float"""
         pass
@@ -3380,12 +3416,44 @@ class ProceduralPlayerAnimator:
         """GDScript function: _apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void"""
         pass
 
+    def gd_func__attack_strength_lagged(self):
+        """GDScript function: _attack_strength_lagged(lag: float) -> float"""
+        pass
+
+    def gd_func__whip_elbow(self):
+        """GDScript function: _whip_elbow(joint_key: String, strength: float) -> void"""
+        pass
+
     def gd_func__apply_right_combo_pose(self):
         """GDScript function: _apply_right_combo_pose(strength: float) -> void"""
         pass
 
     def gd_func__apply_left_combo_pose(self):
         """GDScript function: _apply_left_combo_pose(strength: float) -> void"""
+        pass
+
+    def gd_func__apply_arm_sword_pose(self):
+        """GDScript function: _apply_arm_sword_pose(strength: float) -> void"""
+        pass
+
+    def gd_func_is_arm_sword_held(self):
+        """GDScript function: is_arm_sword_held() -> bool"""
+        pass
+
+    def gd_func_note_arm_sword_swing(self):
+        """GDScript function: note_arm_sword_swing() -> void"""
+        pass
+
+    def gd_func__update_arm_sword(self):
+        """GDScript function: _update_arm_sword(delta: float) -> void"""
+        pass
+
+    def gd_func__both_arms_equipped(self):
+        """GDScript function: _both_arms_equipped() -> bool"""
+        pass
+
+    def gd_func__right_hand_rig_position(self):
+        """GDScript function: _right_hand_rig_position() -> Vector3"""
         pass
 
     def gd_func__apply_finisher_combo_pose(self):
