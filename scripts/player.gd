@@ -368,6 +368,7 @@ func _try_attack() -> void:
 	var hitbox := ATTACK_HITBOX_SCENE.instantiate()
 	hitbox.damage = attack_damage
 	hitbox.owner_player = self
+	hitbox.visual_enabled = not _is_head_only_combat_mode()
 	if hitbox.has_signal("hit_confirmed"):
 		hitbox.hit_confirmed.connect(_on_attack_hit_confirmed)
 
@@ -398,6 +399,10 @@ func _try_attack() -> void:
 func _on_attack_hit_confirmed(_target: Node) -> void:
 	if animator != null and animator.has_method("confirm_head_only_attack_contact"):
 		animator.confirm_head_only_attack_contact()
+
+
+func _is_head_only_combat_mode() -> bool:
+	return rig != null and rig.has_method("has_equipped_slot") and not bool(rig.call("has_equipped_slot", "body"))
 
 
 func _try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void:

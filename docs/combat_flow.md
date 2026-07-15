@@ -133,6 +133,9 @@ Ataque/combo por hueso:
 - Mientras ese ataque esta activo, `Player` lee
   `get_head_only_attack_world_offset()` y se lo pasa a la camara como offset
   horizontal acumulado. La camara no sigue el arco vertical de la cabeza.
+- En modo solo cabeza, `AttackHitbox` mantiene colision/dano pero apaga su mesh
+  visual para que el flash del hitbox no parezca una segunda cabeza durante el
+  salto.
 - Estos campos no cambian cooldown, hitbox, dano ni input automaticamente. Para
   activar combos con gameplay real se debe crear una regla de combate explicita
   y probarla en `TESTING ENVIRONMENT`.

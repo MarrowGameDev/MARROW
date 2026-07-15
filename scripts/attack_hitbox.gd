@@ -8,6 +8,7 @@ signal hit_confirmed(target: Node)
 
 @export var damage: int = 1
 @export var lifetime: float = 0.16
+@export var visual_enabled: bool = true
 
 const ENEMY_BODY_HURTBOX_GROUP := "enemy_body_hurtboxes"
 
@@ -30,7 +31,7 @@ func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 
 	# Polish: fade the swing out instead of letting it pop off abruptly.
-	_start_fade()
+	_apply_visual_state()
 
 	# Wait one physics frame so Godot has time to calculate bodies that were already
 	# inside the hitbox the moment it spawned.
@@ -41,11 +42,18 @@ func _ready() -> void:
 	await get_tree().create_timer(lifetime).timeout
 	queue_free()
 
+func _apply_visual_state() -> void:
+	if _visual == null:
+		return
+	_visual.visible = visual_enabled
+	if visual_enabled:
+		_start_fade()
+
+
 # Fade the box mesh's transparency from its starting alpha down to invisible.
 func _start_fade() -> void:
 	if _visual == null:
 		return
-
 	var base_material := _visual.material_override
 	if base_material is StandardMaterial3D:
 		# Duplicate so fading THIS swing does not touch other live swings.
