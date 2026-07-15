@@ -566,6 +566,19 @@ class BoneTrialGate:
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
 
+class CombatTargetingService:
+    """Godot script: scripts/combat_targeting_service.gd
+    class_name: CombatTargetingService
+    extends: unknown
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/combat_targeting_service.gd'
+    godot_class_name = 'CombatTargetingService'
+    godot_extends = ''
+    gameplay_system = 'Supporting gameplay'
+
+    pass
+
 class DemoEnemyCamp:
     """Godot script: scripts/demo_enemy_camp.gd
     class_name: DemoEnemyCamp
@@ -1658,6 +1671,38 @@ class Player:
         """GDScript function: _on_attack_hit_confirmed(_target: Node) -> void"""
         pass
 
+    def gd_func__acquire_head_launch_target(self):
+        """GDScript function: _acquire_head_launch_target() -> void"""
+        pass
+
+    def gd_func__head_launch_target_aim(self):
+        """GDScript function: _head_launch_target_aim() -> Vector3"""
+        pass
+
+    def gd_func__push_head_launch_attack_aim(self):
+        """GDScript function: _push_head_launch_attack_aim() -> void"""
+        pass
+
+    def gd_func__is_head_launch_combat_mode(self):
+        """GDScript function: _is_head_launch_combat_mode() -> bool"""
+        pass
+
+    def gd_func__is_head_only_attack_locking_movement(self):
+        """GDScript function: _is_head_only_attack_locking_movement() -> bool"""
+        pass
+
+    def gd_func__is_head_launch_attack_busy(self):
+        """GDScript function: _is_head_launch_attack_busy() -> bool"""
+        pass
+
+    def gd_func__is_head_launch_attack_blocked(self):
+        """GDScript function: _is_head_launch_attack_blocked() -> bool"""
+        pass
+
+    def gd_func__update_head_launch_recovery(self):
+        """GDScript function: _update_head_launch_recovery(delta: float) -> void"""
+        pass
+
     def gd_func__get_head_only_hitbox_follow_target(self):
         """GDScript function: _get_head_only_hitbox_follow_target() -> Node3D"""
         pass
@@ -1768,6 +1813,10 @@ class Player:
 
     def gd_func__update_procedural_animation(self):
         """GDScript function: _update_procedural_animation(delta: float, max_speed: float) -> void"""
+        pass
+
+    def gd_func__apply_head_only_lunge_displacement(self):
+        """GDScript function: _apply_head_only_lunge_displacement(offset: Vector3) -> void"""
         pass
 
     def gd_func__update_camera_animation_follow_offset(self):
@@ -2009,6 +2058,10 @@ class Player:
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
+
+    def depends_on_CombatTargetingService(self):
+        """Relationship: references class CombatTargetingService."""
+        return CombatTargetingService
 
     def depends_on_DropPickupRulesService(self):
         """Relationship: references class DropPickupRulesService."""
@@ -2890,6 +2943,86 @@ class ProceduralPlayerAnimator:
         """GDScript function: update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void"""
         pass
 
+    def gd_func_trigger_demo_attack_procedural(self):
+        """GDScript function: trigger_demo_attack_procedural() -> void"""
+        pass
+
+    def gd_func_trigger_demo_attack_tween(self):
+        """GDScript function: trigger_demo_attack_tween() -> void"""
+        pass
+
+    def gd_func__update_demo_procedural(self):
+        """GDScript function: _update_demo_procedural(delta: float) -> void"""
+        pass
+
+    def gd_func__apply_demo_pose(self):
+        """GDScript function: _apply_demo_pose() -> void"""
+        pass
+
+    def gd_func__demo_keyframes(self):
+        """GDScript function: _demo_keyframes() -> Dictionary"""
+        pass
+
+    def gd_func__demo_charge_time(self):
+        """GDScript function: _demo_charge_time() -> float"""
+        pass
+
+    def gd_func__demo_air_time(self):
+        """GDScript function: _demo_air_time() -> float"""
+        pass
+
+    def gd_func__demo_begin(self):
+        """GDScript function: _demo_begin() -> Node3D"""
+        pass
+
+    def gd_func__demo_local_forward(self):
+        """GDScript function: _demo_local_forward() -> Vector3"""
+        pass
+
+    def gd_func_set_demo_target_world_position(self):
+        """GDScript function: set_demo_target_world_position(world_position: Vector3) -> void"""
+        pass
+
+    def gd_func__demo_stop(self):
+        """GDScript function: _demo_stop() -> void"""
+        pass
+
+    def gd_func__demo_on_tween_finished(self):
+        """GDScript function: _demo_on_tween_finished() -> void"""
+        pass
+
+    def gd_func__ease_out_sine(self):
+        """GDScript function: _ease_out_sine(t: float) -> float"""
+        pass
+
+    def gd_func__ease_out_quad(self):
+        """GDScript function: _ease_out_quad(t: float) -> float"""
+        pass
+
+    def gd_func__ease_in_quad(self):
+        """GDScript function: _ease_in_quad(t: float) -> float"""
+        pass
+
+    def gd_func__ease_in_out_sine(self):
+        """GDScript function: _ease_in_out_sine(t: float) -> float"""
+        pass
+
+    def gd_func_is_head_launch_attack_busy(self):
+        """GDScript function: is_head_launch_attack_busy() -> bool"""
+        pass
+
+    def gd_func_set_head_launch_attack_aim(self):
+        """GDScript function: set_head_launch_attack_aim(direction: Vector3, valid: bool) -> void"""
+        pass
+
+    def gd_func__head_launch_aim_or(self):
+        """GDScript function: _head_launch_aim_or(fallback: Vector3) -> Vector3"""
+        pass
+
+    def gd_func__update_head_launch_attack_aim(self):
+        """GDScript function: _update_head_launch_attack_aim() -> void"""
+        pass
+
     def gd_func_trigger_attack(self):
         """GDScript function: trigger_attack(combo_step: int = 0) -> void"""
         pass
@@ -2916,6 +3049,14 @@ class ProceduralPlayerAnimator:
 
     def gd_func_get_head_launch_attack_world_offset(self):
         """GDScript function: get_head_launch_attack_world_offset() -> Vector3"""
+        pass
+
+    def gd_func_has_head_only_body_catch_up_request(self):
+        """GDScript function: has_head_only_body_catch_up_request() -> bool"""
+        pass
+
+    def gd_func_consume_head_only_body_catch_up_offset(self):
+        """GDScript function: consume_head_only_body_catch_up_offset() -> Vector3"""
         pass
 
     def gd_func_has_torso_head_miss_detach_request(self):
@@ -3032,6 +3173,10 @@ class ProceduralPlayerAnimator:
 
     def gd_func__is_head_only(self):
         """GDScript function: _is_head_only() -> bool"""
+        pass
+
+    def gd_func__head_only_attack_airborne(self):
+        """GDScript function: _head_only_attack_airborne() -> bool"""
         pass
 
     def gd_func__is_torso_spring_only(self):
@@ -3195,6 +3340,18 @@ class RigTestPlayer:
 
     def gd_func__physics_process(self):
         """GDScript function: _physics_process(delta: float) -> void"""
+        pass
+
+    def gd_func__trigger_animation_demo(self):
+        """GDScript function: _trigger_animation_demo(use_tween: bool) -> void"""
+        pass
+
+    def gd_func__ensure_demo_target(self):
+        """GDScript function: _ensure_demo_target() -> void"""
+        pass
+
+    def gd_func__update_demo_target(self):
+        """GDScript function: _update_demo_target(delta: float) -> void"""
         pass
 
     def gd_func__cycle_equip(self):

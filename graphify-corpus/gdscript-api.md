@@ -637,6 +637,48 @@
 ### Node Path Lookups
 - none
 
+## CombatTargetingService
+
+- Source file: `scripts/combat_targeting_service.gd`
+- Extends: `unknown`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `DEFAULT_TARGET_RANGE`
+- `DEFAULT_BEHIND_BIAS`
+
+### Key Variables
+- `best_index`
+- `best_score`
+- `flat_facing`
+- `has_facing`
+- `candidate`
+- `to_target`
+- `distance`
+- `score`
+- `alignment`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## DemoEnemyCamp
 
 - Source file: `scripts/demo_enemy_camp.gd`
@@ -1484,8 +1526,11 @@
 - `damage_knockback_strength`
 - `gravity`
 - `attack_cooldown`
+- `head_launch_attack_recovery`
+- `head_only_attack_locks_movement`
 - `attack_forward_offset`
 - `attack_height`
+- `head_launch_target_range`
 - `head_only_attack_hitbox_lifetime`
 - `head_only_attack_hitbox_height`
 - `head_only_attack_hitbox_radius`
@@ -1556,11 +1601,11 @@
 - `sprinting_this_frame`
 - `fallback_input_previous`
 - `fallback_input_current`
+- `head_launch_target`
+- `head_launch_recovery_timer`
 - `head_detached_from_torso`
 - `detached_torso_bone_id`
 - `detached_torso_marker`
-- `detached_torso_reattach_progress`
-- `detached_torso_reattaching`
 
 ### Functions
 - `_ready() -> void`
@@ -1577,6 +1622,14 @@
 - `_get_camera_forward_direction() -> Vector3`
 - `_try_attack() -> void`
 - `_on_attack_hit_confirmed(_target: Node) -> void`
+- `_acquire_head_launch_target() -> void`
+- `_head_launch_target_aim() -> Vector3`
+- `_push_head_launch_attack_aim() -> void`
+- `_is_head_launch_combat_mode() -> bool`
+- `_is_head_only_attack_locking_movement() -> bool`
+- `_is_head_launch_attack_busy() -> bool`
+- `_is_head_launch_attack_blocked() -> bool`
+- `_update_head_launch_recovery(delta: float) -> void`
 - `_get_head_only_hitbox_follow_target() -> Node3D`
 - `_is_head_only_combat_mode() -> bool`
 - `_is_torso_only_combat_mode() -> bool`
@@ -1605,6 +1658,7 @@
 - `_get_bow_charge_multiplier() -> float`
 - `_make_bow_piece(piece_name: String, size: Vector3, local_position: Vector3, color: Color) -> MeshInstance3D`
 - `_update_procedural_animation(delta: float, max_speed: float) -> void`
+- `_apply_head_only_lunge_displacement(offset: Vector3) -> void`
 - `_update_camera_animation_follow_offset() -> void`
 - `collect_bone(bone_id: String) -> void`
 - `get_equipped_bone_id() -> String`
@@ -2315,6 +2369,8 @@
 - `head_only_attack_arc`
 - `head_only_attack_charge_squash`
 - `head_only_attack_roll`
+- `head_only_attack_release_portion`
+- `head_only_attack_roll_damping`
 - `head_only_hit_recoil_duration`
 - `head_only_hit_recoil_hold`
 - `head_only_hit_recoil_arc`
@@ -2344,6 +2400,7 @@
 - `combo_finisher_arm_forward`
 - `combo_finisher_torso_twist`
 - `combo_finisher_lunge`
+- `demo_settle_time`
 - `aim_overlay_blend_speed`
 - `aim_right_arm_forward`
 - `aim_left_arm_forward`
@@ -2406,6 +2463,26 @@
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
+- `trigger_demo_attack_procedural() -> void`
+- `trigger_demo_attack_tween() -> void`
+- `_update_demo_procedural(delta: float) -> void`
+- `_apply_demo_pose() -> void`
+- `_demo_keyframes() -> Dictionary`
+- `_demo_charge_time() -> float`
+- `_demo_air_time() -> float`
+- `_demo_begin() -> Node3D`
+- `_demo_local_forward() -> Vector3`
+- `set_demo_target_world_position(world_position: Vector3) -> void`
+- `_demo_stop() -> void`
+- `_demo_on_tween_finished() -> void`
+- `_ease_out_sine(t: float) -> float`
+- `_ease_out_quad(t: float) -> float`
+- `_ease_in_quad(t: float) -> float`
+- `_ease_in_out_sine(t: float) -> float`
+- `is_head_launch_attack_busy() -> bool`
+- `set_head_launch_attack_aim(direction: Vector3, valid: bool) -> void`
+- `_head_launch_aim_or(fallback: Vector3) -> Vector3`
+- `_update_head_launch_attack_aim() -> void`
 - `trigger_attack(combo_step: int = 0) -> void`
 - `_capture_torso_head_miss_body_hold_transform() -> void`
 - `set_aiming(enabled: bool) -> void`
@@ -2413,6 +2490,8 @@
 - `get_head_only_attack_forward_offset() -> float`
 - `get_head_only_attack_world_offset() -> Vector3`
 - `get_head_launch_attack_world_offset() -> Vector3`
+- `has_head_only_body_catch_up_request() -> bool`
+- `consume_head_only_body_catch_up_offset() -> Vector3`
 - `has_torso_head_miss_detach_request() -> bool`
 - `consume_torso_head_miss_detach_offset() -> Vector3`
 - `get_torso_head_miss_detach_body_transform() -> Transform3D`
@@ -2442,6 +2521,7 @@
 - `_as_vector3(value: Variant, fallback: Vector3) -> Vector3`
 - `_animate_body() -> void`
 - `_is_head_only() -> bool`
+- `_head_only_attack_airborne() -> bool`
 - `_is_torso_spring_only() -> bool`
 - `_animate_head_only(sway: float, breath: float) -> void`
 - `_apply_detached_head_reattach_tornado(head: Node3D) -> void`
@@ -2505,20 +2585,35 @@
 - `gravity`
 
 ### Constants
-- none
+- `DEMO_TARGET_ORBIT_RADIUS`
+- `DEMO_TARGET_ORBIT_SPEED`
+- `DEMO_TARGET_HEIGHT`
+- `DEMO_TARGET_SIZE`
 
 ### Key Variables
 - `facing_direction`
 - `equipped_ids`
 - `_equip_cycle`
 - `_equip_index`
+- `_demo_target_marker`
+- `_demo_target_time`
 - `input_vector`
 - `direction`
+- `method`
+- `marker`
+- `mesh`
+- `sphere`
+- `material`
+- `angle`
+- `offset`
 - `bone_id`
 
 ### Functions
 - `_ready() -> void`
 - `_physics_process(delta: float) -> void`
+- `_trigger_animation_demo(use_tween: bool) -> void`
+- `_ensure_demo_target() -> void`
+- `_update_demo_target(delta: float) -> void`
 - `_cycle_equip() -> void`
 
 ### Resource Dependencies
@@ -2530,6 +2625,8 @@
 ### Input Actions
 - `equip`
 - `attack`
+- `anim_demo_procedural`
+- `anim_demo_tween`
 - `move_left`
 
 ### Node Path Lookups
