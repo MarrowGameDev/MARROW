@@ -810,6 +810,36 @@ El bow del jugador usa el OTRO metodo del servicio,
   (`_start_bow_aim` solo corre con `bow_equipped`), asi que no rompen ninguna
   promesa; son un lob corto a ~6.6 m.
 
+## Combo de brazos: el paso 4 (arm sword)
+
+El combo melee cicla derecha -> izquierda -> ambos -> **arrancarse el brazo
+izquierdo y usarlo de espada**.
+
+- `Player._next_combo_animation_step()` incluye el paso 4 SOLO con los dos brazos
+  equipados (`_has_both_arms_equipped()`). Con un brazo no hay nada que agarrar, y
+  ademas `_combo_step_for_equipped_arms()` remapea el paso al brazo que existe, asi
+  que el paso 4 nunca cae en un socket escondido.
+- `ProceduralPlayerAnimator._apply_arm_sword_pose()` es SOLO POSE: no desequipa
+  nada y no reparenta nada. El slot `left_arm` sigue equipado todo el tiempo, asi
+  que stats, paper doll y el bow (que exige ambos brazos) no se enteran.
+- El truco: `strength` viene de `_attack_pose_strength()`, que sube a 1 a mitad del
+  ataque y vuelve a 0. Lerpear el brazo izquierdo hacia la mano por ese valor da
+  arranque -> swing -> vuelta sola. En strength 0 el brazo esta exactamente donde
+  lo dejo el animator normal.
+- El swing se aplica ANTES de leer la mano, para que la "hoja" viaje con el brazo
+  que la sostiene. `_right_hand_rig_position()` devuelve la punta del antebrazo en
+  espacio del rig (el padre del socket del brazo izquierdo), con fallback a la
+  punta del brazo entero en un rig sin codo.
+- Medido: el brazo izquierdo se aleja hasta 0.648 m del hombro, llega a 0.100 m de
+  la mano derecha, y al terminar el combo vuelve a 0.00000 m de donde estaria un
+  brazo que nunca ataco. Equipamiento intacto.
+- Tuning: `arm_sword_swing` (1.5), `arm_sword_torso_twist` (0.45),
+  `arm_sword_lunge` (0.30), `arm_sword_blade_pitch` (-1.57, de colgando a
+  horizontal hacia adelante).
+- NOTA: es un floreo visual. Si alguna vez se quiere que el brazo QUEDE arrancado,
+  eso ya no es pose: hay que desequipar de verdad y entonces si cambian stats, el
+  bow deja de andar y el paper doll tiene que mostrar el slot vacio.
+
 ## Auto-target de ataques head-launch
 
 Aplica solo a head-only y torso-only, donde la cabeza se lanza fuera del cuerpo.
@@ -3066,7 +3096,59 @@ The arithmetic that has to close, and why each number is what it is:
 - **Z tapers too** (0.28 -> 0.22). The waist has no bend, so static geometry is its
   only cue; a width-only taper vanishes in profile.
 
-**The waist does NOT bend, deliberately** (`LOWER_UNDER_UPPER["body_lower"]` sets
+### The waist bend
+The chest leans at the waist and the head and arms come with it, giving a
+two-segment spine instead of a rigid plank. Tuning lives in the animator's
+`Waist` export group (`waist_bend_lean` 0.10 is the main read; set it to 0 to
+disable the feature at runtime).
+
+- `_build_waist_joint()` inserts a `waist_joint` Node3D between the body socket
+  and the chest mesh. It sits at body-local ZERO because the waist plane IS the
+  body origin, which makes moving the chest mesh onto it a NUMERIC IDENTITY.
+- It is NOT in `sockets`, on purpose. A new socket key would silently need a
+  `LIMB_GEO` entry (else a 0.2 m cube), an `ENEMY_HITBOX_ACCURACY_SCALE` entry
+  (else a default scale) and a `_base_socket_should_show` branch (else `return
+  true`, rendering an unearned chest). Staying out of the dict sidesteps all three
+  plus the marker/equip/hitbox loops. `get_waist_joint()` returns null on an
+  unsplit rig, and that null IS the animator's gate — the animator is shared and
+  has no per-rig flag.
+- `get_socket_attach("body")` returns the pivot, so equipped torso art and the
+  chest hurtbox bend with it.
+- **NOT routed through `_animate_joints`.** That writer is for elbows and knees:
+  it ASSIGNS rotation (stomping other writers), its `joint_bend_base` 0.12 +
+  `joint_bend_swing` 0.7 would give the chest a permanent 0.12–0.82 rad flex every
+  step, and its `bend_sign` keys off the substring `"arm"`.
+
+**The head and arms are NOT reparented under the chest** — and that is the
+load-bearing decision. Reparenting is the obvious way to make them follow, but
+`_capture_rest()` stores every socket's PARENT-LOCAL rest pose, so it silently
+redefines what `_rest_pos["head"]` means and six families break at once:
+torso-spring (`head.position = body.position + offset`), the head-only ground
+constants (rig-space −0.85 fused with chest-space rest.x/z), the 12
+`_world_horizontal_offset_to_local` call sites (rig-basis directions applied in a
+tilted frame), `rig.to_local` across the player.gd boundary, the doubled crawl
+drops, and — the one nothing warns about — `body.scale`'s squash-and-stretch,
+which would suddenly squash the head and both arms.
+
+So `_apply_waist_carry()` ADDS the transform a hierarchy would have contributed,
+by hand, after every other writer. No socket changes parent, so no space changes
+and all six are structurally absent. **Verified equivalent:** the carried head and
+a real parent transform agree to 0.00000 m.
+
+Two consequences to respect:
+- **`_animate_waist(delta)` MUST stay last in `update_from_player`.** A writer
+  added below it escapes the carry, and the head silently stops following the
+  chest. This is the price of the carry over a real hierarchy.
+- `_waist_target_angle()` returns exactly 0.0 in head-only, torso-spring, crawl,
+  the detach/reattach states and the demo — every mode that owns the head socket
+  or already pitches the torso. `_apply_waist_carry` early-returns on
+  `is_zero_approx`, so those modes are bit-identical to a build with no waist.
+
+Do the real reparent only when something needs a writer BETWEEN the waist and the
+head/arms (IK, a skinned chest, per-socket physics), or when the ordering rule
+above actually bites.
+
+**The ABDOMEN (`body_lower`) does NOT bend, deliberately** (`LOWER_UNDER_UPPER["body_lower"]` sets
 `bend: false`, so it is never registered in `limb_joints`). The head and arm
 sockets are SIBLINGS of `body`, not children, so a bending waist would swing the
 chest away from them and tear the figure apart. The split is an attach point for

@@ -1621,6 +1621,7 @@
 ### Constants
 - `ATTACK_HITBOX_SCENE`
 - `ARROW_PROJECTILE_SCRIPT`
+- `COMBO_STEP_ARM_SWORD`
 
 ### Key Variables
 - `move_speed`
@@ -1703,6 +1704,7 @@
 - `_aim_direction_to(start_position: Vector3, aim_point: Vector3, fallback_direction: Vector3) -> Vector3`
 - `_try_stealth_finish() -> void`
 - `_next_combo_animation_step() -> int`
+- `_has_both_arms_equipped() -> bool`
 - `_combo_animation_window() -> float`
 - `_flash_player_attack() -> void`
 - `_setup_procedural_character() -> void`
@@ -2234,6 +2236,7 @@
 - `_head_model_mesh`
 - `_head_model_mesh_loaded`
 - `socket_markers`
+- `_waist_joint`
 - `sockets`
 - `base_visuals`
 - `equipped_parts`
@@ -2270,7 +2273,6 @@
 - `limb_scale`
 - `dir_skel`
 - `length_axis`
-- `r`
 
 ### Functions
 - `_ready() -> void`
@@ -2316,6 +2318,9 @@
 - `_clear_damage_hitbox_groups(area: Area3D) -> void`
 - `_build_socket_markers() -> void`
 - `_make_socket_marker(socket_key: String) -> MeshInstance3D`
+- `get_waist_joint() -> Node3D`
+- `get_socket_attach(socket_key: String) -> Node3D`
+- `_build_waist_joint() -> void`
 - `_socket_layout_for(socket_key: String) -> Vector3`
 - `_limb_geo_for(socket_key: String) -> Dictionary`
 - `_split_limbs_active() -> bool`
@@ -2471,11 +2476,20 @@
 - `detached_head_reattach_tornado_turns`
 - `detached_head_reattach_tornado_lift`
 - `detached_head_reattach_finish_blend_duration`
+- `arm_sword_swing`
+- `arm_sword_torso_twist`
+- `arm_sword_lunge`
+- `arm_sword_blade_pitch`
 - `combo_left_arm_forward`
 - `combo_finisher_arm_forward`
 - `combo_finisher_torso_twist`
 - `combo_finisher_lunge`
 - `demo_settle_time`
+- `waist_bend_lean`
+- `waist_bend_step`
+- `waist_bend_breath`
+- `waist_bend_limit`
+- `waist_response`
 - `aim_overlay_blend_speed`
 - `aim_right_arm_forward`
 - `aim_left_arm_forward`
@@ -2491,8 +2505,10 @@
 - `foot_align_to_normal`
 
 ### Constants
+- `COMBO_STEP_ARM_SWORD`
 - `ANIMATED_KEYS`
 - `FOOT_KEYS`
+- `WAIST_CARRIED`
 
 ### Key Variables
 - `walk_time`
@@ -2538,6 +2554,9 @@
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
+- `_waist_target_angle() -> float`
+- `_animate_waist(delta: float) -> void`
+- `_apply_waist_carry(angle: float) -> void`
 - `trigger_demo_attack_procedural() -> void`
 - `trigger_demo_attack_tween() -> void`
 - `_update_demo_procedural(delta: float) -> void`
@@ -2632,6 +2651,8 @@
 - `_apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void`
 - `_apply_right_combo_pose(strength: float) -> void`
 - `_apply_left_combo_pose(strength: float) -> void`
+- `_apply_arm_sword_pose(strength: float) -> void`
+- `_right_hand_rig_position() -> Vector3`
 - `_apply_finisher_combo_pose(strength: float) -> void`
 - `_animate_feet(delta: float) -> void`
 - `_place_foot(space: PhysicsDirectSpaceState3D, key: String, delta: float) -> void`
