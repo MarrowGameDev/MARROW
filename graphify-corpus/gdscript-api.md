@@ -159,7 +159,8 @@
 - `radius`
 
 ### Constants
-- none
+- `PLAYER_BODY_HURTBOX_GROUP`
+- `ENEMY_BODY_HURTBOX_GROUP`
 
 ### Key Variables
 - `arrow_velocity`
@@ -167,6 +168,8 @@
 - `damages_player`
 - `projectile_style`
 - `_has_hit`
+- `damage_owner`
+- `call_args`
 - `shape`
 - `sphere`
 - `visual`
@@ -180,6 +183,10 @@
 - `configure(start_position: Vector3, launch_velocity: Vector3, hit_damage: int, source_body: Node, should_damage_player: bool, gravity_value: float = 6.0, visual_style: String = "arrow") -> void`
 - `_physics_process(delta: float) -> void`
 - `_on_body_entered(body: Node) -> void`
+- `_on_area_entered(area: Area3D) -> void`
+- `_try_hit_body_part_area(area: Area3D, group_name: String, method_name: String, extra_args: Array) -> void`
+- `_damage_owner_for_area(area: Area3D) -> Node`
+- `_body_part_for_area(area: Area3D) -> String`
 - `_build_visuals() -> void`
 
 ### Resource Dependencies
@@ -209,7 +216,7 @@
 - `lifetime`
 
 ### Constants
-- none
+- `ENEMY_BODY_HURTBOX_GROUP`
 
 ### Key Variables
 - `owner_player`
@@ -217,13 +224,18 @@
 - `base_material`
 - `material`
 - `tween`
+- `damage_owner`
 
 ### Functions
 - `_ready() -> void`
 - `_start_fade() -> void`
 - `_hit_current_overlaps() -> void`
 - `_on_body_entered(body: Node) -> void`
+- `_on_area_entered(area: Area3D) -> void`
 - `_try_hit_body(body: Node) -> void`
+- `_try_hit_enemy_area(area: Area3D) -> void`
+- `_damage_owner_for_area(area: Area3D) -> Node`
+- `_body_part_for_area(area: Area3D) -> String`
 
 ### Resource Dependencies
 - none
@@ -444,6 +456,10 @@
 - `visual_scale`
 - `visual_offset`
 - `visual_rotation`
+- `hitbox_size`
+- `hitbox_offset`
+- `hitbox_scale`
+- `hitbox_rotation`
 
 ### Constants
 - `DEFAULT_COLOR`
@@ -938,6 +954,8 @@
 - `_get_slide_around_obstacle(desired_direction: Vector3) -> Vector3`
 - `_update_vision_visual(can_see_player: bool) -> void`
 - `take_damage(amount: int, hit_from: Vector3 = Vector3.ZERO, attacker: Node = null, damage_source: String = "") -> void`
+- `take_enemy_body_part_damage(body_part: String, amount: int, hit_from: Vector3 = Vector3.ZERO, attacker: Node = null, damage_source: String = "") -> void`
+- `has_body_part_hitboxes() -> bool`
 - `_react_to_arrow_hit(attacker: Node, hit_from: Vector3) -> void`
 - `_apply_knockback(hit_from: Vector3) -> void`
 - `take_hit(damage: int) -> void`
@@ -1027,12 +1045,13 @@
 - `radius`
 
 ### Constants
-- none
+- `PLAYER_BODY_HURTBOX_GROUP`
 
 ### Key Variables
 - `velocity`
 - `owner_enemy`
 - `_has_hit`
+- `damage_owner`
 - `shape`
 - `sphere`
 - `visual`
@@ -1044,6 +1063,9 @@
 - `configure(start_position: Vector3, launch_velocity: Vector3, hit_damage: int, source_enemy: Node, projectile_gravity: float = 24.0) -> void`
 - `_physics_process(delta: float) -> void`
 - `_on_body_entered(body: Node) -> void`
+- `_on_area_entered(area: Area3D) -> void`
+- `_damage_owner_for_area(area: Area3D) -> Node`
+- `_body_part_for_area(area: Area3D) -> String`
 - `_build_visuals() -> void`
 
 ### Resource Dependencies
@@ -1539,6 +1561,8 @@
 - `get_equipped_bone_for_slot(slot: String) -> String`
 - `get_inventory_stats_snapshot() -> Dictionary`
 - `take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
+- `take_player_body_part_damage(body_part: String, amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
+- `has_body_part_hitboxes() -> bool`
 - `is_player_dead() -> bool`
 - `get_noise_radius() -> float`
 - `_die_player() -> void`
@@ -2001,6 +2025,11 @@
 
 ### Constants
 - `BASE_COLOR`
+- `BODY_HITBOX_GROUP`
+- `PLAYER_BODY_HITBOX_GROUP`
+- `ENEMY_BODY_HITBOX_GROUP`
+- `DAMAGE_HITBOX_GROUPS`
+- `MIN_HITBOX_SIZE`
 
 ### Key Variables
 - `sockets`
@@ -2008,6 +2037,10 @@
 - `equipped_parts`
 - `equipped_ids`
 - `limb_joints`
+- `body_hitboxes`
+- `body_hitbox_shapes`
+- `body_hitbox_owner`
+- `body_hitbox_damage_group`
 - `body_progression_enabled`
 - `socket`
 - `limb`
@@ -2037,12 +2070,8 @@
 - `tref`
 - `to_b`
 - `n`
-- `geo`
-- `mi`
-- `mat`
-- `slot_id`
-- `socket_keys`
-- `color`
+- `area`
+- `shape_node`
 
 ### Functions
 - `_ready() -> void`
@@ -2058,6 +2087,9 @@
 - `_top_ancestor_under(node: Node, ancestor: Node) -> Node`
 - `get_socket(socket_key: String) -> Node3D`
 - `set_body_progression_enabled(enabled: bool) -> void`
+- `set_body_hitbox_owner(owner_body: Node, damage_group: String = PLAYER_BODY_HITBOX_GROUP) -> void`
+- `has_body_part_hitboxes() -> bool`
+- `set_body_part_hitbox_enabled(socket_key: String, enabled: bool) -> void`
 - `has_equipped_slot(slot_id: String) -> bool`
 - `_make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D`
 - `equip_bone(bone_id: String, bone_def: Dictionary) -> void`
@@ -2066,6 +2098,20 @@
 - `_refresh_body_progression_visibility() -> void`
 - `_base_socket_should_show(socket_key: String) -> bool`
 - `_socket_is_equipped(socket_key: String) -> bool`
+- `_ensure_body_hitboxes() -> void`
+- `_make_body_hitbox(socket_key: String) -> void`
+- `_body_hitbox_name(socket_key: String) -> String`
+- `_configure_body_hitbox_owner(socket_key: String) -> void`
+- `_apply_default_body_hitbox(socket_key: String) -> void`
+- `_apply_equipped_body_hitbox(socket_key: String, explicit_size: Vector3, scale_value: Vector3, extra_offset: Vector3, rotation_value: Vector3) -> void`
+- `_apply_body_hitbox(socket_key: String, size_value: Vector3, offset_value: Vector3, rotation_value: Vector3) -> void`
+- `_refresh_body_hitbox_enabled() -> void`
+- `_body_hitbox_should_be_enabled(socket_key: String) -> bool`
+- `_clear_damage_hitbox_groups(area: Area3D) -> void`
+- `_limb_geo_for(socket_key: String) -> Dictionary`
+- `_as_vector3(value: Variant, fallback: Vector3) -> Vector3`
+- `_scale_vector3(size_value: Vector3, scale_value: Vector3) -> Vector3`
+- `_positive_vector3(value: Vector3, fallback: Vector3) -> Vector3`
 
 ### Resource Dependencies
 - none

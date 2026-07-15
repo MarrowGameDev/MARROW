@@ -245,6 +245,22 @@ class ArrowProjectile:
         """GDScript function: _on_body_entered(body: Node) -> void"""
         pass
 
+    def gd_func__on_area_entered(self):
+        """GDScript function: _on_area_entered(area: Area3D) -> void"""
+        pass
+
+    def gd_func__try_hit_body_part_area(self):
+        """GDScript function: _try_hit_body_part_area(area: Area3D, group_name: String, method_name: String, extra_args: Array) -> void"""
+        pass
+
+    def gd_func__damage_owner_for_area(self):
+        """GDScript function: _damage_owner_for_area(area: Area3D) -> Node"""
+        pass
+
+    def gd_func__body_part_for_area(self):
+        """GDScript function: _body_part_for_area(area: Area3D) -> String"""
+        pass
+
     def gd_func__build_visuals(self):
         """GDScript function: _build_visuals() -> void"""
         pass
@@ -276,8 +292,24 @@ class AttackHitbox:
         """GDScript function: _on_body_entered(body: Node) -> void"""
         pass
 
+    def gd_func__on_area_entered(self):
+        """GDScript function: _on_area_entered(area: Area3D) -> void"""
+        pass
+
     def gd_func__try_hit_body(self):
         """GDScript function: _try_hit_body(body: Node) -> void"""
+        pass
+
+    def gd_func__try_hit_enemy_area(self):
+        """GDScript function: _try_hit_enemy_area(area: Area3D) -> void"""
+        pass
+
+    def gd_func__damage_owner_for_area(self):
+        """GDScript function: _damage_owner_for_area(area: Area3D) -> Node"""
+        pass
+
+    def gd_func__body_part_for_area(self):
+        """GDScript function: _body_part_for_area(area: Area3D) -> String"""
         pass
 
 class Bone:
@@ -867,6 +899,14 @@ class Enemy:
         """GDScript function: take_damage(amount: int, hit_from: Vector3 = Vector3.ZERO, attacker: Node = null, damage_source: String = "") -> void"""
         pass
 
+    def gd_func_take_enemy_body_part_damage(self):
+        """GDScript function: take_enemy_body_part_damage(body_part: String, amount: int, hit_from: Vector3 = Vector3.ZERO, attacker: Node = null, damage_source: String = "") -> void"""
+        pass
+
+    def gd_func_has_body_part_hitboxes(self):
+        """GDScript function: has_body_part_hitboxes() -> bool"""
+        pass
+
     def gd_func__react_to_arrow_hit(self):
         """GDScript function: _react_to_arrow_hit(attacker: Node, hit_from: Vector3) -> void"""
         pass
@@ -1148,6 +1188,18 @@ class EnemyRockProjectile:
 
     def gd_func__on_body_entered(self):
         """GDScript function: _on_body_entered(body: Node) -> void"""
+        pass
+
+    def gd_func__on_area_entered(self):
+        """GDScript function: _on_area_entered(area: Area3D) -> void"""
+        pass
+
+    def gd_func__damage_owner_for_area(self):
+        """GDScript function: _damage_owner_for_area(area: Area3D) -> Node"""
+        pass
+
+    def gd_func__body_part_for_area(self):
+        """GDScript function: _body_part_for_area(area: Area3D) -> String"""
         pass
 
     def gd_func__build_visuals(self):
@@ -1668,6 +1720,14 @@ class Player:
 
     def gd_func_take_player_damage(self):
         """GDScript function: take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void"""
+        pass
+
+    def gd_func_take_player_body_part_damage(self):
+        """GDScript function: take_player_body_part_damage(body_part: String, amount: int, from_position: Vector3 = Vector3.ZERO) -> void"""
+        pass
+
+    def gd_func_has_body_part_hitboxes(self):
+        """GDScript function: has_body_part_hitboxes() -> bool"""
         pass
 
     def gd_func_is_player_dead(self):
@@ -2500,6 +2560,18 @@ class ModularSkeletonRig:
         """GDScript function: set_body_progression_enabled(enabled: bool) -> void"""
         pass
 
+    def gd_func_set_body_hitbox_owner(self):
+        """GDScript function: set_body_hitbox_owner(owner_body: Node, damage_group: String = PLAYER_BODY_HITBOX_GROUP) -> void"""
+        pass
+
+    def gd_func_has_body_part_hitboxes(self):
+        """GDScript function: has_body_part_hitboxes() -> bool"""
+        pass
+
+    def gd_func_set_body_part_hitbox_enabled(self):
+        """GDScript function: set_body_part_hitbox_enabled(socket_key: String, enabled: bool) -> void"""
+        pass
+
     def gd_func_has_equipped_slot(self):
         """GDScript function: has_equipped_slot(slot_id: String) -> bool"""
         pass
@@ -2530,6 +2602,62 @@ class ModularSkeletonRig:
 
     def gd_func__socket_is_equipped(self):
         """GDScript function: _socket_is_equipped(socket_key: String) -> bool"""
+        pass
+
+    def gd_func__ensure_body_hitboxes(self):
+        """GDScript function: _ensure_body_hitboxes() -> void"""
+        pass
+
+    def gd_func__make_body_hitbox(self):
+        """GDScript function: _make_body_hitbox(socket_key: String) -> void"""
+        pass
+
+    def gd_func__body_hitbox_name(self):
+        """GDScript function: _body_hitbox_name(socket_key: String) -> String"""
+        pass
+
+    def gd_func__configure_body_hitbox_owner(self):
+        """GDScript function: _configure_body_hitbox_owner(socket_key: String) -> void"""
+        pass
+
+    def gd_func__apply_default_body_hitbox(self):
+        """GDScript function: _apply_default_body_hitbox(socket_key: String) -> void"""
+        pass
+
+    def gd_func__apply_equipped_body_hitbox(self):
+        """GDScript function: _apply_equipped_body_hitbox(socket_key: String, explicit_size: Vector3, scale_value: Vector3, extra_offset: Vector3, rotation_value: Vector3) -> void"""
+        pass
+
+    def gd_func__apply_body_hitbox(self):
+        """GDScript function: _apply_body_hitbox(socket_key: String, size_value: Vector3, offset_value: Vector3, rotation_value: Vector3) -> void"""
+        pass
+
+    def gd_func__refresh_body_hitbox_enabled(self):
+        """GDScript function: _refresh_body_hitbox_enabled() -> void"""
+        pass
+
+    def gd_func__body_hitbox_should_be_enabled(self):
+        """GDScript function: _body_hitbox_should_be_enabled(socket_key: String) -> bool"""
+        pass
+
+    def gd_func__clear_damage_hitbox_groups(self):
+        """GDScript function: _clear_damage_hitbox_groups(area: Area3D) -> void"""
+        pass
+
+    def gd_func__limb_geo_for(self):
+        """GDScript function: _limb_geo_for(socket_key: String) -> Dictionary"""
+        pass
+
+    def gd_func__as_vector3(self):
+        """GDScript function: _as_vector3(value: Variant, fallback: Vector3) -> Vector3"""
+        pass
+
+    def gd_func__scale_vector3(self):
+        """GDScript function: _scale_vector3(size_value: Vector3, scale_value: Vector3) -> Vector3"""
+        pass
+
+    def gd_func__positive_vector3(self):
+        """GDScript function: _positive_vector3(value: Vector3, fallback: Vector3) -> Vector3"""
         pass
 
     def depends_on_BoneRulesService(self):

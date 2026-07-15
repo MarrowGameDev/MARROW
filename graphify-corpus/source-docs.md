@@ -454,6 +454,16 @@ Campos:
 - `visual_scale`
 - `visual_offset`
 - `visual_rotation`
+- `hitbox_size`
+- `hitbox_offset`
+- `hitbox_scale`
+- `hitbox_rotation`
+
+`hitbox_*` controla las cajas de dano por parte del cuerpo en
+`ModularSkeletonRig`. Si `hitbox_size` queda en `Vector3.ZERO`, el rig calcula
+el tamano desde la geometria base del socket y `hitbox_scale`/`visual_scale`.
+Usa `hitbox_offset` y `hitbox_rotation` cuando una malla importada no coincide
+con el centro/orientacion de la caja base.
 
 ## Agregar Un Hueso Nuevo
 
@@ -763,6 +773,28 @@ Nucleo del jugador:
 - Si una regla futura destruye la cabeza del jugador, debe llamar a la muerte
   del jugador directamente.
 
+Hurtboxes del jugador:
+- `ModularSkeletonRig` crea hurtboxes por socket y `Player` se registra como
+  `damage_owner`.
+- Flechas enemigas, saliva y rocas escuchan `area_entered` contra el grupo
+  `player_body_hurtboxes` y llaman `take_player_body_part_damage(body_part, ...)`.
+- Si el jugador tiene hurtboxes activos, los proyectiles enemigos ignoran el
+  capsule principal para evitar dano con el cuerpo invisible. El capsule se
+  mantiene para movimiento/colision general.
+- Actualmente `take_player_body_part_damage` delega a `take_player_damage`.
+  La separacion queda lista para dano por cabeza/torso/extremidades.
+
+Hurtboxes de enemigos:
+- `Enemy._setup_procedural_character()` registra al enemigo como owner de los
+  hurtboxes del rig usando el grupo `enemy_body_hurtboxes`.
+- `AttackHitbox` escucha `area_entered` y llama
+  `take_enemy_body_part_damage(body_part, ...)` para melee.
+- Flechas y finger bones del jugador tambien escuchan `enemy_body_hurtboxes`.
+- Si un enemigo tiene hurtboxes activos, melee/proyectiles del jugador ignoran
+  el capsule principal del enemigo para evitar dano duplicado.
+- Cuando una extremidad enemiga se desprende, su hurtbox se desactiva; cuando
+  el enemigo recupera la parte, el hurtbox vuelve a activarse.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -819,6 +851,13 @@ En `TESTING ENVIRONMENT`:
   es visual solamente y no cambia dano ni hitboxes.
 - 2026-07-14: Se documento el inicio como cabeza fija y la recuperacion de vida
   al equipar torso/extremidades.
+- 2026-07-14: Proyectiles enemigos ahora usan hurtboxes por parte del cuerpo del
+  jugador cuando estan disponibles, manteniendo el capsule principal para
+  locomocion.
+- 2026-07-14: Melee, flechas y finger bones del jugador ahora usan hurtboxes por
+  parte del cuerpo de enemigos mediante `enemy_body_hurtboxes`.
+- 2026-07-14: Se limpio el ruteo de hurtboxes en melee/proyectiles con helpers
+  pequenos para evitar duplicacion entre jugador y enemigos.
 
 ## docs/current_system_status.md
 
@@ -1244,6 +1283,13 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
   entra al inventario normal; `torso_bone` aparece como pickup starter en el
   demo.
+- Las piezas pueden definir `hitbox_size`, `hitbox_offset`, `hitbox_scale` y
+  `hitbox_rotation`. `ModularSkeletonRig` consume esos campos al equipar para
+  ajustar el hurtbox de cada socket individual. Si no hay `hitbox_size`, el rig
+  deriva el tamano desde la geometria base y `visual_scale`.
+- El mismo contrato de `hitbox_*` aplica para jugador y enemigos. La diferencia
+  vive en el grupo de dano (`player_body_hurtboxes` o `enemy_body_hurtboxes`),
+  no en datos duplicados.
 
 ## Como probar
 
@@ -1292,6 +1338,10 @@ En `TESTING ENVIRONMENT`:
   de estructura de datos de huesos para programadores.
 - 2026-07-14: El jugador ahora inicia como cabeza fija, necesita torso para
   acoplar extremidades, y el rig muestra solo las partes recuperadas.
+- 2026-07-14: Se agregaron hurtboxes por parte del cuerpo al rig. Equipamiento
+  ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
+- 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
+  grupos distintos sin duplicar los campos de authoring.
 
 ## docs/flow_index.md
 
@@ -2084,6 +2134,27 @@ Combo overlay:
   progression disabled. This prevents enemies without player equipment records
   from being treated as head-only bodies.
 - Once the torso is equipped, the normal body/head rest pose takes over again.
+
+## Body-part hurtboxes
+- `ModularSkeletonRig` now creates one `Area3D` hurtbox per socket:
+  `head`, `body`, `right_arm`, `left_arm`, `right_leg`, `left_leg`,
+  `right_foot` and `left_foot`.
+- Hurtboxes live under the same sockets as the visuals, so procedural animation,
+  crawling, rolling head movement and equipped-part scaling all move the boxes
+  with the visible body part.
+- `set_body_hitbox_owner(owner, group)` labels the same socket boxes for the
+  owning actor. Player boxes use `player_body_hurtboxes`; enemy boxes use
+  `enemy_body_hurtboxes`.
+- When a bone is equipped, `equip_bone()` reads `hitbox_size`,
+  `hitbox_offset`, `hitbox_scale` and `hitbox_rotation`. If no explicit
+  `hitbox_size` is provided, the rig derives the box from the part's visual
+  scale and the default limb geometry.
+- Player body progression enables only the recovered/equipped body part
+  hurtboxes. In the head-only start, only the head hurtbox should receive
+  projectile damage.
+- Enemies register themselves as the owner of their rig hurtboxes. When limbs
+  detach or recover, `Enemy._set_rig_limb_visible()` also disables/enables that
+  limb's hurtbox.
 
 ## Known limitations / TODO
 - Socket positions & limb sizes are hand-estimated grey-box values — expect to
