@@ -128,12 +128,13 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   el diccionario plano que el rig, stats y slots ya esperan.
 - Los campos de calidad (`quality_rank`, `quality_score`,
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
-  No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
-  balance lo defina explicitamente.
+  `BoneRulesService.player_stats_with_equipment()` aplica `quality_multiplier`
+  sobre los bonuses directos del jugador antes de agregarlos al resultado final.
 - Los modificadores porcentuales por calidad (`quality_damage_percent`,
   `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
-  `quality_weight_percent`) son metadata granular. Pueden alimentar balance
-  futuro, pero equipamiento no los aplica automaticamente todavia.
+  `quality_weight_percent`) son metadata granular. Damage, speed, health y
+  weight ya alimentan la formula determinista de stats; drop sigue pasivo hasta
+  que una regla de drops lo consuma.
 - Las calidades canonicas son ids en minuscula y sin acentos para datos:
   `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
   acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
@@ -154,7 +155,8 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
-  animacion procedural actual.
+  animacion procedural actual. `equipment_weight` contribuye a una penalizacion
+  suave de velocidad cuando la carga equipada supera el umbral libre.
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
   combinaciones de piezas. No aplican bonuses automaticamente todavia.
@@ -265,3 +267,5 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: `BoneRulesService` aplica calidad, modificadores porcentuales y
+  carga equipada al calculo determinista de stats del jugador.
