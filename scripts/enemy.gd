@@ -165,6 +165,7 @@ var bone_recovery_safe_timer: float = 0.0
 var recovering_limb_key: String = ""
 var detached_limb_bodies: Dictionary = {}
 var limb_detach_damage_progress: float = 0.0
+var last_hit_body_part: String = ""
 
 # Tier 1D polish: one reusable tween so hit-squash, attack-lunge, and death-pop
 # never fight over the scale, plus a procedurally built placeholder "hit" sound.
@@ -1162,6 +1163,15 @@ func take_damage(amount: int, hit_from: Vector3 = Vector3.ZERO, attacker: Node =
 		_react_to_arrow_hit(attacker, hit_from)
 
 
+func take_enemy_body_part_damage(body_part: String, amount: int, hit_from: Vector3 = Vector3.ZERO, attacker: Node = null, damage_source: String = "") -> void:
+	last_hit_body_part = body_part
+	take_damage(amount, hit_from, attacker, damage_source)
+
+
+func has_body_part_hitboxes() -> bool:
+	return rig != null and rig.has_method("has_body_part_hitboxes") and bool(rig.call("has_body_part_hitboxes"))
+
+
 func _react_to_arrow_hit(attacker: Node, hit_from: Vector3) -> void:
 	var attacker_body: Node3D = attacker as Node3D
 	if attacker_body == null or not is_instance_valid(attacker_body):
@@ -1407,6 +1417,9 @@ func _set_rig_limb_visible(limb_key: String, is_visible: bool) -> void:
 		limb.visible = is_visible and not (limb_key == "body" and _has_lizard_torso_blocks())
 	if limb_key == "body":
 		_set_lizard_torso_blocks_visible(is_visible)
+	if rig.has_method("set_body_part_hitbox_enabled"):
+		for hitbox_key in _limb_recovery_group(limb_key):
+			rig.call("set_body_part_hitbox_enabled", hitbox_key, is_visible)
 
 
 func _has_lizard_torso_blocks() -> bool:
@@ -1760,6 +1773,8 @@ func _setup_procedural_character() -> void:
 		rig.apply_gorilla_proportions()
 	animator.rig = rig
 	animator.turn_target = null
+	if rig.has_method("set_body_hitbox_owner"):
+		rig.call("set_body_hitbox_owner", self, "enemy_body_hurtboxes")
 	if animator.has_method("set_player_body_progression_enabled"):
 		animator.set_player_body_progression_enabled(false)
 	if animator.has_method("set_crawl_mode"):

@@ -50,6 +50,11 @@ static var RIGGED_LIMBS := {
 }
 
 const BASE_COLOR := Color(0.62, 0.62, 0.70)
+const BODY_HITBOX_GROUP := "body_part_hitboxes"
+const PLAYER_BODY_HITBOX_GROUP := "player_body_hurtboxes"
+const ENEMY_BODY_HITBOX_GROUP := "enemy_body_hurtboxes"
+const DAMAGE_HITBOX_GROUPS := [PLAYER_BODY_HITBOX_GROUP, ENEMY_BODY_HITBOX_GROUP]
+const MIN_HITBOX_SIZE := Vector3(0.08, 0.08, 0.08)
 
 # Optional: show a real 3D model as the whole body instead of grey boxes.
 # The model is a single un-rigged mesh, so it gets whole-body motion (the grey
@@ -78,6 +83,10 @@ var base_visuals: Dictionary = {}    # socket key -> MeshInstance3D (grey defaul
 var equipped_parts: Dictionary = {}  # slot id -> Array of Node3D
 var equipped_ids: Dictionary = {}    # slot id -> bone_id
 var limb_joints: Dictionary = {}     # socket key -> {skel, bone, rest_rot} for bending
+var body_hitboxes: Dictionary = {}    # socket key -> Area3D
+var body_hitbox_shapes: Dictionary = {} # socket key -> CollisionShape3D
+var body_hitbox_owner: Node = null
+var body_hitbox_damage_group: String = ""
 var body_progression_enabled: bool = false
 
 
@@ -108,6 +117,8 @@ func _ready() -> void:
 		var foot_limb := _make_limb(foot_key, BASE_COLOR, Vector3.ONE)
 		foot.add_child(foot_limb)
 		base_visuals[foot_key] = foot_limb
+
+	_ensure_body_hitboxes()
 
 	# Limbs-only placeholder: optionally hide the torso and head.
 	if not show_torso and base_visuals.has("body"):
@@ -227,6 +238,7 @@ func _set_base_limb_shape(limb_key: String, new_size: Vector3, new_offset: Vecto
 	box.size = new_size
 	limb.position = new_offset
 	limb.scale = Vector3.ONE
+	_apply_body_hitbox(limb_key, new_size, new_offset, Vector3.ZERO)
 
 
 # Hides the grey-box limbs and shows the real model as one body under the torso
@@ -345,6 +357,27 @@ func set_body_progression_enabled(enabled: bool) -> void:
 	_refresh_body_progression_visibility()
 
 
+func set_body_hitbox_owner(owner_body: Node, damage_group: String = PLAYER_BODY_HITBOX_GROUP) -> void:
+	body_hitbox_owner = owner_body
+	body_hitbox_damage_group = damage_group
+	for socket_key in body_hitboxes:
+		_configure_body_hitbox_owner(str(socket_key))
+
+
+func has_body_part_hitboxes() -> bool:
+	return not body_hitboxes.is_empty()
+
+
+func set_body_part_hitbox_enabled(socket_key: String, enabled: bool) -> void:
+	var area: Area3D = body_hitboxes.get(socket_key) as Area3D
+	var shape_node: CollisionShape3D = body_hitbox_shapes.get(socket_key) as CollisionShape3D
+	if area == null or shape_node == null:
+		return
+
+	area.monitorable = enabled
+	shape_node.disabled = not enabled
+
+
 func has_equipped_slot(slot_id: String) -> bool:
 	return equipped_ids.has(slot_id)
 
@@ -378,9 +411,13 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 	unequip_slot(slot_id)
 
 	var color: Color = bone_def.get("color", Color(1, 1, 1))
-	var vis_scale: Vector3 = bone_def.get("visual_scale", Vector3.ONE)
-	var vis_offset: Vector3 = bone_def.get("visual_offset", Vector3.ZERO)
-	var vis_rotation: Vector3 = bone_def.get("visual_rotation", Vector3.ZERO)
+	var vis_scale: Vector3 = _as_vector3(bone_def.get("visual_scale", Vector3.ONE), Vector3.ONE)
+	var vis_offset: Vector3 = _as_vector3(bone_def.get("visual_offset", Vector3.ZERO), Vector3.ZERO)
+	var vis_rotation: Vector3 = _as_vector3(bone_def.get("visual_rotation", Vector3.ZERO), Vector3.ZERO)
+	var hitbox_scale: Vector3 = _as_vector3(bone_def.get("hitbox_scale", vis_scale), vis_scale)
+	var hitbox_size: Vector3 = _as_vector3(bone_def.get("hitbox_size", Vector3.ZERO), Vector3.ZERO)
+	var hitbox_offset: Vector3 = _as_vector3(bone_def.get("hitbox_offset", vis_offset), vis_offset)
+	var hitbox_rotation: Vector3 = _as_vector3(bone_def.get("hitbox_rotation", vis_rotation), vis_rotation)
 
 	var parts: Array = []
 	for key in socket_keys:
@@ -396,6 +433,7 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 		part.rotation = vis_rotation
 		socket.add_child(part)
 		parts.append(part)
+		_apply_equipped_body_hitbox(key, hitbox_size, hitbox_scale, hitbox_offset, hitbox_rotation)
 
 	equipped_parts[slot_id] = parts
 	equipped_ids[slot_id] = bone_id
@@ -414,6 +452,7 @@ func unequip_slot(slot_id: String) -> void:
 	for key in EquipmentRulesService.socket_keys_for_slot(slot_id):
 		if base_visuals.has(key):
 			base_visuals[key].visible = true
+		_apply_default_body_hitbox(str(key))
 	_refresh_body_progression_visibility()
 
 
@@ -437,6 +476,7 @@ func _refresh_body_progression_visibility() -> void:
 		if visual == null:
 			continue
 		visual.visible = _base_socket_should_show(socket_key)
+	_refresh_body_hitbox_enabled()
 
 
 func _base_socket_should_show(socket_key: String) -> bool:
@@ -462,3 +502,133 @@ func _socket_is_equipped(socket_key: String) -> bool:
 		if EquipmentRulesService.socket_keys_for_slot(str(slot_id)).has(socket_key):
 			return true
 	return false
+
+
+func _ensure_body_hitboxes() -> void:
+	for socket_key in sockets:
+		_make_body_hitbox(str(socket_key))
+		_apply_default_body_hitbox(str(socket_key))
+	_refresh_body_hitbox_enabled()
+
+
+func _make_body_hitbox(socket_key: String) -> void:
+	if body_hitboxes.has(socket_key):
+		return
+
+	var socket: Node3D = sockets.get(socket_key) as Node3D
+	if socket == null:
+		return
+
+	var area := Area3D.new()
+	area.name = _body_hitbox_name(socket_key)
+	area.collision_layer = 1
+	area.collision_mask = 0
+	area.monitoring = false
+	area.monitorable = true
+	area.add_to_group(BODY_HITBOX_GROUP)
+	socket.add_child(area)
+
+	var shape_node := CollisionShape3D.new()
+	shape_node.name = "Shape"
+	shape_node.shape = BoxShape3D.new()
+	area.add_child(shape_node)
+
+	body_hitboxes[socket_key] = area
+	body_hitbox_shapes[socket_key] = shape_node
+	_configure_body_hitbox_owner(socket_key)
+
+
+func _body_hitbox_name(socket_key: String) -> String:
+	return "BodyPartHitbox_" + socket_key
+
+
+func _configure_body_hitbox_owner(socket_key: String) -> void:
+	var area: Area3D = body_hitboxes.get(socket_key) as Area3D
+	if area == null:
+		return
+
+	area.set_meta("body_part", socket_key)
+	area.set_meta("damage_owner", body_hitbox_owner)
+	_clear_damage_hitbox_groups(area)
+	if body_hitbox_owner != null:
+		if body_hitbox_damage_group != "" and not area.is_in_group(body_hitbox_damage_group):
+			area.add_to_group(body_hitbox_damage_group)
+
+
+func _apply_default_body_hitbox(socket_key: String) -> void:
+	var geo: Dictionary = _limb_geo_for(socket_key)
+	var size_value: Vector3 = _as_vector3(geo.get("size", Vector3(0.2, 0.2, 0.2)), Vector3(0.2, 0.2, 0.2))
+	var offset_value: Vector3 = _as_vector3(geo.get("offset", Vector3.ZERO), Vector3.ZERO)
+	_apply_body_hitbox(socket_key, size_value, offset_value, Vector3.ZERO)
+
+
+func _apply_equipped_body_hitbox(socket_key: String, explicit_size: Vector3, scale_value: Vector3, extra_offset: Vector3, rotation_value: Vector3) -> void:
+	var geo: Dictionary = _limb_geo_for(socket_key)
+	var base_size: Vector3 = _as_vector3(geo.get("size", Vector3(0.2, 0.2, 0.2)), Vector3(0.2, 0.2, 0.2))
+	var base_offset: Vector3 = _as_vector3(geo.get("offset", Vector3.ZERO), Vector3.ZERO)
+	var final_size: Vector3 = explicit_size
+	if final_size == Vector3.ZERO:
+		final_size = _scale_vector3(base_size, scale_value)
+	_apply_body_hitbox(socket_key, final_size, base_offset + extra_offset, rotation_value)
+
+
+func _apply_body_hitbox(socket_key: String, size_value: Vector3, offset_value: Vector3, rotation_value: Vector3) -> void:
+	var shape_node: CollisionShape3D = body_hitbox_shapes.get(socket_key) as CollisionShape3D
+	if shape_node == null:
+		return
+
+	var box: BoxShape3D = shape_node.shape as BoxShape3D
+	if box == null:
+		box = BoxShape3D.new()
+		shape_node.shape = box
+
+	box.size = _positive_vector3(size_value, MIN_HITBOX_SIZE)
+	shape_node.position = offset_value
+	shape_node.rotation = rotation_value
+
+
+func _refresh_body_hitbox_enabled() -> void:
+	for socket_key in body_hitboxes:
+		var area: Area3D = body_hitboxes[socket_key] as Area3D
+		var shape_node: CollisionShape3D = body_hitbox_shapes.get(socket_key) as CollisionShape3D
+		if area == null or shape_node == null:
+			continue
+		var enabled := _body_hitbox_should_be_enabled(str(socket_key))
+		area.monitorable = enabled
+		shape_node.disabled = not enabled
+
+
+func _body_hitbox_should_be_enabled(socket_key: String) -> bool:
+	if not body_progression_enabled:
+		return true
+	if _socket_is_equipped(socket_key):
+		return true
+	return _base_socket_should_show(socket_key)
+
+
+func _clear_damage_hitbox_groups(area: Area3D) -> void:
+	for group_name in DAMAGE_HITBOX_GROUPS:
+		if area.is_in_group(group_name):
+			area.remove_from_group(group_name)
+
+
+func _limb_geo_for(socket_key: String) -> Dictionary:
+	return LIMB_GEO.get(socket_key, {"size": Vector3(0.2, 0.2, 0.2), "offset": Vector3.ZERO})
+
+
+func _as_vector3(value: Variant, fallback: Vector3) -> Vector3:
+	if value is Vector3:
+		var vector_value: Vector3 = value
+		return vector_value
+	if value is float or value is int:
+		var f := float(value)
+		return Vector3(f, f, f)
+	return fallback
+
+
+func _scale_vector3(size_value: Vector3, scale_value: Vector3) -> Vector3:
+	return Vector3(size_value.x * scale_value.x, size_value.y * scale_value.y, size_value.z * scale_value.z)
+
+
+func _positive_vector3(value: Vector3, fallback: Vector3) -> Vector3:
+	return Vector3(maxf(value.x, fallback.x), maxf(value.y, fallback.y), maxf(value.z, fallback.z))

@@ -161,6 +161,13 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
   entra al inventario normal; `torso_bone` aparece como pickup starter en el
   demo.
+- Las piezas pueden definir `hitbox_size`, `hitbox_offset`, `hitbox_scale` y
+  `hitbox_rotation`. `ModularSkeletonRig` consume esos campos al equipar para
+  ajustar el hurtbox de cada socket individual. Si no hay `hitbox_size`, el rig
+  deriva el tamano desde la geometria base y `visual_scale`.
+- El mismo contrato de `hitbox_*` aplica para jugador y enemigos. La diferencia
+  vive en el grupo de dano (`player_body_hurtboxes` o `enemy_body_hurtboxes`),
+  no en datos duplicados.
 
 ## Como probar
 
@@ -209,3 +216,7 @@ En `TESTING ENVIRONMENT`:
   de estructura de datos de huesos para programadores.
 - 2026-07-14: El jugador ahora inicia como cabeza fija, necesita torso para
   acoplar extremidades, y el rig muestra solo las partes recuperadas.
+- 2026-07-14: Se agregaron hurtboxes por parte del cuerpo al rig. Equipamiento
+  ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
+- 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
+  grupos distintos sin duplicar los campos de authoring.

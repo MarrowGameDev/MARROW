@@ -6,6 +6,9 @@ extends Area3D
 @export var projectile_gravity: float = 6.0
 @export var radius: float = 0.08
 
+const PLAYER_BODY_HURTBOX_GROUP := "player_body_hurtboxes"
+const ENEMY_BODY_HURTBOX_GROUP := "enemy_body_hurtboxes"
+
 var arrow_velocity: Vector3 = Vector3.ZERO
 var owner_body: Node = null
 var damages_player: bool = false
@@ -17,6 +20,7 @@ func _ready() -> void:
 	collision_layer = 0
 	collision_mask = 1
 	body_entered.connect(_on_body_entered)
+	area_entered.connect(_on_area_entered)
 	_build_visuals()
 
 	await get_tree().create_timer(lifetime).timeout
@@ -48,6 +52,8 @@ func _on_body_entered(body: Node) -> void:
 		return
 
 	if damages_player:
+		if body != null and body.has_method("has_body_part_hitboxes") and bool(body.call("has_body_part_hitboxes")):
+			return
 		if body != null and body.has_method("take_player_damage"):
 			_has_hit = true
 			body.take_player_damage(damage, global_position)
@@ -57,6 +63,8 @@ func _on_body_entered(body: Node) -> void:
 			queue_free()
 		return
 
+	if body != null and body.has_method("has_body_part_hitboxes") and bool(body.call("has_body_part_hitboxes")):
+		return
 	if body != null and body.has_method("take_damage"):
 		_has_hit = true
 		body.take_damage(damage, global_position, owner_body, projectile_style)
@@ -64,6 +72,42 @@ func _on_body_entered(body: Node) -> void:
 	elif body != null and body != owner_body:
 		_has_hit = true
 		queue_free()
+
+
+func _on_area_entered(area: Area3D) -> void:
+	if _has_hit:
+		return
+
+	if damages_player:
+		_try_hit_body_part_area(area, PLAYER_BODY_HURTBOX_GROUP, "take_player_body_part_damage", [])
+		return
+
+	_try_hit_body_part_area(area, ENEMY_BODY_HURTBOX_GROUP, "take_enemy_body_part_damage", [owner_body, projectile_style])
+
+
+func _try_hit_body_part_area(area: Area3D, group_name: String, method_name: String, extra_args: Array) -> void:
+	if not area.is_in_group(group_name):
+		return
+
+	var damage_owner := _damage_owner_for_area(area)
+	if damage_owner == null or damage_owner == owner_body:
+		return
+	if not damage_owner.has_method(method_name):
+		return
+
+	_has_hit = true
+	var call_args: Array = [_body_part_for_area(area), damage, global_position]
+	call_args.append_array(extra_args)
+	damage_owner.callv(method_name, call_args)
+	queue_free()
+
+
+func _damage_owner_for_area(area: Area3D) -> Node:
+	return area.get_meta("damage_owner", null) as Node
+
+
+func _body_part_for_area(area: Area3D) -> String:
+	return str(area.get_meta("body_part", ""))
 
 
 func _build_visuals() -> void:

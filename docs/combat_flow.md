@@ -139,6 +139,28 @@ Nucleo del jugador:
 - Si una regla futura destruye la cabeza del jugador, debe llamar a la muerte
   del jugador directamente.
 
+Hurtboxes del jugador:
+- `ModularSkeletonRig` crea hurtboxes por socket y `Player` se registra como
+  `damage_owner`.
+- Flechas enemigas, saliva y rocas escuchan `area_entered` contra el grupo
+  `player_body_hurtboxes` y llaman `take_player_body_part_damage(body_part, ...)`.
+- Si el jugador tiene hurtboxes activos, los proyectiles enemigos ignoran el
+  capsule principal para evitar dano con el cuerpo invisible. El capsule se
+  mantiene para movimiento/colision general.
+- Actualmente `take_player_body_part_damage` delega a `take_player_damage`.
+  La separacion queda lista para dano por cabeza/torso/extremidades.
+
+Hurtboxes de enemigos:
+- `Enemy._setup_procedural_character()` registra al enemigo como owner de los
+  hurtboxes del rig usando el grupo `enemy_body_hurtboxes`.
+- `AttackHitbox` escucha `area_entered` y llama
+  `take_enemy_body_part_damage(body_part, ...)` para melee.
+- Flechas y finger bones del jugador tambien escuchan `enemy_body_hurtboxes`.
+- Si un enemigo tiene hurtboxes activos, melee/proyectiles del jugador ignoran
+  el capsule principal del enemigo para evitar dano duplicado.
+- Cuando una extremidad enemiga se desprende, su hurtbox se desactiva; cuando
+  el enemigo recupera la parte, el hurtbox vuelve a activarse.
+
 Lizard wall climb:
 - El lizard ya no atraviesa paredes con `global_position`.
 - Usa `move_and_slide`.
@@ -195,3 +217,10 @@ En `TESTING ENVIRONMENT`:
   es visual solamente y no cambia dano ni hitboxes.
 - 2026-07-14: Se documento el inicio como cabeza fija y la recuperacion de vida
   al equipar torso/extremidades.
+- 2026-07-14: Proyectiles enemigos ahora usan hurtboxes por parte del cuerpo del
+  jugador cuando estan disponibles, manteniendo el capsule principal para
+  locomocion.
+- 2026-07-14: Melee, flechas y finger bones del jugador ahora usan hurtboxes por
+  parte del cuerpo de enemigos mediante `enemy_body_hurtboxes`.
+- 2026-07-14: Se limpio el ruteo de hurtboxes en melee/proyectiles con helpers
+  pequenos para evitar duplicacion entre jugador y enemigos.

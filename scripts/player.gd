@@ -582,6 +582,8 @@ func _setup_procedural_character() -> void:
 	animator.turn_target = visual_root
 	if animator.has_method("set_player_body_progression_enabled"):
 		animator.set_player_body_progression_enabled(true)
+	if rig.has_method("set_body_hitbox_owner"):
+		rig.set_body_hitbox_owner(self)
 
 
 func _build_bow_visual() -> void:
@@ -805,6 +807,14 @@ func take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> v
 
 	if health <= 0:
 		_die_player()
+
+
+func take_player_body_part_damage(body_part: String, amount: int, from_position: Vector3 = Vector3.ZERO) -> void:
+	take_player_damage(amount, from_position)
+
+
+func has_body_part_hitboxes() -> bool:
+	return rig != null and rig.has_method("has_body_part_hitboxes") and bool(rig.call("has_body_part_hitboxes"))
 
 
 # Enemies check this so they stop attacking a dead player.

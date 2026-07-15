@@ -197,6 +197,16 @@ Campos:
 - `visual_scale`
 - `visual_offset`
 - `visual_rotation`
+- `hitbox_size`
+- `hitbox_offset`
+- `hitbox_scale`
+- `hitbox_rotation`
+
+`hitbox_*` controla las cajas de dano por parte del cuerpo en
+`ModularSkeletonRig`. Si `hitbox_size` queda en `Vector3.ZERO`, el rig calcula
+el tamano desde la geometria base del socket y `hitbox_scale`/`visual_scale`.
+Usa `hitbox_offset` y `hitbox_rotation` cuando una malla importada no coincide
+con el centro/orientacion de la caja base.
 
 ## Agregar Un Hueso Nuevo
 

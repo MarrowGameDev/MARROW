@@ -70,6 +70,27 @@ Combo overlay:
   from being treated as head-only bodies.
 - Once the torso is equipped, the normal body/head rest pose takes over again.
 
+## Body-part hurtboxes
+- `ModularSkeletonRig` now creates one `Area3D` hurtbox per socket:
+  `head`, `body`, `right_arm`, `left_arm`, `right_leg`, `left_leg`,
+  `right_foot` and `left_foot`.
+- Hurtboxes live under the same sockets as the visuals, so procedural animation,
+  crawling, rolling head movement and equipped-part scaling all move the boxes
+  with the visible body part.
+- `set_body_hitbox_owner(owner, group)` labels the same socket boxes for the
+  owning actor. Player boxes use `player_body_hurtboxes`; enemy boxes use
+  `enemy_body_hurtboxes`.
+- When a bone is equipped, `equip_bone()` reads `hitbox_size`,
+  `hitbox_offset`, `hitbox_scale` and `hitbox_rotation`. If no explicit
+  `hitbox_size` is provided, the rig derives the box from the part's visual
+  scale and the default limb geometry.
+- Player body progression enables only the recovered/equipped body part
+  hurtboxes. In the head-only start, only the head hurtbox should receive
+  projectile damage.
+- Enemies register themselves as the owner of their rig hurtboxes. When limbs
+  detach or recover, `Enemy._set_rig_limb_visible()` also disables/enables that
+  limb's hurtbox.
+
 ## Known limitations / TODO
 - Socket positions & limb sizes are hand-estimated grey-box values — expect to
   nudge them once seen in a real window.

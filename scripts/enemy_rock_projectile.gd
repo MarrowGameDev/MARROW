@@ -6,6 +6,8 @@ extends Area3D
 @export var projectile_gravity: float = 24.0
 @export var radius: float = 0.18
 
+const PLAYER_BODY_HURTBOX_GROUP := "player_body_hurtboxes"
+
 var velocity: Vector3 = Vector3.ZERO
 var owner_enemy: Node = null
 var _has_hit: bool = false
@@ -15,6 +17,7 @@ func _ready() -> void:
 	collision_layer = 0
 	collision_mask = 1
 	body_entered.connect(_on_body_entered)
+	area_entered.connect(_on_area_entered)
 	_build_visuals()
 
 	await get_tree().create_timer(lifetime).timeout
@@ -41,12 +44,37 @@ func _on_body_entered(body: Node) -> void:
 		return
 	if body != null and body.is_in_group("enemies"):
 		return
+	if body != null and body.has_method("has_body_part_hitboxes") and bool(body.call("has_body_part_hitboxes")):
+		return
 
 	_has_hit = true
 	if body != null and body.has_method("take_player_damage"):
 		body.take_player_damage(damage, global_position)
 
 	queue_free()
+
+
+func _on_area_entered(area: Area3D) -> void:
+	if _has_hit:
+		return
+	if not area.is_in_group(PLAYER_BODY_HURTBOX_GROUP):
+		return
+
+	var damage_owner := _damage_owner_for_area(area)
+	if damage_owner == null or damage_owner == owner_enemy:
+		return
+	if damage_owner.has_method("take_player_body_part_damage"):
+		_has_hit = true
+		damage_owner.call("take_player_body_part_damage", _body_part_for_area(area), damage, global_position)
+		queue_free()
+
+
+func _damage_owner_for_area(area: Area3D) -> Node:
+	return area.get_meta("damage_owner", null) as Node
+
+
+func _body_part_for_area(area: Area3D) -> String:
+	return str(area.get_meta("body_part", ""))
 
 
 func _build_visuals() -> void:
