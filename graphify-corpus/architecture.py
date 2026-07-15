@@ -2746,8 +2746,16 @@ class ProceduralPlayerAnimator:
         """GDScript function: _is_head_only() -> bool"""
         pass
 
+    def gd_func__is_torso_spring_only(self):
+        """GDScript function: _is_torso_spring_only() -> bool"""
+        pass
+
     def gd_func__animate_head_only(self):
         """GDScript function: _animate_head_only(sway: float, breath: float) -> void"""
+        pass
+
+    def gd_func__animate_torso_spring(self):
+        """GDScript function: _animate_torso_spring(sway: float, breath: float) -> void"""
         pass
 
     def gd_func__animate_limbs(self):

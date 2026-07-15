@@ -2200,6 +2200,14 @@
 - `head_only_roll_amount`
 - `head_only_roll_radius`
 - `head_only_ground_socket_y`
+- `torso_spring_hop_amount`
+- `torso_spring_compress_amount`
+- `torso_spring_forward_offset`
+- `torso_spring_tilt_amount`
+- `torso_spring_ground_socket_y`
+- `torso_spring_head_offset`
+- `torso_spring_head_pop_amount`
+- `torso_spring_head_pop_delay`
 - `joint_bend_base`
 - `joint_bend_swing`
 - `wobble_enabled`
@@ -2269,16 +2277,16 @@
 - `head`
 - `hop`
 - `rest`
-- `swing`
-- `pull`
-- `shove`
+- `phase`
+- `airborne`
+- `contact`
+- `compression`
 - `forward_shove`
-- `right_pull`
-- `left_pull`
-- `right_arm`
-- `left_arm`
-- `right_leg`
-- `left_leg`
+- `spring_tilt`
+- `body_rest`
+- `head_phase`
+- `head_pop`
+- `swing`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
@@ -2293,7 +2301,9 @@
 - `_calculate_weight(equipped_defs: Array) -> float`
 - `_animate_body() -> void`
 - `_is_head_only() -> bool`
+- `_is_torso_spring_only() -> bool`
 - `_animate_head_only(sway: float, breath: float) -> void`
+- `_animate_torso_spring(sway: float, breath: float) -> void`
 - `_animate_limbs() -> void`
 - `_animate_crawl_body() -> void`
 - `_animate_crawl_limbs() -> void`
