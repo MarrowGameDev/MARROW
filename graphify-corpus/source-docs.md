@@ -755,6 +755,28 @@ antes de que aterrizara el anterior y las poses se apilaban.
   reciben la misma recuperacion sin rastrear como termino el ataque.
 - El melee normal no cambia: solo se gatea cuando el modo es head-launch.
 
+### Torso sin piernas: brazo o cabeza
+
+Un torso sin piernas lanza la cabeza SOLO si no tiene ningun brazo equipado.
+Alcanza con UN brazo para que el ataque pase a ser el combo de brazo.
+
+- `ProceduralPlayerAnimator._torso_head_launch_available()` = torso-spring y
+  `not _has_any_arm_equipped()`. Gobierna `trigger_attack()` y
+  `_apply_attack_overlay()`.
+- `Player._is_torso_head_launch_combat_mode()` (antes `_is_torso_only_combat_mode`)
+  agrega la misma condicion de brazo, y tiene que moverse en conjunto con el
+  animator: rutea el hitbox (esfera que sigue al socket `head` vs caja melee
+  normal), el lock de movimiento, el gate anti-stacking y el detach por fallo. Si
+  quedara en true con un brazo equipado, el hitbox apuntaria a la cabeza mientras
+  el brazo hace el swing.
+- Con un solo brazo, `_combo_step_for_equipped_arms()` fuerza el paso del combo al
+  brazo que existe (derecho -> paso 1, izquierdo -> paso 2). El combo normal
+  alterna derecho/izquierdo/ambos, y un paso sobre un socket vacio se ve como si
+  el ataque no hiciera nada. Con progression apagada (rig sandbox, enemigos) todos
+  los grey-box estan presentes y el ciclo normal se mantiene.
+- Consecuencia buscada: con un brazo no hay lanzamiento, asi que tampoco hay
+  detach de cabeza por fallar ni desplazamiento del cuerpo.
+
 ### Que ataques lanzan la cabeza
 
 `trigger_attack(combo_step, allow_head_launch)` es el unico punto de entrada de
@@ -1174,6 +1196,53 @@ En `TESTING ENVIRONMENT`:
   `TESTING ENVIRONMENT`, quedar solo como cabeza y atacar al aire varias veces
   seguidas; la cabeza y la capsula deben seguir juntas y la camara no debe
   quedarse atras. Atacar contra una pared no debe atravesarla.
+- 2026-07-15: `scripts/attack_hitbox.gd` — los ataques ya no registran hits
+  fantasma contra el piso. `_is_ground_like_body()` clasificaba por substring del
+  NOMBRE del nodo (`ground/floor/terrain/stagebody/ramp`), asi que toda superficie
+  caminable que no se llamara asi contaba como pared: `VillageBridge`,
+  `FieldBridge`, `NorthBridge`, `VillageCliff` (tutorial_island_builder) y
+  `RigPosePlatform` (testing_environment). Parado sobre cualquiera de ellas, la
+  esfera del hitbox head-launch tocaba el StaticBody3D y disparaba
+  `_confirm_contact` -> `hit_confirmed` -> `confirm_head_only_attack_contact()`,
+  o sea la cabeza rebotaba como si hubiera golpeado a un enemigo y, en torso-only,
+  ese falso hit tapaba el detach por fallo. Ahora la clasificacion es geometrica:
+  es piso si el hitbox esta a la altura de la cara superior del cuerpo o mas
+  arriba (`GROUND_CONTACT_TOLERANCE` 0.05), leyendo el AABB de sus
+  `CollisionShape3D`. Esto ademas resuelve el caso que ningun nombre ni grupo
+  puede expresar: `VillageCliff` mide 1 m, su techo es piso y su costado es pared.
+  Sin shape usable se lo trata como obstaculo, que es lo que las paredes esperan.
+  Medido con la geometria real: parado sobre bridge/cliff/platform no hay hit;
+  chocar contra `VillageKeep` o el costado del cliff si lo hay. Pruebas: en la
+  isla tutorial, pararse en un puente y atacar como cabeza; no debe haber recoil.
+- 2026-07-15: `scripts/player.gd` — `get_noise_radius()` estaba invertido:
+  devolvia 6.5 esprintando y 9.0 caminando, y `Enemy._can_hear_player()` compara
+  `dist <= noise_radius`, asi que esprintar te hacia MAS silencioso que caminar.
+  Los valores estaban al reves. Ahora son los exports
+  `noise_radius_normal` (6.5) y `noise_radius_sprinting` (9.0), configurables
+  como pide AGENTS.md para cambios de feel; enterrarlos como literales es lo que
+  tapo la inversion. Pruebas: en `TESTING ENVIRONMENT`, atacar cerca de un enemigo
+  caminando y esprintando; esprintar debe alertarlo desde mas lejos.
+- 2026-07-15: `scripts/rig/procedural_player_animator.gd` — corregida la posicion
+  de los brazos con torso sin piernas. Los sockets son hermanos del socket `body`,
+  no hijos, y `_swing()` solo escribe rotacion, asi que cuando
+  `_animate_torso_spring()` baja el torso a `torso_spring_ground_socket_y` (-0.58)
+  la cabeza se re-ancla pero los brazos se quedaban a su altura de hombro parado
+  (0.30), flotando ~0.88 m arriba del torso. Ahora `_anchor_socket_to_body()` los
+  re-ancla con el offset de rest respecto del body. Segunda causa en
+  `_animate_wobble()`: el slide reseteaba `base_pos` al rest, pisando la pose;
+  `crawl_mode` ya tenia esa excepcion y ahora tambien `_is_torso_spring_only()`.
+  Medido: brazo a 0.302 sobre el torso (antes 0.877). Pruebas: en
+  `TESTING ENVIRONMENT`, equipar torso sin piernas y mirar los hombros.
+- 2026-07-15: `scripts/player.gd`, `scripts/rig/procedural_player_animator.gd` —
+  con torso sin piernas y al menos UN brazo equipado, el ataque usa el combo de
+  brazo en vez de lanzar la cabeza. Detalle en la seccion "Torso sin piernas:
+  brazo o cabeza". `Player._is_torso_only_combat_mode()` se renombro a
+  `_is_torso_head_launch_combat_mode()` y ahora excluye el caso con brazo, asi que
+  el hitbox vuelve a ser la caja melee normal y no hay lock, gate ni detach.
+  Medido: sin brazos lanza la cabeza; con un brazo no lanza, no desplaza el cuerpo
+  y el paso del combo cae en el brazo equipado. Pruebas: en
+  `TESTING ENVIRONMENT`, torso sin piernas, atacar sin brazos (embestida de
+  cabeza) y despues equipar un solo brazo y atacar (swing de ese brazo).
 - 2026-07-15: `scripts/player.gd`, `scripts/rig/procedural_player_animator.gd` —
   los ataques ranged y el stealth finish ya no lanzan la cabeza. `_try_bow_shot()`
   y `_try_stealth_finish()` llamaban `animator.trigger_attack()`, el mismo punto
@@ -2045,6 +2114,18 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
+- 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
+  agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
+  hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
+  `_input_pressed` / `_input_just_pressed` / `_input_just_released` /
+  `_get_move_input_vector`, asi que el rebinding de la UI nunca podia
+  DESasignar un default: rebindear Move Forward fuera de W dejaba W caminando
+  para siempre, y lo mismo para las otras 12 acciones. Verificado que las 13
+  acciones estan declaradas en `project.godot`, o sea que el fallback era
+  redundante. Ahora los helpers leen solo el `InputMap`. Pruebas: abrir
+  settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
+  reiniciar y confirmar que el binding persiste desde
+  `user://control_settings.cfg`.
 
 ## docs/open_world_map_layout.md
 
