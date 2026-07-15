@@ -1879,7 +1879,7 @@ class Player:
         pass
 
     def gd_func__detach_head_from_torso_after_miss(self):
-        """GDScript function: _detach_head_from_torso_after_miss(detach_offset: Vector3) -> void"""
+        """GDScript function: _detach_head_from_torso_after_miss(detach_offset: Vector3, detached_body_transform: Transform3D = Transform3D.IDENTITY, use_detached_body_transform: bool = false) -> void"""
         pass
 
     def gd_func__detached_head_ground_local_position(self):
@@ -1887,15 +1887,43 @@ class Player:
         pass
 
     def gd_func__spawn_detached_torso_marker(self):
-        """GDScript function: _spawn_detached_torso_marker(body_bone_id: String) -> void"""
+        """GDScript function: _spawn_detached_torso_marker(body_bone_id: String, detached_body_transform: Transform3D = Transform3D.IDENTITY, use_detached_body_transform: bool = false) -> void"""
+        pass
+
+    def gd_func__grounded_detached_torso_marker_position(self):
+        """GDScript function: _grounded_detached_torso_marker_position(anchor_position: Vector3, torso_height: float) -> Vector3"""
         pass
 
     def gd_func__update_detached_torso_reattach(self):
         """GDScript function: _update_detached_torso_reattach(delta: float) -> bool"""
         pass
 
-    def gd_func__reattach_head_to_detached_torso(self):
-        """GDScript function: _reattach_head_to_detached_torso() -> void"""
+    def gd_func__begin_detached_torso_reattach_animation(self):
+        """GDScript function: _begin_detached_torso_reattach_animation() -> void"""
+        pass
+
+    def gd_func__update_detached_torso_reattach_animation(self):
+        """GDScript function: _update_detached_torso_reattach_animation() -> void"""
+        pass
+
+    def gd_func__cancel_detached_torso_reattach_animation(self):
+        """GDScript function: _cancel_detached_torso_reattach_animation() -> void"""
+        pass
+
+    def gd_func__finish_reattach_head_to_detached_torso(self):
+        """GDScript function: _finish_reattach_head_to_detached_torso() -> void"""
+        pass
+
+    def gd_func__current_head_world_position(self):
+        """GDScript function: _current_head_world_position() -> Vector3"""
+        pass
+
+    def gd_func__align_player_body_pose_to_detached_torso_marker(self):
+        """GDScript function: _align_player_body_pose_to_detached_torso_marker() -> void"""
+        pass
+
+    def gd_func__detached_torso_head_attach_offset(self):
+        """GDScript function: _detached_torso_head_attach_offset() -> Vector3"""
         pass
 
     def gd_func__clear_detached_torso_marker(self):
@@ -2866,6 +2894,10 @@ class ProceduralPlayerAnimator:
         """GDScript function: trigger_attack(combo_step: int = 0) -> void"""
         pass
 
+    def gd_func__capture_torso_head_miss_body_hold_transform(self):
+        """GDScript function: _capture_torso_head_miss_body_hold_transform() -> void"""
+        pass
+
     def gd_func_set_aiming(self):
         """GDScript function: set_aiming(enabled: bool) -> void"""
         pass
@@ -2894,8 +2926,36 @@ class ProceduralPlayerAnimator:
         """GDScript function: consume_torso_head_miss_detach_offset() -> Vector3"""
         pass
 
+    def gd_func_get_torso_head_miss_detach_body_transform(self):
+        """GDScript function: get_torso_head_miss_detach_body_transform() -> Transform3D"""
+        pass
+
     def gd_func_enter_detached_head_state(self):
         """GDScript function: enter_detached_head_state(start_local_position: Vector3 = Vector3.ZERO, use_start_position: bool = false) -> void"""
+        pass
+
+    def gd_func_start_detached_head_reattach_tornado(self):
+        """GDScript function: start_detached_head_reattach_tornado(body_world_position: Vector3, target_world_position: Vector3, body_world_rotation: Vector3 = Vector3.ZERO) -> void"""
+        pass
+
+    def gd_func_set_detached_head_reattach_tornado_progress(self):
+        """GDScript function: set_detached_head_reattach_tornado_progress(progress: float, body_world_position: Vector3, target_world_position: Vector3, body_world_rotation: Vector3 = Vector3.ZERO) -> void"""
+        pass
+
+    def gd_func_cancel_detached_head_reattach_tornado_to_ground(self):
+        """GDScript function: cancel_detached_head_reattach_tornado_to_ground() -> void"""
+        pass
+
+    def gd_func_play_detached_head_reattach_finish_blend(self):
+        """GDScript function: play_detached_head_reattach_finish_blend() -> void"""
+        pass
+
+    def gd_func_get_detached_head_reattach_tornado_duration(self):
+        """GDScript function: get_detached_head_reattach_tornado_duration() -> float"""
+        pass
+
+    def gd_func_get_stable_body_attach_local_position(self):
+        """GDScript function: get_stable_body_attach_local_position() -> Vector3"""
         pass
 
     def gd_func__update_head_only_facing_direction(self):
@@ -2904,6 +2964,10 @@ class ProceduralPlayerAnimator:
 
     def gd_func__world_horizontal_offset_to_local(self):
         """GDScript function: _world_horizontal_offset_to_local(world_offset: Vector3) -> Vector3"""
+        pass
+
+    def gd_func__world_rotation_to_rig_local(self):
+        """GDScript function: _world_rotation_to_rig_local(world_rotation: Vector3) -> Vector3"""
         pass
 
     def gd_func__capture_head_only_recoil_start_local_position(self):
@@ -2976,6 +3040,14 @@ class ProceduralPlayerAnimator:
 
     def gd_func__animate_head_only(self):
         """GDScript function: _animate_head_only(sway: float, breath: float) -> void"""
+        pass
+
+    def gd_func__apply_detached_head_reattach_tornado(self):
+        """GDScript function: _apply_detached_head_reattach_tornado(head: Node3D) -> void"""
+        pass
+
+    def gd_func__apply_detached_head_reattach_finish_blend(self):
+        """GDScript function: _apply_detached_head_reattach_finish_blend(_body: Node3D, head: Node3D) -> void"""
         pass
 
     def gd_func__animate_torso_spring(self):
@@ -3059,7 +3131,11 @@ class ProceduralPlayerAnimator:
         pass
 
     def gd_func__apply_torso_head_miss_fall_pose(self):
-        """GDScript function: _apply_torso_head_miss_fall_pose(head: Node3D) -> void"""
+        """GDScript function: _apply_torso_head_miss_fall_pose(body: Node3D, head: Node3D) -> void"""
+        pass
+
+    def gd_func__apply_torso_head_miss_body_hold_pose(self):
+        """GDScript function: _apply_torso_head_miss_body_hold_pose(body: Node3D) -> void"""
         pass
 
     def gd_func__future_head_only_ground_position(self):

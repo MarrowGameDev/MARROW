@@ -1494,6 +1494,8 @@
 - `detached_head_reattach_range`
 - `detached_head_reattach_hold_time`
 - `detached_head_fallback_launch_distance`
+- `detached_torso_ground_probe_height`
+- `detached_torso_ground_probe_depth`
 - `stealth_prompt_scan_range`
 - `bow_enabled`
 - `start_with_bow_equipped`
@@ -1558,7 +1560,7 @@
 - `detached_torso_bone_id`
 - `detached_torso_marker`
 - `detached_torso_reattach_progress`
-- `detached_camera_offset_carry`
+- `detached_torso_reattaching`
 
 ### Functions
 - `_ready() -> void`
@@ -1630,11 +1632,18 @@
 - `_recalculate_stats() -> void`
 - `_update_stealth_finish_prompt() -> void`
 - `is_head_detached_from_torso() -> bool`
-- `_detach_head_from_torso_after_miss(detach_offset: Vector3) -> void`
+- `_detach_head_from_torso_after_miss(detach_offset: Vector3, detached_body_transform: Transform3D = Transform3D.IDENTITY, use_detached_body_transform: bool = false) -> void`
 - `_detached_head_ground_local_position(launch_offset: Vector3) -> Vector3`
-- `_spawn_detached_torso_marker(body_bone_id: String) -> void`
+- `_spawn_detached_torso_marker(body_bone_id: String, detached_body_transform: Transform3D = Transform3D.IDENTITY, use_detached_body_transform: bool = false) -> void`
+- `_grounded_detached_torso_marker_position(anchor_position: Vector3, torso_height: float) -> Vector3`
 - `_update_detached_torso_reattach(delta: float) -> bool`
-- `_reattach_head_to_detached_torso() -> void`
+- `_begin_detached_torso_reattach_animation() -> void`
+- `_update_detached_torso_reattach_animation() -> void`
+- `_cancel_detached_torso_reattach_animation() -> void`
+- `_finish_reattach_head_to_detached_torso() -> void`
+- `_current_head_world_position() -> Vector3`
+- `_align_player_body_pose_to_detached_torso_marker() -> void`
+- `_detached_torso_head_attach_offset() -> Vector3`
 - `_clear_detached_torso_marker() -> void`
 - `_set_detached_torso_marker_prompt_visible(is_visible: bool) -> void`
 - `_as_vector3(value: Variant, fallback: Vector3) -> Vector3`
@@ -2326,6 +2335,11 @@
 - `detached_head_landing_bounce`
 - `detached_head_landing_roll`
 - `detached_head_mode_blend_duration`
+- `detached_head_reattach_tornado_duration`
+- `detached_head_reattach_tornado_radius`
+- `detached_head_reattach_tornado_turns`
+- `detached_head_reattach_tornado_lift`
+- `detached_head_reattach_finish_blend_duration`
 - `combo_left_arm_forward`
 - `combo_finisher_arm_forward`
 - `combo_finisher_torso_twist`
@@ -2384,15 +2398,16 @@
 - `_torso_head_miss_fall_start_position`
 - `_torso_head_miss_fall_start_rotation`
 - `_torso_head_miss_fall_start_scale`
+- `_torso_head_miss_body_hold_global_transform`
+- `_torso_head_detach_body_global_transform`
+- `_torso_head_miss_body_hold_transform_ready`
 - `_detached_head_landing_timer`
 - `_detached_head_landing_start_position`
-- `_detached_head_landing_start_rotation`
-- `_detached_head_landing_start_scale`
-- `_aim_requested`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
 - `trigger_attack(combo_step: int = 0) -> void`
+- `_capture_torso_head_miss_body_hold_transform() -> void`
 - `set_aiming(enabled: bool) -> void`
 - `confirm_head_only_attack_contact() -> void`
 - `get_head_only_attack_forward_offset() -> float`
@@ -2400,9 +2415,17 @@
 - `get_head_launch_attack_world_offset() -> Vector3`
 - `has_torso_head_miss_detach_request() -> bool`
 - `consume_torso_head_miss_detach_offset() -> Vector3`
+- `get_torso_head_miss_detach_body_transform() -> Transform3D`
 - `enter_detached_head_state(start_local_position: Vector3 = Vector3.ZERO, use_start_position: bool = false) -> void`
+- `start_detached_head_reattach_tornado(body_world_position: Vector3, target_world_position: Vector3, body_world_rotation: Vector3 = Vector3.ZERO) -> void`
+- `set_detached_head_reattach_tornado_progress(progress: float, body_world_position: Vector3, target_world_position: Vector3, body_world_rotation: Vector3 = Vector3.ZERO) -> void`
+- `cancel_detached_head_reattach_tornado_to_ground() -> void`
+- `play_detached_head_reattach_finish_blend() -> void`
+- `get_detached_head_reattach_tornado_duration() -> float`
+- `get_stable_body_attach_local_position() -> Vector3`
 - `_update_head_only_facing_direction(facing_direction: Vector3) -> void`
 - `_world_horizontal_offset_to_local(world_offset: Vector3) -> Vector3`
+- `_world_rotation_to_rig_local(world_rotation: Vector3) -> Vector3`
 - `_capture_head_only_recoil_start_local_position() -> Vector3`
 - `_capture_socket_local_position(socket_key: String) -> Vector3`
 - `_capture_socket_local_rotation(socket_key: String) -> Vector3`
@@ -2421,6 +2444,8 @@
 - `_is_head_only() -> bool`
 - `_is_torso_spring_only() -> bool`
 - `_animate_head_only(sway: float, breath: float) -> void`
+- `_apply_detached_head_reattach_tornado(head: Node3D) -> void`
+- `_apply_detached_head_reattach_finish_blend(_body: Node3D, head: Node3D) -> void`
 - `_animate_torso_spring(sway: float, breath: float) -> void`
 - `_animate_limbs() -> void`
 - `_animate_crawl_body() -> void`
@@ -2441,7 +2466,8 @@
 - `_apply_head_only_attack_pose() -> void`
 - `_apply_head_only_hit_recoil_pose(head: Node3D) -> void`
 - `_apply_torso_head_attack_pose() -> void`
-- `_apply_torso_head_miss_fall_pose(head: Node3D) -> void`
+- `_apply_torso_head_miss_fall_pose(body: Node3D, head: Node3D) -> void`
+- `_apply_torso_head_miss_body_hold_pose(body: Node3D) -> void`
 - `_future_head_only_ground_position() -> Vector3`
 - `_apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void`
 - `_apply_right_combo_pose(strength: float) -> void`
