@@ -67,6 +67,7 @@
 - `scripts/player_stats_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/rig/procedural_enemy_animator.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
 - `scripts/rig/procedural_player_animator.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/rig/rig_test_player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
@@ -109,6 +110,7 @@
 - `scenes/player.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
 - `scenes/player.tscn` uses script `scripts/rig/procedural_player_animator.gd`.
 - `scenes/player.tscn` uses script `scripts/player_camera_controller.gd`.
+- `scenes/player.tscn` instantiates scene `assets/skull.glb`.
 - `scenes/rig_test.tscn` uses script `scripts/rig/rig_test_player.gd`.
 - `scenes/rig_test.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
 - `scenes/rig_test.tscn` uses script `scripts/rig/procedural_player_animator.gd`.

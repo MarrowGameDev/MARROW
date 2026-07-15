@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player_script"]
 [ext_resource type="Script" path="res://scripts/rig/modular_skeleton_rig.gd" id="2_rig"]
 [ext_resource type="Script" path="res://scripts/rig/procedural_player_animator.gd" id="3_anim"]
 [ext_resource type="Script" path="res://scripts/player_camera_controller.gd" id="4_camera_controller"]
+[ext_resource type="PackedScene" uid="uid://dvgsjyj2wi7l6" path="res://assets/skull.glb" id="5_skull"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_player"]
 radius = 0.4
@@ -32,6 +33,8 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="ModularSkeletonRig" type="Node3D" parent="VisualRoot"]
 position = Vector3(0, 0.12, 0)
 script = ExtResource("2_rig")
+head_model_scene = ExtResource("5_skull")
+head_model_rotation_deg = Vector3(0, -90, 0)
 
 [node name="ProceduralAnimator" type="Node3D" parent="VisualRoot"]
 script = ExtResource("3_anim")

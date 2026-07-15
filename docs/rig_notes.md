@@ -43,6 +43,41 @@ the end of the animator's frame. An `AnimationPlayer` would hit the same wall.
 The demo hijacks the head socket regardless of equipped state, and settles back to
 a pose captured at trigger time, so it may pop slightly if triggered mid-sprint.
 
+## Head model (skull)
+The player's head is `assets/skull.glb` instead of a grey box. Wired in
+`player.tscn` via `ModularSkeletonRig.head_model_scene`.
+
+- Both the base head box AND the equipped head bone are built by `_make_limb()`,
+  so that is the only hook needed. It has to cover both:
+  `PlayerEquipmentComponent.equip_starting_core()` equips `head_bone` on spawn and
+  `_base_socket_should_show()` returns false for an equipped socket, so the head
+  you actually SEE is the equipped bone's visual — swapping only the base box
+  would look like nothing happened.
+- `head_model_scale` 0.32: skull.glb measures ~0.96 x 1.00 x 0.96 around its own
+  origin, and the grey head box it replaces is 0.32 (LIMB_GEO). It MULTIPLIES the
+  bone's `visual_scale`, so a bigger head bone still reads bigger. Measured in
+  play: the visible head is 0.307 x 0.319 x 0.306.
+- `head_model_rotation_deg` is `(0, -90, 0)` in `player.tscn`. skull.glb's face
+  points down its own **+X**, established from two in-game observations that agree:
+  at rotation 0 it looked left, and at +90 it looked backward. The mesh is
+  near-symmetric (0.959 vs 0.955 on X/Z), so its facing cannot be derived from its
+  bounds — only from looking at it.
+- Careful with left/right here: this rig's forward is **+Z** (`_animate_facing`
+  sets `rotation.y = atan2(flat.x, flat.z)`, aiming the node's +Z along facing),
+  which is 180 deg from Godot's standard -Z forward. That flip swaps handedness:
+  facing +Z the character's right is **-X** and its LEFT is **+X**. Assuming
+  Godot's usual "+X is right" here gives exactly the wrong sign.
+- `equip_bone()` ADDS `visual_rotation`/`visual_offset` rather than assigning
+  them. Assigning discarded `head_model_rotation_deg` on the EQUIPPED head (the
+  visible one) while the hidden base box rotated correctly. Every current bone has
+  a zero `visual_rotation`, so `+=` is identical to `=` for them.
+- `head_model_keep_material` (true) keeps the imported skull material instead of
+  flat-tinting it with the bone colour the grey boxes use.
+- With no `head_model_scene` assigned the grey box is used, so enemies (which
+  share `ModularSkeletonRig`) are unaffected.
+- Hitboxes are unchanged: `_apply_equipped_body_hitbox()` sizes from the bone
+  data, not the visual.
+
 ## Architecture (animate sockets, not meshes)
 - `scripts/rig/modular_skeleton_rig.gd` (`ModularSkeletonRig`) — builds Node3D
   sockets in `_ready()` and hangs a grey box on each. `equip_bone(id, def)` /

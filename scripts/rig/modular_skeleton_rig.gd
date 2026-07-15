@@ -75,6 +75,27 @@ const ENEMY_HITBOX_ACCURACY_SCALE := {
 @export var skeleton_rotation_deg := Vector3(-90.0, 0.0, 0.0)
 @export var skeleton_offset := Vector3.ZERO
 
+# Optional: swap the head socket's grey box for a real mesh (assets/skull.glb).
+# This applies to BOTH the base head box and the equipped head bone, because
+# PlayerEquipmentComponent.equip_starting_core() equips `head_bone` on spawn,
+# which hides the base visual — swapping only one of the two would look like
+# nothing changed. Both are built by _make_limb(), so that is the single hook.
+@export_group("Head model")
+@export var head_model_scene: PackedScene
+# skull.glb measures ~0.96 x 1.00 x 0.96 around its own origin, so 0.32 matches
+# the grey head box it replaces (LIMB_GEO "head" size). Multiplies the bone's
+# visual_scale rather than replacing it, so a Heavy head still reads as bigger.
+@export var head_model_scale := 0.32
+@export var head_model_offset := Vector3.ZERO
+# The mesh is near-symmetric (0.959 vs 0.955 on X/Z), so its facing cannot be
+# derived from its bounds — set this in the editor if the skull faces the wrong
+# way. It has not been verified on screen.
+@export var head_model_rotation_deg := Vector3.ZERO
+# Keep the imported skull material instead of flat-tinting it with the bone
+# colour the grey boxes use.
+@export var head_model_keep_material := true
+
+@export_group("")
 # Show/hide body parts. Used for the "limbs only" placeholder while a real rigged
 # skeleton is being made in Blender — leave the torso/head out, keep arms + legs.
 @export var show_torso := true
@@ -87,6 +108,9 @@ const ENEMY_HITBOX_ACCURACY_SCALE := {
 @export var rigged_model_scene: PackedScene
 @export var rigged_limb_scale := 1.0
 @export var rigged_limb_rotation_deg := Vector3(-90.0, 0.0, 0.0)
+
+var _head_model_mesh: Mesh = null
+var _head_model_mesh_loaded: bool = false
 
 var sockets: Dictionary = {}         # socket key -> Node3D
 var base_visuals: Dictionary = {}    # socket key -> MeshInstance3D (grey default)
@@ -436,10 +460,23 @@ func has_equipped_slot(slot_id: String) -> bool:
 # Builds one grey-box MeshInstance3D for a socket, offset so it hangs correctly.
 func _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D:
 	var geo: Dictionary = LIMB_GEO.get(socket_key, {"size": Vector3(0.2, 0.2, 0.2), "offset": Vector3.ZERO})
+	var mi := MeshInstance3D.new()
+
+	if socket_key == "head":
+		var head_mesh: Mesh = _get_head_model_mesh()
+		if head_mesh != null:
+			mi.mesh = head_mesh
+			mi.position = geo["offset"] + head_model_offset
+			mi.rotation_degrees = head_model_rotation_deg
+			mi.scale = extra_scale * head_model_scale
+			if not head_model_keep_material:
+				var head_material := StandardMaterial3D.new()
+				head_material.albedo_color = color
+				mi.material_override = head_material
+			return mi
+
 	var mesh := BoxMesh.new()
 	mesh.size = geo["size"]
-
-	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.position = geo["offset"]
 	mi.scale = extra_scale
@@ -448,6 +485,29 @@ func _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshI
 	mat.albedo_color = color
 	mi.material_override = mat
 	return mi
+
+
+# The head model's mesh, pulled out of its scene once and reused for every head
+# built afterwards. Returns null when no model is assigned, which is the cue to
+# fall back to the grey box.
+func _get_head_model_mesh() -> Mesh:
+	if _head_model_mesh_loaded:
+		return _head_model_mesh
+	_head_model_mesh_loaded = true
+	if head_model_scene == null:
+		return null
+
+	var instance: Node = head_model_scene.instantiate()
+	for node in instance.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance != null and mesh_instance.mesh != null:
+			_head_model_mesh = mesh_instance.mesh
+			break
+	# Never entered the tree, so free() rather than queue_free().
+	instance.free()
+	if _head_model_mesh == null:
+		push_warning("ModularSkeletonRig: head_model_scene has no MeshInstance3D; keeping the grey head box.")
+	return _head_model_mesh
 
 
 # Equip a bone: swap the target socket(s) grey limb for a bone-colored, bone-scaled
@@ -479,9 +539,12 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 			base_visuals[key].visible = false
 
 		var part := _make_limb(key, color, vis_scale)
-		# Per-bone corrections on top of the natural hang offset.
+		# Per-bone corrections on top of the natural hang offset. Both ADD rather
+		# than assign: grey boxes leave _make_limb at rotation zero so the result is
+		# unchanged for them, but the head model arrives already rotated by
+		# head_model_rotation_deg, and assigning here would silently discard it.
 		part.position += vis_offset
-		part.rotation = vis_rotation
+		part.rotation += vis_rotation
 		socket.add_child(part)
 		parts.append(part)
 		_apply_equipped_body_hitbox(key, hitbox_size, hitbox_scale, hitbox_offset, hitbox_rotation)
