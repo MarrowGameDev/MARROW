@@ -1392,7 +1392,8 @@ func rebuild_item_tiles() -> void:
 
 	var equipped_counts := _equipped_bone_counts()
 	var skipped_equipped_counts: Dictionary = {}
-	var shown := 0
+	var visible_counts: Dictionary = {}
+	var visible_order: Array[String] = []
 	for bone_id in _bone_inventory():
 		var id := str(bone_id)
 		if not _bone_matches_inventory_category(id):
@@ -1402,8 +1403,15 @@ func rebuild_item_tiles() -> void:
 		if skipped_count < equipped_count:
 			skipped_equipped_counts[id] = skipped_count + 1
 			continue
+		if not visible_counts.has(id):
+			visible_order.append(id)
+			visible_counts[id] = 0
+		visible_counts[id] = int(visible_counts[id]) + 1
+
+	var shown := 0
+	for id in visible_order:
 		var tile := BoneItemTile.new()
-		tile.setup(id, self)
+		tile.setup(id, self, int(visible_counts.get(id, 1)))
 		items_grid.add_child(tile)
 		shown += 1
 

@@ -152,6 +152,10 @@ Campos de ataque/combo:
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
   filtrar solo las copias equipadas, no esconder todos los duplicados.
+- Stacks visuales: despues de filtrar copias equipadas, el grid agrupa las
+  copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
+  de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
+  la ruta existente de `PlayerEquipmentComponent`.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
 - El tutorial de controles debe leer los bindings actuales con

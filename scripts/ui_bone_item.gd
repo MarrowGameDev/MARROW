@@ -7,14 +7,17 @@ extends Control
 
 var bone_id: String = ""
 var player: Node = null
+var stack_count: int = 1
 var _label: Label = null
 var _slot_label: Label = null
+var _stack_label: Label = null
 
 
 # Called right after .new() to fill in the tile's look and data.
-func setup(id: String, player_ref: Node) -> void:
+func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	bone_id = id
 	player = player_ref
+	stack_count = maxi(1, quantity)
 	var tile_size := Vector2(96, 86)
 	if player != null and player.has_method("get_inventory_tile_size"):
 		var requested_size: Variant = player.call("get_inventory_tile_size")
@@ -57,7 +60,17 @@ func setup(id: String, player_ref: Node) -> void:
 	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(core)
 
-	# The bone name under it, with a "(worn)" tag when it's currently equipped.
+	_stack_label = Label.new()
+	_stack_label.position = Vector2(57.0 * x_scale, 17.0 * y_scale)
+	_stack_label.size = Vector2(30.0 * x_scale, 16.0 * y_scale)
+	_stack_label.add_theme_font_size_override("font_size", maxi(9, int(10.0 * minf(x_scale, y_scale))))
+	_stack_label.add_theme_color_override("font_color", Color(0.96, 0.91, 0.72, 1.0))
+	_stack_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_stack_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_stack_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_stack_label)
+
+	# The bone name under it.
 	_label = Label.new()
 	_label.position = Vector2(5.0 * x_scale, 50.0 * y_scale)
 	_label.size = Vector2(86.0 * x_scale, 22.0 * y_scale)
@@ -103,6 +116,9 @@ func refresh() -> void:
 	if _label == null:
 		return
 	_label.text = BoneRulesService.display_name_with_slot(bone_id)
+	if _stack_label != null:
+		_stack_label.text = "x" + str(stack_count) if stack_count > 1 else ""
+		_stack_label.visible = stack_count > 1
 
 
 # Godot calls this when a drag begins on the tile. Returning data starts the drag.
