@@ -694,28 +694,58 @@ func _fire_player_projectile(forward: Vector3, projectile_damage: int, projectil
 	var start_position: Vector3 = global_position + Vector3.UP * bow_arrow_spawn_height + muzzle_forward * 0.7
 	if projectile_style == "arrow" and bow_equipped and bow_visual != null:
 		start_position = bow_visual.global_position
-	var launch_direction: Vector3 = forward.normalized()
-	if projectile_style == "arrow" and bow_equipped:
-		launch_direction = _get_pointer_aim_direction(start_position, muzzle_forward)
-	var launch_velocity: Vector3 = launch_direction * projectile_speed
+	var launch_velocity: Vector3 = forward.normalized() * projectile_speed
 	if projectile_style != "arrow":
+		# Finger bones are a short underhand lob with no reticle promising anything,
+		# so they keep their flat loft rather than gaining a solve.
 		launch_velocity.y = 0.65
+	elif bow_equipped:
+		# The reticle is a fixed dot the aim ray is cast through — it promises the
+		# arrow lands on the crosshair. Firing straight down that ray while gravity
+		# pulls the arrow down broke that promise by 0.64 m at 10 m, and the miss
+		# grew with range and shrank with charge, so no hold-over was learnable.
+		# Solve the ANGLE, not the vertical speed: charge must keep meaning speed.
+		var aim_point: Vector3 = _get_pointer_aim_point(start_position, muzzle_forward)
+		var solved: Vector3 = BallisticsService.solve_launch_velocity_fixed_speed(
+			start_position,
+			aim_point,
+			projectile_speed,
+			projectile_gravity,
+			BallisticsService.physics_step()
+		)
+		if solved != Vector3.ZERO:
+			launch_velocity = solved
+		else:
+			# Out of ballistic reach (open sky, or too far/too steep to arc onto).
+			# Fire straight down the aim line rather than inventing energy.
+			launch_velocity = _aim_direction_to(start_position, aim_point, muzzle_forward) * projectile_speed
 	if projectile.has_method("configure"):
 		projectile.call("configure", start_position, launch_velocity, projectile_damage, self, false, projectile_gravity, projectile_style)
 	get_tree().current_scene.add_child(projectile)
 
 
-func _get_pointer_aim_direction(start_position: Vector3, fallback_direction: Vector3) -> Vector3:
+# Where the centre-screen ray lands: a real surface hit, or ray_end when it hits
+# nothing. The ballistic solve needs the POINT, not just a direction, because a
+# direction carries no distance and therefore no time of flight.
+func _get_pointer_aim_point(start_position: Vector3, fallback_direction: Vector3) -> Vector3:
 	if camera_controller != null and camera_controller.has_method("get_center_aim_point"):
 		var exclude: Array[RID] = []
 		var player_collision: CollisionObject3D = self as CollisionObject3D
 		if player_collision != null:
 			exclude.append(player_collision.get_rid())
 		var aim_point: Vector3 = camera_controller.get_center_aim_point(bow_aim_ray_distance, exclude)
-		var aim_direction: Vector3 = aim_point - start_position
-		if aim_direction.length() > 0.01:
-			return aim_direction.normalized()
+		if start_position.distance_to(aim_point) > 0.01:
+			return aim_point
 
+	if fallback_direction.length() > 0.01:
+		return start_position + fallback_direction.normalized() * bow_aim_ray_distance
+	return start_position + Vector3.FORWARD * bow_aim_ray_distance
+
+
+func _aim_direction_to(start_position: Vector3, aim_point: Vector3, fallback_direction: Vector3) -> Vector3:
+	var aim_direction: Vector3 = aim_point - start_position
+	if aim_direction.length() > 0.01:
+		return aim_direction.normalized()
 	if fallback_direction.length() > 0.01:
 		return fallback_direction.normalized()
 	return Vector3.FORWARD

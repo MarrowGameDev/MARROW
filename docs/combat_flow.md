@@ -25,6 +25,9 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/combat_targeting_service.gd`: reglas puras de auto-target para
   ataques head-launch (head-only y torso-only). No accede a la escena: recibe
   posiciones candidatas y devuelve el indice del mejor objetivo.
+- `scripts/ballistics_service.gd`: regla pura de lanzamiento para proyectiles con
+  gravedad (saliva, flecha enemiga, roca de gorilla). Recibe posiciones y tuning,
+  devuelve la velocidad de lanzamiento. Ver "Solve balistico compartido".
 - `scripts/bone_definition.gd`, `scripts/bone_database.gd` y
   `scripts/bone_data_catalog.gd`: stats de huesos que modifican perfiles de
   combate del jugador y enemigos.
@@ -44,6 +47,59 @@ perdida de limbs, crawling, drops y reacciones de AI.
 5. `AttackHitbox` revisa overlaps y `body_entered`.
 6. Si el cuerpo tiene `take_damage`, llama `take_damage(damage, hit_pos, player)`.
 7. `Enemy.take_damage` aplica knockback, dano, limb loss y muerte si corresponde.
+
+## Solve balistico compartido
+
+Los tres proyectiles con gravedad usan `BallisticsService.solve_launch_velocity()`:
+saliva de lizard (`enemy.gd:508`), flecha enemiga (`:574`) y roca de gorilla
+(`:644`). Antes el mismo solve estaba copiado en los tres, y las copias
+DERIVARON — cada una fallaba distinto:
+
+- La roca sumaba `+ gorilla_rock_throw_upward_boost` ENCIMA de la solucion, o sea
+  llegaba (boost * travel_time) alta: +2.29 m a 10 m.
+- Saliva y flecha clampeaban `travel_time` en la division pero usaban el valor
+  crudo en el termino de gravedad, asi que por debajo de `0.1 * speed` metros los
+  dos terminos no coincidian y el tiro salia ALTO: medido +0.44 m a 0.3 m con la
+  saliva. `lizard_saliva_min_range` (2.2) solo gatea el INICIO del ataque; el
+  windup re-apunta cada frame, asi que correrle encima al lizard cae justo en esa
+  zona.
+- Ninguna de las dos compensaba el paso de fisica (ver abajo).
+
+Reglas del servicio:
+
+- `arc` loftea alargando el VUELO, nunca sumando velocidad vertical. Cualquier
+  termino sumado encima falla por exactamente (velocidad_sumada * travel_time).
+- `travel_time` se clampea AL DECLARARLO y la velocidad horizontal se deriva de
+  ese valor ya clampeado, asi que de cerca el proyectil simplemente vuela mas
+  lento en vez de irse alto.
+- `physics_step_seconds` compensa el integrador: los proyectiles corren
+  `velocity.y -= g*dt` y despues `position += velocity*dt` (Euler semi-implicito),
+  que pierde 0.5*g*T*dt contra la parabola analitica. La correccion es
+  `v0 = dy/T + 0.5*g*(T + dt)`. OJO: el signo depende del orden — con Euler
+  explicito (posicion con la velocidad VIEJA) seria `(T - dt)`. El error escala
+  con la gravedad: ~1 cm en la saliva (g 1.5), ~6 cm en la flecha (g 5), ~22 cm en
+  la roca (g 32).
+- Cambiar speed/gravity/arc no puede desviar el tiro: el solve se re-deriva.
+
+El bow del jugador usa el OTRO metodo del servicio,
+`solve_launch_velocity_fixed_speed()`, y la diferencia importa:
+
+- Los enemigos apuntan a un objetivo conocido y pueden inflar la velocidad
+  vertical libremente. En el bow la VELOCIDAD significa algo: `player.gd:606`
+  hace `charged_speed = bow_arrow_speed * lerpf(0.9, 1.15, charge_ratio)`, asi
+  que resolver la vertical como los enemigos le daria a un tiro a medio cargar la
+  energia de uno completo. Por eso el bow resuelve el ANGULO con la velocidad fija.
+- Devolver ZERO cuando el objetivo esta fuera de alcance no es un fallo, es la
+  respuesta: le avisa al `Player` que dispare derecho en vez de inventar energia.
+  Eso es lo que evita que apuntar al cielo abierto (el raycast devuelve `ray_end`
+  a 90 m) se convierta en un morterazo. Alcance maximo plano a v=18, g=4 es
+  v^2/g = 81 m.
+- Se elige la raiz PLANA de las dos posibles (a 10 m son 3.7 grados); la otra es
+  un lob de mortero.
+- Los finger bones NO usan el servicio: siguen con su `launch_velocity.y = 0.65`.
+  Es el mismo anti-patron de constante aditiva, pero no hay reticle para ellos
+  (`_start_bow_aim` solo corre con `bow_equipped`), asi que no rompen ninguna
+  promesa; son un lob corto a ~6.6 m.
 
 ## Auto-target de ataques head-launch
 
@@ -527,6 +583,81 @@ En `TESTING ENVIRONMENT`:
   `TESTING ENVIRONMENT`, quedar solo como cabeza y atacar al aire varias veces
   seguidas; la cabeza y la capsula deben seguir juntas y la camara no debe
   quedarse atras. Atacar contra una pared no debe atravesarla.
+- 2026-07-15: `scripts/player.gd`, `scripts/ballistics_service.gd` — el bow del
+  jugador ahora pega donde apunta el reticle. Era el unico tirador del juego sin
+  solve: disparaba en linea recta al punto del raycast mientras la gravedad (4.0)
+  tiraba la flecha abajo, asi que caia 0.64 m bajo el reticle a 10 m, 2.51 m a
+  20 m y 5.61 m a 30 m. Peor: como la carga escala la velocidad (0.9x-1.15x), la
+  caida variaba 62% con cuanto se mantenia el click, o sea no existia un hold-over
+  aprendible; y tirando plano desde 0.85 m la flecha tocaba el piso a ~11-13 m
+  mientras los enemigos ranged atacan desde 13 m CON solve correcto. Nuevo
+  `solve_launch_velocity_fixed_speed()`: resuelve el ANGULO con la velocidad fija
+  en vez de la vertical, asi la carga sigue significando velocidad (medido: la
+  velocidad se preserva a 0.01 m/s y el punto de impacto NO se mueve entre carga
+  0.0, 0.5 y 1.0). Fuera de alcance devuelve ZERO y el `Player` dispara derecho,
+  que es lo que evita que apuntar al cielo se vuelva un morterazo. Medido: error
+  vertical 0.000 m a 5/10/20/30 m y con el objetivo +-6 m de altura; rechaza 200 m,
+  cielo empinado y apuntar recto arriba; elige la raiz plana (3.7 grados a 10 m).
+  Los finger bones no cambian (no tienen reticle). Se borro
+  `_get_pointer_aim_direction()`, que quedo sin uso. Pruebas: en
+  `TESTING ENVIRONMENT`, equipar ambos brazos, tomar el bow (`1`) y disparar a un
+  enemigo a ~10 m y a ~20 m; debe pegar en el punto del reticle a cualquier carga.
+- 2026-07-15: `scripts/ballistics_service.gd` (nuevo), `scripts/enemy.gd` — el
+  solve balistico estaba copiado en tres lugares y las copias derivaron, cada una
+  fallando distinto; ahora los tres usan `BallisticsService`. La saliva y la
+  flecha enemiga ganan dos correcciones: (1) el clamp de `travel_time` estaba
+  aplicado solo en la division y no en el termino de gravedad, asi que por debajo
+  de `0.1 * speed` metros el tiro salia ALTO — medido +0.44 m a 0.3 m con la
+  saliva, o sea el lizard escupia por encima de la cabeza si le corrias encima
+  (`lizard_saliva_min_range` 2.2 solo gatea el inicio del ataque, pero el windup
+  de 0.28 s re-apunta cada frame); (2) compensacion del paso de fisica, que en la
+  saliva son ~1 cm a 12 m y en la flecha ~6 cm a 18 m — real pero invisible, muy
+  lejos de los 22 cm de la roca, porque el error escala con la gravedad (1.5 vs
+  32). La formula `v0 = dy/T + 0.5*g*(T + dt)` se verifico con tres derivaciones
+  independientes que intentaron refutarla (3/3 la confirmaron exacta, no
+  aproximada, para Euler semi-implicito) y ademas por simulacion. Medido con el
+  servicio: peor error 1.1 mm en 60 combinaciones de rango x altura para saliva y
+  roca, y 0.2 mm para la flecha. Pruebas: en `TESTING ENVIRONMENT`, spawnear un
+  lizard (`3`) y correrle encima hasta ~0.5 m; la saliva debe pegar y no pasar por
+  arriba. Un gorilla (`2`) y un ranged (`4`) deben seguir pegando a distancia.
+- 2026-07-15: `scripts/enemy.gd`, `scripts/enemy_rock_projectile.gd` — la roca de
+  gorilla ahora pega donde esta el jugador y se siente pesada.
+  `_throw_held_rock()` sumaba `gorilla_rock_throw_upward_boost` (2.6) ENCIMA de la
+  solucion balistica, asi que la roca llegaba (boost * travel_time) metros ALTA:
+  medido +0.91 m a 4 m y +2.29 m a 10 m, o sea pasaba por arriba de la cabeza
+  siempre. La saliva hace el mismo solve pero sin ese termino, por eso si pegaba.
+  Ahora el boost se reemplaza por `gorilla_rock_throw_arc` (0.15), que loftea
+  alargando el VUELO en vez de romper la punteria, y el solve ademas compensa el
+  paso de fisica: el proyectil integra con Euler semi-implicito (velocidad antes
+  que posicion), que pierde 0.5*g*T*step contra la parabola analitica — sin
+  compensar quedaba ~0.26 m bajo a 10 m. Medido: error < 1 mm de 4 a 10 m, y
+  tambien con el objetivo 2 m arriba o abajo. Peso: `gorilla_rock_gravity`
+  24 -> 32 (cae mas fuerte; tambien sube el arco, porque el solve compensa para
+  mantener el hang time), `gorilla_rock_throw_speed` 10.5 -> 12.0 (mantiene el
+  angulo de lanzamiento ~48 grados con la gravedad nueva) y nuevo export
+  `EnemyRockProjectile.tumble_speed` 0.22 (antes 0.8 hardcodeado, giraba ~1.3
+  vueltas por segundo y se leia como piedrita). Cambiar speed/gravity/arc no puede
+  desviar el tiro: el solve se re-deriva de ellos. NOTA: la saliva
+  (`enemy.gd:509`) comparte el mismo error de discretizacion de Euler y queda un
+  poco baja; no se toco en este cambio. Pruebas: en `TESTING ENVIRONMENT`,
+  spawnear un gorilla (`2`), dejarse ver a ~8-10 m y confirmar que la roca pega en
+  el cuerpo y no pasa por encima.
+- 2026-07-15: `scripts/arrow_projectile.gd`, `scripts/enemy_rock_projectile.gd` —
+  `configure()` escribia `global_position` cuando el nodo todavia no estaba en el
+  arbol. Los cuatro llamadores configuran ANTES de `add_child` (`enemy.gd:509`
+  saliva, `:570` flecha, `:636` roca, y `player.gd:704` bow) y tienen que hacerlo,
+  porque `_ready()` -> `_build_visuals()` necesita `projectile_style` y `radius`
+  ya seteados; invertir el orden construiria el visual equivocado. Cada proyectil
+  disparado loggeaba `Condition "!is_inside_tree()" is true. Returning:
+  Transform3D()`. Ahora `configure()` guarda el punto de spawn y `_ready()` lo
+  aplica con el nodo ya en el arbol; sigue funcionando si algun dia se llama
+  despues de `add_child`. Son DOS scripts distintos con el mismo bug: la roca usa
+  `enemy_rock_projectile.gd`, la saliva y la flecha usan `arrow_projectile.gd`.
+  Verificado: posicion mundial correcta incluso con el padre desplazado y rotado
+  (guardar una posicion local se habria offseteado en silencio). Pruebas: en
+  `TESTING ENVIRONMENT`, spawnear un lizard (saliva), un ranged (flecha) y un
+  gorilla (roca) y confirmar que no hay errores en consola y que los proyectiles
+  salen del cuerpo del enemigo.
 - 2026-07-15: `scripts/attack_hitbox.gd` — los ataques ya no registran hits
   fantasma contra el piso. `_is_ground_like_body()` clasificaba por substring del
   NOMBRE del nodo (`ground/floor/terrain/stagebody/ramp`), asi que toda superficie

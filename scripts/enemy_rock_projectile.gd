@@ -5,15 +5,26 @@ extends Area3D
 @export var lifetime: float = 4.0
 @export var projectile_gravity: float = 24.0
 @export var radius: float = 0.18
+# Tumble rate as a fraction of velocity. A boulder turns over slowly; at the old
+# hardcoded 0.8 it spun ~1.3 times a second, which read as a pebble.
+@export var tumble_speed: float = 0.22
 
 const PLAYER_BODY_HURTBOX_GROUP := "player_body_hurtboxes"
 
 var velocity: Vector3 = Vector3.ZERO
 var owner_enemy: Node = null
 var _has_hit: bool = false
+# Spawn point recorded by configure(), applied once the node is in the tree.
+var _spawn_position: Vector3 = Vector3.ZERO
+var _has_spawn_position: bool = false
 
 
 func _ready() -> void:
+	# Applied here rather than in configure(): the caller must configure BEFORE
+	# add_child so _build_visuals() below can see radius, but at that point the
+	# node is not in the tree and global_position is unusable.
+	if _has_spawn_position:
+		global_position = _spawn_position
 	collision_layer = 0
 	collision_mask = 1
 	body_entered.connect(_on_body_entered)
@@ -25,8 +36,14 @@ func _ready() -> void:
 		queue_free()
 
 
+# Safe to call before OR after add_child. enemy.gd:636 calls it before, so
+# writing global_position here logged `Condition "!is_inside_tree()" is true`
+# for every rock thrown.
 func configure(start_position: Vector3, launch_velocity: Vector3, hit_damage: int, source_enemy: Node, projectile_gravity: float = 24.0) -> void:
-	global_position = start_position
+	_spawn_position = start_position
+	_has_spawn_position = true
+	if is_inside_tree():
+		global_position = start_position
 	velocity = launch_velocity
 	damage = hit_damage
 	owner_enemy = source_enemy
@@ -36,7 +53,7 @@ func configure(start_position: Vector3, launch_velocity: Vector3, hit_damage: in
 func _physics_process(delta: float) -> void:
 	velocity.y -= projectile_gravity * delta
 	global_position += velocity * delta
-	rotation += Vector3(velocity.z, velocity.x, velocity.y) * delta * 0.8
+	rotation += Vector3(velocity.z, velocity.x, velocity.y) * delta * tumble_speed
 
 
 func _on_body_entered(body: Node) -> void:
