@@ -1510,6 +1510,34 @@ class Player:
         """GDScript function: _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3"""
         pass
 
+    def gd_func__reset_fallback_input_state(self):
+        """GDScript function: _reset_fallback_input_state() -> void"""
+        pass
+
+    def gd_func__refresh_fallback_input_state(self):
+        """GDScript function: _refresh_fallback_input_state() -> void"""
+        pass
+
+    def gd_func__read_fallback_input_state(self):
+        """GDScript function: _read_fallback_input_state() -> Dictionary"""
+        pass
+
+    def gd_func__input_pressed(self):
+        """GDScript function: _input_pressed(action: String) -> bool"""
+        pass
+
+    def gd_func__input_just_pressed(self):
+        """GDScript function: _input_just_pressed(action: String) -> bool"""
+        pass
+
+    def gd_func__input_just_released(self):
+        """GDScript function: _input_just_released(action: String) -> bool"""
+        pass
+
+    def gd_func__get_move_input_vector(self):
+        """GDScript function: _get_move_input_vector() -> Vector2"""
+        pass
+
     def gd_func__get_camera_forward_direction(self):
         """GDScript function: _get_camera_forward_direction() -> Vector3"""
         pass
@@ -2284,6 +2312,26 @@ class PlayerInventoryUI:
 
     def gd_func__event_from_config(self):
         """GDScript function: _event_from_config(config: ConfigFile, action: String) -> InputEvent"""
+        pass
+
+    def gd_func__control_event_is_usable(self):
+        """GDScript function: _control_event_is_usable(event: InputEvent) -> bool"""
+        pass
+
+    def gd_func__ensure_required_control_bindings(self):
+        """GDScript function: _ensure_required_control_bindings() -> void"""
+        pass
+
+    def gd_func__ensure_default_control_key(self):
+        """GDScript function: _ensure_default_control_key(action: String, keycode: int) -> void"""
+        pass
+
+    def gd_func__ensure_default_control_mouse(self):
+        """GDScript function: _ensure_default_control_mouse(action: String, button_index: int) -> void"""
+        pass
+
+    def gd_func__action_has_usable_event(self):
+        """GDScript function: _action_has_usable_event(action: String) -> bool"""
         pass
 
     def gd_func__reset_control_defaults(self):

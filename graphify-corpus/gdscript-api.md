@@ -1486,19 +1486,26 @@
 - `stealth_target`
 - `noise_timer`
 - `sprinting_this_frame`
+- `fallback_input_previous`
+- `fallback_input_current`
 - `input_vector`
 - `direction`
 - `aim_forward`
 - `current_move_speed`
 - `forward`
-- `right`
-- `combo_step`
 
 ### Functions
 - `_ready() -> void`
 - `_input(event: InputEvent) -> void`
 - `_physics_process(delta: float) -> void`
 - `_get_camera_relative_move_direction(input_vector: Vector2) -> Vector3`
+- `_reset_fallback_input_state() -> void`
+- `_refresh_fallback_input_state() -> void`
+- `_read_fallback_input_state() -> Dictionary`
+- `_input_pressed(action: String) -> bool`
+- `_input_just_pressed(action: String) -> bool`
+- `_input_just_released(action: String) -> bool`
+- `_get_move_input_vector() -> Vector2`
 - `_get_camera_forward_direction() -> Vector3`
 - `_try_attack() -> void`
 - `_try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void`
@@ -1570,16 +1577,9 @@
 
 ### Input Actions
 - `ui_cancel`
-- `inventory`
 - `ui_focus_next`
-- `equip`
-- `stealth_finish`
-- `toggle_bow`
-- `attack`
-- `ranged_attack`
-- `jump`
+- `inventory`
 - `move_left`
-- `sprint`
 
 ### Node Path Lookups
 - `MeshInstance3D`
@@ -1906,6 +1906,11 @@
 - `_save_control_settings() -> void`
 - `_load_control_settings() -> void`
 - `_event_from_config(config: ConfigFile, action: String) -> InputEvent`
+- `_control_event_is_usable(event: InputEvent) -> bool`
+- `_ensure_required_control_bindings() -> void`
+- `_ensure_default_control_key(action: String, keycode: int) -> void`
+- `_ensure_default_control_mouse(action: String, button_index: int) -> void`
+- `_action_has_usable_event(action: String) -> bool`
 - `_reset_control_defaults() -> void`
 - `_set_default_control_key(action: String, keycode: int) -> void`
 - `_set_default_control_mouse(action: String, button_index: int) -> void`
