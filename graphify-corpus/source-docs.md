@@ -492,6 +492,16 @@ con el centro/orientacion de la caja base.
 5. Probar equipamiento/drops en `scenes/testing_environment.tscn`.
 6. Actualizar docs relevantes si el hueso introduce una regla nueva.
 
+Antes de abrir PR, ejecutar la validacion read-only de datos:
+
+```bash
+python tools/validate_bone_data.py
+```
+
+El validador revisa rutas del catalogo, IDs duplicados, Resources `.tres` sin
+referencia, slots, calidades, rarezas, familias de mutacion y rangos numericos
+basicos. No modifica Resources ni requiere abrir Godot.
+
 ## Compatibilidad
 
 `BoneDefinition.to_clean_dictionary()` mantiene el esquema organizado.
@@ -616,6 +626,34 @@ En `TESTING ENVIRONMENT`:
 6. Cerrar inventario y confirmar que mouse/look vuelve.
 7. Subir rampas y confirmar que la camara no se inclina raro.
 
+## Diagnostico de jitter
+
+El bug de jitter/vibracion no tiene causa confirmada. Antes de tocar
+`Player`, `PlayerCameraController` o el rig procedural, correr:
+
+```bash
+python -B tools/validate_jitter_update_contract.py
+```
+
+Ese validador es estatico y read-only. Confirma el contrato actual de update:
+`Player._physics_process` mueve con `move_and_slide`, luego llama
+`ProceduralPlayerAnimator.update_from_player`, y despues entrega offsets
+horizontales de animacion a `PlayerCameraController.set_animation_follow_offset`.
+Tambien marca como hipotesis a aislar que la camara suaviza follow en `_process`
+mientras el jugador se mueve en fisica.
+
+Para reproducir manualmente en `TESTING ENVIRONMENT`:
+
+1. Probar idle, caminar, sprintar, saltar y rozar paredes con camara activa.
+2. Repetir abriendo/cerrando inventario para confirmar que el bloqueo de look no
+   introduce vibracion.
+3. Comparar head-only, torso-only y cuerpo completo.
+4. Repetir ataques de head launch y reattach de torso, anotando si el jitter
+   aparece durante el offset de animacion o despues de volver a cero.
+5. Aislar en una escena temporal deshabilitando solo camara follow, luego solo
+   offset de animacion, y luego solo rig procedural.
+6. Aplicar un fix solo cuando una de esas pruebas reproduzca y elimine la causa.
+
 ## Historial de cambios
 
 - 2026-07-14: Se documento el flujo actual de camara.
@@ -623,6 +661,8 @@ En `TESTING ENVIRONMENT`:
   camara, enemigos, movimiento, animaciones y rig.
 - 2026-07-14: La camara ahora puede seguir offsets horizontales de animacion;
   se usa para acompanar el ataque de cabeza sin copiar su salto vertical.
+- 2026-07-15: Se agrego diagnostico estatico de contrato de update para jitter,
+  sin modificar runtime ni confirmar todavia la causa.
 
 ## docs/change_documentation_policy.md
 
@@ -889,6 +929,21 @@ compromete al jugador en el lugar mientras dura la animacion.
 4. Al presionar stealth:
    - Si enemy health <= threshold, muere.
    - Si tiene demasiada vida, recibe dano extra y responde atacando/buscando.
+
+### Validacion geometrica de backstab
+
+Antes de cambiar la regla de stealth finish, ejecutar:
+
+```bash
+python tools/validate_backstab_geometry.py
+```
+
+El arnes reproduce la formula actual de `Enemy._is_player_behind()` sin abrir
+Godot. Cubre frente, detras, laterales, enemigos rotados, angulos del cono
+trasero y posiciones con offset vertical. Esta validacion es estatica; la
+confirmacion visual/runtime de que `facing_direction` coincide con el frente
+real del enemigo debe hacerse en `TESTING ENVIRONMENT` antes de una correccion
+funcional.
 
 ## Flujo de dano enemigo
 
@@ -2116,6 +2171,21 @@ modificar controles desde la seccion de settings.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
 
+### Validacion estatica del preview
+
+Antes de cambiar el preview del inventario, ejecutar:
+
+```bash
+python -B tools/validate_inventory_preview_contract.py
+```
+
+El validador confirma que la UI conserva el `SubViewportContainer`, el
+`SubViewport`, un `World3D` propio, luces/camara de preview, rig modular
+separado, sincronizacion desde eventos de equipamiento y escalado responsive del
+paper doll. Es una validacion estatica; render, lifecycle visual y
+sincronizacion real al equipar/desequipar siguen requiriendo prueba en
+`TESTING ENVIRONMENT`.
+
 `Player`:
 - Sigue siendo orquestador.
 - Decide cuando pausar el juego al abrir inventario.
@@ -2198,6 +2268,19 @@ Campos de ataque/combo:
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
   filtrar solo las copias equipadas, no esconder todos los duplicados.
+- Contrato de stacks: hoy el grid muestra una tile por copia visible. Antes de
+  agregar un contador `xN`, mantener la misma semantica: contar equipados por id,
+  omitir solo esa cantidad de copias del inventario, y dejar visibles las copias
+  sobrantes. Validar con:
+
+```bash
+python -B tools/validate_inventory_stack_contract.py
+```
+
+- Stacks visuales: despues de filtrar copias equipadas, el grid agrupa las
+  copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
+  de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
+  la ruta existente de `PlayerEquipmentComponent`.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
 - El tutorial de controles debe leer los bindings actuales con

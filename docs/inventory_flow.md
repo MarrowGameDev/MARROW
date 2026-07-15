@@ -70,6 +70,21 @@ modificar controles desde la seccion de settings.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
 
+### Validacion estatica del preview
+
+Antes de cambiar el preview del inventario, ejecutar:
+
+```bash
+python -B tools/validate_inventory_preview_contract.py
+```
+
+El validador confirma que la UI conserva el `SubViewportContainer`, el
+`SubViewport`, un `World3D` propio, luces/camara de preview, rig modular
+separado, sincronizacion desde eventos de equipamiento y escalado responsive del
+paper doll. Es una validacion estatica; render, lifecycle visual y
+sincronizacion real al equipar/desequipar siguen requiriendo prueba en
+`TESTING ENVIRONMENT`.
+
 `Player`:
 - Sigue siendo orquestador.
 - Decide cuando pausar el juego al abrir inventario.
@@ -152,6 +167,19 @@ Campos de ataque/combo:
 
 - Duplicados: el inventario permite varios huesos con el mismo id. La UI debe
   filtrar solo las copias equipadas, no esconder todos los duplicados.
+- Contrato de stacks: hoy el grid muestra una tile por copia visible. Antes de
+  agregar un contador `xN`, mantener la misma semantica: contar equipados por id,
+  omitir solo esa cantidad de copias del inventario, y dejar visibles las copias
+  sobrantes. Validar con:
+
+```bash
+python -B tools/validate_inventory_stack_contract.py
+```
+
+- Stacks visuales: despues de filtrar copias equipadas, el grid agrupa las
+  copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
+  de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
+  la ruta existente de `PlayerEquipmentComponent`.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
 - El tutorial de controles debe leer los bindings actuales con

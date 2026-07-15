@@ -15184,7 +15184,7 @@
       "norm_label": "godot script: scripts/ui_bone_item.gd     class_name: boneitemtile     extends:"
     },
     {
-      "label": "GDScript function: setup(id: String, player_ref: Node) -> void",
+      "label": "GDScript function: setup(id: String, player_ref: Node, quantity: int = 1) -> voi",
       "file_type": "rationale",
       "source_file": "architecture.py",
       "source_location": "L3672",
