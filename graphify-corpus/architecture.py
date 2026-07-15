@@ -1699,6 +1699,10 @@ class Player:
         """GDScript function: _is_head_launch_attack_blocked() -> bool"""
         pass
 
+    def gd_func__head_launch_attack_input_blocked(self):
+        """GDScript function: _head_launch_attack_input_blocked() -> bool"""
+        pass
+
     def gd_func__update_head_launch_recovery(self):
         """GDScript function: _update_head_launch_recovery(delta: float) -> void"""
         pass
@@ -3024,7 +3028,7 @@ class ProceduralPlayerAnimator:
         pass
 
     def gd_func_trigger_attack(self):
-        """GDScript function: trigger_attack(combo_step: int = 0) -> void"""
+        """GDScript function: trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void"""
         pass
 
     def gd_func__capture_torso_head_miss_body_hold_transform(self):
@@ -3439,6 +3443,14 @@ class TestingEnvironment:
 
     def gd_func__bone_for_profile(self):
         """GDScript function: _bone_for_profile(profile: String) -> String"""
+        pass
+
+    def gd_func__try_spawn_dummy(self):
+        """GDScript function: _try_spawn_dummy() -> void"""
+        pass
+
+    def gd_func__has_live_dummy(self):
+        """GDScript function: _has_live_dummy() -> bool"""
         pass
 
     def gd_func__remove_latest_enemy(self):

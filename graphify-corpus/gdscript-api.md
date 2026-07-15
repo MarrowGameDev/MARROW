@@ -1629,6 +1629,7 @@
 - `_is_head_only_attack_locking_movement() -> bool`
 - `_is_head_launch_attack_busy() -> bool`
 - `_is_head_launch_attack_blocked() -> bool`
+- `_head_launch_attack_input_blocked() -> bool`
 - `_update_head_launch_recovery(delta: float) -> void`
 - `_get_head_only_hitbox_follow_target() -> Node3D`
 - `_is_head_only_combat_mode() -> bool`
@@ -2483,7 +2484,7 @@
 - `set_head_launch_attack_aim(direction: Vector3, valid: bool) -> void`
 - `_head_launch_aim_or(fallback: Vector3) -> Vector3`
 - `_update_head_launch_attack_aim() -> void`
-- `trigger_attack(combo_step: int = 0) -> void`
+- `trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void`
 - `_capture_torso_head_miss_body_hold_transform() -> void`
 - `set_aiming(enabled: bool) -> void`
 - `confirm_head_only_attack_contact() -> void`
@@ -2695,6 +2696,8 @@
 - `_spawn_enemy(profile: String, pos: Vector3) -> void`
 - `_apply_profile(enemy: Node, profile: String) -> void`
 - `_bone_for_profile(profile: String) -> String`
+- `_try_spawn_dummy() -> void`
+- `_has_live_dummy() -> bool`
 - `_remove_latest_enemy() -> void`
 - `_on_enemy_defeated(_enemy: Node, _dropped_bone_id: String) -> void`
 - `_build_ui() -> void`

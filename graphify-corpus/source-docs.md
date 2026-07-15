@@ -755,6 +755,27 @@ antes de que aterrizara el anterior y las poses se apilaban.
   reciben la misma recuperacion sin rastrear como termino el ataque.
 - El melee normal no cambia: solo se gatea cuando el modo es head-launch.
 
+### Que ataques lanzan la cabeza
+
+`trigger_attack(combo_step, allow_head_launch)` es el unico punto de entrada de
+animacion de ataque, y no todos los ataques deben tirar la cabeza:
+
+- `_try_attack()` (melee) pasa `allow_head_launch = true`: en head-only y
+  torso-only lanza la cabeza. Es el unico que desplaza al jugador.
+- `_try_bow_shot()` (ranged/finger bones) y `_try_stealth_finish()` pasan
+  `false`: solo quieren feedback. Una cabeza que salta 0.85 m para disparar un
+  proyectil se ve mal y, con el catch-up del cuerpo, movia al jugador; en
+  torso-only ademas un lanzamiento fallado detacha la cabeza.
+- Con `allow_head_launch = false` se usa el overlay normal y los flags de launch
+  quedan en "landed", asi que `is_head_launch_attack_busy()` es false: no hay lock
+  de movimiento ni desplazamiento.
+- Los tres pasan primero por `Player._head_launch_attack_input_blocked()`. Un
+  lanzamiento en vuelo es dueño del socket `head`: disparar otra cosa encima lo
+  devolveria al suelo en el aire. Centralizarlo evita que un cambio futuro a
+  `attack_cooldown` o `bow_cooldown` reabra el stacking.
+- `ProceduralEnemyAnimator` desactiva `player_body_progression_enabled`, asi que
+  los enemigos nunca entran en estos caminos y el default `true` no los cambia.
+
 ### Lock de movimiento en head-only
 
 El salto se aplica como offset ENCIMA del movimiento del cuerpo, asi que un cuerpo
@@ -1153,6 +1174,33 @@ En `TESTING ENVIRONMENT`:
   `TESTING ENVIRONMENT`, quedar solo como cabeza y atacar al aire varias veces
   seguidas; la cabeza y la capsula deben seguir juntas y la camara no debe
   quedarse atras. Atacar contra una pared no debe atravesarla.
+- 2026-07-15: `scripts/player.gd`, `scripts/rig/procedural_player_animator.gd` —
+  los ataques ranged y el stealth finish ya no lanzan la cabeza. `_try_bow_shot()`
+  y `_try_stealth_finish()` llamaban `animator.trigger_attack()`, el mismo punto
+  de entrada del melee, asi que en head-only disparar un finger bone con click
+  derecho reproducia la embestida completa: medido, desplazaba al jugador 0.85 m y
+  le bloqueaba el movimiento 0.35s en un ataque a distancia. En torso-only ademas
+  podia detachar la cabeza por "fallar" un lanzamiento que nunca se quiso hacer.
+  Antes del catch-up del cuerpo esto solo desviaba el visual de la cabeza, asi que
+  pasaba como rareza cosmetica. Ahora `trigger_attack(combo_step,
+  allow_head_launch)` recibe `false` desde ranged y stealth, y los tres caminos
+  pasan por `_head_launch_attack_input_blocked()`, que antes solo estaba en
+  `_try_attack()` (ranged se apoyaba en `bow_cooldown` 0.75 > 0.34 por suerte, no
+  por diseño). Medido: melee sigue desplazando 0.85 m, ranged y stealth 0.00 m y
+  sin lock. Enemigos no afectados. Pruebas: en `DUMMY TESTING ENVIRONMENT`, como
+  cabeza, click derecho no debe moverte ni congelarte; click izquierdo si debe
+  embestir.
+- 2026-07-15: `scripts/testing_environment.gd` — en `dummy_only_mode` el dummy
+  ahora se respawnea con `2` en vez de `1` (`1` ya no hace nada ahi; en el
+  `TESTING ENVIRONMENT` normal `2` sigue siendo gorilla). Nuevo `_try_spawn_dummy()`
+  + `_has_live_dummy()`: si el dummy sigue vivo se rechaza el respawn en vez de
+  apilar otro sobre el mismo marker; al morir o quitarlo con Backspace vuelve a
+  permitirse. `5` sigue sirviendo para respawnear y respeta el mismo bloqueo. El
+  label de estado muestra "2 or 5: respawn dummy target" o
+  "(blocked, dummy already up)". El `TESTING ENVIRONMENT` normal no cambia: `5`
+  ahi todavia permite varios dummies. Pruebas: en `DUMMY TESTING ENVIRONMENT`,
+  apretar `2` con el dummy vivo no debe spawnear nada; matarlo y apretar `2` debe
+  traerlo de vuelta.
 
 ## docs/current_system_status.md
 
