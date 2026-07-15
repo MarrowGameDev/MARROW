@@ -21,6 +21,14 @@ gameplay debe actualizar el archivo de flujo correspondiente.
 7. `docs/tutorial_flow.md`
    - Tutorial de controles, hints del demo y checklist de onboarding.
 
+## Seguimiento y QA
+
+1. `docs/manual_gameplay_qa_checklist.md`
+   - Pasada manual repetible para validar gameplay, UI, combate, camara, rig y
+     evidencia de PR.
+2. `docs/roadmap_progress.md`
+   - Tabla operativa de lotes, ramas, evidencia, PRs y pendientes.
+
 ## Politica
 
 Leer `docs/change_documentation_policy.md` antes de cerrar cualquier cambio
