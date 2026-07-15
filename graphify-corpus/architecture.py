@@ -2838,6 +2838,10 @@ class ModularSkeletonRig:
         """GDScript function: _make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D"""
         pass
 
+    def gd_func__get_head_model_mesh(self):
+        """GDScript function: _get_head_model_mesh() -> Mesh"""
+        pass
+
     def gd_func_equip_bone(self):
         """GDScript function: equip_bone(bone_id: String, bone_def: Dictionary) -> void"""
         pass
@@ -2937,6 +2941,10 @@ class ModularSkeletonRig:
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
+
+    def depends_on_PlayerEquipmentComponent(self):
+        """Relationship: references class PlayerEquipmentComponent."""
+        return PlayerEquipmentComponent
 
 class ProceduralEnemyAnimator:
     """Godot script: scripts/rig/procedural_enemy_animator.gd

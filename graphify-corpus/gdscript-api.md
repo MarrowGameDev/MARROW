@@ -2205,6 +2205,11 @@
 - `skeleton_scale`
 - `skeleton_rotation_deg`
 - `skeleton_offset`
+- `head_model_scene`
+- `head_model_scale`
+- `head_model_offset`
+- `head_model_rotation_deg`
+- `head_model_keep_material`
 - `show_torso`
 - `show_head`
 - `use_rigged_limbs`
@@ -2222,6 +2227,8 @@
 - `ENEMY_HITBOX_ACCURACY_SCALE`
 
 ### Key Variables
+- `_head_model_mesh`
+- `_head_model_mesh_loaded`
 - `sockets`
 - `base_visuals`
 - `equipped_parts`
@@ -2260,8 +2267,6 @@
 - `tlen`
 - `tref`
 - `to_b`
-- `n`
-- `area`
 
 ### Functions
 - `_ready() -> void`
@@ -2285,6 +2290,7 @@
 - `_set_mesh_visibility_recursive(root: Node, is_visible: bool) -> void`
 - `has_equipped_slot(slot_id: String) -> bool`
 - `_make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D`
+- `_get_head_model_mesh() -> Mesh`
 - `equip_bone(bone_id: String, bone_def: Dictionary) -> void`
 - `unequip_slot(slot_id: String) -> void`
 - `get_equipped_bone_defs() -> Array`

@@ -200,7 +200,7 @@
 - `scripts/player_camera_controller.gd`
 
 ### Instanced Scenes
-- none
+- `assets/skull.glb`
 
 ### Nodes
 - `Player`
