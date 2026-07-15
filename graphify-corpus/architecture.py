@@ -3636,7 +3636,7 @@ class BoneItemTile:
     gameplay_system = 'Inventory, equipment, and bones'
 
     def gd_func_setup(self):
-        """GDScript function: setup(id: String, player_ref: Node) -> void"""
+        """GDScript function: setup(id: String, player_ref: Node, quantity: int = 1) -> void"""
         pass
 
     def gd_func__on_mouse_entered(self):

@@ -15084,14 +15084,14 @@
       "norm_label": "godot script: scripts/ui_bone_item.gd     class_name: boneitemtile     extends:"
     },
     {
-      "label": "GDScript function: setup(id: String, player_ref: Node) -> void",
+      "label": "GDScript function: setup(id: String, player_ref: Node, quantity: int = 1) -> voi",
       "file_type": "rationale",
       "source_file": "architecture.py",
       "source_location": "L3639",
       "_origin": "ast",
       "id": "architecture_rationale_3639",
       "community": 2,
-      "norm_label": "gdscript function: setup(id: string, player_ref: node) -> void"
+      "norm_label": "gdscript function: setup(id: string, player_ref: node, quantity: int = 1) -> voi"
     },
     {
       "label": "GDScript function: _on_mouse_entered() -> void",
@@ -37184,5 +37184,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "09c69c5e6d5b2417aad61520ce011f3f8e67e880"
+  "built_at_commit": "d85b879c948c59b59ce9493250e69fcfe03aed0a"
 }

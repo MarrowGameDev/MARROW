@@ -2854,8 +2854,10 @@
 ### Key Variables
 - `bone_id`
 - `player`
+- `stack_count`
 - `_label`
 - `_slot_label`
+- `_stack_label`
 - `tile_size`
 - `requested_size`
 - `x_scale`
@@ -2870,7 +2872,7 @@
 - `style`
 
 ### Functions
-- `setup(id: String, player_ref: Node) -> void`
+- `setup(id: String, player_ref: Node, quantity: int = 1) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
