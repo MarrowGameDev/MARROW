@@ -207,3 +207,15 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
+- 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
+  agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
+  hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
+  `_input_pressed` / `_input_just_pressed` / `_input_just_released` /
+  `_get_move_input_vector`, asi que el rebinding de la UI nunca podia
+  DESasignar un default: rebindear Move Forward fuera de W dejaba W caminando
+  para siempre, y lo mismo para las otras 12 acciones. Verificado que las 13
+  acciones estan declaradas en `project.godot`, o sea que el fallback era
+  redundante. Ahora los helpers leen solo el `InputMap`. Pruebas: abrir
+  settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
+  reiniciar y confirmar que el binding persiste desde
+  `user://control_settings.cfg`.
