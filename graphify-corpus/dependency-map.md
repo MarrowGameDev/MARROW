@@ -22,7 +22,7 @@
 - `scripts/bone_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/bone_trial_gate.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/demo_enemy_camp.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
-- `scripts/drop_pickup_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
+- `scripts/drop_pickup_rules_service.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/enemy.gd` depends on `scenes/bone.tscn` because it loads resource.
 - `scripts/enemy.gd` depends on `scripts/limb_bone_pickup.gd` because it loads resource.
@@ -46,12 +46,16 @@
 - `scripts/player.gd` depends on `scripts/combat_targeting_service.gd` because it references class CombatTargetingService.
 - `scripts/player.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/player.gd` depends on `scripts/player_camera_controller.gd` because it references class PlayerCameraController.
+- `scripts/player.gd` depends on `scripts/player_equipment_builds_component.gd` because it references class PlayerEquipmentBuildsComponent.
 - `scripts/player.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/player.gd` depends on `scripts/player_inventory_component.gd` because it references class PlayerInventoryComponent.
 - `scripts/player.gd` depends on `scripts/player_inventory_ui.gd` because it references class PlayerInventoryUI.
 - `scripts/player.gd` depends on `scripts/player_stats_component.gd` because it references class PlayerStatsComponent.
 - `scripts/player.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/player.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
+- `scripts/player_equipment_builds_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/player_equipment_builds_component.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/player_equipment_builds_component.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/player_equipment_component.gd` depends on `scenes/equipped_bone.tscn` because it loads resource.
 - `scripts/player_equipment_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player_equipment_component.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
@@ -61,6 +65,7 @@
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_inventory_empty_slot.gd` because it loads resource.
 - `scripts/player_inventory_ui.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player_inventory_ui.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/player_inventory_ui.gd` depends on `scripts/player_equipment_builds_component.gd` because it references class PlayerEquipmentBuildsComponent.
 - `scripts/player_inventory_ui.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_bone_item.gd` because it references class BoneItemTile.
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_bone_slot.gd` because it references class BoneSlotWidget.

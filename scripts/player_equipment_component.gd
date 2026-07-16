@@ -3,9 +3,14 @@ extends Node
 
 const EQUIPPED_BONE_SCENE: PackedScene = preload("res://scenes/equipped_bone.tscn")
 const CORE_HEAD_BONE_ID := "head_bone"
-const CORE_HEAD_SLOT := "head"
-const CORE_TORSO_SLOT := "body"
-const TORSO_REQUIRED_SLOTS := ["right_arm", "left_arm", "legs"]
+const CORE_HEAD_SLOT := EquipmentRulesService.SLOT_HEAD
+const CORE_TORSO_SLOT := EquipmentRulesService.SLOT_TORSO
+const TORSO_REQUIRED_SLOTS := [
+	EquipmentRulesService.SLOT_RIGHT_ARM,
+	EquipmentRulesService.SLOT_LEFT_ARM,
+	EquipmentRulesService.SLOT_RIGHT_LEG,
+	EquipmentRulesService.SLOT_LEFT_LEG,
+]
 
 var owner_player: Node = null
 var equipped: Dictionary = {}
@@ -26,31 +31,31 @@ func equip_starting_core() -> void:
 		_recalculate_owner_stats()
 
 
-func equip_bone(bone_id: String) -> void:
-	if not _equip_bone_in_slot(bone_id):
+func equip_bone(bone_id: String, target_slot: String = "") -> void:
+	if not _equip_bone_in_slot(bone_id, false, target_slot):
 		return
 
+	var slot: String = _slot_for_request(bone_id, target_slot)
 	var rig: ModularSkeletonRig = _get_player_rig()
 	if rig != null:
-		rig.equip_bone(bone_id, BoneRulesService.definition_for(bone_id))
+		rig.equip_bone(bone_id, _definition_for_slot(bone_id, slot))
 
 	equip_swaps += 1
 	_recalculate_owner_stats()
 	_notify_equipment_changed()
-	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
 	GameEvents.bone_equipped.emit(bone_id, slot, owner_player)
 	print("Equipped ", BoneRulesService.display_name_with_slot(bone_id), " in slot ", slot)
 
 
 func restore_detached_body(bone_id: String) -> void:
-	if EquipmentRulesService.slot_for_bone(bone_id) != CORE_TORSO_SLOT:
+	if not EquipmentRulesService.can_equip_bone_in_slot(bone_id, CORE_TORSO_SLOT):
 		return
 	if not _equip_bone_in_slot(bone_id, true):
 		return
 
 	var rig: ModularSkeletonRig = _get_player_rig()
 	if rig != null:
-		rig.equip_bone(bone_id, BoneRulesService.definition_for(bone_id))
+		rig.equip_bone(bone_id, _definition_for_slot(bone_id, CORE_TORSO_SLOT))
 
 	_recalculate_owner_stats()
 	_notify_equipment_changed()
@@ -59,6 +64,7 @@ func restore_detached_body(bone_id: String) -> void:
 
 
 func unequip_slot(slot: String) -> void:
+	slot = EquipmentRulesService.normalize_slot_id(slot)
 	if not equipped.has(slot):
 		return
 	if slot == CORE_HEAD_SLOT:
@@ -87,6 +93,7 @@ func get_equipped_bone_id() -> String:
 
 
 func get_equipped_bone_for_slot(slot: String) -> String:
+	slot = EquipmentRulesService.normalize_slot_id(slot)
 	return str(equipped.get(slot, ""))
 
 
@@ -102,8 +109,8 @@ func get_swap_count() -> int:
 	return equip_swaps
 
 
-func _equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool:
-	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
+func _equip_bone_in_slot(bone_id: String, force_core: bool = false, target_slot: String = "") -> bool:
+	var slot: String = _slot_for_request(bone_id, target_slot)
 	if slot == "":
 		print("Bone has no slot: ", bone_id)
 		return false
@@ -137,7 +144,37 @@ func _equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool:
 	return true
 
 
+func _slot_for_request(bone_id: String, target_slot: String = "") -> String:
+	var normalized_target := EquipmentRulesService.normalize_slot_id(target_slot)
+	if normalized_target != "" and EquipmentRulesService.can_equip_bone_in_slot(bone_id, normalized_target):
+		return normalized_target
+	return _first_open_compatible_slot(bone_id)
+
+
+# A bilateral bone (generic legs/right_arm data without a limb_key) is
+# compatible with two slots, e.g. [right_leg, left_leg]. Without an explicit
+# target_slot, EquipmentRulesService.slot_for_bone() (a pure, state-free
+# function) always returns the first one, so cycling equip-next with two
+# such bones could never reach the second side. This picks the first
+# compatible slot that isn't already occupied, using this component's own
+# `equipped` state, and only falls back to the static first slot when every
+# compatible slot is taken (matching the previous swap behavior).
+func _first_open_compatible_slot(bone_id: String) -> String:
+	var compatible: Array[String] = EquipmentRulesService.compatible_slots_for_bone(bone_id)
+	for slot in compatible:
+		if str(equipped.get(slot, "")) == "":
+			return slot
+	if not compatible.is_empty():
+		return compatible[0]
+	return ""
+
+
 func _can_equip_slot(slot: String, bone_id: String) -> bool:
+	slot = EquipmentRulesService.normalize_slot_id(slot)
+	if not EquipmentRulesService.can_equip_bone_in_slot(bone_id, slot):
+		print("Bone ", bone_id, " cannot equip in slot ", slot)
+		return false
+
 	if slot == CORE_HEAD_SLOT:
 		print("The head is fixed. Enemy heads cannot replace the player's core.")
 		_emit_equipment_hint("head_fixed", "Your head is the fixed core. If it breaks, you die.")
@@ -203,6 +240,13 @@ func _get_run_stats() -> Dictionary:
 	if owner_player != null and owner_player.has_method("get_run_stats"):
 		return owner_player.call("get_run_stats") as Dictionary
 	return {}
+
+
+func _definition_for_slot(bone_id: String, slot: String) -> Dictionary:
+	var definition: Dictionary = BoneRulesService.definition_for(bone_id).duplicate(true)
+	if not definition.is_empty():
+		definition["slot"] = slot
+	return definition
 
 
 func _tint_visual(visual: Node3D, color: Color) -> void:
