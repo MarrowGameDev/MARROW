@@ -62,6 +62,13 @@ var settings_status_label: Label = null
 var settings_reset_button: Button = null
 var build_preset_status_label: Label = null
 var build_preset_summary_labels: Dictionary = {}
+var build_preset_apply_buttons: Dictionary = {}
+var build_preset_save_buttons: Dictionary = {}
+# "save:2" / "apply:1" style key for whichever button is armed and waiting
+# for a second press to confirm; "" when nothing is armed.
+var build_preset_armed_action: String = ""
+var build_preset_confirm_timer: SceneTreeTimer = null
+const BUILD_PRESET_CONFIRM_WINDOW := 4.0
 var control_rows: Dictionary = {}
 var control_labels: Dictionary = {}
 var control_buttons: Dictionary = {}
@@ -941,10 +948,12 @@ func _build_equipment_build_row(index: int) -> Control:
 	var save_button := _make_build_preset_button("Save")
 	save_button.pressed.connect(Callable(self, "_save_equipment_build").bind(index))
 	row.add_child(save_button)
+	build_preset_save_buttons[index] = save_button
 
 	var apply_button := _make_build_preset_button("Apply")
 	apply_button.pressed.connect(Callable(self, "_apply_equipment_build").bind(index))
 	row.add_child(apply_button)
+	build_preset_apply_buttons[index] = apply_button
 	return row
 
 
@@ -964,6 +973,10 @@ func _save_equipment_build(index: int) -> void:
 	if player == null or not player.has_method("save_equipment_build"):
 		_set_build_preset_status("Equipment builds are not ready.")
 		return
+	# Saving into an empty slot is harmless; only overwriting an existing
+	# build needs a second press.
+	if not _build_slot_is_empty(index) and not _consume_or_arm_confirmation("save", index, "Save"):
+		return
 	var result := player.call("save_equipment_build", index) as Dictionary
 	_set_build_preset_status(str(result.get("message", "")))
 	_refresh_build_preset_rows()
@@ -973,11 +986,70 @@ func _apply_equipment_build(index: int) -> void:
 	if player == null or not player.has_method("apply_equipment_build"):
 		_set_build_preset_status("Equipment builds are not ready.")
 		return
+	# Applying always replaces currently worn gear, so it always needs a
+	# second press to confirm.
+	if not _consume_or_arm_confirmation("apply", index, "Apply"):
+		return
 	var result := player.call("apply_equipment_build", index) as Dictionary
 	_set_build_preset_status(str(result.get("message", "")))
 	_refresh_build_preset_rows()
 	if bool(result.get("ok", false)):
 		notify_equipment_changed()
+
+
+func _build_slot_is_empty(index: int) -> bool:
+	if player == null or not player.has_method("get_equipment_build_summaries"):
+		return true
+	var summaries := player.call("get_equipment_build_summaries") as Array
+	for entry in summaries:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		if int(entry.get("index", 0)) == index:
+			return bool(entry.get("is_empty", true))
+	return true
+
+
+# First press arms the given action+index and edits its button to prompt a
+# second press; returns false without doing anything else. Second press
+# within BUILD_PRESET_CONFIRM_WINDOW seconds on the SAME action+index
+# disarms and returns true, letting the caller proceed. Pressing any other
+# build button while one is armed just re-arms the new one instead of
+# silently running it.
+func _consume_or_arm_confirmation(action: String, index: int, button_text: String) -> bool:
+	var key := action + ":" + str(index)
+	if build_preset_armed_action == key:
+		_disarm_build_preset_confirmation()
+		return true
+
+	_disarm_build_preset_confirmation()
+	build_preset_armed_action = key
+	var buttons: Dictionary = build_preset_apply_buttons if action == "apply" else build_preset_save_buttons
+	var button := buttons.get(index) as Button
+	if button != null:
+		button.text = "Confirm?"
+	_set_build_preset_status(button_text + " build " + str(index) + " again to confirm.")
+	build_preset_confirm_timer = get_tree().create_timer(BUILD_PRESET_CONFIRM_WINDOW)
+	build_preset_confirm_timer.timeout.connect(_on_build_preset_confirm_timeout.bind(key))
+	return false
+
+
+func _on_build_preset_confirm_timeout(expected_key: String) -> void:
+	if build_preset_armed_action == expected_key:
+		_disarm_build_preset_confirmation()
+		_set_build_preset_status("Confirmation timed out.")
+
+
+func _disarm_build_preset_confirmation() -> void:
+	build_preset_armed_action = ""
+	build_preset_confirm_timer = null
+	for index in build_preset_save_buttons:
+		var save_button := build_preset_save_buttons[index] as Button
+		if save_button != null:
+			save_button.text = "Save"
+	for index in build_preset_apply_buttons:
+		var apply_button := build_preset_apply_buttons[index] as Button
+		if apply_button != null:
+			apply_button.text = "Apply"
 
 
 func _refresh_build_preset_rows() -> void:
