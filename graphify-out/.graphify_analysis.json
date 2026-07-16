@@ -454,24 +454,24 @@
     "13": [
       "architecture_rationale_4022",
       "architecture_rationale_4073",
+      "architecture_rationale_4082",
       "architecture_rationale_4091",
       "architecture_rationale_4108",
-      "architecture_rationale_4141",
       "architecture_scenebonetrialgate",
       "architecture_scenebonetrialgate_contains_bonetrialgate",
       "architecture_sceneexitportal",
       "architecture_sceneexitportal_contains_exitportal",
+      "architecture_sceneguidewisp",
+      "architecture_sceneguidewisp_contains_guidewisp",
       "architecture_scenemain",
       "architecture_scenemain_contains_arenagoalmanager",
       "architecture_scenemain_contains_scenebonetrialgate",
       "architecture_scenemain_contains_sceneenemy",
       "architecture_scenemain_contains_sceneexitportal",
-      "architecture_scenemain_contains_sceneopenworldstage",
+      "architecture_scenemain_contains_sceneguidewisp",
       "architecture_scenemain_contains_sceneplayer",
       "architecture_scenemain_contains_tutorialislandbuilder",
-      "architecture_scenemain_contains_worldmapmanager",
-      "architecture_sceneopenworldstage",
-      "architecture_sceneopenworldstage_contains_openworldstage"
+      "architecture_scenemain_contains_worldmapmanager"
     ],
     "14": [
       "architecture_demoenemycamp",
@@ -984,10 +984,10 @@
       "architecture_rationale_3220"
     ],
     "67": [
-      "architecture_rationale_4082",
-      "architecture_sceneguidewisp",
-      "architecture_sceneguidewisp_contains_guidewisp",
-      "architecture_scenemain_contains_sceneguidewisp"
+      "architecture_rationale_4141",
+      "architecture_scenemain_contains_sceneopenworldstage",
+      "architecture_sceneopenworldstage",
+      "architecture_sceneopenworldstage_contains_openworldstage"
     ],
     "68": [
       "architecture_arenagoalmanager_gd_func_action_binding_text",

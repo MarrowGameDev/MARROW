@@ -609,6 +609,11 @@
 
 ### Constants
 - `PLAYER_BONUS_DEFAULTS`
+- `PLAYER_STAT_MODIFIER_DEFAULTS`
+- `PLAYER_STAT_PERCENT_LIMIT`
+- `EQUIPMENT_FREE_WEIGHT`
+- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT`
+- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX`
 - `UNKNOWN_COLOR`
 
 ### Key Variables
@@ -623,8 +628,18 @@
 - `range_bonus`
 - `damage_bonus`
 - `health_bonus`
+- `multiplier`
 - `total`
+- `attack_damage_total`
+- `max_health_total`
 - `bone_id`
+- `weight_multiplier`
+- `load_over_free`
+- `modifiers`
+- `move_before_percent`
+- `move_multiplier`
+- `damage_before_percent`
+- `health_before_percent`
 - `keys`
 
 ### Functions
@@ -1632,6 +1647,7 @@
 - `inventory_component`
 - `equipment_component`
 - `stats_component`
+- `last_calculated_stats`
 - `nearby_bone_pickups`
 - `can_attack`
 - `can_shoot_bow`
@@ -1663,7 +1679,6 @@
 - `detached_torso_bone_id`
 - `detached_torso_marker`
 - `detached_torso_reattach_progress`
-- `detached_torso_reattaching`
 
 ### Functions
 - `_ready() -> void`

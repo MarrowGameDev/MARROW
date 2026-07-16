@@ -9490,7 +9490,7 @@
       "source_location": "L4081",
       "_origin": "ast",
       "id": "architecture_sceneguidewisp",
-      "community": 67,
+      "community": 13,
       "norm_label": "sceneguidewisp"
     },
     {
@@ -9500,7 +9500,7 @@
       "source_location": "L4086",
       "_origin": "ast",
       "id": "architecture_sceneguidewisp_contains_guidewisp",
-      "community": 67,
+      "community": 13,
       "norm_label": ".contains_guidewisp()"
     },
     {
@@ -9590,7 +9590,7 @@
       "source_location": "L4123",
       "_origin": "ast",
       "id": "architecture_scenemain_contains_sceneopenworldstage",
-      "community": 13,
+      "community": 67,
       "norm_label": ".contains_sceneopenworldstage()"
     },
     {
@@ -9600,7 +9600,7 @@
       "source_location": "L4127",
       "_origin": "ast",
       "id": "architecture_scenemain_contains_sceneguidewisp",
-      "community": 67,
+      "community": 13,
       "norm_label": ".contains_sceneguidewisp()"
     },
     {
@@ -9630,7 +9630,7 @@
       "source_location": "L4140",
       "_origin": "ast",
       "id": "architecture_sceneopenworldstage",
-      "community": 13,
+      "community": 67,
       "norm_label": "sceneopenworldstage"
     },
     {
@@ -9640,7 +9640,7 @@
       "source_location": "L4145",
       "_origin": "ast",
       "id": "architecture_sceneopenworldstage_contains_openworldstage",
-      "community": 13,
+      "community": 67,
       "norm_label": ".contains_openworldstage()"
     },
     {
@@ -16090,7 +16090,7 @@
       "source_location": "L4082",
       "_origin": "ast",
       "id": "architecture_rationale_4082",
-      "community": 67,
+      "community": 13,
       "norm_label": "godot scene: scenes/guide_wisp.tscn"
     },
     {
@@ -16130,7 +16130,7 @@
       "source_location": "L4141",
       "_origin": "ast",
       "id": "architecture_rationale_4141",
-      "community": 13,
+      "community": 67,
       "norm_label": "godot scene: scenes/open_world_stage.tscn"
     },
     {
@@ -38928,5 +38928,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "7a289a51144644f4bbfa2a02bba007034feff9bf"
+  "built_at_commit": "d0aebec4237c60e0b0234b5ecaef372c73adbe8d"
 }
