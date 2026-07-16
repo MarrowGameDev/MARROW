@@ -58,7 +58,7 @@ static func pickup_display_name(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
 		return str(definition.get("display_name", "Enemy Bone"))
-	return BoneDatabase.display_name_with_slot(bone_id)
+	return BoneRulesService.display_name_with_slot(bone_id)
 
 
 static func action_binding_text(action: String) -> String:
@@ -111,8 +111,10 @@ static func pickup_limb_candidates_for_bone(_bone_id: String) -> Array[String]:
 
 
 static func drop_slot_matches_limb(bone_id: String, limb_key: String) -> bool:
-	var slot_id: String = EquipmentRulesService.slot_for_bone(bone_id)
-	return EquipmentRulesService.primary_limb_keys_for_slot(slot_id).has(limb_key)
+	for slot_id in EquipmentRulesService.compatible_slots_for_bone(bone_id):
+		if EquipmentRulesService.primary_limb_keys_for_slot(str(slot_id)).has(limb_key):
+			return true
+	return false
 
 
 static func first_available_pickup_limb(detached_limb_keys: Array[String], source_profile: String = "normal") -> String:

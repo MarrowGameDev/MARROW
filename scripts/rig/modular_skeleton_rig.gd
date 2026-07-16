@@ -592,6 +592,11 @@ func _set_mesh_visibility_recursive(root: Node, is_visible: bool) -> void:
 
 
 func has_equipped_slot(slot_id: String) -> bool:
+	if slot_id == "legs":
+		return equipped_ids.has(EquipmentRulesService.SLOT_RIGHT_LEG) or equipped_ids.has(EquipmentRulesService.SLOT_LEFT_LEG)
+	var normalized := EquipmentRulesService.normalize_slot_id(slot_id)
+	if normalized != "":
+		return equipped_ids.has(normalized)
 	return equipped_ids.has(slot_id)
 
 
@@ -656,7 +661,9 @@ func _get_head_model_mesh() -> Mesh:
 # Equip a bone: swap the target socket(s) grey limb for a bone-colored, bone-scaled
 # part. bone_def comes from BoneRulesService.definition_for(bone_id).
 func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
-	var slot_id: String = bone_def.get("slot", "")
+	var slot_id := EquipmentRulesService.normalize_slot_id(str(bone_def.get("slot", "")))
+	if slot_id == "":
+		slot_id = str(bone_def.get("slot", ""))
 	var socket_keys: Array = EquipmentRulesService.socket_keys_for_slot(slot_id)
 	if socket_keys.is_empty():
 		push_warning("ModularSkeletonRig: no sockets for slot '" + slot_id + "'")
@@ -700,6 +707,9 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 
 
 func unequip_slot(slot_id: String) -> void:
+	var normalized_slot := EquipmentRulesService.normalize_slot_id(slot_id)
+	if normalized_slot != "":
+		slot_id = normalized_slot
 	if equipped_parts.has(slot_id):
 		for part in equipped_parts[slot_id]:
 			if is_instance_valid(part):
@@ -719,8 +729,9 @@ func unequip_slot(slot_id: String) -> void:
 func get_equipped_bone_defs() -> Array:
 	var defs: Array = []
 	for slot_id in equipped_ids:
-		var def := BoneRulesService.definition_for(equipped_ids[slot_id])
+		var def := BoneRulesService.definition_for(equipped_ids[slot_id]).duplicate(true)
 		if not def.is_empty():
+			def["slot"] = "body" if str(slot_id) == EquipmentRulesService.SLOT_TORSO else str(slot_id)
 			defs.append(def)
 	return defs
 
@@ -735,7 +746,7 @@ func _refresh_body_progression_visibility() -> void:
 		if visual == null:
 			continue
 		visual.visible = _base_socket_should_show(socket_key)
-	if equipped_ids.has("head") and not equipped_ids.has("body"):
+	if has_equipped_slot("head") and not has_equipped_slot("body"):
 		set_head_only_visual_guard(true)
 	_refresh_body_hitbox_enabled()
 
@@ -746,26 +757,26 @@ func _base_socket_should_show(socket_key: String) -> bool:
 	if socket_key == "head":
 		return true
 	if socket_key == "body" or socket_key == "body_lower":
-		return equipped_ids.has("body")
+		return has_equipped_slot("body")
 	# The lower halves follow their upper: without these branches they fall through
 	# to `return true` below and, with body progression on, an unearned forearm or
 	# shin renders on its own while the upper half is correctly hidden.
 	if socket_key == "right_arm" or socket_key == "right_arm_lower":
-		return equipped_ids.has("right_arm")
+		return has_equipped_slot("right_arm")
 	if socket_key == "left_arm" or socket_key == "left_arm_lower":
-		return equipped_ids.has("left_arm")
-	if (
-		socket_key == "right_leg" or socket_key == "left_leg"
-		or socket_key == "right_leg_lower" or socket_key == "left_leg_lower"
-		or socket_key == "right_foot" or socket_key == "left_foot"
-	):
-		return equipped_ids.has("legs")
+		return has_equipped_slot("left_arm")
+	if socket_key == "right_leg" or socket_key == "right_leg_lower" or socket_key == "right_foot":
+		return has_equipped_slot("right_leg")
+	if socket_key == "left_leg" or socket_key == "left_leg_lower" or socket_key == "left_foot":
+		return has_equipped_slot("left_leg")
 	return true
 
 
 func _socket_is_equipped(socket_key: String) -> bool:
-	if socket_key == "right_foot" or socket_key == "left_foot":
-		return equipped_ids.has("legs")
+	if socket_key == "right_foot":
+		return has_equipped_slot("right_leg")
+	if socket_key == "left_foot":
+		return has_equipped_slot("left_leg")
 	for slot_id in equipped_ids:
 		if EquipmentRulesService.socket_keys_for_slot(str(slot_id)).has(socket_key):
 			return true

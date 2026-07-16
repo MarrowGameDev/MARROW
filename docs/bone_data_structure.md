@@ -42,10 +42,18 @@ Campos principales:
 - `bone_id`: id estable, por ejemplo `arm_bone`.
 - `display_name`: nombre visible.
 - `color`: color fisico del hueso.
-- `slot`: slot de equipamiento (`right_arm`, `left_arm`, `body`, `legs`,
-  `head`).
+- `slot`: slot de equipamiento canonico (`head`, `torso`, `left_arm`,
+  `right_arm`, `left_leg`, `right_leg`) o alias legacy aceptado durante
+  migracion (`body`, `legs` -- los unicos dos que aparecen realmente en
+  `data/bones/*.tres` hoy; no agregar aliases especulativos sin un
+  consumidor real).
 - `tags`: tags generales.
 - `description`: texto visible para UI.
+
+`EquipmentRulesService.normalize_slot_id` convierte aliases legacy a los ids
+canonicos que usa el runtime. Los Resources viejos pueden seguir declarando
+`body` o `legs`, pero los sistemas nuevos deben guardar y comparar slots
+canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 ## Calidad
 
@@ -71,7 +79,11 @@ Campos:
 - `quality_weight_percent`
 
 Los porcentajes son metadata pasiva. No se aplican automaticamente a combate,
-drops, inventario o equipamiento hasta que exista una regla dedicada.
+drops o inventario hasta que exista una regla dedicada. En equipamiento,
+`BoneRulesService.player_stats_with_equipment()` ya consume
+`quality_multiplier`, `quality_damage_percent`, `quality_speed_percent`,
+`quality_health_percent` y `quality_weight_percent` para calcular stats finales
+del jugador de forma determinista.
 
 ## Rareza
 
@@ -94,6 +106,43 @@ Campos:
 `rarity_drop_weight` esta listo para tablas ponderadas, pero no cambia drops
 automaticamente todavia.
 
+## Alcance De Durabilidad, Mutacion Y Set/Sinergia
+
+Estas tres secciones (Durabilidad, Mutacion, Set Y Sinergia) son
+deliberadamente solo esquema de datos y helpers puros y deterministas en
+`BoneRulesService`. Nada de esto esta conectado a gameplay todavia:
+
+- La durabilidad no disminuye en runtime; no existe estado por copia.
+- Reparar no hace nada; `durability_repair_cost_for` solo calcula un numero.
+- Los sets/sinergias no aplican bonus a stats; `equipment_synergy_summary`
+  solo resume que hay repetido.
+- Las mutaciones no producen ningun efecto (visual, de rig, de IA o de
+  combate).
+- Ninguna de las funciones nuevas de `BoneRulesService` para estos temas
+  tiene un llamador fuera de si misma o del validador que las prueba.
+
+Esto es intencional: el objetivo de este hito era preparar datos y reglas
+puras reutilizables, no implementar las mecanicas de juego. Ver
+`docs/roadmap_1_165.md` objetivos 70-75, marcados "No iniciado".
+
+## Durabilidad
+
+Durabilidad describe resistencia authorable de la pieza, no el estado persistido
+de una copia concreta del inventario.
+
+Campos:
+- `durability_max`: capacidad maxima de la pieza.
+- `durability_start`: durabilidad inicial al crear o dropear la pieza.
+- `durability_repair_cost`: coste relativo para reparar esa pieza.
+- `durability_tags`: tags para futuras reglas de reparacion, rotura o UI.
+
+`BoneRulesService.durability_profile_for(bone_id, current_durability)` calcula
+un perfil determinista con `current`, `max`, `ratio`, `state`, `repair_cost` y
+`tags`. Los estados canonicos son `intact`, `cracked` y `broken`.
+
+El Resource no debe guardar el desgaste runtime de cada copia. Ese estado debe
+vivir luego en inventario/save y consultar estas reglas compartidas.
+
 ## Mutacion
 
 Mutacion describe variantes visuales, biologicas o de comportamiento que una
@@ -115,6 +164,9 @@ Campos:
 
 Mutacion no debe modificar rig, AI o combate por si sola. Debe haber una regla
 documentada que lea estos campos.
+
+`BoneRulesService.mutation_profile_for(bone_id)` centraliza id, familia, etapa,
+intensidad y tags para que UI, drops o combate futuro no dupliquen lecturas.
 
 ## Ataque Y Combo
 
@@ -154,6 +206,11 @@ Campos:
 Estos campos son metadata pasiva para futuras reglas de combinacion. No aplican
 bonuses automaticamente.
 
+`BoneRulesService.synergy_profile_for(bone_id)` entrega la metadata de una pieza
+y `equipment_synergy_summary(equipment_state)` resume piezas equipadas por set,
+synergy id, tags y familias de mutacion. Un set o synergy id queda activo cuando
+aparece al menos dos veces. El resumen no aplica bonuses por si mismo.
+
 ## Stats Del Jugador
 
 Campos limpios:
@@ -171,6 +228,18 @@ Campos legacy equivalentes:
 El inicio del juego usa `head_bone` como pieza fija y `max_health` base bajo.
 `torso_bone`, brazos y piernas pueden aumentar `max_health`; al subir el maximo,
 `PlayerStatsComponent` recupera esa diferencia de vida.
+
+Formula activa:
+- Los bonuses directos (`player_move_speed`, `player_attack_range`,
+  `player_attack_damage`, `player_max_health`) se escalan primero con
+  `quality_multiplier`.
+- `quality_damage_percent`, `quality_speed_percent` y
+  `quality_health_percent` se acumulan y se aplican al resultado base + bonus.
+- `quality_weight_percent` ajusta `equipment_weight` e `inventory_weight` por
+  pieza.
+- Si el peso equipado total supera el umbral libre, se aplica una penalizacion
+  suave y acotada sobre la velocidad de movimiento.
+- `quality_drop_percent` sigue reservado para reglas futuras de drops.
 
 ## Stats De Enemigos
 

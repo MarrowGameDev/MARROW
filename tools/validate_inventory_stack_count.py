@@ -39,10 +39,10 @@ CASES = [
         expected_groups=[("arm_bone", 2)],
     ),
     Case(
-        name="category order keeps first visible id order",
+        name="canonical body-slot order overrides pickup order",
         inventory=["leg_bone", "arm_bone", "leg_bone"],
         equipped={},
-        expected_groups=[("leg_bone", 2), ("arm_bone", 1)],
+        expected_groups=[("arm_bone", 1), ("leg_bone", 2)],
     ),
     Case(
         name="all equipped copies hide the stack",
@@ -86,7 +86,20 @@ def visible_stack_groups(inventory: list[str], equipment_state: dict[str, str]) 
             visible_counts[bone_id] = 0
         visible_counts[bone_id] += 1
 
+    visible_order.sort(key=inventory_sort_key)
     return [(bone_id, visible_counts[bone_id]) for bone_id in visible_order]
+
+
+def inventory_sort_key(bone_id: str) -> tuple[int, str]:
+    slots = {
+        "head_bone": 0,
+        "rib_bone": 1,
+        "body_bone": 1,
+        "arm_bone": 3,
+        "dummy_bone": 3,
+        "leg_bone": 5,
+    }
+    return (slots.get(bone_id, 99), bone_id)
 
 
 def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
@@ -95,6 +108,7 @@ def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
         "var visible_counts: Dictionary = {}",
         "var visible_order: Array[String] = []",
         "visible_order.append(id)",
+        'visible_order.sort_custom(Callable(self, "_compare_inventory_items"))',
         "visible_counts[id] = int(visible_counts[id]) + 1",
         "tile.setup(id, self, int(visible_counts.get(id, 1)))",
     ]

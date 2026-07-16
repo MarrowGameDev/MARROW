@@ -6,6 +6,20 @@ const PLAYER_BONUS_DEFAULTS := {
 	"attack_damage": 0,
 	"max_health": 0,
 }
+const DURABILITY_CRACKED_THRESHOLD := 0.4
+const PLAYER_STAT_MODIFIER_DEFAULTS := {
+	"damage_percent": 0.0,
+	"speed_percent": 0.0,
+	"health_percent": 0.0,
+	"weight_percent": 0.0,
+	"equipment_weight": 0.0,
+	"inventory_weight": 0.0,
+	"load_speed_penalty": 0.0,
+}
+const PLAYER_STAT_PERCENT_LIMIT := 0.75
+const EQUIPMENT_FREE_WEIGHT := 3.0
+const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06
+const EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30
 const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
 
@@ -28,7 +42,20 @@ static func display_name_with_slot(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
 		return str(definition.get("display_name", "Enemy Bone"))
-	return BoneDatabase.display_name_with_slot(bone_id)
+	var base_name := BoneDatabase.display_name(bone_id)
+	var slot_label := EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id))
+	if slot_label == "":
+		return base_name
+
+	var clean_name := base_name
+	if clean_name.ends_with(" Bone"):
+		clean_name = clean_name.substr(0, clean_name.length() - " Bone".length())
+
+	var clean_lower := clean_name.to_lower()
+	var slot_lower := slot_label.to_lower()
+	if slot_lower.contains(clean_lower):
+		return slot_label + " Bone"
+	return clean_name + " " + slot_label
 
 
 static func quality_for(bone_id: String) -> String:
@@ -123,6 +150,53 @@ static func rarity_drop_weight_for(bone_id: String) -> float:
 	return BoneDatabase.rarity_drop_weight(bone_id)
 
 
+static func durability_max_for(bone_id: String) -> int:
+	var definition: Dictionary = definition_for(bone_id)
+	return maxi(0, int(definition.get("durability_max", 100)))
+
+
+static func durability_start_for(bone_id: String) -> int:
+	var maximum := durability_max_for(bone_id)
+	var definition: Dictionary = definition_for(bone_id)
+	return clampi(int(definition.get("durability_start", maximum)), 0, maximum)
+
+
+static func durability_repair_cost_for(bone_id: String) -> int:
+	var definition: Dictionary = definition_for(bone_id)
+	return maxi(0, int(definition.get("durability_repair_cost", 1)))
+
+
+static func durability_tags_for(bone_id: String) -> Array:
+	var definition: Dictionary = definition_for(bone_id)
+	var value: Variant = definition.get("durability_tags", [])
+	if value is Array:
+		var tags: Array = value
+		return tags.duplicate()
+	return []
+
+
+static func durability_state_for(current_durability: int, max_durability: int) -> String:
+	if max_durability <= 0 or current_durability <= 0:
+		return BoneDefinition.DURABILITY_BROKEN
+	var ratio := float(current_durability) / float(max_durability)
+	if ratio <= DURABILITY_CRACKED_THRESHOLD:
+		return BoneDefinition.DURABILITY_CRACKED
+	return BoneDefinition.DURABILITY_INTACT
+
+
+static func durability_profile_for(bone_id: String, current_durability: int = -1) -> Dictionary:
+	var maximum := durability_max_for(bone_id)
+	var current := durability_start_for(bone_id) if current_durability < 0 else clampi(current_durability, 0, maximum)
+	return {
+		"max": maximum,
+		"current": current,
+		"ratio": 0.0 if maximum <= 0 else float(current) / float(maximum),
+		"state": durability_state_for(current, maximum),
+		"repair_cost": durability_repair_cost_for(bone_id),
+		"tags": durability_tags_for(bone_id),
+	}
+
+
 static func mutation_id_for(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
@@ -159,6 +233,16 @@ static func mutation_tags_for(bone_id: String) -> Array:
 			var tags: Array = value
 			return tags.duplicate()
 	return BoneDatabase.mutation_tags(bone_id)
+
+
+static func mutation_profile_for(bone_id: String) -> Dictionary:
+	return {
+		"id": mutation_id_for(bone_id),
+		"family": mutation_family_for(bone_id),
+		"stage": mutation_stage_for(bone_id),
+		"intensity": mutation_intensity_for(bone_id),
+		"tags": mutation_tags_for(bone_id),
+	}
 
 
 static func attack_type_for(bone_id: String) -> String:
@@ -276,6 +360,77 @@ static func synergy_score_for(bone_id: String) -> float:
 	return float(definition.get("synergy_score", 0.0))
 
 
+static func synergy_profile_for(bone_id: String) -> Dictionary:
+	return {
+		"set_id": set_id_for(bone_id),
+		"set_name": set_name_for(bone_id),
+		"set_piece_key": set_piece_key_for(bone_id),
+		"set_tags": set_tags_for(bone_id),
+		"synergy_ids": synergy_ids_for(bone_id),
+		"synergy_tags": synergy_tags_for(bone_id),
+		"synergy_score": synergy_score_for(bone_id),
+	}
+
+
+static func equipment_synergy_summary(equipment_state: Dictionary) -> Dictionary:
+	var set_counts: Dictionary = {}
+	var set_names: Dictionary = {}
+	var set_pieces: Dictionary = {}
+	var synergy_counts: Dictionary = {}
+	var tag_counts: Dictionary = {}
+	var mutation_counts: Dictionary = {}
+	var total_synergy_score := 0.0
+	var total_mutation_intensity := 0.0
+
+	for slot_id in equipment_state:
+		var bone_id: String = str(equipment_state[slot_id])
+		if bone_id == "":
+			continue
+
+		var set_id := set_id_for(bone_id)
+		if set_id != "":
+			set_counts[set_id] = int(set_counts.get(set_id, 0)) + 1
+			set_names[set_id] = set_name_for(bone_id)
+			if not set_pieces.has(set_id):
+				set_pieces[set_id] = []
+			var pieces: Array = set_pieces[set_id]
+			var piece_key := set_piece_key_for(bone_id)
+			if piece_key != "" and not pieces.has(piece_key):
+				pieces.append(piece_key)
+
+		for synergy_id in synergy_ids_for(bone_id):
+			var clean_synergy_id := str(synergy_id)
+			if clean_synergy_id == "":
+				continue
+			synergy_counts[clean_synergy_id] = int(synergy_counts.get(clean_synergy_id, 0)) + 1
+
+		for tag in set_tags_for(bone_id) + synergy_tags_for(bone_id):
+			var clean_tag := str(tag)
+			if clean_tag == "":
+				continue
+			tag_counts[clean_tag] = int(tag_counts.get(clean_tag, 0)) + 1
+
+		var mutation_family := mutation_family_for(bone_id)
+		if mutation_family != "":
+			mutation_counts[mutation_family] = int(mutation_counts.get(mutation_family, 0)) + 1
+			total_mutation_intensity += mutation_intensity_for(bone_id)
+
+		total_synergy_score += synergy_score_for(bone_id)
+
+	return {
+		"set_counts": set_counts,
+		"set_names": set_names,
+		"set_pieces": set_pieces,
+		"active_set_ids": _keys_with_min_count(set_counts, 2),
+		"synergy_counts": synergy_counts,
+		"active_synergy_ids": _keys_with_min_count(synergy_counts, 2),
+		"tag_counts": tag_counts,
+		"mutation_counts": mutation_counts,
+		"total_synergy_score": total_synergy_score,
+		"total_mutation_intensity": total_mutation_intensity,
+	}
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
@@ -327,25 +482,94 @@ static func player_bonus_for(bone_id: String) -> Dictionary:
 	}
 
 
+# Returns the quality-adjusted bonus for a single bone as floats. Callers
+# that aggregate several bones must sum these floats first and round once
+# at the end (see aggregate_player_bonuses): rounding attack_damage/max_health
+# per bone before summing would let each bone's fraction round up
+# independently (e.g. three bones at +0.5 would total +3 instead of the
+# correct +2 for a combined +1.5), inflating stats with more equipped
+# pieces even when the underlying bonus total is unchanged.
+static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
+	var bonus := player_bonus_for(bone_id)
+	var multiplier := quality_multiplier_for(bone_id)
+	return {
+		"move_speed": float(bonus["move_speed"]) * multiplier,
+		"attack_range": float(bonus["attack_range"]) * multiplier,
+		"attack_damage": float(bonus["attack_damage"]) * multiplier,
+		"max_health": float(bonus["max_health"]) * multiplier,
+	}
+
+
 static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 	var total: Dictionary = PLAYER_BONUS_DEFAULTS.duplicate()
+	var attack_damage_total := 0.0
+	var max_health_total := 0.0
 	for slot_id in equipment_state:
 		var bone_id: String = str(equipment_state[slot_id])
-		var bonus: Dictionary = player_bonus_for(bone_id)
+		if bone_id == "":
+			continue
+		var bonus: Dictionary = adjusted_player_bonus_for(bone_id)
 		total["move_speed"] = float(total["move_speed"]) + float(bonus["move_speed"])
 		total["attack_range"] = float(total["attack_range"]) + float(bonus["attack_range"])
-		total["attack_damage"] = int(total["attack_damage"]) + int(bonus["attack_damage"])
-		total["max_health"] = int(total["max_health"]) + int(bonus["max_health"])
+		attack_damage_total += float(bonus["attack_damage"])
+		max_health_total += float(bonus["max_health"])
+	total["attack_damage"] = roundi(attack_damage_total)
+	total["max_health"] = roundi(max_health_total)
+	return total
+
+
+static func aggregate_player_stat_modifiers(equipment_state: Dictionary) -> Dictionary:
+	var total: Dictionary = PLAYER_STAT_MODIFIER_DEFAULTS.duplicate()
+	for slot_id in equipment_state:
+		var bone_id: String = str(equipment_state[slot_id])
+		if bone_id == "":
+			continue
+		total["damage_percent"] = float(total["damage_percent"]) + quality_damage_percent_for(bone_id)
+		total["speed_percent"] = float(total["speed_percent"]) + quality_speed_percent_for(bone_id)
+		total["health_percent"] = float(total["health_percent"]) + quality_health_percent_for(bone_id)
+		total["weight_percent"] = float(total["weight_percent"]) + quality_weight_percent_for(bone_id)
+
+		var weight_multiplier := maxf(0.0, 1.0 + quality_weight_percent_for(bone_id))
+		total["equipment_weight"] = float(total["equipment_weight"]) + equipment_weight_for(bone_id) * weight_multiplier
+		total["inventory_weight"] = float(total["inventory_weight"]) + inventory_weight_for(bone_id) * weight_multiplier
+
+	total["damage_percent"] = clampf(float(total["damage_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+	total["speed_percent"] = clampf(float(total["speed_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+	total["health_percent"] = clampf(float(total["health_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+	total["weight_percent"] = clampf(float(total["weight_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+
+	var load_over_free := maxf(0.0, float(total["equipment_weight"]) - EQUIPMENT_FREE_WEIGHT)
+	total["load_speed_penalty"] = clampf(
+		load_over_free * EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT,
+		0.0,
+		EQUIPMENT_LOAD_SPEED_PENALTY_MAX
+	)
 	return total
 
 
 static func player_stats_with_equipment(base_move_speed: float, base_attack_range: float, base_attack_damage: int, base_max_health: int, equipment_state: Dictionary) -> Dictionary:
 	var bonus: Dictionary = aggregate_player_bonuses(equipment_state)
+	var modifiers: Dictionary = aggregate_player_stat_modifiers(equipment_state)
+
+	var move_before_percent := base_move_speed + float(bonus["move_speed"])
+	var move_multiplier := maxf(
+		0.1,
+		(1.0 + float(modifiers["speed_percent"])) * (1.0 - float(modifiers["load_speed_penalty"]))
+	)
+	var damage_before_percent := float(base_attack_damage + int(bonus["attack_damage"]))
+	var health_before_percent := float(base_max_health + int(bonus["max_health"]))
 	return {
-		"move_speed": base_move_speed + float(bonus["move_speed"]),
+		"move_speed": maxf(0.0, move_before_percent * move_multiplier),
 		"attack_range": base_attack_range + float(bonus["attack_range"]),
-		"attack_damage": base_attack_damage + int(bonus["attack_damage"]),
-		"max_health": base_max_health + int(bonus["max_health"]),
+		"attack_damage": maxi(0, roundi(damage_before_percent * maxf(0.1, 1.0 + float(modifiers["damage_percent"])))),
+		"max_health": maxi(1, roundi(health_before_percent * maxf(0.1, 1.0 + float(modifiers["health_percent"])))),
+		"equipment_weight": float(modifiers["equipment_weight"]),
+		"inventory_weight": float(modifiers["inventory_weight"]),
+		"load_speed_penalty": float(modifiers["load_speed_penalty"]),
+		"quality_damage_percent": float(modifiers["damage_percent"]),
+		"quality_speed_percent": float(modifiers["speed_percent"]),
+		"quality_health_percent": float(modifiers["health_percent"]),
+		"quality_weight_percent": float(modifiers["weight_percent"]),
 	}
 
 
@@ -406,3 +630,12 @@ static func _format_signed_int(value: int) -> String:
 	if value > 0:
 		return "+" + str(value)
 	return str(value)
+
+
+static func _keys_with_min_count(counts: Dictionary, minimum: int) -> Array[String]:
+	var result: Array[String] = []
+	for key in counts:
+		if int(counts[key]) >= minimum:
+			result.append(str(key))
+	result.sort()
+	return result

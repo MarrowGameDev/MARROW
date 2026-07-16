@@ -12,6 +12,8 @@ dependan directamente del componente.
 ## Scripts y escenas principales
 
 - `scripts/player_equipment_component.gd`: estado real de equipo por slot.
+- `scripts/player_equipment_builds_component.gd`: presets guardables de
+  equipamiento que delegan aplicacion real en `PlayerEquipmentComponent`.
 - `scripts/player_stats_component.gd`: calculo de stats finales del jugador.
 - `scripts/equipment_rules_service.gd`: reglas de slots, sockets, ids generados
   por limbs y escalas visuales.
@@ -34,9 +36,13 @@ dependan directamente del componente.
 
 ## Flujo de equipar
 
-1. La UI o el input de equip next llama `player.equip_bone(bone_id)`.
+1. La UI o el input de equip next llama `player.equip_bone(bone_id)`. Si el
+   usuario suelta una pieza sobre un slot especifico, la UI pasa tambien
+   `target_slot`.
 2. `Player` delega a `PlayerEquipmentComponent.equip_bone`.
-3. El componente pregunta el slot con `EquipmentRulesService.slot_for_bone`.
+3. El componente resuelve compatibilidad con
+   `EquipmentRulesService.compatible_slots_for_bone` y normaliza el slot con
+   `EquipmentRulesService.normalize_slot_id`.
 4. Si el hueso ya esta equipado en ese slot, no hace nada.
 5. Si hay `ModularSkeletonRig`, el componente llama `rig.equip_bone`.
 6. Se incrementa `equip_swaps`.
@@ -55,16 +61,45 @@ dependan directamente del componente.
 6. Emite `inventory_changed`.
 7. Emite `bone_unequipped`.
 
+## Flujo de build presets
+
+1. La UI llama `player.save_equipment_build(index)` para capturar el equipo
+   actual no-core.
+2. `PlayerEquipmentBuildsComponent` normaliza slots, omite la cabeza fija y
+   guarda el build en `user://equipment_builds.cfg`.
+3. La UI llama `player.apply_equipment_build(index)`.
+4. El componente valida inventario disponible, slots compatibles y torso
+   requerido antes de tocar el equipo.
+5. Si la validacion falla, no aplica cambios parciales y devuelve un mensaje
+   para la UI.
+6. Si la validacion pasa, desequipa slots no presentes en el build y equipa en
+   orden estable: torso, brazos, piernas.
+7. `PlayerEquipmentComponent` recalcula stats, actualiza rig y emite eventos por
+   la ruta normal.
+
 ## Reglas de slots
 
 El punto central es `EquipmentRulesService`.
 
 Slots principales:
-- `right_arm`
-- `left_arm`
-- `legs`
-- `body`
 - `head`
+- `torso`
+- `left_arm`
+- `right_arm`
+- `left_leg`
+- `right_leg`
+
+Aliases legacy aceptados (solo los que tienen consumidor real en
+`data/bones/*.tres`; no agregar aliases especulativos):
+- `body` -> `torso`
+- `legs` -> compatible con `right_leg` y `left_leg` (equip-next resuelve al
+  primer lado libre via `PlayerEquipmentComponent._first_open_compatible_slot`;
+  `normalize_slot_id("legs")` sigue devolviendo `right_leg` como valor unico
+  por defecto para contextos que necesitan un solo id, como display/orden)
+
+`torso` es el slot de equipamiento. `body` sigue siendo un socket del rig y un
+valor legacy en datos viejos. No se debe mezclar socket del rig, slot de equipo
+y parte corporal sin pasar por `EquipmentRulesService`.
 
 Los huesos generados por limbs usan ids como:
 - `normal_right_arm_bone`
@@ -107,7 +142,8 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - El jugador inicia con `head_bone` equipado como nucleo fijo.
   - La cabeza no se puede reemplazar ni desequipar; si se rompe, el jugador
     muere.
-  - El torso (`body`) debe equiparse antes de brazos o piernas.
+  - El torso (`torso`, alias legacy `body`) debe equiparse antes de brazos o
+    piernas.
   - Si el torso se quita, las extremidades se desacoplan primero.
   - Brazos y piernas no tienen orden obligatorio entre si una vez equipado el
     torso.
@@ -120,6 +156,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
+- Las piezas legacy hechas a mano pueden seguir declarando `body` o `legs`
+  durante la migracion. El runtime debe normalizarlas antes de guardar estado
+  de equipamiento, pintar el rig o validar drops.
 - Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
   en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
   necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
@@ -128,24 +167,30 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   el diccionario plano que el rig, stats y slots ya esperan.
 - Los campos de calidad (`quality_rank`, `quality_score`,
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
-  No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
-  balance lo defina explicitamente.
+  `BoneRulesService.player_stats_with_equipment()` aplica `quality_multiplier`
+  sobre los bonuses directos del jugador antes de agregarlos al resultado final.
 - Los modificadores porcentuales por calidad (`quality_damage_percent`,
   `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
-  `quality_weight_percent`) son metadata granular. Pueden alimentar balance
-  futuro, pero equipamiento no los aplica automaticamente todavia.
+  `quality_weight_percent`) son metadata granular. Damage, speed, health y
+  weight ya alimentan la formula determinista de stats; drop sigue pasivo hasta
+  que una regla de drops lo consuma.
 - Las calidades canonicas son ids en minuscula y sin acentos para datos:
   `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
   acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
 - Las rarezas canonicas son `comun`, `corrupto`, `maldito`, `especial` y
   `legendario`. Las familias de mutacion canonicas actuales son vacio,
   `corrupto`, `maldito`, `especial` e `hibrido`.
+- Los campos de durabilidad (`durability_max`, `durability_start`,
+  `durability_repair_cost`, `durability_tags`) describen resistencia y coste de
+  reparacion por tipo de pieza. `BoneRulesService` calcula perfiles y estados,
+  pero equipar una pieza no desgasta ni repara automaticamente todavia.
 - Rareza y mutacion siguen siendo metadata pasiva hasta que una regla de drops,
   rig o combate las consuma explicitamente.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
-  regla de equipamiento que los consuma.
+  regla de equipamiento que los consuma. `mutation_profile_for` centraliza su
+  lectura para futuros consumidores.
 - Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
   `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
   una pieza podria participar en cadenas de combate. Actualmente solo alimentan
@@ -154,10 +199,45 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
-  animacion procedural actual.
+  animacion procedural actual. `equipment_weight` contribuye a una penalizacion
+  suave de velocidad cuando la carga equipada supera el umbral libre.
+
+### Unidades Y Formula De Peso/Calidad (`BoneRulesService`)
+
+Todas las constantes viven en `scripts/bone_rules_service.gd`. No hay
+unidades fisicas reales (kg, etc.); son numeros de diseno adimensionales
+calibrados por prueba y error, igual que el resto del balance del proyecto.
+
+- `EQUIPMENT_FREE_WEIGHT := 3.0`: suma de `equipment_weight` (peso ya
+  ajustado por calidad) que el jugador carga sin penalizacion. Mismas
+  unidades que `weight`/`equipment_weight` en los `.tres` de hueso.
+- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06`: fraccion de
+  `move_speed` que se resta por cada unidad de `equipment_weight` que
+  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 5.0 de peso equipado con 3.0
+  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.06 = 0.12 (12%).
+- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30`: techo de la penalizacion de
+  velocidad (30%), sin importar cuanto peso adicional se equipe.
+- `PLAYER_STAT_PERCENT_LIMIT := 0.75`: techo/piso (+-75%) para la suma de
+  `quality_damage_percent`, `quality_speed_percent`, `quality_health_percent`
+  y `quality_weight_percent` acumulados por todas las piezas equipadas.
+- Orden de aplicacion en `player_stats_with_equipment()`: 1) sumar bonuses
+  planos (`move_speed_bonus`, etc.) ajustados por `quality_multiplier` por
+  pieza; 2) sumar y limitar los porcentajes de calidad; 3) calcular la
+  penalizacion de carga desde `equipment_weight` total; 4) aplicar
+  `(1 + porcentaje) * (1 - penalizacion_de_carga)` sobre velocidad, y
+  `(1 + porcentaje)` sobre dano/vida.
+- `attack_damage` y `max_health` se redondean una sola vez, despues de sumar
+  los bonuses de todas las piezas equipadas como floats. Redondear cada
+  pieza por separado antes de sumar inflaria el total con mas piezas
+  equipadas incluso si la suma real no cambia (ver comentario en
+  `adjusted_player_bonus_for`).
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
-  combinaciones de piezas. No aplican bonuses automaticamente todavia.
+  combinaciones de piezas. `equipment_synergy_summary` puede detectar sets e
+  ids repetidos en el equipo, pero no aplica bonuses automaticamente todavia.
+- Build presets no son una segunda fuente de estado. Solo persisten una
+  intencion de equipamiento y deben revalidarse contra inventario y reglas
+  actuales cada vez que se aplican.
 - `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
   entra al inventario normal; `torso_bone` aparece como pickup starter en el
   demo.
@@ -222,10 +302,22 @@ En `TESTING ENVIRONMENT`:
 2. Confirmar que la cabeza inicial ya esta equipada y no se puede reemplazar.
 3. Equipar torso.
 4. Equipar huesos de brazo y piernas.
-5. Confirmar que el cuerpo del jugador cambia.
+5. Confirmar que `Left Arm`, `Right Arm`, `Left Leg` y `Right Leg` cambian solo
+   el lado correspondiente.
 6. Confirmar que el preview cambia igual que el jugador.
 7. Desequipar con right click o drag hacia zona vacia si aplica.
 8. Confirmar que stats en UI cambian.
+9. Guardar un build en Settings, modificar equipo y aplicar el build guardado.
+10. Intentar aplicar un build que necesita dos copias del mismo hueso teniendo
+    solo una copia; debe mostrar error y no dejar cambios parciales.
+11. Presionar Apply una vez y confirmar que el boton cambia a "Confirm?" y el
+    equipo NO cambia todavia; presionar de nuevo dentro de unos segundos y
+    confirmar que ahora si aplica. Presionar Apply una vez y esperar mas de
+    4 segundos sin presionar de nuevo; confirmar que el boton vuelve a decir
+    "Apply" y no paso nada.
+12. Guardar sobre un build ya ocupado y confirmar que tambien pide una
+    segunda pulsacion; guardar sobre un build vacio y confirmar que NO la
+    pide (aplica directo).
 
 ## Historial de cambios
 
@@ -265,3 +357,70 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: Se agregaron campos de durabilidad authorable y helpers puros
+  para perfiles de durabilidad, mutacion y resumen de sinergias equipadas.
+- 2026-07-15: Equipamiento adopto seis slots canonicos (`head`, `torso`,
+  `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
+  aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus
+  sockets `body`/`body_lower` sin usarlos como ids de estado de equipo.
+- 2026-07-15: Se agregaron build presets de equipamiento. La persistencia vive
+  en `PlayerEquipmentBuildsComponent`, la aplicacion usa
+  `PlayerEquipmentComponent`, y cada apply revalida copias, torso y
+  compatibilidad de slots.
+- 2026-07-15: `BoneRulesService` aplica calidad, modificadores porcentuales y
+  carga equipada al calculo determinista de stats del jugador.
+- 2026-07-15: Se documentaron unidades y formula exacta de peso/calidad. Se
+  corrigio `aggregate_player_bonuses` para sumar bonuses de dano/vida como
+  floats y redondear una sola vez (antes cada pieza equipada redondeaba por
+  separado, inflando el total con mas piezas equipadas). Se expusieron
+  `equipment_weight`, `inventory_weight`, `load_speed_penalty` y los
+  `quality_*_percent` en `Player.get_inventory_stats_snapshot()`, que antes
+  se calculaban y se descartaban sin ningun consumidor. No se agrego
+  defensa, stamina ni movilidad: esos stats no existen en el proyecto.
+- 2026-07-15 (correccion): `_slot_for_request` resolvia el slot por defecto
+  de un hueso bilateral (`legs`, o `right_arm` sin `limb_key`) llamando a
+  `EquipmentRulesService.slot_for_bone`, una funcion pura sin estado que
+  siempre devuelve el primer slot compatible. Equipar-siguiente con dos
+  huesos de pierna genericos nunca podia alcanzar `left_leg`. Se agrego
+  `PlayerEquipmentComponent._first_open_compatible_slot`, que consulta el
+  `equipped` real del componente y elige el primer slot compatible vacio.
+  Verificado en Godot 4.7 headless: dos `leg_bone` equipados via
+  equip-next ahora terminan en `{"left_leg": "leg_bone", "right_leg":
+  "leg_bone"}`. De paso se encontro y corrigio un bug de tipado de
+  GDScript: `compatible_slots_for_bone` devolvia arrays literales sin
+  tipar explicitamente, lo cual fallaba en runtime ("Trying to assign an
+  array of type Array to a variable of type Array[String]") para
+  cualquier llamador externo a la clase que asignara el resultado a una
+  variable tipada; ahora construye el array con `.append()`.
+- 2026-07-15: Se eliminaron 7 de los 9 aliases legacy de slot (`ribs`,
+  `ribcage`, `chest`, `arm_left`, `arm_right`, `leg_left`, `leg_right`):
+  ningun archivo en `data/bones/*.tres` ni codigo en `scripts/` los produce
+  (verificado por grep). Solo quedan `body` y `legs`, que si tienen datos
+  reales. `tools/validate_bone_data.py` actualizado para no exigirlos.
+- 2026-07-15: Se elimino `PlayerEquipmentComponent.get_equipped_bone_defs`
+  (cero llamadores; existe una funcion homonima pero distinta en
+  `ModularSkeletonRig` que si se usa).
+- 2026-07-15: El panel de informacion del inventario ahora compara el hueso
+  bajo el cursor contra el equipado en el mismo slot (deltas de
+  move_speed/attack_range/attack_damage/max_health via
+  `BoneRulesService.adjusted_player_bonus_for`, los unicos stats de hueso
+  que existen). No se inventaron stats de defensa/peso para la comparacion.
+- 2026-07-15: `BoneSlotWidget` pinta el borde del slot en verde/rojo
+  mientras un drag lo sobrevuela, segun `can_equip_bone_in_slot`, y lo
+  restaura en `NOTIFICATION_DRAG_END`.
+- 2026-07-15 (correccion): `PlayerEquipmentBuildsComponent.apply_build`
+  aplicaba el estado objetivo y solo reportaba si no coincidia del todo;
+  nunca deshacia el cambio parcial. Ahora guarda un snapshot del
+  equipamiento antes de aplicar y reaplica ese snapshot si la
+  verificacion post-apply falla. Verificado en Godot 4.7 headless con 5
+  escenarios (build valido, build vacio, pieza no disponible, slot
+  incompatible, y un rollback forzado): el estado final tras el rollback
+  forzado coincidio exactamente con el estado previo a la aplicacion. De
+  paso se encontro y corrigio un bug preexistente desde el primer commit
+  de esta rama: `_summary_for_state` llamaba
+  `BoneRulesService.display_name` (nunca existio), lo cual rompia la
+  compilacion de GDScript de `player.gd` completo -- el validador estatico
+  nunca pudo detectarlo porque no ejecuta GDScript.
+- 2026-07-15: Guardar sobre un build no vacio y Aplicar un build ahora
+  requieren una segunda pulsacion del mismo boton dentro de 4 segundos
+  para confirmar (sin dialogo nativo, mismo estilo DIY del resto de la UI).

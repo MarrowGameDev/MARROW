@@ -35,4 +35,11 @@ func calculate(equipment_state: Dictionary, current_health: int, current_max_hea
 		"attack_damage": int(calculated_stats["attack_damage"]),
 		"max_health": new_max_health,
 		"health": new_health,
+		"equipment_weight": float(calculated_stats.get("equipment_weight", 0.0)),
+		"inventory_weight": float(calculated_stats.get("inventory_weight", 0.0)),
+		"load_speed_penalty": float(calculated_stats.get("load_speed_penalty", 0.0)),
+		"quality_damage_percent": float(calculated_stats.get("quality_damage_percent", 0.0)),
+		"quality_speed_percent": float(calculated_stats.get("quality_speed_percent", 0.0)),
+		"quality_health_percent": float(calculated_stats.get("quality_health_percent", 0.0)),
+		"quality_weight_percent": float(calculated_stats.get("quality_weight_percent", 0.0)),
 	}

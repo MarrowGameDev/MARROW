@@ -59,17 +59,22 @@ refactor pass.
   they are intentionally separate from loot rarity.
 - Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
   `legendario`; UI can localize display text separately.
-- Quality percentage modifiers are stored as passive metadata for damage, speed,
-  health, drop and weight tuning; no automatic formula consumes them yet.
+- Quality percentage modifiers now feed the deterministic player stat formula
+  for damage, speed, health and equipped weight; drop tuning remains passive.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
   `legendario`; canonical mutation families are empty, `corrupto`, `maldito`,
   `especial` and `hibrido`.
+- Bone durability fields define authoring defaults for max durability, starting
+  durability, repair cost and durability tags. Runtime wear is not stored on the
+  Resource.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
-  equipment load and inventory weight while keeping legacy `weight`.
-- Bone set/synergy fields are present as passive metadata; no automatic set
-  bonuses are active yet.
+  equipment load and inventory weight while keeping legacy `weight`. Equipped
+  load can apply a capped movement-speed penalty through `BoneRulesService`.
+- Bone set/synergy fields can be summarized from equipped state through
+  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
+  applied to stats yet, and durability does not decrease at runtime.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -77,6 +82,9 @@ refactor pass.
 
 - `scenes/testing_environment.tscn` is the unified sandbox for camera, enemies,
   movement, animation, rig, drops, and equipment checks.
+- The testing environment status panel includes P0 validation guide sections
+  that can be cycled with F1/F2 for jitter, inventory/preview, pickups/drops,
+  backstab runtime geometry, and rig progression checks.
 - TESTING ENVIRONMENT can spawn a passive dummy target with `5`; it stays still,
   does not attack, and keeps normal damage/limb-loss reactions active.
 - `scenes/dummy_testing_environment.tscn` is a separate passive-target room that
