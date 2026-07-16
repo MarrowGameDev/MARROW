@@ -22,16 +22,15 @@ const CANONICAL_BODY_SLOTS := [
 	SLOT_LEFT_LEG,
 	SLOT_RIGHT_LEG,
 ]
+# Only aliases with a real consumer in data/bones/*.tres or generated bone
+# definitions belong here. "body" and "legs" are the raw slot values still
+# authored in existing .tres files; "ribs"/"ribcage"/"chest"/"arm_left"/
+# "arm_right"/"leg_left"/"leg_right" were removed because no data file or
+# script ever produces them (verified: grep -rn for each across scripts/,
+# data/, docs/ found zero matches outside this map itself).
 const LEGACY_SLOT_ALIASES := {
 	"body": "torso",
-	"ribs": "torso",
-	"ribcage": "torso",
-	"chest": "torso",
 	"legs": "right_leg",
-	"arm_left": "left_arm",
-	"arm_right": "right_arm",
-	"leg_left": "left_leg",
-	"leg_right": "right_leg",
 }
 const SLOT_DISPLAY := {
 	"head": "Head",
