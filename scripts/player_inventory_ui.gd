@@ -703,8 +703,13 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 		inventory_preview_container.position = Vector2(98.0, 15.0) * doll_scale
 		var preview_size := _inventory_preview_base_size() * doll_scale
 		inventory_preview_container.custom_minimum_size = preview_size
+		# inventory_preview_container.stretch is true (see
+		# _build_character_preview_panel), so SubViewportContainer already
+		# resizes its single SubViewport child to match this size on
+		# NOTIFICATION_RESIZED. Do not add a manual SubViewport resize call
+		# here again; see docs/inventory_flow.md for why that was removed
+		# twice already.
 		inventory_preview_container.size = preview_size
-		_sync_preview_viewport_size()
 
 	var slot_positions := {
 		"left_arm": Vector2(0.0, 12.0),
@@ -977,24 +982,6 @@ func _build_character_preview_panel() -> Control:
 
 	call_deferred("sync_preview")
 	return inventory_preview_container
-
-
-func _sync_preview_viewport_size() -> void:
-	if inventory_preview_container == null or inventory_preview_viewport == null:
-		return
-
-	var target_size := inventory_preview_container.size
-	if target_size.x <= 0.0 or target_size.y <= 0.0:
-		target_size = inventory_preview_container.custom_minimum_size
-	if target_size.x <= 0.0 or target_size.y <= 0.0:
-		target_size = _inventory_preview_base_size()
-
-	var viewport_size := Vector2i(
-		maxi(1, roundi(target_size.x)),
-		maxi(1, roundi(target_size.y))
-	)
-	if inventory_preview_viewport.size != viewport_size:
-		inventory_preview_viewport.size = viewport_size
 
 
 func _inventory_preview_base_size() -> Vector2:
