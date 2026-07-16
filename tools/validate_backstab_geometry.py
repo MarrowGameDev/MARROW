@@ -74,12 +74,12 @@ def main() -> int:
     enemy_path = root / "scripts" / "enemy.gd"
     service_path = root / "scripts" / "backstab_rules_service.gd"
     threshold = parse_stealth_behind_dot(enemy_path)
-    verify_backstab_service_shape(service_path)
-    verify_enemy_uses_backstab_service(enemy_path)
-    verify_backstab_execution_contract(player_path, enemy_path)
+    shape_errors = verify_backstab_service_shape(service_path)
+    shape_errors += verify_enemy_uses_backstab_service(enemy_path)
+    shape_errors += verify_backstab_execution_contract(player_path, enemy_path)
 
     results = [run_case(case, threshold) for case in build_cases()]
-    failures = [result for result in results if result.actual != result.case.expected]
+    case_failures = [result for result in results if result.actual != result.case.expected]
 
     print("Backstab geometry validation")
     print(f"- threshold: {threshold:.2f}")
@@ -94,8 +94,17 @@ def main() -> int:
             f"expected={expected}, actual={actual}"
         )
 
-    if failures:
-        print(f"\nFAILED: {len(failures)} backstab geometry case(s) changed")
+    # These used to only print WARNING and never affect the exit code, so
+    # the entire contract could be gutted (e.g. the double-damage guard, or
+    # the freeze fix below) and this validator would still exit 0. They now
+    # count as real failures.
+    if shape_errors:
+        print(f"\n- {len(shape_errors)} contract shape error(s):")
+        for error in shape_errors:
+            print(f"  [ERROR] {error}")
+
+    if case_failures or shape_errors:
+        print(f"\nFAILED: {len(case_failures)} geometry case(s), {len(shape_errors)} contract shape error(s)")
         return 1
 
     print("\nOK: all backstab geometry cases match the current expected rule")
@@ -113,7 +122,7 @@ def parse_stealth_behind_dot(enemy_path: Path) -> float:
     return float(match.group(1))
 
 
-def verify_backstab_service_shape(service_path: Path) -> None:
+def verify_backstab_service_shape(service_path: Path) -> list[str]:
     text = service_path.read_text(encoding="utf-8")
     required_snippets = [
         "class_name BackstabRulesService",
@@ -122,29 +131,37 @@ def verify_backstab_service_shape(service_path: Path) -> None:
         "flat_forward.y = 0.0",
         "flat_forward.normalized().dot(to_attacker.normalized()) <= -behind_dot",
     ]
-    missing = [snippet for snippet in required_snippets if snippet not in text]
-    if missing:
-        print("WARNING: BackstabRulesService implementation shape changed:")
-        for snippet in missing:
-            print(f"- missing snippet: {snippet}")
+    return [f"BackstabRulesService missing: {s}" for s in required_snippets if s not in text]
 
 
-def verify_enemy_uses_backstab_service(enemy_path: Path) -> None:
+def verify_enemy_uses_backstab_service(enemy_path: Path) -> list[str]:
     text = enemy_path.read_text(encoding="utf-8")
     required_snippets = [
         "func _is_player_behind(player: Node3D) -> bool:",
         "enemy_forward = _facing_from_rotation()",
         "BackstabRulesService.is_attacker_behind_target(",
         "stealth_behind_dot",
+        # global_transform.basis.z, not rotation.y: _is_player_behind()
+        # compares this against a GLOBAL player position, and rotation.y
+        # is local to this node's parent. A rotated parent would silently
+        # skew the behind-cone check with the old formula.
+        "func _facing_from_rotation() -> Vector3:\n\treturn global_transform.basis.z.normalized()",
     ]
-    missing = [snippet for snippet in required_snippets if snippet not in text]
-    if missing:
-        print("WARNING: Enemy backstab service call shape changed:")
-        for snippet in missing:
-            print(f"- missing snippet: {snippet}")
+    errors = [f"Enemy missing: {s}" for s in required_snippets if s not in text]
+
+    # The victim must not turn to face its attacker while a backstab is
+    # anticipated or held -- that would give away the whole point of a
+    # stealth kill from behind, and previously happened every frame.
+    begin_fn = extract_gd_function(text, "_begin_stealth_execution")
+    hold_fn = extract_gd_function(text, "_update_stealth_execution_hold")
+    if "_turn_toward(" in begin_fn:
+        errors.append("_begin_stealth_execution must not _turn_toward() the player")
+    if "_turn_toward(" in hold_fn:
+        errors.append("_update_stealth_execution_hold must not _turn_toward() the player")
+    return errors
 
 
-def verify_backstab_execution_contract(player_path: Path, enemy_path: Path) -> None:
+def verify_backstab_execution_contract(player_path: Path, enemy_path: Path) -> list[str]:
     player_text = player_path.read_text(encoding="utf-8")
     enemy_text = enemy_path.read_text(encoding="utf-8")
 
@@ -156,6 +173,23 @@ def verify_backstab_execution_contract(player_path: Path, enemy_path: Path) -> N
         '"apply_stealth_finish_impact"',
         "func _is_backstab_executing() -> bool:",
         "not _is_backstab_executing()",
+        # Freeze-fix contract: a plain bool tracks "in progress" because
+        # GDScript compares a freed Object as equal to null, so checking
+        # backstab_execution_target directly silently misreports "not
+        # executing" once the target is queue_free()'d mid-execution,
+        # skipping cleanup and leaving can_attack stuck false forever.
+        "var backstab_execution_in_progress: bool = false",
+        "return backstab_execution_in_progress",
+        # Player-death/pause freeze fix: cancellation must run before the
+        # early return that stops _update_backstab_execution from being
+        # called again, not after (where it was unreachable).
+        "if _is_backstab_executing():\n\t\t\t_cancel_backstab_execution()",
+        # Impact synced to the animator's strike phase, not only a fixed
+        # timer guessed to line up with the animation.
+        "func _on_backstab_animator_impact() -> void:",
+        "attack_impact_reached.connect(_on_backstab_animator_impact)",
+        # Distinct finisher pose, not the plain swing overlay.
+        "animator.trigger_stealth_finish_attack()",
     ]
     enemy_required = [
         "stealth_execution_player",
@@ -166,12 +200,14 @@ def verify_backstab_execution_contract(player_path: Path, enemy_path: Path) -> N
         "func cancel_stealth_execution(",
         "func _update_stealth_execution_hold() -> bool:",
     ]
-    missing = [f"Player missing: {snippet}" for snippet in player_required if snippet not in player_text]
-    missing += [f"Enemy missing: {snippet}" for snippet in enemy_required if snippet not in enemy_text]
-    if missing:
-        print("WARNING: Backstab execution contract shape changed:")
-        for snippet in missing:
-            print(f"- {snippet}")
+    errors = [f"Player missing: {s}" for s in player_required if s not in player_text]
+    errors += [f"Enemy missing: {s}" for s in enemy_required if s not in enemy_text]
+    return errors
+
+
+def extract_gd_function(text: str, function_name: str) -> str:
+    match = re.search(rf"^func {re.escape(function_name)}\(.*?:\n((?:\t.*\n?)*)", text, re.MULTILINE)
+    return match.group(1) if match else ""
 
 
 def build_cases() -> list[Case]:
