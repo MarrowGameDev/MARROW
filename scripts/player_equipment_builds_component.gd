@@ -50,12 +50,30 @@ func apply_build(index: int) -> Dictionary:
 		return validation
 
 	var target_state: Dictionary = validation.get("state", {})
+	# Snapshot before mutating anything, so a failed apply can be rolled
+	# back to exactly what was equipped a moment ago.
+	var previous_state := equipment_component.get_equipment_state()
+
 	_apply_validated_state(target_state)
 
-	var final_check := _matches_equipment_state(target_state)
-	if not final_check:
-		return _result(false, "Build " + str(index) + " could not be fully applied.", target_state)
-	return _result(true, "Applied build " + str(index) + ".", target_state)
+	if _matches_equipment_state(target_state):
+		return _result(true, "Applied build " + str(index) + ".", target_state)
+
+	# Apply did not fully take (e.g. a late equip rejection not caught by
+	# pre-validation). Restore the pre-apply state instead of leaving the
+	# player with a mix of old and new gear.
+	_apply_validated_state(previous_state)
+	if _matches_equipment_state(previous_state):
+		return _result(
+			false,
+			"Build " + str(index) + " could not be fully applied. Equipment was rolled back to what you had equipped before.",
+			previous_state
+		)
+	return _result(
+		false,
+		"Build " + str(index) + " could not be applied, and restoring your previous equipment also failed. Check your equipped gear.",
+		equipment_component.get_equipment_state()
+	)
 
 
 func validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dictionary:
