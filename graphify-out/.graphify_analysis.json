@@ -20,6 +20,7 @@
       "architecture_bonedefinition_gd_func_to_clean_dictionary",
       "architecture_bonedefinition_gd_func_to_legacy_dictionary",
       "architecture_boneitemtile_depends_on_bonerulesservice",
+      "architecture_boneitemtile_depends_on_equipmentrulesservice",
       "architecture_bonerulesservice",
       "architecture_bonerulesservice_depends_on_bonedatabase",
       "architecture_bonerulesservice_depends_on_bonedefinition",
@@ -71,28 +72,28 @@
       "architecture_testingenvironment_depends_on_equipmentrulesservice"
     ],
     "1": [
-      "architecture_rationale_3830",
-      "architecture_rationale_3954",
-      "architecture_rationale_3969",
-      "architecture_rationale_3973",
-      "architecture_rationale_3977",
-      "architecture_rationale_3981",
-      "architecture_rationale_3985",
+      "architecture_rationale_3850",
+      "architecture_rationale_3974",
       "architecture_rationale_3989",
       "architecture_rationale_3993",
       "architecture_rationale_3997",
+      "architecture_rationale_4001",
       "architecture_rationale_4005",
       "architecture_rationale_4009",
+      "architecture_rationale_4013",
       "architecture_rationale_4017",
       "architecture_rationale_4025",
       "architecture_rationale_4029",
-      "architecture_rationale_4033",
       "architecture_rationale_4037",
-      "architecture_rationale_4041",
       "architecture_rationale_4045",
       "architecture_rationale_4049",
       "architecture_rationale_4053",
       "architecture_rationale_4057",
+      "architecture_rationale_4061",
+      "architecture_rationale_4065",
+      "architecture_rationale_4069",
+      "architecture_rationale_4073",
+      "architecture_rationale_4077",
       "architecture_testingenvironment_gd_func_make_material",
       "architecture_tutorialislandbuilder",
       "architecture_tutorialislandbuilder_gd_func_build_demo_island",
@@ -160,38 +161,39 @@
     ],
     "3": [
       "architecture_playerinventoryui",
+      "architecture_playerinventoryui_gd_func_action_has_usable_event",
       "architecture_playerinventoryui_gd_func_add_inventory_tab",
       "architecture_playerinventoryui_gd_func_apply_inventory_responsive_layout",
       "architecture_playerinventoryui_gd_func_apply_paper_doll_responsive_layout",
       "architecture_playerinventoryui_gd_func_begin_rebinding",
-      "architecture_playerinventoryui_gd_func_build_inventory_blur_layer",
-      "architecture_playerinventoryui_gd_func_build_inventory_ui",
-      "architecture_playerinventoryui_gd_func_build_settings_panel",
-      "architecture_playerinventoryui_gd_func_consume_or_arm_confirmation",
-      "architecture_playerinventoryui_gd_func_inventory_preview_base_size",
-      "architecture_playerinventoryui_gd_func_is_bindable_control_event",
-      "architecture_playerinventoryui_gd_func_load_control_settings",
-      "architecture_playerinventoryui_gd_func_on_build_preset_confirm_timeout",
-      "architecture_playerinventoryui_gd_func_on_inventory_changed",
-      "architecture_playerinventoryui_gd_func_reset_control_defaults",
-      "architecture_playerinventoryui_gd_func_save_control_settings",
+      "architecture_playerinventoryui_gd_func_clean_control_event",
+      "architecture_playerinventoryui_gd_func_compare_inventory_items",
+      "architecture_playerinventoryui_gd_func_control_event_is_usable",
+      "architecture_playerinventoryui_gd_func_ensure_default_control_key",
+      "architecture_playerinventoryui_gd_func_ensure_default_control_mouse",
+      "architecture_playerinventoryui_gd_func_equip_bone_in_slot",
+      "architecture_playerinventoryui_gd_func_event_from_config",
+      "architecture_playerinventoryui_gd_func_make_rule",
+      "architecture_playerinventoryui_gd_func_preview_snapshot_matches",
+      "architecture_playerinventoryui_gd_func_queue_inventory_responsive_layout",
       "architecture_playerinventoryui_gd_func_set_default_control_key",
       "architecture_rationale_2589",
-      "architecture_rationale_2624",
-      "architecture_rationale_2672",
-      "architecture_rationale_2680",
+      "architecture_rationale_2648",
       "architecture_rationale_2688",
+      "architecture_rationale_2704",
       "architecture_rationale_2708",
       "architecture_rationale_2716",
-      "architecture_rationale_2728",
-      "architecture_rationale_2756",
-      "architecture_rationale_2760",
-      "architecture_rationale_2800",
-      "architecture_rationale_2832",
-      "architecture_rationale_2844",
-      "architecture_rationale_2880",
+      "architecture_rationale_2804",
+      "architecture_rationale_2840",
+      "architecture_rationale_2852",
+      "architecture_rationale_2868",
+      "architecture_rationale_2908",
       "architecture_rationale_2912",
-      "architecture_rationale_2916"
+      "architecture_rationale_2920",
+      "architecture_rationale_2924",
+      "architecture_rationale_2928",
+      "architecture_rationale_2936",
+      "architecture_rationale_2952"
     ],
     "4": [
       "architecture_arenagoalmanager_uses_game_event_objective_updated",
@@ -203,12 +205,12 @@
       "architecture_rationale_1670",
       "architecture_rationale_190",
       "architecture_rationale_194",
-      "architecture_rationale_4226",
-      "architecture_rationale_4241",
-      "architecture_rationale_4249",
-      "architecture_rationale_4257",
+      "architecture_rationale_4246",
+      "architecture_rationale_4261",
       "architecture_rationale_4269",
-      "architecture_rationale_4273",
+      "architecture_rationale_4277",
+      "architecture_rationale_4289",
+      "architecture_rationale_4293",
       "architecture_worldmapmanager",
       "architecture_worldmapmanager_gd_func_build_map_ui",
       "architecture_worldmapmanager_gd_func_emit_region_objective",
@@ -289,37 +291,6 @@
       "architecture_rationale_352"
     ],
     "7": [
-      "architecture_modularskeletonrig_depends_on_playerequipmentcomponent",
-      "architecture_player_depends_on_playerequipmentbuildscomponent",
-      "architecture_player_depends_on_playerequipmentcomponent",
-      "architecture_player_depends_on_playerinventoryui",
-      "architecture_playerequipmentbuildscomponent_depends_on_playerequipmentcomponent",
-      "architecture_playerequipmentcomponent",
-      "architecture_playerequipmentcomponent_gd_func_can_equip_slot",
-      "architecture_playerequipmentcomponent_gd_func_clear_equipped_visual",
-      "architecture_playerequipmentcomponent_gd_func_definition_for_slot",
-      "architecture_playerequipmentcomponent_gd_func_equip_bone_in_slot",
-      "architecture_playerequipmentcomponent_gd_func_first_open_compatible_slot",
-      "architecture_playerequipmentcomponent_gd_func_get_player_rig",
-      "architecture_playerequipmentcomponent_gd_func_restore_detached_body",
-      "architecture_playerequipmentcomponent_gd_func_slot_for_request",
-      "architecture_playerequipmentcomponent_gd_func_tint_visual",
-      "architecture_playerequipmentcomponent_gd_func_tint_visual_mesh",
-      "architecture_playerinventorycomponent_depends_on_playerequipmentcomponent",
-      "architecture_rationale_2205",
-      "architecture_rationale_2414",
-      "architecture_rationale_2442",
-      "architecture_rationale_2446",
-      "architecture_rationale_2450",
-      "architecture_rationale_2454",
-      "architecture_rationale_2462",
-      "architecture_rationale_2470",
-      "architecture_rationale_2490",
-      "architecture_rationale_2494",
-      "architecture_rationale_2498"
-    ],
-    "8": [
-      "architecture_player_gd_func_apply_equipment_build",
       "architecture_player_gd_func_get_equipment_build_summaries",
       "architecture_player_gd_func_save_equipment_build",
       "architecture_playerequipmentbuildscomponent",
@@ -348,7 +319,7 @@
       "architecture_rationale_2371",
       "architecture_rationale_2375"
     ],
-    "9": [
+    "8": [
       "architecture_enemy",
       "architecture_enemy_gd_func_apply_knockback",
       "architecture_enemy_gd_func_drop_standard_bone_pickup",
@@ -376,80 +347,114 @@
       "architecture_rationale_926",
       "architecture_rationale_998"
     ],
+    "9": [
+      "architecture_modularskeletonrig_depends_on_playerequipmentcomponent",
+      "architecture_player_depends_on_playerequipmentbuildscomponent",
+      "architecture_player_depends_on_playerequipmentcomponent",
+      "architecture_player_depends_on_playerinventoryui",
+      "architecture_playerequipmentbuildscomponent_depends_on_playerequipmentcomponent",
+      "architecture_playerequipmentcomponent",
+      "architecture_playerequipmentcomponent_gd_func_can_equip_slot",
+      "architecture_playerequipmentcomponent_gd_func_clear_equipped_visual",
+      "architecture_playerequipmentcomponent_gd_func_definition_for_slot",
+      "architecture_playerequipmentcomponent_gd_func_emit_equipment_hint",
+      "architecture_playerequipmentcomponent_gd_func_equip_bone_in_slot",
+      "architecture_playerequipmentcomponent_gd_func_first_open_compatible_slot",
+      "architecture_playerequipmentcomponent_gd_func_get_player_rig",
+      "architecture_playerequipmentcomponent_gd_func_restore_detached_body",
+      "architecture_playerequipmentcomponent_gd_func_slot_for_request",
+      "architecture_playerinventorycomponent_depends_on_playerequipmentcomponent",
+      "architecture_rationale_2205",
+      "architecture_rationale_2414",
+      "architecture_rationale_2442",
+      "architecture_rationale_2446",
+      "architecture_rationale_2450",
+      "architecture_rationale_2454",
+      "architecture_rationale_2458",
+      "architecture_rationale_2462",
+      "architecture_rationale_2470",
+      "architecture_rationale_2490"
+    ],
     "10": [
+      "architecture_bone",
+      "architecture_bone_gd_func_collect",
+      "architecture_bone_gd_func_ready",
+      "architecture_bone_gd_func_set_bone_id",
+      "architecture_bone_gd_func_update_prompt",
+      "architecture_bone_uses_game_event_pickup_collected",
+      "architecture_bone_uses_game_event_pickup_focus_changed",
+      "architecture_enemy_depends_on_limbbonepickup",
+      "architecture_limbbonepickup",
+      "architecture_limbbonepickup_gd_func_collect",
+      "architecture_limbbonepickup_gd_func_on_body_entered",
+      "architecture_limbbonepickup_gd_func_ready",
+      "architecture_limbbonepickup_gd_func_set_bone_id",
+      "architecture_limbbonepickup_gd_func_update_prompt",
+      "architecture_limbbonepickup_uses_game_event_pickup_collected",
+      "architecture_limbbonepickup_uses_game_event_pickup_focus_changed",
+      "architecture_rationale_1529",
+      "architecture_rationale_382",
+      "architecture_rationale_401",
+      "architecture_rationale_413",
+      "architecture_rationale_429",
+      "architecture_rationale_433",
+      "architecture_scenebone_contains_bone"
+    ],
+    "11": [
+      "architecture_player",
+      "architecture_player_gd_func_apply_equipment_build",
+      "architecture_player_gd_func_current_head_world_position",
+      "architecture_player_gd_func_detached_torso_head_attach_offset",
+      "architecture_player_gd_func_enter_bone_pickup_range",
+      "architecture_player_gd_func_exit_bone_pickup_range",
+      "architecture_player_gd_func_find_stealth_target",
+      "architecture_player_gd_func_finish_backstab_execution",
+      "architecture_player_gd_func_input_just_pressed",
+      "architecture_player_gd_func_input_just_released",
+      "architecture_player_gd_func_input_pressed",
+      "architecture_player_gd_func_is_head_launch_attack_blocked",
+      "architecture_player_gd_func_spawn_detached_torso_marker",
+      "architecture_player_gd_func_update_stealth_finish_prompt",
+      "architecture_rationale_1701",
+      "architecture_rationale_1753",
+      "architecture_rationale_1849",
+      "architecture_rationale_2049",
+      "architecture_rationale_2065",
+      "architecture_rationale_2093",
+      "architecture_rationale_2101",
+      "architecture_rationale_2117",
+      "architecture_rationale_2129"
+    ],
+    "12": [
       "architecture_proceduralplayeranimator",
       "architecture_proceduralplayeranimator_gd_func_animate_body",
       "architecture_proceduralplayeranimator_gd_func_animate_joints",
       "architecture_proceduralplayeranimator_gd_func_animate_limbs",
       "architecture_proceduralplayeranimator_gd_func_animate_wobble",
-      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_miss_fall_pose",
-      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_recoil_pose",
-      "architecture_proceduralplayeranimator_gd_func_cancel_detached_head_reattach_tornado_to_ground",
-      "architecture_proceduralplayeranimator_gd_func_consume_head_only_body_catch_up_offset",
-      "architecture_proceduralplayeranimator_gd_func_find_body",
-      "architecture_proceduralplayeranimator_gd_func_get_detached_head_reattach_tornado_duration",
-      "architecture_proceduralplayeranimator_gd_func_set_lizard_wall_climb_blend",
-      "architecture_proceduralplayeranimator_gd_func_trigger_stealth_finish_attack",
-      "architecture_proceduralplayeranimator_gd_func_update_from_player",
-      "architecture_rationale_3296",
-      "architecture_rationale_3396",
-      "architecture_rationale_3428",
+      "architecture_proceduralplayeranimator_gd_func_apply_finisher_combo_pose",
+      "architecture_proceduralplayeranimator_gd_func_apply_head_only_attack_pose",
+      "architecture_proceduralplayeranimator_gd_func_apply_left_combo_pose",
+      "architecture_proceduralplayeranimator_gd_func_apply_right_combo_pose",
+      "architecture_proceduralplayeranimator_gd_func_capture_rest",
+      "architecture_proceduralplayeranimator_gd_func_consume_torso_head_miss_detach_offset",
+      "architecture_proceduralplayeranimator_gd_func_head_launch_aim_or",
+      "architecture_proceduralplayeranimator_gd_func_is_head_only",
+      "architecture_proceduralplayeranimator_gd_func_torso_head_launch_available",
+      "architecture_proceduralplayeranimator_gd_func_world_rotation_to_rig_local",
+      "architecture_rationale_3404",
       "architecture_rationale_3456",
-      "architecture_rationale_3464",
-      "architecture_rationale_3508",
-      "architecture_rationale_3540",
-      "architecture_rationale_3672",
-      "architecture_rationale_3684",
-      "architecture_rationale_3740"
-    ],
-    "11": [
-      "architecture_player",
-      "architecture_player_gd_func_build_aim_reticle_ui",
-      "architecture_player_gd_func_detach_head_from_torso_after_miss",
-      "architecture_player_gd_func_detached_torso_head_attach_offset",
-      "architecture_player_gd_func_enter_bone_pickup_range",
-      "architecture_player_gd_func_exit_bone_pickup_range",
-      "architecture_player_gd_func_on_backstab_animator_impact",
-      "architecture_player_gd_func_recalculate_inventory_stats",
-      "architecture_player_gd_func_recalculate_player_stats",
-      "architecture_player_gd_func_recalculate_stats",
-      "architecture_player_gd_func_update_aim_reticle_ui",
-      "architecture_player_gd_func_update_health_ui",
-      "architecture_player_gd_func_update_mouse_mode",
-      "architecture_playerequipmentcomponent_gd_func_recalculate_owner_stats",
-      "architecture_rationale_1841",
-      "architecture_rationale_2037",
-      "architecture_rationale_2057",
-      "architecture_rationale_2101",
-      "architecture_rationale_2129",
-      "architecture_rationale_70"
-    ],
-    "12": [
-      "architecture_arenagoalmanager_uses_game_event_bone_collected",
-      "architecture_player_depends_on_playerinventorycomponent",
-      "architecture_player_gd_func_collect_bone",
-      "architecture_player_gd_func_equip_next_bone",
-      "architecture_playerequipmentbuildscomponent_gd_func_setup",
-      "architecture_playerequipmentcomponent_gd_func_equip_starting_core",
-      "architecture_playerinventorycomponent",
-      "architecture_playerinventorycomponent_gd_func_collect_bone",
-      "architecture_playerinventorycomponent_gd_func_equip_next_bone",
-      "architecture_playerinventorycomponent_gd_func_notify_inventory_changed",
-      "architecture_playerinventorycomponent_gd_func_setup",
-      "architecture_playerinventorycomponent_uses_game_event_bone_collected",
-      "architecture_playerinventoryui_gd_func_notify_inventory_changed",
-      "architecture_rationale_1941",
-      "architecture_rationale_198",
-      "architecture_rationale_2013",
-      "architecture_rationale_2308",
-      "architecture_rationale_2319",
-      "architecture_rationale_2569"
+      "architecture_rationale_3500",
+      "architecture_rationale_3536",
+      "architecture_rationale_3560",
+      "architecture_rationale_3584",
+      "architecture_rationale_3680",
+      "architecture_rationale_3716"
     ],
     "13": [
-      "architecture_rationale_4362",
-      "architecture_rationale_4371",
-      "architecture_rationale_4388",
-      "architecture_rationale_4421",
+      "architecture_rationale_4382",
+      "architecture_rationale_4391",
+      "architecture_rationale_4408",
+      "architecture_rationale_4441",
       "architecture_scenebonetrialgate",
       "architecture_scenebonetrialgate_contains_bonetrialgate",
       "architecture_sceneguidewisp",
@@ -467,24 +472,24 @@
       "architecture_sceneopenworldstage_contains_openworldstage"
     ],
     "14": [
-      "architecture_bone",
-      "architecture_bone_gd_func_collect",
-      "architecture_bone_gd_func_on_body_exited",
-      "architecture_bone_gd_func_ready",
-      "architecture_bone_gd_func_set_bone_id",
-      "architecture_bone_gd_func_update_prompt",
-      "architecture_bone_uses_game_event_pickup_collected",
-      "architecture_bone_uses_game_event_pickup_focus_changed",
-      "architecture_limbbonepickup_gd_func_collect",
-      "architecture_limbbonepickup_gd_func_set_bone_id",
-      "architecture_limbbonepickup_uses_game_event_pickup_collected",
-      "architecture_limbbonepickup_uses_game_event_pickup_focus_changed",
-      "architecture_rationale_382",
-      "architecture_rationale_401",
-      "architecture_rationale_413",
-      "architecture_rationale_429",
-      "architecture_rationale_433",
-      "architecture_scenebone_contains_bone"
+      "architecture_arenagoalmanager_gd_func_ready",
+      "architecture_enemy_gd_func_ready",
+      "architecture_enemy_gd_func_respawn",
+      "architecture_modularskeletonrig_gd_func_ready",
+      "architecture_openworldstage",
+      "architecture_openworldstage_gd_func_get_stage_summary",
+      "architecture_openworldstage_gd_func_on_body_entered",
+      "architecture_openworldstage_gd_func_on_body_exited",
+      "architecture_openworldstage_gd_func_ready",
+      "architecture_openworldstage_gd_func_refresh_runtime_mesh",
+      "architecture_openworldstage_gd_func_refresh_stage_from_mesh",
+      "architecture_player_gd_func_ready",
+      "architecture_rationale_1623",
+      "architecture_rationale_1638",
+      "architecture_rationale_1650",
+      "architecture_rationale_42",
+      "architecture_testingenvironment_gd_func_ready",
+      "architecture_tutorialislandbuilder_gd_func_ready"
     ],
     "15": [
       "architecture",
@@ -493,9 +498,9 @@
       "architecture_playerequipmentcomponent_depends_on_sceneequippedbone",
       "architecture_rationale_1",
       "architecture_rationale_2193",
-      "architecture_rationale_4320",
-      "architecture_rationale_4346",
-      "architecture_rationale_4412",
+      "architecture_rationale_4340",
+      "architecture_rationale_4366",
+      "architecture_rationale_4432",
       "architecture_rationale_600",
       "architecture_scenedummytestingenvironment",
       "architecture_scenedummytestingenvironment_contains_testingenvironment",
@@ -506,24 +511,60 @@
       "architecture_scenetestingenvironment_contains_testingenvironment"
     ],
     "16": [
-      "architecture_demoenemycamp",
-      "architecture_demoenemycamp_gd_func_build_campfire",
-      "architecture_demoenemycamp_gd_func_emit_camp_state_changed",
-      "architecture_demoenemycamp_gd_func_make_material",
-      "architecture_demoenemycamp_gd_func_ready",
-      "architecture_demoenemycamp_gd_func_register_enemy",
-      "architecture_demoenemycamp_gd_func_remaining_enemy_count",
-      "architecture_demoenemycamp_gd_func_update_chest_visual",
-      "architecture_demoenemycamp_gd_func_update_state",
-      "architecture_demoenemycamp_uses_game_event_camp_chest_opened",
-      "architecture_rationale_613",
-      "architecture_rationale_628",
-      "architecture_rationale_644",
-      "architecture_rationale_688",
-      "architecture_rationale_692",
-      "architecture_rationale_704"
+      "architecture_arenagoalmanager_gd_func_open_exit",
+      "architecture_arenagoalmanager_uses_game_event_exit_reached",
+      "architecture_bonetrialgate_gd_func_set_gate_color",
+      "architecture_exitportal",
+      "architecture_exitportal_gd_func_on_body_entered",
+      "architecture_exitportal_gd_func_on_body_exited",
+      "architecture_exitportal_gd_func_open_exit",
+      "architecture_exitportal_gd_func_reach_exit",
+      "architecture_exitportal_gd_func_ready",
+      "architecture_exitportal_gd_func_set_portal_color",
+      "architecture_exitportal_gd_func_update_visuals",
+      "architecture_exitportal_uses_game_event_exit_reached",
+      "architecture_rationale_1391",
+      "architecture_rationale_182",
+      "architecture_rationale_269",
+      "architecture_rationale_588",
+      "architecture_rationale_62"
     ],
     "17": [
+      "architecture_player_depends_on_playerinventorycomponent",
+      "architecture_player_gd_func_collect_bone",
+      "architecture_player_uses_game_event_inventory_changed",
+      "architecture_playerequipmentbuildscomponent_gd_func_setup",
+      "architecture_playerequipmentcomponent_uses_game_event_inventory_changed",
+      "architecture_playerinventorycomponent",
+      "architecture_playerinventorycomponent_gd_func_collect_bone",
+      "architecture_playerinventorycomponent_gd_func_notify_inventory_changed",
+      "architecture_playerinventorycomponent_gd_func_setup",
+      "architecture_playerinventorycomponent_uses_game_event_inventory_changed",
+      "architecture_playerinventoryui_gd_func_notify_inventory_changed",
+      "architecture_playerinventoryui_uses_game_event_inventory_changed",
+      "architecture_rationale_1941",
+      "architecture_rationale_2165",
+      "architecture_rationale_2308",
+      "architecture_rationale_2319",
+      "architecture_rationale_2569"
+    ],
+    "18": [
+      "architecture_arenagoalmanager_uses_game_event_trial_completed",
+      "architecture_bone_gd_func_update_appearance",
+      "architecture_bonetrialgate",
+      "architecture_bonetrialgate_gd_func_on_body_entered",
+      "architecture_bonetrialgate_gd_func_on_body_exited",
+      "architecture_bonetrialgate_gd_func_process",
+      "architecture_bonetrialgate_gd_func_ready",
+      "architecture_bonetrialgate_gd_func_try_complete_with",
+      "architecture_bonetrialgate_gd_func_update_appearance",
+      "architecture_bonetrialgate_uses_game_event_trial_completed",
+      "architecture_rationale_178",
+      "architecture_rationale_425",
+      "architecture_rationale_545",
+      "architecture_rationale_572"
+    ],
+    "19": [
       "architecture_bone_gd_func_prepare_materials",
       "architecture_bonetrialgate_gd_func_prepare_material",
       "architecture_exitportal_gd_func_prepare_material",
@@ -539,30 +580,30 @@
       "architecture_rationale_1517",
       "architecture_rationale_421"
     ],
-    "18": [
-      "architecture_boneitemtile",
-      "architecture_boneitemtile_depends_on_equipmentrulesservice",
-      "architecture_boneitemtile_depends_on_playerinventoryui",
-      "architecture_boneitemtile_gd_func_get_drag_data",
-      "architecture_boneitemtile_gd_func_make_preview",
-      "architecture_boneitemtile_gd_func_refresh",
-      "architecture_boneitemtile_gd_func_setup",
-      "architecture_boneslotwidget_gd_func_get_drag_data",
-      "architecture_playerinventoryui_depends_on_boneitemtile",
-      "architecture_rationale_2988",
-      "architecture_rationale_4077",
-      "architecture_rationale_4088",
-      "architecture_rationale_4104",
-      "architecture_rationale_4108"
+    "20": [
+      "architecture_demoenemycamp",
+      "architecture_demoenemycamp_gd_func_build_campfire",
+      "architecture_demoenemycamp_gd_func_build_chest",
+      "architecture_demoenemycamp_gd_func_ready",
+      "architecture_demoenemycamp_gd_func_register_enemy",
+      "architecture_demoenemycamp_gd_func_release_player_interact_lock",
+      "architecture_demoenemycamp_gd_func_remaining_enemy_count",
+      "architecture_demoenemycamp_gd_func_reserve_player_interact_lock",
+      "architecture_demoenemycamp_uses_game_event_camp_chest_opened",
+      "architecture_rationale_613",
+      "architecture_rationale_628",
+      "architecture_rationale_660",
+      "architecture_rationale_688",
+      "architecture_rationale_704"
     ],
-    "19": [
+    "21": [
       "architecture_enemy_gd_func_update_procedural_animation",
       "architecture_proceduralplayeranimator_gd_func_update_demo_procedural",
       "architecture_rationale_1178",
-      "architecture_rationale_3756",
-      "architecture_rationale_3775",
-      "architecture_rationale_3779",
-      "architecture_rationale_3787",
+      "architecture_rationale_3776",
+      "architecture_rationale_3795",
+      "architecture_rationale_3799",
+      "architecture_rationale_3807",
       "architecture_rigtestplayer",
       "architecture_rigtestplayer_gd_func_cycle_equip",
       "architecture_rigtestplayer_gd_func_ensure_demo_target",
@@ -571,7 +612,22 @@
       "architecture_rigtestplayer_gd_func_trigger_animation_demo",
       "architecture_rigtestplayer_gd_func_update_demo_target"
     ],
-    "20": [
+    "22": [
+      "architecture_boneitemtile",
+      "architecture_boneitemtile_depends_on_playerinventoryui",
+      "architecture_boneitemtile_gd_func_make_preview",
+      "architecture_boneitemtile_gd_func_on_mouse_entered",
+      "architecture_boneitemtile_gd_func_refresh",
+      "architecture_boneitemtile_gd_func_setup",
+      "architecture_boneslotwidget_gd_func_on_mouse_entered",
+      "architecture_playerinventoryui_depends_on_boneitemtile",
+      "architecture_rationale_3008",
+      "architecture_rationale_4097",
+      "architecture_rationale_4108",
+      "architecture_rationale_4112",
+      "architecture_rationale_4128"
+    ],
+    "23": [
       "architecture_demoenemycamp_gd_func_open_chest",
       "architecture_mainmenu",
       "architecture_mainmenu_gd_func_build_menu",
@@ -586,7 +642,7 @@
       "architecture_rationale_1615",
       "architecture_rationale_648"
     ],
-    "21": [
+    "24": [
       "architecture_enemy_depends_on_modularskeletonrig",
       "architecture_modularskeletonrig",
       "architecture_modularskeletonrig_gd_func_get_socket",
@@ -596,14 +652,41 @@
       "architecture_playerinventoryui_depends_on_modularskeletonrig",
       "architecture_proceduralplayeranimator_depends_on_modularskeletonrig",
       "architecture_rationale_27",
-      "architecture_rationale_3023",
-      "architecture_rationale_3082",
+      "architecture_rationale_3043",
+      "architecture_rationale_3102",
       "architecture_rigtestplayer_depends_on_modularskeletonrig",
       "architecture_rt6_depends_on_modularskeletonrig"
     ],
-    "22": [
+    "25": [
+      "architecture_enemy_depends_on_scenebone",
+      "architecture_player_depends_on_sceneattackhitbox",
+      "architecture_rationale_23",
+      "architecture_rationale_4313",
+      "architecture_rationale_4322",
+      "architecture_sceneattackhitbox",
+      "architecture_sceneattackhitbox_contains_attackhitbox",
+      "architecture_scenebone",
+      "architecture_testingenvironment_depends_on_sceneplayer",
+      "architecture_tutorialislandbuilder_depends_on_demoenemycamp",
+      "architecture_tutorialislandbuilder_depends_on_scenebone",
+      "architecture_tutorialislandbuilder_depends_on_sceneenemy"
+    ],
+    "26": [
+      "architecture_rationale_4318",
+      "architecture_rationale_4450",
+      "architecture_rationale_4471",
+      "architecture_sceneplayer",
+      "architecture_sceneplayer_contains_modularskeletonrig",
+      "architecture_sceneplayer_contains_player",
+      "architecture_sceneplayer_contains_playercameracontroller",
+      "architecture_sceneplayer_contains_proceduralplayeranimator",
+      "architecture_scenerigtest",
+      "architecture_scenerigtest_contains_modularskeletonrig",
+      "architecture_scenerigtest_contains_proceduralplayeranimator",
+      "architecture_scenerigtest_contains_rigtestplayer"
+    ],
+    "27": [
       "architecture_arenagoalmanager_gd_func_build_help_ui",
-      "architecture_demoenemycamp_gd_func_build_chest",
       "architecture_enemy_gd_func_die",
       "architecture_modularskeletonrig_gd_func_build_waist_joint",
       "architecture_player_gd_func_build_health_ui",
@@ -615,90 +698,7 @@
       "architecture_rationale_130",
       "architecture_testingenvironment_gd_func_build_ui"
     ],
-    "23": [
-      "architecture_bone_gd_func_on_body_entered",
-      "architecture_demoenemycamp_gd_func_on_chest_body_entered",
-      "architecture_demoenemycamp_gd_func_on_chest_body_exited",
-      "architecture_enemy_depends_on_limbbonepickup",
-      "architecture_limbbonepickup",
-      "architecture_limbbonepickup_gd_func_on_body_entered",
-      "architecture_limbbonepickup_gd_func_on_body_exited",
-      "architecture_limbbonepickup_gd_func_ready",
-      "architecture_limbbonepickup_gd_func_update_prompt",
-      "architecture_limbbonepickup_gd_func_update_prompt_color",
-      "architecture_rationale_1529",
-      "architecture_rationale_405"
-    ],
-    "24": [
-      "architecture_boneitemtile_gd_func_on_mouse_exited",
-      "architecture_boneslotwidget",
-      "architecture_boneslotwidget_gd_func_equipped_bone_id",
-      "architecture_boneslotwidget_gd_func_notification",
-      "architecture_boneslotwidget_gd_func_on_mouse_exited",
-      "architecture_boneslotwidget_gd_func_refresh",
-      "architecture_boneslotwidget_gd_func_set_frame_border",
-      "architecture_playerinventoryui_depends_on_boneslotwidget",
-      "architecture_rationale_4096",
-      "architecture_rationale_4136",
-      "architecture_rationale_4171",
-      "architecture_rationale_4175"
-    ],
-    "25": [
-      "architecture_bonetrialgate_gd_func_set_gate_color",
-      "architecture_exitportal",
-      "architecture_exitportal_gd_func_on_body_entered",
-      "architecture_exitportal_gd_func_on_body_exited",
-      "architecture_exitportal_gd_func_process",
-      "architecture_exitportal_gd_func_reach_exit",
-      "architecture_exitportal_gd_func_ready",
-      "architecture_exitportal_gd_func_set_portal_color",
-      "architecture_exitportal_gd_func_update_visuals",
-      "architecture_rationale_1391",
-      "architecture_rationale_269",
-      "architecture_rationale_588"
-    ],
-    "26": [
-      "architecture_enemy_depends_on_scenebone",
-      "architecture_player_depends_on_sceneattackhitbox",
-      "architecture_rationale_23",
-      "architecture_rationale_4293",
-      "architecture_rationale_4302",
-      "architecture_sceneattackhitbox",
-      "architecture_sceneattackhitbox_contains_attackhitbox",
-      "architecture_scenebone",
-      "architecture_testingenvironment_depends_on_sceneplayer",
-      "architecture_tutorialislandbuilder_depends_on_demoenemycamp",
-      "architecture_tutorialislandbuilder_depends_on_scenebone",
-      "architecture_tutorialislandbuilder_depends_on_sceneenemy"
-    ],
-    "27": [
-      "architecture_rationale_4298",
-      "architecture_rationale_4430",
-      "architecture_rationale_4451",
-      "architecture_sceneplayer",
-      "architecture_sceneplayer_contains_modularskeletonrig",
-      "architecture_sceneplayer_contains_player",
-      "architecture_sceneplayer_contains_playercameracontroller",
-      "architecture_sceneplayer_contains_proceduralplayeranimator",
-      "architecture_scenerigtest",
-      "architecture_scenerigtest_contains_modularskeletonrig",
-      "architecture_scenerigtest_contains_proceduralplayeranimator",
-      "architecture_scenerigtest_contains_rigtestplayer"
-    ],
     "28": [
-      "architecture_arenagoalmanager",
-      "architecture_arenagoalmanager_gd_func_build_goal_ui",
-      "architecture_arenagoalmanager_gd_func_on_bone_collected",
-      "architecture_arenagoalmanager_gd_func_refresh_help_ui",
-      "architecture_arenagoalmanager_gd_func_reset_control_tutorial",
-      "architecture_arenagoalmanager_gd_func_update_goal_ui",
-      "architecture_rationale_110",
-      "architecture_rationale_142",
-      "architecture_rationale_146",
-      "architecture_rationale_31",
-      "architecture_rationale_66"
-    ],
-    "29": [
       "architecture_arrowprojectile",
       "architecture_arrowprojectile_gd_func_on_area_entered",
       "architecture_arrowprojectile_gd_func_ready",
@@ -711,37 +711,50 @@
       "architecture_rationale_249",
       "architecture_rationale_253"
     ],
+    "29": [
+      "architecture_boneitemtile_gd_func_drop_data",
+      "architecture_boneslotwidget_gd_func_drop_data",
+      "architecture_inventoryemptyslot",
+      "architecture_inventoryemptyslot_gd_func_drop_data",
+      "architecture_inventoryemptyslot_gd_func_setup",
+      "architecture_playerinventoryui_depends_on_inventoryemptyslot",
+      "architecture_playerinventoryui_depends_on_inventoryemptyslot2",
+      "architecture_rationale_3016",
+      "architecture_rationale_4140",
+      "architecture_rationale_4219",
+      "architecture_rationale_4230"
+    ],
     "30": [
-      "architecture_bone_gd_func_update_appearance",
-      "architecture_bonetrialgate",
-      "architecture_bonetrialgate_gd_func_on_body_entered",
-      "architecture_bonetrialgate_gd_func_on_body_exited",
-      "architecture_bonetrialgate_gd_func_process",
-      "architecture_bonetrialgate_gd_func_ready",
-      "architecture_bonetrialgate_gd_func_try_complete_with",
-      "architecture_bonetrialgate_gd_func_update_appearance",
-      "architecture_rationale_425",
-      "architecture_rationale_545",
-      "architecture_rationale_572"
+      "architecture_boneitemtile_gd_func_get_drag_data",
+      "architecture_boneslotwidget",
+      "architecture_boneslotwidget_gd_func_get_drag_data",
+      "architecture_boneslotwidget_gd_func_notification",
+      "architecture_boneslotwidget_gd_func_refresh",
+      "architecture_boneslotwidget_gd_func_set_frame_border",
+      "architecture_playerinventoryui_depends_on_boneslotwidget",
+      "architecture_rationale_4124",
+      "architecture_rationale_4156",
+      "architecture_rationale_4191",
+      "architecture_rationale_4195"
     ],
     "31": [
-      "architecture_openworldstage",
-      "architecture_openworldstage_gd_func_get_stage_summary",
-      "architecture_openworldstage_gd_func_on_body_entered",
-      "architecture_openworldstage_gd_func_on_body_exited",
-      "architecture_openworldstage_gd_func_ready",
-      "architecture_openworldstage_gd_func_refresh_runtime_mesh",
-      "architecture_openworldstage_gd_func_refresh_stage_from_mesh",
-      "architecture_rationale_1623",
-      "architecture_rationale_1638",
-      "architecture_rationale_1650"
+      "architecture_arenagoalmanager_gd_func_update_goal_ui",
+      "architecture_demoenemycamp_gd_func_update_chest_visual",
+      "architecture_demoenemycamp_gd_func_update_state",
+      "architecture_limbbonepickup_gd_func_update_prompt_color",
+      "architecture_player_gd_func_build_aim_reticle_ui",
+      "architecture_player_gd_func_update_aim_reticle_ui",
+      "architecture_player_gd_func_update_health_ui",
+      "architecture_player_gd_func_update_mouse_mode",
+      "architecture_rationale_70",
+      "architecture_testingenvironment_gd_func_update_status"
     ],
     "32": [
       "architecture_proceduralenemyanimator",
       "architecture_proceduralenemyanimator_depends_on_proceduralplayeranimator",
       "architecture_proceduralenemyanimator_gd_func_ready",
-      "architecture_rationale_3266",
-      "architecture_rationale_4329",
+      "architecture_rationale_3286",
+      "architecture_rationale_4349",
       "architecture_sceneenemy",
       "architecture_sceneenemy_contains_enemy",
       "architecture_sceneenemy_contains_modularskeletonrig",
@@ -749,26 +762,18 @@
       "architecture_testingenvironment_depends_on_sceneenemy"
     ],
     "33": [
-      "architecture_arenagoalmanager_gd_func_ready",
-      "architecture_enemy_gd_func_ready",
-      "architecture_enemy_gd_func_respawn",
-      "architecture_modularskeletonrig_gd_func_ready",
-      "architecture_player_gd_func_ready",
-      "architecture_rationale_42",
-      "architecture_testingenvironment_gd_func_ready",
-      "architecture_tutorialislandbuilder_gd_func_ready"
+      "architecture_arenagoalmanager",
+      "architecture_arenagoalmanager_gd_func_control_tutorial_label",
+      "architecture_arenagoalmanager_gd_func_control_tutorial_line",
+      "architecture_arenagoalmanager_gd_func_on_bone_collected",
+      "architecture_arenagoalmanager_gd_func_show_win_screen",
+      "architecture_rationale_110",
+      "architecture_rationale_126",
+      "architecture_rationale_158",
+      "architecture_rationale_31"
     ],
     "34": [
-      "architecture_arrowprojectile_gd_func_configure",
-      "architecture_enemy_depends_on_enemyrockprojectile",
-      "architecture_enemyrockprojectile",
-      "architecture_enemyrockprojectile_gd_func_configure",
-      "architecture_enemyrockprojectile_gd_func_physics_process",
-      "architecture_enemyrockprojectile_gd_func_ready",
-      "architecture_rationale_1294",
-      "architecture_rationale_237"
-    ],
-    "35": [
+      "architecture_boneslotwidget_gd_func_equipped_bone_id",
       "architecture_modularskeletonrig_gd_func_get_equipped_bone_defs",
       "architecture_player_gd_func_get_equipped_bone_for_slot",
       "architecture_player_gd_func_get_equipped_bone_id",
@@ -778,16 +783,37 @@
       "architecture_playerinventoryui_gd_func_get_equipped_bone_for_slot",
       "architecture_rationale_1945"
     ],
-    "36": [
+    "35": [
       "architecture_arenagoalmanager_gd_func_process",
       "architecture_bone_gd_func_process",
       "architecture_demoenemycamp_gd_func_process",
       "architecture_enemy_gd_func_process",
+      "architecture_exitportal_gd_func_process",
       "architecture_limbbonepickup_gd_func_process",
       "architecture_playercameracontroller_gd_func_process",
       "architecture_rationale_46"
     ],
+    "36": [
+      "architecture_arrowprojectile_gd_func_configure",
+      "architecture_enemy_depends_on_enemyrockprojectile",
+      "architecture_enemyrockprojectile",
+      "architecture_enemyrockprojectile_gd_func_configure",
+      "architecture_enemyrockprojectile_gd_func_physics_process",
+      "architecture_enemyrockprojectile_gd_func_ready",
+      "architecture_rationale_1294",
+      "architecture_rationale_237"
+    ],
     "37": [
+      "architecture_rationale_3823",
+      "architecture_rationale_3858",
+      "architecture_rationale_3874",
+      "architecture_rationale_3934",
+      "architecture_testingenvironment",
+      "architecture_testingenvironment_gd_func_add_spawn_marker",
+      "architecture_testingenvironment_gd_func_on_notes_submitted",
+      "architecture_testingenvironment_gd_func_spawn_enemy_at_next_marker"
+    ],
+    "38": [
       "architecture_arenagoalmanager_gd_func_unhandled_input",
       "architecture_boneslotwidget_gd_func_gui_input",
       "architecture_player_gd_func_input",
@@ -796,34 +822,16 @@
       "architecture_rationale_50",
       "architecture_testingenvironment_gd_func_unhandled_input"
     ],
-    "38": [
-      "architecture_inventoryemptyslot",
-      "architecture_inventoryemptyslot_gd_func_setup",
-      "architecture_playerinventoryui_depends_on_inventoryemptyslot",
-      "architecture_playerinventoryui_depends_on_inventoryemptyslot2",
-      "architecture_rationale_2996",
-      "architecture_rationale_4199",
-      "architecture_rationale_4210"
-    ],
     "39": [
       "architecture_player_depends_on_playerstatscomponent",
       "architecture_playerstatscomponent",
       "architecture_playerstatscomponent_gd_func_calculate",
       "architecture_playerstatscomponent_gd_func_setup",
-      "architecture_rationale_3000",
-      "architecture_rationale_3011",
-      "architecture_rationale_3015"
+      "architecture_rationale_3020",
+      "architecture_rationale_3031",
+      "architecture_rationale_3035"
     ],
     "40": [
-      "architecture_rationale_3803",
-      "architecture_rationale_3838",
-      "architecture_rationale_3918",
-      "architecture_testingenvironment",
-      "architecture_testingenvironment_gd_func_add_spawn_marker",
-      "architecture_testingenvironment_gd_func_runtime_evidence_snapshot",
-      "architecture_testingenvironment_gd_func_update_status"
-    ],
-    "41": [
       "architecture_arenagoalmanager_uses_game_event_bone_equipped",
       "architecture_playerequipmentcomponent_uses_game_event_bone_equipped",
       "architecture_playerequipmentcomponent_uses_game_event_bone_unequipped",
@@ -831,13 +839,21 @@
       "architecture_playerinventoryui_uses_game_event_bone_unequipped",
       "architecture_rationale_202"
     ],
-    "42": [
+    "41": [
       "architecture_arrowprojectile_gd_func_physics_process",
       "architecture_attackhitbox_gd_func_physics_process",
       "architecture_enemy_gd_func_physics_process",
       "architecture_player_gd_func_physics_process",
       "architecture_playercameracontroller_gd_func_physics_process",
       "architecture_rationale_241"
+    ],
+    "42": [
+      "architecture_bone_gd_func_on_body_entered",
+      "architecture_bone_gd_func_on_body_exited",
+      "architecture_demoenemycamp_gd_func_on_chest_body_entered",
+      "architecture_demoenemycamp_gd_func_on_chest_body_exited",
+      "architecture_limbbonepickup_gd_func_on_body_exited",
+      "architecture_rationale_405"
     ],
     "43": [
       "architecture_bonetrialgate_gd_func_update_label",
@@ -884,1838 +900,1834 @@
       "architecture_rationale_2021"
     ],
     "49": [
-      "architecture_player_gd_func_is_head_launch_combat_mode",
-      "architecture_player_gd_func_is_head_only_combat_mode",
-      "architecture_player_gd_func_is_torso_head_launch_combat_mode",
-      "architecture_proceduralplayeranimator_gd_func_is_head_only",
-      "architecture_rationale_1741"
+      "architecture_player_gd_func_recalculate_inventory_stats",
+      "architecture_player_gd_func_recalculate_player_stats",
+      "architecture_player_gd_func_recalculate_stats",
+      "architecture_playerequipmentcomponent_gd_func_recalculate_owner_stats",
+      "architecture_rationale_2037"
     ],
     "50": [
-      "architecture_player_uses_game_event_inventory_changed",
-      "architecture_playerequipmentcomponent_uses_game_event_inventory_changed",
-      "architecture_playerinventorycomponent_uses_game_event_inventory_changed",
-      "architecture_playerinventoryui_uses_game_event_inventory_changed",
-      "architecture_rationale_2165"
-    ],
-    "51": [
       "architecture_proceduralplayeranimator_gd_func_ease_in_out_sine",
       "architecture_proceduralplayeranimator_gd_func_ease_in_quad",
       "architecture_proceduralplayeranimator_gd_func_ease_out_quad",
       "architecture_proceduralplayeranimator_gd_func_ease_out_sine",
-      "architecture_rationale_3360"
+      "architecture_rationale_3380"
     ],
-    "52": [
+    "51": [
       "architecture_rationale_19",
       "architecture_rationale_8",
       "architecture_rt6",
       "architecture_rt6_depends_on_scenerigtest",
       "architecture_rt6_gd_func_initialize"
     ],
-    "53": [
+    "52": [
       "architecture_arenagoalmanager_gd_func_on_bone_equipped",
       "architecture_playerinventoryui_gd_func_on_bone_equipped",
       "architecture_playerinventoryui_gd_func_on_bone_unequipped",
       "architecture_rationale_114"
     ],
-    "54": [
+    "53": [
       "architecture_arrowprojectile_gd_func_body_part_for_area",
       "architecture_attackhitbox_gd_func_body_part_for_area",
       "architecture_enemyrockprojectile_gd_func_body_part_for_area",
       "architecture_rationale_261"
     ],
-    "55": [
+    "54": [
       "architecture_arrowprojectile_gd_func_damage_owner_for_area",
       "architecture_attackhitbox_gd_func_damage_owner_for_area",
       "architecture_enemyrockprojectile_gd_func_damage_owner_for_area",
       "architecture_rationale_257"
     ],
-    "56": [
+    "55": [
       "architecture_arrowprojectile_gd_func_on_body_entered",
       "architecture_attackhitbox_gd_func_on_body_entered",
       "architecture_enemyrockprojectile_gd_func_on_body_entered",
       "architecture_rationale_245"
     ],
-    "57": [
+    "56": [
       "architecture_boneitemtile_gd_func_can_drop_data",
       "architecture_boneslotwidget_gd_func_can_drop_data",
       "architecture_inventoryemptyslot_gd_func_can_drop_data",
-      "architecture_rationale_4116"
+      "architecture_rationale_4136"
     ],
-    "58": [
-      "architecture_boneitemtile_gd_func_drop_data",
-      "architecture_boneslotwidget_gd_func_drop_data",
-      "architecture_inventoryemptyslot_gd_func_drop_data",
-      "architecture_rationale_4120"
-    ],
-    "59": [
+    "57": [
       "architecture_boneitemtile_gd_func_make_tile_style",
       "architecture_boneslotwidget_gd_func_make_slot_style",
       "architecture_inventoryemptyslot_gd_func_make_slot_style",
-      "architecture_rationale_4112"
+      "architecture_rationale_4132"
     ],
-    "60": [
+    "58": [
       "architecture_demoenemycamp_uses_game_event_enemy_defeated",
       "architecture_enemy_uses_game_event_enemy_defeated",
       "architecture_rationale_696",
       "architecture_testingenvironment_uses_game_event_enemy_defeated"
     ],
-    "61": [
+    "59": [
       "architecture_enemy_depends_on_proceduralplayeranimator",
       "architecture_player_depends_on_proceduralplayeranimator",
       "architecture_rationale_1290",
       "architecture_rigtestplayer_depends_on_proceduralplayeranimator"
     ],
-    "62": [
+    "60": [
       "architecture_enemy_gd_func_drop_bone",
       "architecture_player_gd_func_clear_bone_info",
       "architecture_playerinventoryui_gd_func_clear_bone_info",
       "architecture_rationale_1138"
     ],
-    "63": [
+    "61": [
       "architecture_enemy_gd_func_has_body_part_hitboxes",
       "architecture_modularskeletonrig_gd_func_has_body_part_hitboxes",
       "architecture_player_gd_func_has_body_part_hitboxes",
       "architecture_rationale_1014"
     ],
-    "64": [
+    "62": [
       "architecture_modularskeletonrig_gd_func_as_vector3",
       "architecture_player_gd_func_as_vector3",
       "architecture_proceduralplayeranimator_gd_func_as_vector3",
       "architecture_rationale_2113"
     ],
-    "65": [
+    "63": [
       "architecture_player_gd_func_equip_bone",
       "architecture_playerequipmentcomponent_gd_func_equip_bone",
       "architecture_playerinventoryui_gd_func_equip_bone",
       "architecture_rationale_2017"
     ],
-    "66": [
+    "64": [
+      "architecture_player_gd_func_equip_next_bone",
+      "architecture_playerequipmentcomponent_gd_func_equip_starting_core",
+      "architecture_playerinventorycomponent_gd_func_equip_next_bone",
+      "architecture_rationale_2013"
+    ],
+    "65": [
       "architecture_player_gd_func_get_equipment_state",
       "architecture_playerequipmentcomponent_gd_func_get_equipment_state",
       "architecture_playerinventoryui_gd_func_equipment_state",
       "architecture_rationale_1961"
     ],
-    "67": [
+    "66": [
       "architecture_player_gd_func_get_run_stats",
       "architecture_playerequipmentcomponent_gd_func_get_run_stats",
       "architecture_playerinventorycomponent_gd_func_get_run_stats",
       "architecture_rationale_1953"
     ],
-    "68": [
+    "67": [
       "architecture_player_gd_func_has_bone_equipped",
       "architecture_playerequipmentcomponent_gd_func_has_bone_equipped",
       "architecture_playerinventoryui_gd_func_has_bone_equipped",
       "architecture_rationale_1949"
     ],
+    "68": [
+      "architecture_player_gd_func_is_head_launch_combat_mode",
+      "architecture_player_gd_func_is_head_only_combat_mode",
+      "architecture_player_gd_func_is_torso_head_launch_combat_mode",
+      "architecture_rationale_1741"
+    ],
     "69": [
-      "architecture_player_gd_func_input_just_pressed",
-      "architecture_player_gd_func_input_just_released",
-      "architecture_player_gd_func_input_pressed",
-      "architecture_rationale_1701"
-    ],
-    "70": [
-      "architecture_proceduralplayeranimator_gd_func_apply_finisher_combo_pose",
-      "architecture_proceduralplayeranimator_gd_func_apply_left_combo_pose",
-      "architecture_proceduralplayeranimator_gd_func_apply_right_combo_pose",
-      "architecture_rationale_3696"
-    ],
-    "71": [
       "architecture_proceduralplayeranimator_gd_func_capture_socket_local_position",
       "architecture_proceduralplayeranimator_gd_func_capture_socket_local_rotation",
       "architecture_proceduralplayeranimator_gd_func_capture_socket_local_scale",
-      "architecture_rationale_3488"
+      "architecture_rationale_3508"
     ],
-    "72": [
-      "architecture_rationale_4353",
+    "70": [
+      "architecture_rationale_4373",
       "architecture_sceneexitportal",
       "architecture_sceneexitportal_contains_exitportal",
       "architecture_scenemain_contains_sceneexitportal"
     ],
-    "73": [
+    "71": [
       "architecture_arenagoalmanager_gd_func_action_binding_text",
       "architecture_playerinventoryui_gd_func_binding_text",
       "architecture_rationale_170"
     ],
-    "74": [
-      "architecture_arenagoalmanager_gd_func_control_tutorial_label",
-      "architecture_arenagoalmanager_gd_func_control_tutorial_line",
-      "architecture_rationale_158"
+    "72": [
+      "architecture_arenagoalmanager_uses_game_event_bone_collected",
+      "architecture_playerinventorycomponent_uses_game_event_bone_collected",
+      "architecture_rationale_198"
     ],
-    "75": [
-      "architecture_arenagoalmanager_gd_func_open_exit",
-      "architecture_exitportal_gd_func_open_exit",
-      "architecture_rationale_62"
-    ],
-    "76": [
+    "73": [
       "architecture_arenagoalmanager_uses_game_event_camp_state_changed",
       "architecture_demoenemycamp_uses_game_event_camp_state_changed",
       "architecture_rationale_210"
     ],
-    "77": [
-      "architecture_arenagoalmanager_uses_game_event_exit_reached",
-      "architecture_exitportal_uses_game_event_exit_reached",
-      "architecture_rationale_182"
-    ],
-    "78": [
+    "74": [
       "architecture_arenagoalmanager_uses_game_event_inventory_open_changed",
       "architecture_player_uses_game_event_inventory_open_changed",
       "architecture_rationale_206"
     ],
-    "79": [
+    "75": [
       "architecture_arenagoalmanager_uses_game_event_player_died",
       "architecture_player_uses_game_event_player_died",
       "architecture_rationale_186"
     ],
-    "80": [
-      "architecture_arenagoalmanager_uses_game_event_trial_completed",
-      "architecture_bonetrialgate_uses_game_event_trial_completed",
-      "architecture_rationale_178"
+    "76": [
+      "architecture_boneitemtile_gd_func_on_mouse_exited",
+      "architecture_boneslotwidget_gd_func_on_mouse_exited",
+      "architecture_rationale_4116"
     ],
-    "81": [
-      "architecture_boneitemtile_gd_func_on_mouse_entered",
-      "architecture_boneslotwidget_gd_func_on_mouse_entered",
-      "architecture_rationale_4092"
-    ],
-    "82": [
+    "77": [
       "architecture_demoenemycamp_gd_func_on_enemy_defeated",
       "architecture_rationale_640",
       "architecture_testingenvironment_gd_func_on_enemy_defeated"
     ],
-    "83": [
-      "architecture_demoenemycamp_gd_func_release_player_interact_lock",
-      "architecture_demoenemycamp_gd_func_reserve_player_interact_lock",
-      "architecture_rationale_660"
-    ],
-    "84": [
+    "78": [
       "architecture_enemy_gd_func_alert_nearby_allies",
       "architecture_enemy_gd_func_receive_alert",
       "architecture_rationale_910"
     ],
-    "85": [
+    "79": [
       "architecture_enemy_gd_func_apply_lizard_wall_climb_velocity",
       "architecture_proceduralplayeranimator_gd_func_apply_lizard_wall_climb_limb_pose",
       "architecture_rationale_774"
     ],
-    "86": [
+    "80": [
       "architecture_enemy_gd_func_get_stealth_prompt_text",
       "architecture_player_gd_func_set_stealth_prompt",
       "architecture_rationale_858"
     ],
-    "87": [
+    "81": [
       "architecture_enemy_gd_func_make_bow_piece",
       "architecture_player_gd_func_make_bow_piece",
       "architecture_rationale_1190"
     ],
-    "88": [
+    "82": [
       "architecture_enemy_gd_func_set_enemy_color",
       "architecture_enemy_gd_func_set_rig_color",
       "architecture_rationale_1170"
     ],
-    "89": [
+    "83": [
       "architecture_enemy_gd_func_setup_procedural_character",
       "architecture_player_gd_func_setup_procedural_character",
       "architecture_rationale_1174"
     ],
-    "90": [
+    "84": [
       "architecture_enemy_gd_func_should_use_gorilla_profile",
       "architecture_enemy_gd_func_should_use_lizard_profile",
       "architecture_rationale_1222"
     ],
-    "91": [
+    "85": [
       "architecture_enemy_gd_func_show_held_rock",
       "architecture_enemy_gd_func_throw_held_rock",
       "architecture_rationale_834"
     ],
-    "92": [
+    "86": [
       "architecture_modularskeletonrig_gd_func_set_body_progression_enabled",
       "architecture_proceduralplayeranimator_gd_func_set_player_body_progression_enabled",
-      "architecture_rationale_3086"
+      "architecture_rationale_3106"
     ],
-    "93": [
+    "87": [
       "architecture_player_gd_func_clear_backstab_execution_state",
       "architecture_player_gd_func_update_backstab_execution",
       "architecture_rationale_1837"
     ],
-    "94": [
+    "88": [
       "architecture_player_gd_func_enter_interact_range",
       "architecture_player_gd_func_exit_interact_range",
       "architecture_rationale_2121"
     ],
-    "95": [
+    "89": [
       "architecture_player_gd_func_flash_player_attack",
       "architecture_player_gd_func_flash_player_damage",
       "architecture_rationale_1885"
     ],
-    "96": [
+    "90": [
       "architecture_player_gd_func_get_equipment_socket_for_slot",
       "architecture_playerequipmentcomponent_gd_func_get_socket_for_slot",
       "architecture_rationale_2033"
     ],
-    "97": [
+    "91": [
       "architecture_player_gd_func_get_inventory_stats_snapshot",
       "architecture_playerinventoryui_gd_func_inventory_stats_snapshot",
       "architecture_rationale_1969"
     ],
-    "98": [
+    "92": [
       "architecture_player_gd_func_get_inventory_tile_size",
       "architecture_playerinventoryui_gd_func_get_inventory_tile_size",
       "architecture_rationale_2137"
     ],
-    "99": [
+    "93": [
       "architecture_player_gd_func_has_any_arm_equipped",
       "architecture_proceduralplayeranimator_gd_func_has_any_arm_equipped",
       "architecture_rationale_1777"
     ],
-    "100": [
+    "94": [
       "architecture_player_gd_func_has_both_arms_equipped",
       "architecture_proceduralplayeranimator_gd_func_both_arms_equipped",
       "architecture_rationale_1877"
     ],
-    "101": [
+    "95": [
       "architecture_player_gd_func_is_arm_sword_held",
       "architecture_proceduralplayeranimator_gd_func_is_arm_sword_held",
       "architecture_rationale_1873"
     ],
-    "102": [
+    "96": [
       "architecture_player_gd_func_is_head_launch_attack_busy",
       "architecture_proceduralplayeranimator_gd_func_is_head_launch_attack_busy",
       "architecture_rationale_1749"
     ],
-    "103": [
+    "97": [
       "architecture_player_gd_func_is_slot_equipped",
       "architecture_proceduralplayeranimator_gd_func_is_slot_equipped",
       "architecture_rationale_1773"
     ],
-    "104": [
+    "98": [
       "architecture_player_gd_func_show_bone_info",
       "architecture_playerinventoryui_gd_func_show_bone_info",
       "architecture_rationale_2025"
     ],
-    "105": [
+    "99": [
       "architecture_player_gd_func_toggle_inventory",
       "architecture_playerinventoryui_gd_func_update_inventory_ui",
       "architecture_rationale_2157"
     ],
-    "106": [
+    "100": [
       "architecture_playerequipmentcomponent_gd_func_get_swap_count",
       "architecture_playerinventorycomponent_gd_func_get_equipment_swap_count",
       "architecture_rationale_2438"
     ],
-    "107": [
+    "101": [
       "architecture_playerequipmentcomponent_gd_func_notify_equipment_changed",
       "architecture_playerinventoryui_gd_func_notify_equipment_changed",
       "architecture_rationale_2478"
     ],
-    "108": [
+    "102": [
       "architecture_playerequipmentcomponent_gd_func_setup",
       "architecture_playerinventoryui_gd_func_setup",
       "architecture_rationale_2402"
     ],
-    "109": [
+    "103": [
+      "architecture_playerinventoryui_gd_func_load_control_settings",
+      "architecture_playerinventoryui_gd_func_save_control_settings",
+      "architecture_rationale_2900"
+    ],
+    "104": [
       "architecture_playerinventoryui_gd_func_refresh_inventory_mode",
       "architecture_playerinventoryui_gd_func_refresh_inventory_tabs",
       "architecture_rationale_2696"
     ],
-    "110": [
+    "105": [
       "architecture_proceduralplayeranimator_gd_func_demo_air_time",
       "architecture_proceduralplayeranimator_gd_func_demo_charge_time",
-      "architecture_rationale_3332"
+      "architecture_rationale_3352"
     ],
-    "111": [
+    "106": [
       "architecture_proceduralplayeranimator_gd_func_get_head_launch_attack_world_offset",
       "architecture_proceduralplayeranimator_gd_func_get_head_only_attack_world_offset",
-      "architecture_rationale_3416"
+      "architecture_rationale_3436"
     ],
-    "112": [
+    "107": [
       "architecture_proceduralplayeranimator_gd_func_get_rest_pos",
       "architecture_proceduralplayeranimator_gd_func_get_rest_rot",
-      "architecture_rationale_3520"
+      "architecture_rationale_3540"
     ],
-    "113": [
+    "108": [
       "architecture_proceduralplayeranimator_gd_func_trigger_demo_attack_procedural",
       "architecture_proceduralplayeranimator_gd_func_trigger_demo_attack_tween",
-      "architecture_rationale_3312"
+      "architecture_rationale_3332"
     ],
-    "114": [
+    "109": [
       "architecture_proceduralplayeranimator_gd_func_update_aim_overlay",
       "architecture_proceduralplayeranimator_gd_func_update_attack_overlay",
-      "architecture_rationale_3628"
+      "architecture_rationale_3648"
     ],
-    "115": [
+    "110": [
+      "architecture_arenagoalmanager_gd_func_build_goal_ui",
+      "architecture_rationale_66"
+    ],
+    "111": [
       "architecture_arenagoalmanager_gd_func_build_win_ui",
       "architecture_rationale_174"
     ],
-    "116": [
+    "112": [
       "architecture_arenagoalmanager_gd_func_complete_control_tutorial_step",
       "architecture_rationale_150"
     ],
-    "117": [
+    "113": [
       "architecture_arenagoalmanager_gd_func_complete_level",
       "architecture_rationale_82"
     ],
-    "118": [
+    "114": [
       "architecture_arenagoalmanager_gd_func_control_tutorial_text",
       "architecture_rationale_154"
     ],
-    "119": [
+    "115": [
       "architecture_arenagoalmanager_gd_func_default_help_text",
       "architecture_rationale_134"
     ],
-    "120": [
+    "116": [
       "architecture_arenagoalmanager_gd_func_emit_objective_updated",
       "architecture_rationale_74"
     ],
-    "121": [
+    "117": [
       "architecture_arenagoalmanager_gd_func_full_help_text",
       "architecture_rationale_138"
     ],
-    "122": [
+    "118": [
       "architecture_arenagoalmanager_gd_func_game_over",
       "architecture_rationale_86"
     ],
-    "123": [
+    "119": [
       "architecture_arenagoalmanager_gd_func_is_exit_open",
       "architecture_rationale_58"
     ],
-    "124": [
+    "120": [
       "architecture_arenagoalmanager_gd_func_movement_binding_text",
       "architecture_rationale_166"
     ],
-    "125": [
+    "121": [
       "architecture_arenagoalmanager_gd_func_objective_body",
       "architecture_rationale_78"
     ],
-    "126": [
+    "122": [
       "architecture_arenagoalmanager_gd_func_on_camp_state_changed",
       "architecture_rationale_122"
     ],
-    "127": [
+    "123": [
       "architecture_arenagoalmanager_gd_func_on_exit_reached",
       "architecture_rationale_94"
     ],
-    "128": [
+    "124": [
       "architecture_arenagoalmanager_gd_func_on_inventory_open_changed",
       "architecture_rationale_118"
     ],
-    "129": [
+    "125": [
       "architecture_arenagoalmanager_gd_func_on_objective_updated",
       "architecture_rationale_102"
     ],
-    "130": [
+    "126": [
       "architecture_arenagoalmanager_gd_func_on_player_died",
       "architecture_rationale_98"
     ],
-    "131": [
+    "127": [
       "architecture_arenagoalmanager_gd_func_on_trial_completed",
       "architecture_rationale_90"
     ],
-    "132": [
+    "128": [
       "architecture_arenagoalmanager_gd_func_on_tutorial_hint_requested",
       "architecture_rationale_106"
     ],
-    "133": [
+    "129": [
+      "architecture_arenagoalmanager_gd_func_refresh_help_ui",
+      "architecture_rationale_142"
+    ],
+    "130": [
       "architecture_arenagoalmanager_gd_func_register_trial_complete",
       "architecture_rationale_54"
     ],
-    "134": [
-      "architecture_arenagoalmanager_gd_func_show_win_screen",
-      "architecture_rationale_126"
+    "131": [
+      "architecture_arenagoalmanager_gd_func_reset_control_tutorial",
+      "architecture_rationale_146"
     ],
-    "135": [
+    "132": [
+      "architecture_demoenemycamp_gd_func_emit_camp_state_changed",
+      "architecture_rationale_644"
+    ],
+    "133": [
+      "architecture_demoenemycamp_gd_func_make_material",
+      "architecture_rationale_692"
+    ],
+    "134": [
       "architecture_enemy_gd_func_apply_bone_identity",
       "architecture_rationale_1198"
     ],
-    "136": [
+    "135": [
       "architecture_enemy_gd_func_apply_box_collision_shape",
       "architecture_rationale_1214"
     ],
-    "137": [
+    "136": [
       "architecture_enemy_gd_func_apply_dummy_target_profile",
       "architecture_rationale_1218"
     ],
-    "138": [
+    "137": [
       "architecture_enemy_gd_func_apply_enemy_movement",
       "architecture_rationale_766"
     ],
-    "139": [
+    "138": [
       "architecture_enemy_gd_func_apply_profile_collision_shape",
       "architecture_rationale_1210"
     ],
-    "140": [
+    "139": [
       "architecture_enemy_gd_func_apply_stealth_finish_impact",
       "architecture_rationale_874"
     ],
-    "141": [
+    "140": [
       "architecture_enemy_gd_func_attach_pickup_to_detached_limb",
       "architecture_rationale_1058"
     ],
-    "142": [
+    "141": [
       "architecture_enemy_gd_func_begin_stealth_execution",
       "architecture_rationale_886"
     ],
-    "143": [
+    "142": [
       "architecture_enemy_gd_func_build_vision_cone",
       "architecture_rationale_922"
     ],
-    "144": [
+    "143": [
       "architecture_enemy_gd_func_can_be_stealth_finished_by",
       "architecture_rationale_854"
     ],
-    "145": [
+    "144": [
       "architecture_enemy_gd_func_can_hear_player",
       "architecture_rationale_902"
     ],
-    "146": [
+    "145": [
       "architecture_enemy_gd_func_can_recover_bone_part",
       "architecture_rationale_954"
     ],
-    "147": [
+    "146": [
       "architecture_enemy_gd_func_can_see_player",
       "architecture_rationale_898"
     ],
-    "148": [
+    "147": [
       "architecture_enemy_gd_func_can_start_ranged_attack",
       "architecture_rationale_806"
     ],
-    "149": [
+    "148": [
       "architecture_enemy_gd_func_can_start_rock_throw",
       "architecture_rationale_822"
     ],
-    "150": [
+    "149": [
       "architecture_enemy_gd_func_can_start_saliva_spit",
       "architecture_rationale_790"
     ],
-    "151": [
+    "150": [
       "architecture_enemy_gd_func_cancel_held_rock",
       "architecture_rationale_842"
     ],
-    "152": [
+    "151": [
       "architecture_enemy_gd_func_cancel_stealth_execution",
       "architecture_rationale_882"
     ],
-    "153": [
+    "152": [
       "architecture_enemy_gd_func_choose_death_pickup_limb_key",
       "architecture_rationale_1158"
     ],
-    "154": [
+    "153": [
       "architecture_enemy_gd_func_clear_stealth_execution",
       "architecture_rationale_890"
     ],
-    "155": [
+    "154": [
       "architecture_enemy_gd_func_death_pop",
       "architecture_rationale_1094"
     ],
-    "156": [
+    "155": [
       "architecture_enemy_gd_func_detach_limb_group",
       "architecture_rationale_1050"
     ],
-    "157": [
+    "156": [
       "architecture_enemy_gd_func_detach_limbs_for_damage",
       "architecture_rationale_1034"
     ],
-    "158": [
+    "157": [
       "architecture_enemy_gd_func_drop_remaining_limbs_on_death",
       "architecture_rationale_1154"
     ],
-    "159": [
+    "158": [
       "architecture_enemy_gd_func_facing_from_rotation",
       "architecture_rationale_1122"
     ],
-    "160": [
+    "159": [
       "architecture_enemy_gd_func_finish_stealth_execution",
       "architecture_rationale_878"
     ],
-    "161": [
+    "160": [
       "architecture_enemy_gd_func_fire_enemy_arrow",
       "architecture_rationale_818"
     ],
-    "162": [
+    "161": [
       "architecture_enemy_gd_func_fire_saliva_spit",
       "architecture_rationale_802"
     ],
-    "163": [
+    "162": [
       "architecture_enemy_gd_func_flash_hit",
       "architecture_rationale_1166"
     ],
-    "164": [
+    "163": [
       "architecture_enemy_gd_func_force_limb_pickup_drop",
       "architecture_rationale_1146"
     ],
-    "165": [
+    "164": [
       "architecture_enemy_gd_func_forget_detached_limb_body",
       "architecture_rationale_986"
     ],
-    "166": [
+    "165": [
       "architecture_enemy_gd_func_get_bone_recovery_move",
       "architecture_rationale_958"
     ],
-    "167": [
+    "166": [
       "architecture_enemy_gd_func_get_drop_display_name",
       "architecture_rationale_862"
     ],
-    "168": [
+    "167": [
       "architecture_enemy_gd_func_get_effective_move_speed",
       "architecture_rationale_1182"
     ],
-    "169": [
+    "168": [
       "architecture_enemy_gd_func_get_flee_move",
       "architecture_rationale_946"
     ],
-    "170": [
+    "169": [
       "architecture_enemy_gd_func_get_held_rock_world_position",
       "architecture_rationale_846"
     ],
-    "171": [
+    "170": [
       "architecture_enemy_gd_func_get_idle_wander_move",
       "architecture_rationale_942"
     ],
-    "172": [
+    "171": [
       "architecture_enemy_gd_func_get_player",
       "architecture_rationale_754"
     ],
-    "173": [
+    "172": [
       "architecture_enemy_gd_func_get_recovering_limb_key",
       "architecture_rationale_962"
     ],
-    "174": [
+    "173": [
       "architecture_enemy_gd_func_get_respawn_delay",
       "architecture_rationale_1110"
     ],
-    "175": [
+    "174": [
       "architecture_enemy_gd_func_get_return_home_move",
       "architecture_rationale_938"
     ],
-    "176": [
+    "175": [
       "architecture_enemy_gd_func_get_rock_throw_socket",
       "architecture_rationale_850"
     ],
-    "177": [
+    "176": [
       "architecture_enemy_gd_func_get_search_move",
       "architecture_rationale_930"
     ],
-    "178": [
+    "177": [
       "architecture_enemy_gd_func_has_active_limb_pickup",
       "architecture_rationale_982"
     ],
-    "179": [
+    "178": [
       "architecture_enemy_gd_func_has_lizard_torso_blocks",
       "architecture_rationale_1074"
     ],
-    "180": [
+    "179": [
       "architecture_enemy_gd_func_hide_until_respawn",
       "architecture_rationale_1098"
     ],
-    "181": [
+    "180": [
       "architecture_enemy_gd_func_investigate_position",
       "architecture_rationale_906"
     ],
-    "182": [
+    "181": [
       "architecture_enemy_gd_func_is_detached_limb_body_valid",
       "architecture_rationale_966"
     ],
-    "183": [
+    "182": [
       "architecture_enemy_gd_func_is_lizard_wall_climb_enabled",
       "architecture_rationale_770"
     ],
-    "184": [
+    "183": [
       "architecture_enemy_gd_func_is_player_behind",
       "architecture_rationale_866"
     ],
-    "185": [
+    "184": [
       "architecture_enemy_gd_func_kill_scale_tween",
       "architecture_rationale_1134"
     ],
-    "186": [
+    "185": [
       "architecture_enemy_gd_func_limb_detach_count_for_damage",
       "architecture_rationale_1038"
     ],
-    "187": [
+    "186": [
       "architecture_enemy_gd_func_limb_recovery_group",
       "architecture_rationale_978"
     ],
-    "188": [
+    "187": [
       "architecture_enemy_gd_func_lizard_wall_probe_blocked",
       "architecture_rationale_782"
     ],
-    "189": [
+    "188": [
       "architecture_enemy_gd_func_lunge",
       "architecture_rationale_1130"
     ],
-    "190": [
+    "189": [
       "architecture_enemy_gd_func_maybe_start_low_health_flee",
       "architecture_rationale_1030"
     ],
-    "191": [
+    "190": [
       "architecture_enemy_gd_func_movement_blocked",
       "architecture_rationale_994"
     ],
-    "192": [
+    "191": [
       "architecture_enemy_gd_func_next_attached_limb_key",
       "architecture_rationale_1042"
     ],
-    "193": [
+    "192": [
       "architecture_enemy_gd_func_next_pickup_limb_key",
       "architecture_rationale_1150"
     ],
-    "194": [
+    "193": [
       "architecture_enemy_gd_func_pickup_bone_id_for_limb",
       "architecture_rationale_1062"
     ],
-    "195": [
+    "194": [
       "architecture_enemy_gd_func_pickup_source_profile",
       "architecture_rationale_1066"
     ],
-    "196": [
+    "195": [
       "architecture_enemy_gd_func_play_hit_sound",
       "architecture_rationale_1238"
     ],
-    "197": [
+    "196": [
       "architecture_enemy_gd_func_player_is_dead",
       "architecture_rationale_758"
     ],
-    "198": [
+    "197": [
       "architecture_enemy_gd_func_punch_scale",
       "architecture_rationale_1126"
     ],
-    "199": [
+    "198": [
       "architecture_enemy_gd_func_react_to_arrow_hit",
       "architecture_rationale_1018"
     ],
-    "200": [
+    "199": [
       "architecture_enemy_gd_func_recover_detached_limb",
       "architecture_rationale_970"
     ],
-    "201": [
+    "200": [
       "architecture_enemy_gd_func_recovery_group_key",
       "architecture_rationale_974"
     ],
-    "202": [
+    "201": [
       "architecture_enemy_gd_func_respawn_after_delay",
       "architecture_rationale_1102"
     ],
-    "203": [
+    "202": [
       "architecture_enemy_gd_func_roll_low_health_personality",
       "architecture_rationale_1230"
     ],
-    "204": [
+    "203": [
       "architecture_enemy_gd_func_scan_while_searching",
       "architecture_rationale_934"
     ],
-    "205": [
+    "204": [
       "architecture_enemy_gd_func_set_collision_enabled",
       "architecture_rationale_1118"
     ],
-    "206": [
+    "205": [
       "architecture_enemy_gd_func_set_lizard_torso_blocks_visible",
       "architecture_rationale_1078"
     ],
-    "207": [
+    "206": [
       "architecture_enemy_gd_func_set_rig_limb_visible",
       "architecture_rationale_1070"
     ],
-    "208": [
+    "207": [
       "architecture_enemy_gd_func_setup_ranged_bow_visual",
       "architecture_rationale_1186"
     ],
-    "209": [
+    "208": [
       "architecture_enemy_gd_func_spawn_is_out_of_perspective",
       "architecture_rationale_1114"
     ],
-    "210": [
+    "209": [
       "architecture_enemy_gd_func_start_ranged_attack",
       "architecture_rationale_810"
     ],
-    "211": [
+    "210": [
       "architecture_enemy_gd_func_start_rock_throw",
       "architecture_rationale_826"
     ],
-    "212": [
+    "211": [
       "architecture_enemy_gd_func_start_saliva_spit",
       "architecture_rationale_794"
     ],
-    "213": [
+    "212": [
       "architecture_enemy_gd_func_steer_around_obstacles",
       "architecture_rationale_990"
     ],
-    "214": [
+    "213": [
       "architecture_enemy_gd_func_take_damage",
       "architecture_rationale_1006"
     ],
-    "215": [
+    "214": [
       "architecture_enemy_gd_func_take_hit",
       "architecture_rationale_1026"
     ],
-    "216": [
+    "215": [
       "architecture_enemy_gd_func_try_attack_player",
       "architecture_rationale_786"
     ],
-    "217": [
+    "216": [
       "architecture_enemy_gd_func_try_stealth_finish",
       "architecture_rationale_870"
     ],
-    "218": [
+    "217": [
       "architecture_enemy_gd_func_turn_toward",
       "architecture_rationale_918"
     ],
-    "219": [
+    "218": [
       "architecture_enemy_gd_func_update_bone_recovery_safety",
       "architecture_rationale_950"
     ],
-    "220": [
+    "219": [
       "architecture_enemy_gd_func_update_crawl_state",
       "architecture_rationale_1086"
     ],
-    "221": [
+    "220": [
       "architecture_enemy_gd_func_update_dummy_target_physics",
       "architecture_rationale_762"
     ],
-    "222": [
+    "221": [
       "architecture_enemy_gd_func_update_lizard_wall_climb_blend",
       "architecture_rationale_778"
     ],
-    "223": [
+    "222": [
       "architecture_enemy_gd_func_update_ranged_attack_windup",
       "architecture_rationale_814"
     ],
-    "224": [
+    "223": [
       "architecture_enemy_gd_func_update_saliva_spit_windup",
       "architecture_rationale_798"
     ],
-    "225": [
+    "224": [
       "architecture_enemy_gd_func_update_stealth_execution_hold",
       "architecture_rationale_894"
     ],
-    "226": [
+    "225": [
       "architecture_modularskeletonrig_gd_func_apply_body_hitbox",
-      "architecture_rationale_3170"
-    ],
-    "227": [
-      "architecture_modularskeletonrig_gd_func_apply_body_hitbox_shape",
-      "architecture_rationale_3174"
-    ],
-    "228": [
-      "architecture_modularskeletonrig_gd_func_apply_default_body_hitbox",
-      "architecture_rationale_3162"
-    ],
-    "229": [
-      "architecture_modularskeletonrig_gd_func_apply_equipped_body_hitbox",
-      "architecture_rationale_3166"
-    ],
-    "230": [
-      "architecture_modularskeletonrig_gd_func_apply_gorilla_body_hitboxes",
-      "architecture_rationale_3058"
-    ],
-    "231": [
-      "architecture_modularskeletonrig_gd_func_apply_rigged_limbs",
-      "architecture_rationale_3066"
-    ],
-    "232": [
-      "architecture_modularskeletonrig_gd_func_apply_skeleton_model",
-      "architecture_rationale_3062"
-    ],
-    "233": [
-      "architecture_modularskeletonrig_gd_func_base_socket_should_show",
-      "architecture_rationale_3138"
-    ],
-    "234": [
-      "architecture_modularskeletonrig_gd_func_body_hitbox_name",
-      "architecture_rationale_3154"
-    ],
-    "235": [
-      "architecture_modularskeletonrig_gd_func_body_hitbox_should_be_enabled",
       "architecture_rationale_3190"
     ],
-    "236": [
-      "architecture_modularskeletonrig_gd_func_build_socket_markers",
-      "architecture_rationale_3198"
-    ],
-    "237": [
-      "architecture_modularskeletonrig_gd_func_clear_damage_hitbox_groups",
+    "226": [
+      "architecture_modularskeletonrig_gd_func_apply_body_hitbox_shape",
       "architecture_rationale_3194"
     ],
-    "238": [
-      "architecture_modularskeletonrig_gd_func_configure_body_hitbox_owner",
-      "architecture_rationale_3158"
-    ],
-    "239": [
-      "architecture_modularskeletonrig_gd_func_enemy_adjusted_hitbox_size",
+    "227": [
+      "architecture_modularskeletonrig_gd_func_apply_default_body_hitbox",
       "architecture_rationale_3182"
     ],
-    "240": [
-      "architecture_modularskeletonrig_gd_func_ensure_body_hitboxes",
-      "architecture_rationale_3146"
-    ],
-    "241": [
-      "architecture_modularskeletonrig_gd_func_ensure_lizard_torso_block",
-      "architecture_rationale_3046"
-    ],
-    "242": [
-      "architecture_modularskeletonrig_gd_func_equip_bone",
-      "architecture_rationale_3122"
-    ],
-    "243": [
-      "architecture_modularskeletonrig_gd_func_find_skeleton",
-      "architecture_rationale_3070"
-    ],
-    "244": [
-      "architecture_modularskeletonrig_gd_func_foot_parent_key",
-      "architecture_rationale_3230"
-    ],
-    "245": [
-      "architecture_modularskeletonrig_gd_func_get_head_model_mesh",
-      "architecture_rationale_3118"
-    ],
-    "246": [
-      "architecture_modularskeletonrig_gd_func_get_limb_meshes",
-      "architecture_rationale_3238"
-    ],
-    "247": [
-      "architecture_modularskeletonrig_gd_func_get_waist_joint",
-      "architecture_rationale_3206"
-    ],
-    "248": [
-      "architecture_modularskeletonrig_gd_func_hang_basis",
-      "architecture_rationale_3074"
-    ],
-    "249": [
-      "architecture_modularskeletonrig_gd_func_has_equipped_slot",
-      "architecture_rationale_3110"
-    ],
-    "250": [
-      "architecture_modularskeletonrig_gd_func_limb_geo_for",
-      "architecture_rationale_3222"
-    ],
-    "251": [
-      "architecture_modularskeletonrig_gd_func_limb_socket_group",
-      "architecture_rationale_3234"
-    ],
-    "252": [
-      "architecture_modularskeletonrig_gd_func_make_body_hitbox",
-      "architecture_rationale_3150"
-    ],
-    "253": [
-      "architecture_modularskeletonrig_gd_func_make_limb",
-      "architecture_rationale_3114"
-    ],
-    "254": [
-      "architecture_modularskeletonrig_gd_func_make_socket_marker",
-      "architecture_rationale_3202"
-    ],
-    "255": [
-      "architecture_modularskeletonrig_gd_func_positive_vector3",
-      "architecture_rationale_3250"
-    ],
-    "256": [
-      "architecture_modularskeletonrig_gd_func_refresh_body_hitbox_enabled",
+    "228": [
+      "architecture_modularskeletonrig_gd_func_apply_equipped_body_hitbox",
       "architecture_rationale_3186"
     ],
-    "257": [
-      "architecture_modularskeletonrig_gd_func_refresh_body_hitbox_shapes",
-      "architecture_rationale_3178"
-    ],
-    "258": [
-      "architecture_modularskeletonrig_gd_func_refresh_body_progression_visibility",
-      "architecture_rationale_3134"
-    ],
-    "259": [
-      "architecture_modularskeletonrig_gd_func_scale_vector3",
-      "architecture_rationale_3246"
-    ],
-    "260": [
-      "architecture_modularskeletonrig_gd_func_set_base_limb_shape",
-      "architecture_rationale_3054"
-    ],
-    "261": [
-      "architecture_modularskeletonrig_gd_func_set_body_hitbox_owner",
-      "architecture_rationale_3090"
-    ],
-    "262": [
-      "architecture_modularskeletonrig_gd_func_set_body_part_hitbox_enabled",
-      "architecture_rationale_3098"
-    ],
-    "263": [
-      "architecture_modularskeletonrig_gd_func_set_head_only_visual_guard",
-      "architecture_rationale_3102"
-    ],
-    "264": [
-      "architecture_modularskeletonrig_gd_func_set_mesh_visibility_recursive",
-      "architecture_rationale_3106"
-    ],
-    "265": [
-      "architecture_modularskeletonrig_gd_func_set_socket_position",
-      "architecture_rationale_3050"
-    ],
-    "266": [
-      "architecture_modularskeletonrig_gd_func_socket_is_equipped",
-      "architecture_rationale_3142"
-    ],
-    "267": [
-      "architecture_modularskeletonrig_gd_func_socket_layout_for",
-      "architecture_rationale_3218"
-    ],
-    "268": [
-      "architecture_modularskeletonrig_gd_func_split_limbs_active",
-      "architecture_rationale_3226"
-    ],
-    "269": [
-      "architecture_modularskeletonrig_gd_func_top_ancestor_under",
+    "229": [
+      "architecture_modularskeletonrig_gd_func_apply_gorilla_body_hitboxes",
       "architecture_rationale_3078"
     ],
-    "270": [
+    "230": [
+      "architecture_modularskeletonrig_gd_func_apply_rigged_limbs",
+      "architecture_rationale_3086"
+    ],
+    "231": [
+      "architecture_modularskeletonrig_gd_func_apply_skeleton_model",
+      "architecture_rationale_3082"
+    ],
+    "232": [
+      "architecture_modularskeletonrig_gd_func_base_socket_should_show",
+      "architecture_rationale_3158"
+    ],
+    "233": [
+      "architecture_modularskeletonrig_gd_func_body_hitbox_name",
+      "architecture_rationale_3174"
+    ],
+    "234": [
+      "architecture_modularskeletonrig_gd_func_body_hitbox_should_be_enabled",
+      "architecture_rationale_3210"
+    ],
+    "235": [
+      "architecture_modularskeletonrig_gd_func_build_socket_markers",
+      "architecture_rationale_3218"
+    ],
+    "236": [
+      "architecture_modularskeletonrig_gd_func_clear_damage_hitbox_groups",
+      "architecture_rationale_3214"
+    ],
+    "237": [
+      "architecture_modularskeletonrig_gd_func_configure_body_hitbox_owner",
+      "architecture_rationale_3178"
+    ],
+    "238": [
+      "architecture_modularskeletonrig_gd_func_enemy_adjusted_hitbox_size",
+      "architecture_rationale_3202"
+    ],
+    "239": [
+      "architecture_modularskeletonrig_gd_func_ensure_body_hitboxes",
+      "architecture_rationale_3166"
+    ],
+    "240": [
+      "architecture_modularskeletonrig_gd_func_ensure_lizard_torso_block",
+      "architecture_rationale_3066"
+    ],
+    "241": [
+      "architecture_modularskeletonrig_gd_func_equip_bone",
+      "architecture_rationale_3142"
+    ],
+    "242": [
+      "architecture_modularskeletonrig_gd_func_find_skeleton",
+      "architecture_rationale_3090"
+    ],
+    "243": [
+      "architecture_modularskeletonrig_gd_func_foot_parent_key",
+      "architecture_rationale_3250"
+    ],
+    "244": [
+      "architecture_modularskeletonrig_gd_func_get_head_model_mesh",
+      "architecture_rationale_3138"
+    ],
+    "245": [
+      "architecture_modularskeletonrig_gd_func_get_limb_meshes",
+      "architecture_rationale_3258"
+    ],
+    "246": [
+      "architecture_modularskeletonrig_gd_func_get_waist_joint",
+      "architecture_rationale_3226"
+    ],
+    "247": [
+      "architecture_modularskeletonrig_gd_func_hang_basis",
+      "architecture_rationale_3094"
+    ],
+    "248": [
+      "architecture_modularskeletonrig_gd_func_has_equipped_slot",
+      "architecture_rationale_3130"
+    ],
+    "249": [
+      "architecture_modularskeletonrig_gd_func_limb_geo_for",
+      "architecture_rationale_3242"
+    ],
+    "250": [
+      "architecture_modularskeletonrig_gd_func_limb_socket_group",
+      "architecture_rationale_3254"
+    ],
+    "251": [
+      "architecture_modularskeletonrig_gd_func_make_body_hitbox",
+      "architecture_rationale_3170"
+    ],
+    "252": [
+      "architecture_modularskeletonrig_gd_func_make_limb",
+      "architecture_rationale_3134"
+    ],
+    "253": [
+      "architecture_modularskeletonrig_gd_func_make_socket_marker",
+      "architecture_rationale_3222"
+    ],
+    "254": [
+      "architecture_modularskeletonrig_gd_func_positive_vector3",
+      "architecture_rationale_3270"
+    ],
+    "255": [
+      "architecture_modularskeletonrig_gd_func_refresh_body_hitbox_enabled",
+      "architecture_rationale_3206"
+    ],
+    "256": [
+      "architecture_modularskeletonrig_gd_func_refresh_body_hitbox_shapes",
+      "architecture_rationale_3198"
+    ],
+    "257": [
+      "architecture_modularskeletonrig_gd_func_refresh_body_progression_visibility",
+      "architecture_rationale_3154"
+    ],
+    "258": [
+      "architecture_modularskeletonrig_gd_func_scale_vector3",
+      "architecture_rationale_3266"
+    ],
+    "259": [
+      "architecture_modularskeletonrig_gd_func_set_base_limb_shape",
+      "architecture_rationale_3074"
+    ],
+    "260": [
+      "architecture_modularskeletonrig_gd_func_set_body_hitbox_owner",
+      "architecture_rationale_3110"
+    ],
+    "261": [
+      "architecture_modularskeletonrig_gd_func_set_body_part_hitbox_enabled",
+      "architecture_rationale_3118"
+    ],
+    "262": [
+      "architecture_modularskeletonrig_gd_func_set_head_only_visual_guard",
+      "architecture_rationale_3122"
+    ],
+    "263": [
+      "architecture_modularskeletonrig_gd_func_set_mesh_visibility_recursive",
+      "architecture_rationale_3126"
+    ],
+    "264": [
+      "architecture_modularskeletonrig_gd_func_set_socket_position",
+      "architecture_rationale_3070"
+    ],
+    "265": [
+      "architecture_modularskeletonrig_gd_func_socket_is_equipped",
+      "architecture_rationale_3162"
+    ],
+    "266": [
+      "architecture_modularskeletonrig_gd_func_socket_layout_for",
+      "architecture_rationale_3238"
+    ],
+    "267": [
+      "architecture_modularskeletonrig_gd_func_split_limbs_active",
+      "architecture_rationale_3246"
+    ],
+    "268": [
+      "architecture_modularskeletonrig_gd_func_top_ancestor_under",
+      "architecture_rationale_3098"
+    ],
+    "269": [
       "architecture_player_gd_func_acquire_head_launch_target",
       "architecture_rationale_1729"
     ],
-    "271": [
+    "270": [
       "architecture_player_gd_func_aim_direction_to",
       "architecture_rationale_1825"
     ],
-    "272": [
+    "271": [
       "architecture_player_gd_func_align_player_body_pose_to_detached_torso_marker",
       "architecture_rationale_2097"
     ],
-    "273": [
+    "272": [
       "architecture_player_gd_func_apply_backstab_impact_once",
       "architecture_rationale_1845"
     ],
-    "274": [
+    "273": [
       "architecture_player_gd_func_apply_head_only_lunge_displacement",
       "architecture_rationale_1933"
     ],
-    "275": [
+    "274": [
       "architecture_player_gd_func_begin_detached_torso_reattach_animation",
       "architecture_rationale_2077"
     ],
-    "276": [
+    "275": [
       "architecture_player_gd_func_build_bow_visual",
       "architecture_rationale_1893"
     ],
-    "277": [
+    "276": [
       "architecture_player_gd_func_can_use_bow",
       "architecture_rationale_1813"
     ],
-    "278": [
+    "277": [
       "architecture_player_gd_func_cancel_backstab_execution",
       "architecture_rationale_1853"
     ],
-    "279": [
+    "278": [
       "architecture_player_gd_func_cancel_bow_aim",
       "architecture_rationale_1801"
     ],
-    "280": [
+    "279": [
       "architecture_player_gd_func_cancel_detached_torso_reattach_animation",
       "architecture_rationale_2085"
     ],
-    "281": [
+    "280": [
       "architecture_player_gd_func_clear_detached_torso_marker",
       "architecture_rationale_2105"
     ],
-    "282": [
+    "281": [
       "architecture_player_gd_func_combo_animation_window",
       "architecture_rationale_1881"
     ],
-    "283": [
-      "architecture_player_gd_func_current_head_world_position",
-      "architecture_rationale_2093"
+    "282": [
+      "architecture_player_gd_func_detach_head_from_torso_after_miss",
+      "architecture_rationale_2057"
     ],
-    "284": [
+    "283": [
       "architecture_player_gd_func_detached_head_ground_local_position",
       "architecture_rationale_2061"
     ],
-    "285": [
+    "284": [
       "architecture_player_gd_func_face_backstab_target",
       "architecture_rationale_1865"
     ],
-    "286": [
-      "architecture_player_gd_func_find_stealth_target",
-      "architecture_rationale_2117"
-    ],
-    "287": [
-      "architecture_player_gd_func_finish_backstab_execution",
-      "architecture_rationale_1849"
-    ],
-    "288": [
+    "285": [
       "architecture_player_gd_func_finish_reattach_head_to_detached_torso",
       "architecture_rationale_2089"
     ],
-    "289": [
+    "286": [
       "architecture_player_gd_func_fire_player_projectile",
       "architecture_rationale_1817"
     ],
-    "290": [
+    "287": [
       "architecture_player_gd_func_force_head_only_single_visual",
       "architecture_rationale_1785"
     ],
-    "291": [
+    "288": [
       "architecture_player_gd_func_get_bow_charge_multiplier",
       "architecture_rationale_1921"
     ],
-    "292": [
+    "289": [
       "architecture_player_gd_func_get_bow_charge_ratio",
       "architecture_rationale_1917"
     ],
-    "293": [
+    "290": [
       "architecture_player_gd_func_get_bow_visual_parent",
       "architecture_rationale_1897"
     ],
-    "294": [
+    "291": [
       "architecture_player_gd_func_get_camera_forward_direction",
       "architecture_rationale_1717"
     ],
-    "295": [
+    "292": [
       "architecture_player_gd_func_get_camera_relative_move_direction",
       "architecture_rationale_1697"
     ],
-    "296": [
+    "293": [
       "architecture_player_gd_func_get_head_only_hitbox_follow_target",
       "architecture_rationale_1765"
     ],
-    "297": [
+    "294": [
       "architecture_player_gd_func_get_move_input_vector",
       "architecture_rationale_1713"
     ],
-    "298": [
+    "295": [
       "architecture_player_gd_func_get_noise_radius",
       "architecture_rationale_2001"
     ],
-    "299": [
+    "296": [
       "architecture_player_gd_func_get_pointer_aim_point",
       "architecture_rationale_1821"
     ],
-    "300": [
+    "297": [
       "architecture_player_gd_func_grounded_detached_torso_marker_position",
       "architecture_rationale_2069"
     ],
-    "301": [
+    "298": [
       "architecture_player_gd_func_head_launch_attack_input_blocked",
       "architecture_rationale_1757"
     ],
-    "302": [
+    "299": [
       "architecture_player_gd_func_head_launch_target_aim",
       "architecture_rationale_1733"
     ],
-    "303": [
+    "300": [
       "architecture_player_gd_func_is_backstab_executing",
       "architecture_rationale_1861"
     ],
-    "304": [
+    "301": [
       "architecture_player_gd_func_is_head_detached_from_torso",
       "architecture_rationale_2053"
     ],
-    "305": [
-      "architecture_player_gd_func_is_head_launch_attack_blocked",
-      "architecture_rationale_1753"
-    ],
-    "306": [
+    "302": [
       "architecture_player_gd_func_is_head_only_attack_locking_movement",
       "architecture_rationale_1745"
     ],
-    "307": [
+    "303": [
       "architecture_player_gd_func_is_player_dead",
       "architecture_rationale_1997"
     ],
-    "308": [
+    "304": [
       "architecture_player_gd_func_make_reticle_rect",
       "architecture_rationale_1905"
     ],
-    "309": [
+    "305": [
       "architecture_player_gd_func_next_combo_animation_step",
       "architecture_rationale_1869"
     ],
-    "310": [
+    "306": [
       "architecture_player_gd_func_on_attack_hit_confirmed",
       "architecture_rationale_1725"
     ],
-    "311": [
+    "307": [
+      "architecture_player_gd_func_on_backstab_animator_impact",
+      "architecture_rationale_1841"
+    ],
+    "308": [
       "architecture_player_gd_func_push_head_launch_attack_aim",
       "architecture_rationale_1737"
     ],
-    "312": [
+    "309": [
       "architecture_player_gd_func_set_aim_reticle_visible",
       "architecture_rationale_1909"
     ],
-    "313": [
+    "310": [
       "architecture_player_gd_func_set_bow_equipped",
       "architecture_rationale_1809"
     ],
-    "314": [
+    "311": [
       "architecture_player_gd_func_set_detached_torso_marker_prompt_visible",
       "architecture_rationale_2109"
     ],
-    "315": [
-      "architecture_player_gd_func_spawn_detached_torso_marker",
-      "architecture_rationale_2065"
-    ],
-    "316": [
+    "312": [
       "architecture_player_gd_func_start_backstab_execution",
       "architecture_rationale_1833"
     ],
-    "317": [
+    "313": [
       "architecture_player_gd_func_take_player_body_part_damage",
       "architecture_rationale_1989"
     ],
-    "318": [
+    "314": [
       "architecture_player_gd_func_take_player_damage",
       "architecture_rationale_1985"
     ],
-    "319": [
+    "315": [
       "architecture_player_gd_func_toggle_bow_equipped",
       "architecture_rationale_1805"
     ],
-    "320": [
+    "316": [
       "architecture_player_gd_func_try_attack",
       "architecture_rationale_1721"
     ],
-    "321": [
+    "317": [
       "architecture_player_gd_func_try_bow_shot",
       "architecture_rationale_1789"
     ],
-    "322": [
+    "318": [
       "architecture_player_gd_func_try_stealth_finish",
       "architecture_rationale_1829"
     ],
-    "323": [
+    "319": [
       "architecture_player_gd_func_update_camera_animation_follow_offset",
       "architecture_rationale_1937"
     ],
-    "324": [
+    "320": [
       "architecture_player_gd_func_update_detached_torso_reattach",
       "architecture_rationale_2073"
     ],
-    "325": [
+    "321": [
       "architecture_player_gd_func_update_detached_torso_reattach_animation",
       "architecture_rationale_2081"
     ],
-    "326": [
+    "322": [
       "architecture_player_gd_func_update_head_launch_recovery",
       "architecture_rationale_1761"
     ],
-    "327": [
+    "323": [
       "architecture_player_gd_func_update_procedural_animation",
       "architecture_rationale_1929"
     ],
-    "328": [
-      "architecture_player_gd_func_update_stealth_finish_prompt",
-      "architecture_rationale_2049"
+    "324": [
+      "architecture_playerequipmentcomponent_gd_func_tint_visual",
+      "architecture_rationale_2494"
     ],
-    "329": [
-      "architecture_playerequipmentcomponent_gd_func_emit_equipment_hint",
-      "architecture_rationale_2458"
+    "325": [
+      "architecture_playerequipmentcomponent_gd_func_tint_visual_mesh",
+      "architecture_rationale_2498"
     ],
-    "330": [
-      "architecture_playerinventoryui_gd_func_action_has_usable_event",
-      "architecture_rationale_2908"
-    ],
-    "331": [
+    "326": [
       "architecture_playerinventoryui_gd_func_add_footer_hint",
-      "architecture_rationale_2780"
+      "architecture_rationale_2800"
     ],
-    "332": [
+    "327": [
       "architecture_playerinventoryui_gd_func_apply_control_binding",
-      "architecture_rationale_2840"
+      "architecture_rationale_2860"
     ],
-    "333": [
+    "328": [
       "architecture_playerinventoryui_gd_func_apply_footer_responsive_layout",
       "architecture_rationale_2720"
     ],
-    "334": [
+    "329": [
       "architecture_playerinventoryui_gd_func_apply_settings_responsive_layout",
       "architecture_rationale_2712"
     ],
-    "335": [
+    "330": [
       "architecture_playerinventoryui_gd_func_bone_comparison_text",
       "architecture_rationale_2664"
     ],
-    "336": [
+    "331": [
       "architecture_playerinventoryui_gd_func_bone_matches_inventory_category",
-      "architecture_rationale_2928"
+      "architecture_rationale_2948"
     ],
-    "337": [
+    "332": [
+      "architecture_playerinventoryui_gd_func_build_build_preview",
+      "architecture_rationale_2740"
+    ],
+    "333": [
       "architecture_playerinventoryui_gd_func_build_character_preview_panel",
+      "architecture_rationale_2816"
+    ],
+    "334": [
+      "architecture_playerinventoryui_gd_func_build_control_binding_row",
       "architecture_rationale_2796"
     ],
-    "338": [
-      "architecture_playerinventoryui_gd_func_build_control_binding_row",
-      "architecture_rationale_2776"
-    ],
-    "339": [
-      "architecture_playerinventoryui_gd_func_build_equipment_build_presets_panel",
-      "architecture_rationale_2732"
-    ],
-    "340": [
-      "architecture_playerinventoryui_gd_func_build_equipment_build_row",
+    "335": [
+      "architecture_playerinventoryui_gd_func_build_equipment_build_card",
       "architecture_rationale_2736"
     ],
-    "341": [
+    "336": [
+      "architecture_playerinventoryui_gd_func_build_equipment_builds_tab",
+      "architecture_rationale_2732"
+    ],
+    "337": [
+      "architecture_playerinventoryui_gd_func_build_inventory_blur_layer",
+      "architecture_rationale_2680"
+    ],
+    "338": [
       "architecture_playerinventoryui_gd_func_build_inventory_tabs",
       "architecture_rationale_2684"
     ],
-    "342": [
+    "339": [
+      "architecture_playerinventoryui_gd_func_build_inventory_ui",
+      "architecture_rationale_2672"
+    ],
+    "340": [
       "architecture_playerinventoryui_gd_func_build_paper_doll",
+      "architecture_rationale_2844"
+    ],
+    "341": [
+      "architecture_playerinventoryui_gd_func_build_preview_room",
       "architecture_rationale_2824"
     ],
-    "343": [
-      "architecture_playerinventoryui_gd_func_build_preview_room",
-      "architecture_rationale_2804"
-    ],
-    "344": [
+    "342": [
       "architecture_playerinventoryui_gd_func_build_right_inventory_panel",
       "architecture_rationale_2676"
     ],
-    "345": [
+    "343": [
+      "architecture_playerinventoryui_gd_func_build_settings_panel",
+      "architecture_rationale_2728"
+    ],
+    "344": [
       "architecture_playerinventoryui_gd_func_build_slot_is_empty",
-      "architecture_rationale_2752"
+      "architecture_rationale_2772"
     ],
-    "346": [
+    "345": [
       "architecture_playerinventoryui_gd_func_cancel_rebinding",
-      "architecture_rationale_2836"
-    ],
-    "347": [
-      "architecture_playerinventoryui_gd_func_clean_control_event",
-      "architecture_rationale_2848"
-    ],
-    "348": [
-      "architecture_playerinventoryui_gd_func_compare_inventory_items",
-      "architecture_rationale_2932"
-    ],
-    "349": [
-      "architecture_playerinventoryui_gd_func_control_event_is_usable",
-      "architecture_rationale_2892"
-    ],
-    "350": [
-      "architecture_playerinventoryui_gd_func_control_events_match",
       "architecture_rationale_2856"
     ],
-    "351": [
-      "architecture_playerinventoryui_gd_func_control_label",
+    "346": [
+      "architecture_playerinventoryui_gd_func_consume_or_arm_confirmation",
+      "architecture_rationale_2776"
+    ],
+    "347": [
+      "architecture_playerinventoryui_gd_func_control_events_match",
       "architecture_rationale_2876"
     ],
-    "352": [
-      "architecture_playerinventoryui_gd_func_disarm_build_preset_confirmation",
-      "architecture_rationale_2764"
-    ],
-    "353": [
-      "architecture_playerinventoryui_gd_func_ensure_default_control_key",
-      "architecture_rationale_2900"
-    ],
-    "354": [
-      "architecture_playerinventoryui_gd_func_ensure_default_control_mouse",
-      "architecture_rationale_2904"
-    ],
-    "355": [
-      "architecture_playerinventoryui_gd_func_ensure_required_control_bindings",
+    "348": [
+      "architecture_playerinventoryui_gd_func_control_label",
       "architecture_rationale_2896"
     ],
-    "356": [
-      "architecture_playerinventoryui_gd_func_equip_bone_in_slot",
-      "architecture_rationale_2648"
-    ],
-    "357": [
-      "architecture_playerinventoryui_gd_func_event_from_config",
-      "architecture_rationale_2888"
-    ],
-    "358": [
-      "architecture_playerinventoryui_gd_func_event_text",
-      "architecture_rationale_2872"
-    ],
-    "359": [
-      "architecture_playerinventoryui_gd_func_find_control_event_owner",
-      "architecture_rationale_2860"
-    ],
-    "360": [
-      "architecture_playerinventoryui_gd_func_make_build_preset_button",
-      "architecture_rationale_2740"
-    ],
-    "361": [
-      "architecture_playerinventoryui_gd_func_make_empty_inventory_slot",
-      "architecture_rationale_2792"
-    ],
-    "362": [
-      "architecture_playerinventoryui_gd_func_make_inventory_style",
-      "architecture_rationale_2788"
-    ],
-    "363": [
-      "architecture_playerinventoryui_gd_func_make_preview_room_box",
-      "architecture_rationale_2808"
-    ],
-    "364": [
-      "architecture_playerinventoryui_gd_func_make_rule",
+    "349": [
+      "architecture_playerinventoryui_gd_func_disarm_build_preset_confirmation",
       "architecture_rationale_2784"
     ],
-    "365": [
-      "architecture_playerinventoryui_gd_func_place_slot",
-      "architecture_rationale_2828"
+    "350": [
+      "architecture_playerinventoryui_gd_func_ensure_required_control_bindings",
+      "architecture_rationale_2916"
     ],
-    "366": [
-      "architecture_playerinventoryui_gd_func_preview_equipment_snapshot",
-      "architecture_rationale_2816"
+    "351": [
+      "architecture_playerinventoryui_gd_func_equip_bone_on_rig",
+      "architecture_rationale_2752"
     ],
-    "367": [
-      "architecture_playerinventoryui_gd_func_preview_snapshot_matches",
+    "352": [
+      "architecture_playerinventoryui_gd_func_event_text",
+      "architecture_rationale_2892"
+    ],
+    "353": [
+      "architecture_playerinventoryui_gd_func_find_control_event_owner",
+      "architecture_rationale_2880"
+    ],
+    "354": [
+      "architecture_playerinventoryui_gd_func_inventory_preview_base_size",
       "architecture_rationale_2820"
     ],
-    "368": [
-      "architecture_playerinventoryui_gd_func_queue_inventory_responsive_layout",
-      "architecture_rationale_2704"
-    ],
-    "369": [
-      "architecture_playerinventoryui_gd_func_rebuild_item_tiles",
-      "architecture_rationale_2924"
-    ],
-    "370": [
-      "architecture_playerinventoryui_gd_func_refresh_build_preset_rows",
-      "architecture_rationale_2768"
-    ],
-    "371": [
-      "architecture_playerinventoryui_gd_func_refresh_control_buttons",
+    "355": [
+      "architecture_playerinventoryui_gd_func_is_bindable_control_event",
       "architecture_rationale_2864"
     ],
-    "372": [
-      "architecture_playerinventoryui_gd_func_remove_control_event_from_other_actions",
-      "architecture_rationale_2852"
+    "356": [
+      "architecture_playerinventoryui_gd_func_make_build_preset_button",
+      "architecture_rationale_2760"
     ],
-    "373": [
+    "357": [
+      "architecture_playerinventoryui_gd_func_make_empty_inventory_slot",
+      "architecture_rationale_2812"
+    ],
+    "358": [
+      "architecture_playerinventoryui_gd_func_make_inventory_style",
+      "architecture_rationale_2808"
+    ],
+    "359": [
+      "architecture_playerinventoryui_gd_func_make_preview_room_box",
+      "architecture_rationale_2828"
+    ],
+    "360": [
+      "architecture_playerinventoryui_gd_func_on_build_preset_confirm_timeout",
+      "architecture_rationale_2780"
+    ],
+    "361": [
+      "architecture_playerinventoryui_gd_func_on_inventory_changed",
+      "architecture_rationale_2624"
+    ],
+    "362": [
+      "architecture_playerinventoryui_gd_func_place_slot",
+      "architecture_rationale_2848"
+    ],
+    "363": [
+      "architecture_playerinventoryui_gd_func_preview_equipment_snapshot",
+      "architecture_rationale_2836"
+    ],
+    "364": [
+      "architecture_playerinventoryui_gd_func_raw_build_state",
+      "architecture_rationale_2756"
+    ],
+    "365": [
+      "architecture_playerinventoryui_gd_func_rebuild_item_tiles",
+      "architecture_rationale_2944"
+    ],
+    "366": [
+      "architecture_playerinventoryui_gd_func_refresh_build_preset_rows",
+      "architecture_rationale_2788"
+    ],
+    "367": [
+      "architecture_playerinventoryui_gd_func_refresh_control_buttons",
+      "architecture_rationale_2884"
+    ],
+    "368": [
+      "architecture_playerinventoryui_gd_func_remove_control_event_from_other_actions",
+      "architecture_rationale_2872"
+    ],
+    "369": [
+      "architecture_playerinventoryui_gd_func_reset_control_defaults",
+      "architecture_rationale_2932"
+    ],
+    "370": [
       "architecture_playerinventoryui_gd_func_select_inventory_category",
       "architecture_rationale_2692"
     ],
-    "374": [
+    "371": [
       "architecture_playerinventoryui_gd_func_set_build_preset_status",
-      "architecture_rationale_2772"
+      "architecture_rationale_2792"
     ],
-    "375": [
+    "372": [
       "architecture_playerinventoryui_gd_func_set_default_control_mouse",
-      "architecture_rationale_2920"
+      "architecture_rationale_2940"
     ],
-    "376": [
+    "373": [
       "architecture_playerinventoryui_gd_func_set_margin",
       "architecture_rationale_2724"
     ],
-    "377": [
+    "374": [
       "architecture_playerinventoryui_gd_func_set_open",
       "architecture_rationale_2608"
     ],
-    "378": [
+    "375": [
+      "architecture_playerinventoryui_gd_func_sync_all_build_previews",
+      "architecture_rationale_2744"
+    ],
+    "376": [
+      "architecture_playerinventoryui_gd_func_sync_build_preview",
+      "architecture_rationale_2748"
+    ],
+    "377": [
       "architecture_playerinventoryui_gd_func_sync_preview",
-      "architecture_rationale_2812"
+      "architecture_rationale_2832"
     ],
-    "379": [
+    "378": [
       "architecture_proceduralplayeranimator_gd_func_anchor_socket_to_body",
-      "architecture_rationale_3584"
-    ],
-    "380": [
-      "architecture_proceduralplayeranimator_gd_func_animate_crawl_body",
-      "architecture_rationale_3592"
-    ],
-    "381": [
-      "architecture_proceduralplayeranimator_gd_func_animate_crawl_limbs",
-      "architecture_rationale_3596"
-    ],
-    "382": [
-      "architecture_proceduralplayeranimator_gd_func_animate_facing",
-      "architecture_rationale_3744"
-    ],
-    "383": [
-      "architecture_proceduralplayeranimator_gd_func_animate_feet",
-      "architecture_rationale_3732"
-    ],
-    "384": [
-      "architecture_proceduralplayeranimator_gd_func_animate_head_only",
-      "architecture_rationale_3568"
-    ],
-    "385": [
-      "architecture_proceduralplayeranimator_gd_func_animate_lizard_torso_blocks",
       "architecture_rationale_3604"
     ],
-    "386": [
+    "379": [
+      "architecture_proceduralplayeranimator_gd_func_animate_crawl_body",
+      "architecture_rationale_3612"
+    ],
+    "380": [
+      "architecture_proceduralplayeranimator_gd_func_animate_crawl_limbs",
+      "architecture_rationale_3616"
+    ],
+    "381": [
+      "architecture_proceduralplayeranimator_gd_func_animate_facing",
+      "architecture_rationale_3764"
+    ],
+    "382": [
+      "architecture_proceduralplayeranimator_gd_func_animate_feet",
+      "architecture_rationale_3752"
+    ],
+    "383": [
+      "architecture_proceduralplayeranimator_gd_func_animate_head_only",
+      "architecture_rationale_3588"
+    ],
+    "384": [
+      "architecture_proceduralplayeranimator_gd_func_animate_lizard_torso_blocks",
+      "architecture_rationale_3624"
+    ],
+    "385": [
       "architecture_proceduralplayeranimator_gd_func_animate_torso_spring",
-      "architecture_rationale_3580"
+      "architecture_rationale_3600"
     ],
-    "387": [
+    "386": [
       "architecture_proceduralplayeranimator_gd_func_animate_waist",
-      "architecture_rationale_3304"
-    ],
-    "388": [
-      "architecture_proceduralplayeranimator_gd_func_apply_aim_overlay",
-      "architecture_rationale_3632"
-    ],
-    "389": [
-      "architecture_proceduralplayeranimator_gd_func_apply_arm_sword_pose",
-      "architecture_rationale_3704"
-    ],
-    "390": [
-      "architecture_proceduralplayeranimator_gd_func_apply_attack_overlay",
-      "architecture_rationale_3640"
-    ],
-    "391": [
-      "architecture_proceduralplayeranimator_gd_func_apply_demo_pose",
       "architecture_rationale_3324"
     ],
-    "392": [
-      "architecture_proceduralplayeranimator_gd_func_apply_detached_head_reattach_finish_blend",
-      "architecture_rationale_3576"
+    "387": [
+      "architecture_proceduralplayeranimator_gd_func_apply_aim_overlay",
+      "architecture_rationale_3652"
     ],
-    "393": [
-      "architecture_proceduralplayeranimator_gd_func_apply_detached_head_reattach_tornado",
-      "architecture_rationale_3572"
+    "388": [
+      "architecture_proceduralplayeranimator_gd_func_apply_arm_sword_pose",
+      "architecture_rationale_3724"
     ],
-    "394": [
-      "architecture_proceduralplayeranimator_gd_func_apply_head_only_attack_pose",
+    "389": [
+      "architecture_proceduralplayeranimator_gd_func_apply_attack_overlay",
       "architecture_rationale_3660"
     ],
-    "395": [
+    "390": [
+      "architecture_proceduralplayeranimator_gd_func_apply_demo_pose",
+      "architecture_rationale_3344"
+    ],
+    "391": [
+      "architecture_proceduralplayeranimator_gd_func_apply_detached_head_reattach_finish_blend",
+      "architecture_rationale_3596"
+    ],
+    "392": [
+      "architecture_proceduralplayeranimator_gd_func_apply_detached_head_reattach_tornado",
+      "architecture_rationale_3592"
+    ],
+    "393": [
       "architecture_proceduralplayeranimator_gd_func_apply_head_only_hit_recoil_pose",
-      "architecture_rationale_3664"
+      "architecture_rationale_3684"
+    ],
+    "394": [
+      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_attack_pose",
+      "architecture_rationale_3688"
+    ],
+    "395": [
+      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_miss_body_hold_pose",
+      "architecture_rationale_3696"
     ],
     "396": [
-      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_attack_pose",
-      "architecture_rationale_3668"
+      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_miss_fall_pose",
+      "architecture_rationale_3692"
     ],
     "397": [
-      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_miss_body_hold_pose",
-      "architecture_rationale_3676"
+      "architecture_proceduralplayeranimator_gd_func_apply_torso_head_recoil_pose",
+      "architecture_rationale_3704"
     ],
     "398": [
       "architecture_proceduralplayeranimator_gd_func_apply_waist_carry",
-      "architecture_rationale_3308"
+      "architecture_rationale_3328"
     ],
     "399": [
       "architecture_proceduralplayeranimator_gd_func_attack_phase",
-      "architecture_rationale_3656"
+      "architecture_rationale_3676"
     ],
     "400": [
       "architecture_proceduralplayeranimator_gd_func_attack_pose_strength",
-      "architecture_rationale_3648"
+      "architecture_rationale_3668"
     ],
     "401": [
       "architecture_proceduralplayeranimator_gd_func_attack_strength_lagged",
-      "architecture_rationale_3688"
+      "architecture_rationale_3708"
     ],
     "402": [
       "architecture_proceduralplayeranimator_gd_func_attack_strike_curve",
-      "architecture_rationale_3652"
+      "architecture_rationale_3672"
     ],
     "403": [
       "architecture_proceduralplayeranimator_gd_func_calculate_weight",
-      "architecture_rationale_3528"
+      "architecture_rationale_3548"
     ],
     "404": [
-      "architecture_proceduralplayeranimator_gd_func_capture_head_only_recoil_start_local_position",
-      "architecture_rationale_3484"
+      "architecture_proceduralplayeranimator_gd_func_cancel_detached_head_reattach_tornado_to_ground",
+      "architecture_rationale_3476"
     ],
     "405": [
-      "architecture_proceduralplayeranimator_gd_func_capture_rest",
-      "architecture_rationale_3516"
+      "architecture_proceduralplayeranimator_gd_func_capture_head_only_recoil_start_local_position",
+      "architecture_rationale_3504"
     ],
     "406": [
       "architecture_proceduralplayeranimator_gd_func_capture_torso_head_miss_body_hold_transform",
-      "architecture_rationale_3400"
+      "architecture_rationale_3420"
     ],
     "407": [
       "architecture_proceduralplayeranimator_gd_func_combo_step_for_equipped_arms",
-      "architecture_rationale_3644"
+      "architecture_rationale_3664"
     ],
     "408": [
       "architecture_proceduralplayeranimator_gd_func_confirm_head_only_attack_contact",
-      "architecture_rationale_3408"
+      "architecture_rationale_3428"
     ],
     "409": [
-      "architecture_proceduralplayeranimator_gd_func_consume_torso_head_miss_detach_offset",
-      "architecture_rationale_3436"
+      "architecture_proceduralplayeranimator_gd_func_consume_head_only_body_catch_up_offset",
+      "architecture_rationale_3448"
     ],
     "410": [
       "architecture_proceduralplayeranimator_gd_func_demo_begin",
-      "architecture_rationale_3340"
+      "architecture_rationale_3360"
     ],
     "411": [
       "architecture_proceduralplayeranimator_gd_func_demo_keyframes",
-      "architecture_rationale_3328"
+      "architecture_rationale_3348"
     ],
     "412": [
       "architecture_proceduralplayeranimator_gd_func_demo_local_forward",
-      "architecture_rationale_3344"
+      "architecture_rationale_3364"
     ],
     "413": [
       "architecture_proceduralplayeranimator_gd_func_demo_on_tween_finished",
-      "architecture_rationale_3356"
+      "architecture_rationale_3376"
     ],
     "414": [
       "architecture_proceduralplayeranimator_gd_func_demo_stop",
-      "architecture_rationale_3352"
+      "architecture_rationale_3372"
     ],
     "415": [
       "architecture_proceduralplayeranimator_gd_func_enter_detached_head_state",
-      "architecture_rationale_3444"
+      "architecture_rationale_3464"
     ],
     "416": [
-      "architecture_proceduralplayeranimator_gd_func_future_head_only_ground_position",
-      "architecture_rationale_3680"
+      "architecture_proceduralplayeranimator_gd_func_find_body",
+      "architecture_rationale_3760"
     ],
     "417": [
-      "architecture_proceduralplayeranimator_gd_func_get_head_only_attack_forward_offset",
-      "architecture_rationale_3412"
+      "architecture_proceduralplayeranimator_gd_func_future_head_only_ground_position",
+      "architecture_rationale_3700"
     ],
     "418": [
-      "architecture_proceduralplayeranimator_gd_func_get_head_only_grounded_local_position",
-      "architecture_rationale_3500"
+      "architecture_proceduralplayeranimator_gd_func_get_detached_head_reattach_tornado_duration",
+      "architecture_rationale_3484"
     ],
     "419": [
-      "architecture_proceduralplayeranimator_gd_func_get_stable_body_attach_local_position",
-      "architecture_rationale_3468"
-    ],
-    "420": [
-      "architecture_proceduralplayeranimator_gd_func_get_torso_head_miss_detach_body_transform",
-      "architecture_rationale_3440"
-    ],
-    "421": [
-      "architecture_proceduralplayeranimator_gd_func_has_head_only_body_catch_up_request",
-      "architecture_rationale_3424"
-    ],
-    "422": [
-      "architecture_proceduralplayeranimator_gd_func_has_torso_head_miss_detach_request",
+      "architecture_proceduralplayeranimator_gd_func_get_head_only_attack_forward_offset",
       "architecture_rationale_3432"
     ],
-    "423": [
-      "architecture_proceduralplayeranimator_gd_func_head_launch_aim_or",
-      "architecture_rationale_3384"
+    "420": [
+      "architecture_proceduralplayeranimator_gd_func_get_head_only_grounded_local_position",
+      "architecture_rationale_3520"
     ],
-    "424": [
-      "architecture_proceduralplayeranimator_gd_func_head_only_attack_airborne",
-      "architecture_rationale_3548"
+    "421": [
+      "architecture_proceduralplayeranimator_gd_func_get_stable_body_attach_local_position",
+      "architecture_rationale_3488"
     ],
-    "425": [
-      "architecture_proceduralplayeranimator_gd_func_is_torso_spring_only",
-      "architecture_rationale_3552"
-    ],
-    "426": [
-      "architecture_proceduralplayeranimator_gd_func_joint_phase",
-      "architecture_rationale_3616"
-    ],
-    "427": [
-      "architecture_proceduralplayeranimator_gd_func_note_arm_sword_swing",
-      "architecture_rationale_3712"
-    ],
-    "428": [
-      "architecture_proceduralplayeranimator_gd_func_place_foot",
-      "architecture_rationale_3736"
-    ],
-    "429": [
-      "architecture_proceduralplayeranimator_gd_func_play_detached_head_reattach_finish_blend",
+    "422": [
+      "architecture_proceduralplayeranimator_gd_func_get_torso_head_miss_detach_body_transform",
       "architecture_rationale_3460"
     ],
-    "430": [
-      "architecture_proceduralplayeranimator_gd_func_right_hand_rig_position",
-      "architecture_rationale_3724"
+    "423": [
+      "architecture_proceduralplayeranimator_gd_func_has_head_only_body_catch_up_request",
+      "architecture_rationale_3444"
     ],
-    "431": [
-      "architecture_proceduralplayeranimator_gd_func_set_aiming",
-      "architecture_rationale_3404"
-    ],
-    "432": [
-      "architecture_proceduralplayeranimator_gd_func_set_crawl_mode",
-      "architecture_rationale_3504"
-    ],
-    "433": [
-      "architecture_proceduralplayeranimator_gd_func_set_demo_target_world_position",
-      "architecture_rationale_3348"
-    ],
-    "434": [
-      "architecture_proceduralplayeranimator_gd_func_set_detached_head_reattach_tornado_progress",
+    "424": [
+      "architecture_proceduralplayeranimator_gd_func_has_torso_head_miss_detach_request",
       "architecture_rationale_3452"
     ],
-    "435": [
-      "architecture_proceduralplayeranimator_gd_func_set_head_launch_attack_aim",
-      "architecture_rationale_3380"
+    "425": [
+      "architecture_proceduralplayeranimator_gd_func_head_only_attack_airborne",
+      "architecture_rationale_3568"
     ],
-    "436": [
-      "architecture_proceduralplayeranimator_gd_func_start_detached_head_reattach_tornado",
-      "architecture_rationale_3448"
+    "426": [
+      "architecture_proceduralplayeranimator_gd_func_is_torso_spring_only",
+      "architecture_rationale_3572"
     ],
-    "437": [
-      "architecture_proceduralplayeranimator_gd_func_swing",
-      "architecture_rationale_3608"
+    "427": [
+      "architecture_proceduralplayeranimator_gd_func_joint_phase",
+      "architecture_rationale_3636"
     ],
-    "438": [
-      "architecture_proceduralplayeranimator_gd_func_torso_head_launch_available",
-      "architecture_rationale_3564"
+    "428": [
+      "architecture_proceduralplayeranimator_gd_func_note_arm_sword_swing",
+      "architecture_rationale_3732"
     ],
-    "439": [
-      "architecture_proceduralplayeranimator_gd_func_trigger_attack",
-      "architecture_rationale_3392"
+    "429": [
+      "architecture_proceduralplayeranimator_gd_func_place_foot",
+      "architecture_rationale_3756"
     ],
-    "440": [
-      "architecture_proceduralplayeranimator_gd_func_update_arm_sword",
-      "architecture_rationale_3716"
-    ],
-    "441": [
-      "architecture_proceduralplayeranimator_gd_func_update_head_launch_attack_aim",
-      "architecture_rationale_3388"
-    ],
-    "442": [
-      "architecture_proceduralplayeranimator_gd_func_update_head_only_facing_direction",
-      "architecture_rationale_3472"
-    ],
-    "443": [
-      "architecture_proceduralplayeranimator_gd_func_update_torso_head_socket_offset",
-      "architecture_rationale_3532"
-    ],
-    "444": [
-      "architecture_proceduralplayeranimator_gd_func_waist_target_angle",
-      "architecture_rationale_3300"
-    ],
-    "445": [
-      "architecture_proceduralplayeranimator_gd_func_whip_elbow",
-      "architecture_rationale_3692"
-    ],
-    "446": [
-      "architecture_proceduralplayeranimator_gd_func_wobble_phase",
-      "architecture_rationale_3624"
-    ],
-    "447": [
-      "architecture_proceduralplayeranimator_gd_func_world_horizontal_offset_to_local",
-      "architecture_rationale_3476"
-    ],
-    "448": [
-      "architecture_proceduralplayeranimator_gd_func_world_rotation_to_rig_local",
+    "430": [
+      "architecture_proceduralplayeranimator_gd_func_play_detached_head_reattach_finish_blend",
       "architecture_rationale_3480"
     ],
+    "431": [
+      "architecture_proceduralplayeranimator_gd_func_right_hand_rig_position",
+      "architecture_rationale_3744"
+    ],
+    "432": [
+      "architecture_proceduralplayeranimator_gd_func_set_aiming",
+      "architecture_rationale_3424"
+    ],
+    "433": [
+      "architecture_proceduralplayeranimator_gd_func_set_crawl_mode",
+      "architecture_rationale_3524"
+    ],
+    "434": [
+      "architecture_proceduralplayeranimator_gd_func_set_demo_target_world_position",
+      "architecture_rationale_3368"
+    ],
+    "435": [
+      "architecture_proceduralplayeranimator_gd_func_set_detached_head_reattach_tornado_progress",
+      "architecture_rationale_3472"
+    ],
+    "436": [
+      "architecture_proceduralplayeranimator_gd_func_set_head_launch_attack_aim",
+      "architecture_rationale_3400"
+    ],
+    "437": [
+      "architecture_proceduralplayeranimator_gd_func_set_lizard_wall_climb_blend",
+      "architecture_rationale_3528"
+    ],
+    "438": [
+      "architecture_proceduralplayeranimator_gd_func_start_detached_head_reattach_tornado",
+      "architecture_rationale_3468"
+    ],
+    "439": [
+      "architecture_proceduralplayeranimator_gd_func_swing",
+      "architecture_rationale_3628"
+    ],
+    "440": [
+      "architecture_proceduralplayeranimator_gd_func_trigger_attack",
+      "architecture_rationale_3412"
+    ],
+    "441": [
+      "architecture_proceduralplayeranimator_gd_func_trigger_stealth_finish_attack",
+      "architecture_rationale_3416"
+    ],
+    "442": [
+      "architecture_proceduralplayeranimator_gd_func_update_arm_sword",
+      "architecture_rationale_3736"
+    ],
+    "443": [
+      "architecture_proceduralplayeranimator_gd_func_update_from_player",
+      "architecture_rationale_3316"
+    ],
+    "444": [
+      "architecture_proceduralplayeranimator_gd_func_update_head_launch_attack_aim",
+      "architecture_rationale_3408"
+    ],
+    "445": [
+      "architecture_proceduralplayeranimator_gd_func_update_head_only_facing_direction",
+      "architecture_rationale_3492"
+    ],
+    "446": [
+      "architecture_proceduralplayeranimator_gd_func_update_torso_head_socket_offset",
+      "architecture_rationale_3552"
+    ],
+    "447": [
+      "architecture_proceduralplayeranimator_gd_func_waist_target_angle",
+      "architecture_rationale_3320"
+    ],
+    "448": [
+      "architecture_proceduralplayeranimator_gd_func_whip_elbow",
+      "architecture_rationale_3712"
+    ],
     "449": [
-      "architecture_proceduralplayeranimator_signal_attack_impact_reached",
-      "architecture_rationale_3748"
+      "architecture_proceduralplayeranimator_gd_func_wobble_phase",
+      "architecture_rationale_3644"
     ],
     "450": [
-      "architecture_rationale_3822",
-      "architecture_testingenvironment_gd_func_build_world"
+      "architecture_proceduralplayeranimator_gd_func_world_horizontal_offset_to_local",
+      "architecture_rationale_3496"
     ],
     "451": [
-      "architecture_rationale_3826",
-      "architecture_testingenvironment_gd_func_make_box"
+      "architecture_proceduralplayeranimator_signal_attack_impact_reached",
+      "architecture_rationale_3768"
     ],
     "452": [
-      "architecture_rationale_3834",
-      "architecture_testingenvironment_gd_func_find_or_create_spawn_root"
+      "architecture_rationale_3842",
+      "architecture_testingenvironment_gd_func_build_world"
     ],
     "453": [
-      "architecture_rationale_3842",
-      "architecture_testingenvironment_gd_func_spawn_player"
+      "architecture_rationale_3846",
+      "architecture_testingenvironment_gd_func_make_box"
     ],
     "454": [
-      "architecture_rationale_3846",
-      "architecture_testingenvironment_gd_func_seed_testing_inventory"
+      "architecture_rationale_3854",
+      "architecture_testingenvironment_gd_func_find_or_create_spawn_root"
     ],
     "455": [
-      "architecture_rationale_3850",
-      "architecture_testingenvironment_gd_func_spawn_initial_enemy_set"
+      "architecture_rationale_3862",
+      "architecture_testingenvironment_gd_func_spawn_player"
     ],
     "456": [
-      "architecture_rationale_3854",
-      "architecture_testingenvironment_gd_func_spawn_enemy_at_next_marker"
+      "architecture_rationale_3866",
+      "architecture_testingenvironment_gd_func_seed_testing_inventory"
     ],
     "457": [
-      "architecture_rationale_3858",
-      "architecture_testingenvironment_gd_func_spawn_markers"
+      "architecture_rationale_3870",
+      "architecture_testingenvironment_gd_func_spawn_initial_enemy_set"
     ],
     "458": [
-      "architecture_rationale_3862",
-      "architecture_testingenvironment_gd_func_spawn_enemy"
+      "architecture_rationale_3878",
+      "architecture_testingenvironment_gd_func_spawn_markers"
     ],
     "459": [
-      "architecture_rationale_3866",
-      "architecture_testingenvironment_gd_func_apply_profile"
+      "architecture_rationale_3882",
+      "architecture_testingenvironment_gd_func_spawn_enemy"
     ],
     "460": [
-      "architecture_rationale_3870",
-      "architecture_testingenvironment_gd_func_bone_for_profile"
+      "architecture_rationale_3886",
+      "architecture_testingenvironment_gd_func_apply_profile"
     ],
     "461": [
-      "architecture_rationale_3874",
-      "architecture_testingenvironment_gd_func_try_spawn_dummy"
+      "architecture_rationale_3890",
+      "architecture_testingenvironment_gd_func_bone_for_profile"
     ],
     "462": [
-      "architecture_rationale_3878",
-      "architecture_testingenvironment_gd_func_has_live_dummy"
+      "architecture_rationale_3894",
+      "architecture_testingenvironment_gd_func_try_spawn_dummy"
     ],
     "463": [
-      "architecture_rationale_3882",
-      "architecture_testingenvironment_gd_func_remove_latest_enemy"
+      "architecture_rationale_3898",
+      "architecture_testingenvironment_gd_func_has_live_dummy"
     ],
     "464": [
-      "architecture_rationale_3898",
-      "architecture_testingenvironment_gd_func_cycle_validation_guide"
+      "architecture_rationale_3902",
+      "architecture_testingenvironment_gd_func_remove_latest_enemy"
     ],
     "465": [
-      "architecture_rationale_3902",
-      "architecture_testingenvironment_gd_func_current_validation_guide_text"
+      "architecture_rationale_3918",
+      "architecture_testingenvironment_gd_func_cycle_validation_guide"
     ],
     "466": [
-      "architecture_rationale_3906",
-      "architecture_testingenvironment_gd_func_begin_notes_editing"
+      "architecture_rationale_3922",
+      "architecture_testingenvironment_gd_func_current_validation_guide_text"
     ],
     "467": [
-      "architecture_rationale_3910",
-      "architecture_testingenvironment_gd_func_cancel_notes_editing"
+      "architecture_rationale_3926",
+      "architecture_testingenvironment_gd_func_begin_notes_editing"
     ],
     "468": [
-      "architecture_rationale_3914",
-      "architecture_testingenvironment_gd_func_on_notes_submitted"
+      "architecture_rationale_3930",
+      "architecture_testingenvironment_gd_func_cancel_notes_editing"
     ],
     "469": [
-      "architecture_rationale_3922",
-      "architecture_testingenvironment_gd_func_log_validation_result"
+      "architecture_rationale_3938",
+      "architecture_testingenvironment_gd_func_runtime_evidence_snapshot"
     ],
     "470": [
-      "architecture_rationale_3926",
-      "architecture_testingenvironment_gd_func_append_log_entry_to_file"
+      "architecture_rationale_3942",
+      "architecture_testingenvironment_gd_func_log_validation_result"
     ],
     "471": [
-      "architecture_rationale_3930",
-      "architecture_testingenvironment_gd_func_count_validation_results"
+      "architecture_rationale_3946",
+      "architecture_testingenvironment_gd_func_append_log_entry_to_file"
     ],
     "472": [
-      "architecture_rationale_3934",
+      "architecture_rationale_3950",
+      "architecture_testingenvironment_gd_func_count_validation_results"
+    ],
+    "473": [
+      "architecture_rationale_3954",
       "architecture_testingenvironment_gd_func_validation_log_summary_text"
     ]
   },
   "cohesion": {
-    "0": 0.05267778753292362,
+    "0": 0.05200341005967604,
     "1": 0.04440333024976873,
     "2": 0.05555555555555555,
-    "3": 0.0625,
+    "3": 0.058823529411764705,
     "4": 0.07126436781609195,
     "5": 0.06666666666666667,
     "6": 0.06896551724137931,
-    "7": 0.07936507936507936,
-    "8": 0.07407407407407407,
-    "9": 0.07692307692307693,
-    "10": 0.09420289855072464,
-    "11": 0.13157894736842105,
-    "12": 0.10526315789473684,
+    "7": 0.07692307692307693,
+    "8": 0.07692307692307693,
+    "9": 0.08615384615384615,
+    "10": 0.09881422924901186,
+    "11": 0.09881422924901186,
+    "12": 0.1067193675889328,
     "13": 0.1286549707602339,
-    "14": 0.1111111111111111,
+    "14": 0.11764705882352941,
     "15": 0.125,
-    "16": 0.125,
-    "17": 0.14285714285714285,
+    "16": 0.11764705882352941,
+    "17": 0.11764705882352941,
     "18": 0.14285714285714285,
     "19": 0.14285714285714285,
-    "20": 0.16666666666666666,
-    "21": 0.24358974358974358,
-    "22": 0.16666666666666666,
-    "23": 0.18181818181818182,
-    "24": 0.16666666666666666,
-    "25": 0.16666666666666666,
-    "26": 0.18181818181818182,
-    "27": 0.24242424242424243,
+    "20": 0.15384615384615385,
+    "21": 0.14285714285714285,
+    "22": 0.15384615384615385,
+    "23": 0.16666666666666666,
+    "24": 0.24358974358974358,
+    "25": 0.18181818181818182,
+    "26": 0.24242424242424243,
+    "27": 0.18181818181818182,
     "28": 0.18181818181818182,
     "29": 0.18181818181818182,
     "30": 0.18181818181818182,
     "31": 0.2,
     "32": 0.2,
     "33": 0.25,
-    "34": 0.25,
+    "34": 0.2222222222222222,
     "35": 0.25,
-    "36": 0.2857142857142857,
-    "37": 0.2857142857142857,
+    "36": 0.25,
+    "37": 0.25,
     "38": 0.2857142857142857,
     "39": 0.2857142857142857,
-    "40": 0.2857142857142857,
+    "40": 0.3333333333333333,
     "41": 0.3333333333333333,
     "42": 0.3333333333333333,
     "43": 0.3333333333333333,
@@ -2727,7 +2739,7 @@
     "49": 0.4,
     "50": 0.4,
     "51": 0.4,
-    "52": 0.4,
+    "52": 0.5,
     "53": 0.5,
     "54": 0.5,
     "55": 0.5,
@@ -2746,8 +2758,8 @@
     "68": 0.5,
     "69": 0.5,
     "70": 0.5,
-    "71": 0.5,
-    "72": 0.5,
+    "71": 0.6666666666666666,
+    "72": 0.6666666666666666,
     "73": 0.6666666666666666,
     "74": 0.6666666666666666,
     "75": 0.6666666666666666,
@@ -2785,11 +2797,11 @@
     "107": 0.6666666666666666,
     "108": 0.6666666666666666,
     "109": 0.6666666666666666,
-    "110": 0.6666666666666666,
-    "111": 0.6666666666666666,
-    "112": 0.6666666666666666,
-    "113": 0.6666666666666666,
-    "114": 0.6666666666666666,
+    "110": 1.0,
+    "111": 1.0,
+    "112": 1.0,
+    "113": 1.0,
+    "114": 1.0,
     "115": 1.0,
     "116": 1.0,
     "117": 1.0,
@@ -3147,7 +3159,8 @@
     "469": 1.0,
     "470": 1.0,
     "471": 1.0,
-    "472": 1.0
+    "472": 1.0,
+    "473": 1.0
   },
   "gods": [
     {
@@ -3168,7 +3181,7 @@
     {
       "id": "architecture_playerinventoryui",
       "label": "PlayerInventoryUI",
-      "degree": 104
+      "degree": 109
     },
     {
       "id": "architecture_modularskeletonrig",
@@ -3211,7 +3224,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "rationale_for",
-      "note": "Bridges community 6 \u2192 community 25"
+      "note": "Bridges community 6 \u2192 community 16"
     },
     {
       "source": "Godot script: scripts/enemy.gd     class_name: none     extends: CharacterBody3D",
@@ -3222,7 +3235,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "rationale_for",
-      "note": "Bridges community 11 \u2192 community 9"
+      "note": "Bridges community 11 \u2192 community 8"
     },
     {
       "source": "Godot script: scripts/player_equipment_builds_component.gd     class_name: Playe",
@@ -3233,7 +3246,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "rationale_for",
-      "note": "Bridges community 8 \u2192 community 12"
+      "note": "Bridges community 7 \u2192 community 17"
     },
     {
       "source": "Godot script: scripts/player_equipment_builds_component.gd     class_name: Playe",
@@ -3244,7 +3257,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "rationale_for",
-      "note": "Bridges community 7 \u2192 community 12"
+      "note": "Bridges community 9 \u2192 community 17"
     },
     {
       "source": "Godot script: scripts/rig/procedural_enemy_animator.gd     class_name: Procedura",
@@ -3255,7 +3268,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "rationale_for",
-      "note": "Bridges community 10 \u2192 community 32"
+      "note": "Bridges community 12 \u2192 community 32"
     }
   ],
   "tokens": {

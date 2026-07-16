@@ -2728,12 +2728,32 @@ class PlayerInventoryUI:
         """GDScript function: _build_settings_panel() -> ScrollContainer"""
         pass
 
-    def gd_func__build_equipment_build_presets_panel(self):
-        """GDScript function: _build_equipment_build_presets_panel() -> Control"""
+    def gd_func__build_equipment_builds_tab(self):
+        """GDScript function: _build_equipment_builds_tab() -> ScrollContainer"""
         pass
 
-    def gd_func__build_equipment_build_row(self):
-        """GDScript function: _build_equipment_build_row(index: int) -> Control"""
+    def gd_func__build_equipment_build_card(self):
+        """GDScript function: _build_equipment_build_card(index: int) -> Control"""
+        pass
+
+    def gd_func__build_build_preview(self):
+        """GDScript function: _build_build_preview(index: int) -> Control"""
+        pass
+
+    def gd_func__sync_all_build_previews(self):
+        """GDScript function: _sync_all_build_previews() -> void"""
+        pass
+
+    def gd_func__sync_build_preview(self):
+        """GDScript function: _sync_build_preview(index: int) -> void"""
+        pass
+
+    def gd_func__equip_bone_on_rig(self):
+        """GDScript function: _equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void"""
+        pass
+
+    def gd_func__raw_build_state(self):
+        """GDScript function: _raw_build_state(index: int) -> Dictionary"""
         pass
 
     def gd_func__make_build_preset_button(self):

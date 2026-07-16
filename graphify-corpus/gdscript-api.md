@@ -2216,6 +2216,7 @@
 - `INVENTORY_EMPTY_SLOT_SCRIPT`
 - `CONTROL_SETTINGS_PATH`
 - `INVENTORY_PREVIEW_BASE_SIZE`
+- `BUILD_PREVIEW_BASE_SIZE`
 - `CONTROL_BINDINGS`
 - `BUILD_PRESET_CONFIRM_WINDOW`
 
@@ -2257,9 +2258,9 @@
 - `settings_title_label`
 - `settings_status_label`
 - `settings_reset_button`
+- `builds_panel`
+- `build_preview_rigs`
 - `build_preset_status_label`
-- `build_preset_summary_labels`
-- `build_preset_apply_buttons`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2295,8 +2296,13 @@
 - `_apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void`
 - `_set_margin(container: MarginContainer, left: int, top: int, right: int, bottom: int) -> void`
 - `_build_settings_panel() -> ScrollContainer`
-- `_build_equipment_build_presets_panel() -> Control`
-- `_build_equipment_build_row(index: int) -> Control`
+- `_build_equipment_builds_tab() -> ScrollContainer`
+- `_build_equipment_build_card(index: int) -> Control`
+- `_build_build_preview(index: int) -> Control`
+- `_sync_all_build_previews() -> void`
+- `_sync_build_preview(index: int) -> void`
+- `_equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void`
+- `_raw_build_state(index: int) -> Dictionary`
 - `_make_build_preset_button(text: String) -> Button`
 - `_save_equipment_build(index: int) -> void`
 - `_apply_equipment_build(index: int) -> void`
