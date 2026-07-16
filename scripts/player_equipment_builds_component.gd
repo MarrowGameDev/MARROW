@@ -203,7 +203,7 @@ func _summary_for_state(state: Dictionary) -> String:
 		var bone_id := str(state.get(slot_id, ""))
 		if bone_id == "":
 			continue
-		parts.append(EquipmentRulesService.slot_display_name(slot_id) + ": " + BoneRulesService.display_name(bone_id))
+		parts.append(EquipmentRulesService.slot_display_name(slot_id) + ": " + BoneRulesService.display_name_with_slot(bone_id))
 	var text := ""
 	for part in parts:
 		if text != "":
