@@ -4,6 +4,7 @@ extends Node
 const INVENTORY_EMPTY_SLOT_SCRIPT: Script = preload("res://scripts/ui_inventory_empty_slot.gd")
 const CONTROL_SETTINGS_PATH := "user://control_settings.cfg"
 const INVENTORY_PREVIEW_BASE_SIZE := Vector2i(210, 276)
+const BUILD_PREVIEW_BASE_SIZE := Vector2(120.0, 158.0)
 const CONTROL_BINDINGS: Array = [
 	{"action": "move_forward", "label": "Move Forward"},
 	{"action": "move_back", "label": "Move Back"},
@@ -60,6 +61,10 @@ var settings_controls_list: VBoxContainer = null
 var settings_title_label: Label = null
 var settings_status_label: Label = null
 var settings_reset_button: Button = null
+var builds_panel: ScrollContainer = null
+# One isolated ModularSkeletonRig per build slot (1..BUILD_SLOT_COUNT),
+# driven from that build's saved state, never the live player/preview.
+var build_preview_rigs: Dictionary = {}
 var build_preset_status_label: Label = null
 var build_preset_summary_labels: Dictionary = {}
 var build_preset_apply_buttons: Dictionary = {}
@@ -136,6 +141,7 @@ func cycle_category() -> void:
 	var categories: Array[String] = ["all"]
 	for slot_id in EquipmentRulesService.CANONICAL_BODY_SLOTS:
 		categories.append(str(slot_id))
+	categories.append("builds")
 	categories.append("settings")
 	var index: int = categories.find(inventory_category)
 	if index < 0:
@@ -376,6 +382,8 @@ func _build_inventory_ui() -> void:
 	inventory_left_panel.add_child(inventory_sort_label)
 
 	_build_right_inventory_panel()
+	builds_panel = _build_equipment_builds_tab()
+	inventory_content_root.add_child(builds_panel)
 	settings_panel = _build_settings_panel()
 	inventory_content_root.add_child(settings_panel)
 
@@ -490,6 +498,7 @@ func _build_inventory_tabs(parent: VBoxContainer) -> void:
 	_add_inventory_tab(inventory_tabs_container, "right_arm", "R. Arm")
 	_add_inventory_tab(inventory_tabs_container, "left_leg", "L. Leg")
 	_add_inventory_tab(inventory_tabs_container, "right_leg", "R. Leg")
+	_add_inventory_tab(inventory_tabs_container, "builds", "Builds")
 	_add_inventory_tab(inventory_tabs_container, "settings", "Settings")
 	_refresh_inventory_tabs()
 
@@ -514,6 +523,7 @@ func _select_inventory_category(category: String) -> void:
 	_refresh_inventory_mode()
 	if inventory_category == "settings":
 		_refresh_control_buttons()
+	elif inventory_category == "builds":
 		_refresh_build_preset_rows()
 	else:
 		rebuild_item_tiles()
@@ -537,10 +547,13 @@ func _refresh_inventory_tabs() -> void:
 
 func _refresh_inventory_mode() -> void:
 	var showing_settings := inventory_category == "settings"
+	var showing_builds := inventory_category == "builds"
 	if inventory_body != null:
-		inventory_body.visible = not showing_settings
+		inventory_body.visible = not showing_settings and not showing_builds
 	if settings_panel != null:
 		settings_panel.visible = showing_settings
+	if builds_panel != null:
+		builds_panel.visible = showing_builds
 
 
 func _queue_inventory_responsive_layout() -> void:
@@ -627,7 +640,7 @@ func _apply_inventory_responsive_layout() -> void:
 
 	var preview_inner_width: int = maxi(180, right_width - 24)
 	var preview_inner_height: int = maxi(140, preview_height - 24)
-	var doll_scale: float = clampf(minf(float(preview_inner_width) / 406.0, float(preview_inner_height) / 306.0), 0.55, 1.75)
+	var doll_scale: float = clampf(minf(float(preview_inner_width) / 406.0, float(preview_inner_height) / 470.0), 0.55, 1.75)
 
 	inventory_safe_area.position = Vector2(panel_x, outer_margin_y)
 	inventory_safe_area.size = Vector2(panel_width, panel_height)
@@ -741,7 +754,10 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 	if inventory_paper_doll == null:
 		return
 
-	var base_doll_size := Vector2(406.0, 306.0)
+	# Anatomical layout: head above the preview, torso below it, arms
+	# flanking its sides, legs below the arms. Base size/positions must
+	# match _build_paper_doll() exactly (see docstring there).
+	var base_doll_size := Vector2(406.0, 470.0)
 	var scaled_doll_size := base_doll_size * doll_scale
 	inventory_paper_doll.scale = Vector2.ONE
 	inventory_paper_doll.custom_minimum_size = scaled_doll_size
@@ -750,16 +766,16 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 
 	var center_frame := inventory_paper_doll.get_node_or_null("CenterFrame") as Control
 	if center_frame != null:
-		center_frame.position = Vector2(94.0, 11.0) * doll_scale
+		center_frame.position = Vector2(94.0, 92.0) * doll_scale
 		center_frame.size = Vector2(218.0, 284.0) * doll_scale
 
 	var ring := inventory_paper_doll.get_node_or_null("CenterRing") as ColorRect
 	if ring != null:
-		ring.position = Vector2(171.0, 96.0) * doll_scale
+		ring.position = Vector2(171.0, 177.0) * doll_scale
 		ring.size = Vector2(64.0, 64.0) * doll_scale
 
 	if inventory_preview_container != null:
-		inventory_preview_container.position = Vector2(98.0, 15.0) * doll_scale
+		inventory_preview_container.position = Vector2(98.0, 96.0) * doll_scale
 		var preview_size := _inventory_preview_base_size() * doll_scale
 		inventory_preview_container.custom_minimum_size = preview_size
 		# inventory_preview_container.stretch is true (see
@@ -770,11 +786,24 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 		# twice already.
 		inventory_preview_container.size = preview_size
 
+	# Keys and base positions must match slot_widgets' real keys (the six
+	# canonical body slots) and _build_paper_doll()'s base positions
+	# exactly. The previous version used "body"/"legs" keys that do not
+	# exist in slot_widgets (keyed "head"/"torso"/"left_arm"/"right_arm"/
+	# "left_leg"/"right_leg"), so those four widgets were silently never
+	# rescaled or repositioned here and stayed frozen at their
+	# _build_paper_doll base position while the doll container itself
+	# scaled around them. left_arm/right_arm WERE handled, but at a
+	# different y than their _build_paper_doll base position, so they
+	# jumped and overlapped the head slot at doll_scale == 1.0 too. This
+	# combination produced the crowded/overlapping layout.
 	var slot_positions := {
-		"left_arm": Vector2(0.0, 12.0),
-		"right_arm": Vector2(310.0, 12.0),
-		"body": Vector2(0.0, 128.0),
-		"legs": Vector2(310.0, 128.0),
+		"head": Vector2(159.0, 0.0),
+		"left_arm": Vector2(0.0, 190.0),
+		"right_arm": Vector2(318.0, 190.0),
+		"left_leg": Vector2(0.0, 286.0),
+		"right_leg": Vector2(318.0, 286.0),
+		"torso": Vector2(159.0, 382.0),
 	}
 	for slot in slot_positions:
 		var widget := slot_widgets.get(slot) as Control
@@ -783,8 +812,8 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 		var base_position: Vector2 = slot_positions[slot]
 		widget.position = base_position * doll_scale
 		widget.scale = Vector2(doll_scale, doll_scale)
-		widget.custom_minimum_size = Vector2(96.0, 96.0) * doll_scale
-		widget.size = Vector2(96.0, 96.0) * doll_scale
+		widget.custom_minimum_size = Vector2(88.0, 88.0) * doll_scale
+		widget.size = Vector2(88.0, 88.0) * doll_scale
 
 
 func _apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void:
@@ -879,8 +908,6 @@ func _build_settings_panel() -> ScrollContainer:
 		var label := String(binding.get("label", action))
 		settings_controls_list.add_child(_build_control_binding_row(action, label))
 
-	settings_controls_list.add_child(_build_equipment_build_presets_panel())
-
 	settings_reset_button = Button.new()
 	settings_reset_button.text = "Reset Controls to Demo Defaults"
 	settings_reset_button.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -893,68 +920,242 @@ func _build_settings_panel() -> ScrollContainer:
 	return scroll
 
 
-func _build_equipment_build_presets_panel() -> Control:
-	var panel := PanelContainer.new()
-	panel.name = "EquipmentBuildPresets"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 0.99, 0.95, 0.42), Color(0.87, 0.63, 0.19, 0.74), 1, 2))
+func _build_equipment_builds_tab() -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = "BuildsPanel"
+	scroll.process_mode = Node.PROCESS_MODE_ALWAYS
+	scroll.visible = false
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	var box := PanelContainer.new()
+	box.name = "EquipmentBuildsBox"
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.34), Color(0.87, 0.63, 0.19, 0.86), 2, 0))
+	scroll.add_child(box)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	panel.add_child(margin)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	box.add_child(margin)
 
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 8)
+	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 10)
 	margin.add_child(list)
 
 	var title := Label.new()
 	title.text = "Equipment Builds"
+	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	list.add_child(title)
 
 	build_preset_status_label = Label.new()
-	build_preset_status_label.text = "Save the current worn bones, then apply them later when the pieces are available."
+	build_preset_status_label.text = "Save the current worn bones, then apply them later when the pieces are available. Each build previews here in its own isolated render -- it is not visible in the world while you play."
 	build_preset_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	build_preset_status_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	list.add_child(build_preset_status_label)
 
+	var divider := ColorRect.new()
+	divider.color = Color(0.87, 0.63, 0.19, 0.58)
+	divider.custom_minimum_size = Vector2(0, 1)
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	list.add_child(divider)
+
+	var cards := HBoxContainer.new()
+	cards.name = "BuildCards"
+	cards.alignment = BoxContainer.ALIGNMENT_CENTER
+	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards.add_theme_constant_override("separation", 18)
+	list.add_child(cards)
+
 	for index in range(1, PlayerEquipmentBuildsComponent.BUILD_SLOT_COUNT + 1):
-		list.add_child(_build_equipment_build_row(index))
+		cards.add_child(_build_equipment_build_card(index))
 
-	return panel
+	# Rig sockets are only populated once each preview rig's _ready() has
+	# run (fires on tree entry, which just happened above via add_child);
+	# defer so equip_bone() below never races that, matching the same
+	# call_deferred("sync_preview") pattern _build_character_preview_panel
+	# already uses for the live-equipped preview.
+	call_deferred("_sync_all_build_previews")
+	return scroll
 
 
-func _build_equipment_build_row(index: int) -> Control:
-	var row := HBoxContainer.new()
-	row.name = "EquipmentBuildRow_" + str(index)
-	row.process_mode = Node.PROCESS_MODE_ALWAYS
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_theme_constant_override("separation", 8)
+func _build_equipment_build_card(index: int) -> Control:
+	var card := PanelContainer.new()
+	card.name = "EquipmentBuildCard_" + str(index)
+	card.process_mode = Node.PROCESS_MODE_ALWAYS
+	card.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 0.99, 0.95, 0.42), Color(0.87, 0.63, 0.19, 0.74), 1, 2))
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	card.add_child(margin)
+
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 8)
+	margin.add_child(list)
+
+	var title := Label.new()
+	title.text = "Build " + str(index)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	list.add_child(title)
+
+	var preview_frame := PanelContainer.new()
+	preview_frame.custom_minimum_size = BUILD_PREVIEW_BASE_SIZE
+	preview_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preview_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
+	preview_frame.add_child(_build_build_preview(index))
+	list.add_child(preview_frame)
 
 	var summary := Label.new()
-	summary.text = "Build " + str(index) + ": Empty"
-	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	summary.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	summary.clip_text = true
-	summary.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	summary.text = "Empty"
+	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.custom_minimum_size = Vector2(BUILD_PREVIEW_BASE_SIZE.x, 0)
 	summary.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	row.add_child(summary)
+	list.add_child(summary)
 	build_preset_summary_labels[index] = summary
+
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons.add_theme_constant_override("separation", 8)
+	list.add_child(buttons)
 
 	var save_button := _make_build_preset_button("Save")
 	save_button.pressed.connect(Callable(self, "_save_equipment_build").bind(index))
-	row.add_child(save_button)
+	buttons.add_child(save_button)
 	build_preset_save_buttons[index] = save_button
 
 	var apply_button := _make_build_preset_button("Apply")
 	apply_button.pressed.connect(Callable(self, "_apply_equipment_build").bind(index))
-	row.add_child(apply_button)
+	buttons.add_child(apply_button)
 	build_preset_apply_buttons[index] = apply_button
-	return row
+	return card
+
+
+# Builds a small, fully isolated 3D preview (own SubViewport + World3D +
+# ModularSkeletonRig) for one build slot, mirroring the shape of
+# _build_character_preview_panel at a smaller size. This rig is never
+# added to the live world, never shares state with inventory_preview_rig
+# (the live-equipped-gear preview), and never touches the in-world player
+# rig -- so a build's preview can never be seen by anything outside this
+# card while the player is actually playing.
+func _build_build_preview(index: int) -> Control:
+	var container := SubViewportContainer.new()
+	container.name = "BuildPreview_" + str(index)
+	container.custom_minimum_size = BUILD_PREVIEW_BASE_SIZE
+	container.size = BUILD_PREVIEW_BASE_SIZE
+	container.stretch = true
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(BUILD_PREVIEW_BASE_SIZE)
+	viewport.transparent_bg = false
+	viewport.world_3d = World3D.new()
+	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+	container.add_child(viewport)
+
+	var preview_scene := Node3D.new()
+	preview_scene.name = "BuildPreviewScene_" + str(index)
+	viewport.add_child(preview_scene)
+
+	_build_preview_room(preview_scene)
+
+	var light := DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-44.0, 30.0, 0.0)
+	light.light_energy = 2.1
+	preview_scene.add_child(light)
+
+	var fill_light := OmniLight3D.new()
+	fill_light.position = Vector3(0.0, 1.25, 1.6)
+	fill_light.light_energy = 0.65
+	fill_light.omni_range = 4.0
+	preview_scene.add_child(fill_light)
+
+	var rig_holder := Node3D.new()
+	rig_holder.rotation_degrees = Vector3(0.0, 180.0, 0.0)
+	rig_holder.scale = Vector3.ONE * 1.08
+	preview_scene.add_child(rig_holder)
+
+	var rig := ModularSkeletonRig.new()
+	rig.name = "BuildPreviewRig_" + str(index)
+	# Must be set before add_child: _ready() reads this flag while
+	# building sockets, same requirement as inventory_preview_rig above.
+	rig.use_split_limbs = true
+	rig_holder.add_child(rig)
+	if rig.has_method("set_body_progression_enabled"):
+		rig.set_body_progression_enabled(true)
+
+	var camera := Camera3D.new()
+	camera.fov = 36.0
+	camera.current = true
+	preview_scene.add_child(camera)
+	camera.look_at_from_position(Vector3(0.0, 0.10, 4.15), Vector3(0.0, -0.08, 0.0), Vector3.UP)
+
+	build_preview_rigs[index] = rig
+	return container
+
+
+func _sync_all_build_previews() -> void:
+	for index in range(1, PlayerEquipmentBuildsComponent.BUILD_SLOT_COUNT + 1):
+		_sync_build_preview(index)
+
+
+# Renders whatever is currently SAVED in build `index` -- never the live
+# equipped state -- on that build's own isolated rig. The player's head
+# is always a fixed piece and never part of a saved build (see
+# PlayerEquipmentBuildsComponent._sanitize_build_state), so it is shown
+# here too, matching what applying the build would actually produce.
+func _sync_build_preview(index: int) -> void:
+	var rig := build_preview_rigs.get(index) as ModularSkeletonRig
+	if rig == null or not is_instance_valid(rig):
+		return
+
+	for slot_id in rig.equipped_ids.keys():
+		rig.unequip_slot(str(slot_id))
+
+	var head_bone_id := ""
+	if player != null and player.has_method("get_equipped_bone_for_slot"):
+		head_bone_id = str(player.call("get_equipped_bone_for_slot", "head"))
+	if head_bone_id == "":
+		head_bone_id = "head_bone"
+	_equip_bone_on_rig(rig, "head", head_bone_id)
+
+	var build_state := _raw_build_state(index)
+	for slot_id in build_state:
+		_equip_bone_on_rig(rig, str(slot_id), str(build_state[slot_id]))
+
+
+func _equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void:
+	if bone_id == "":
+		return
+	var bone_def: Dictionary = BoneRulesService.definition_for(bone_id).duplicate(true)
+	if bone_def.is_empty():
+		return
+	bone_def["slot"] = EquipmentRulesService.normalize_slot_id(slot_id)
+	rig.equip_bone(bone_id, bone_def)
+
+
+# Raw slot_id -> bone_id dict for one saved build, read directly from
+# PlayerEquipmentBuildsComponent -- not validated against current
+# inventory (a preview should still show what was saved even if a piece
+# was later lost), and never applied to live equipment.
+func _raw_build_state(index: int) -> Dictionary:
+	if player == null:
+		return {}
+	var builds_component = player.get("equipment_builds_component")
+	if builds_component == null:
+		return {}
+	var builds: Dictionary = builds_component.get("builds")
+	return builds.get(index, {}) as Dictionary
 
 
 func _make_build_preset_button(text: String) -> Button:
@@ -1061,9 +1262,9 @@ func _refresh_build_preset_rows() -> void:
 			continue
 		var index := int(entry.get("index", 0))
 		var label := build_preset_summary_labels.get(index) as Label
-		if label == null:
-			continue
-		label.text = "Build " + str(index) + ": " + str(entry.get("summary", "Empty"))
+		if label != null:
+			label.text = str(entry.get("summary", "Empty"))
+		_sync_build_preview(index)
 
 
 func _set_build_preset_status(text: String) -> void:
@@ -1161,7 +1362,7 @@ func _make_empty_inventory_slot() -> Control:
 func _build_character_preview_panel() -> Control:
 	inventory_preview_container = SubViewportContainer.new()
 	inventory_preview_container.name = "CharacterPreview"
-	inventory_preview_container.position = Vector2(98.0, 15.0)
+	inventory_preview_container.position = Vector2(98.0, 96.0)
 	inventory_preview_container.custom_minimum_size = _inventory_preview_base_size()
 	inventory_preview_container.size = _inventory_preview_base_size()
 	inventory_preview_container.stretch = true
@@ -1306,15 +1507,22 @@ func _preview_snapshot_matches(next_snapshot: Dictionary) -> bool:
 	return true
 
 
+# Anatomical paper-doll layout: head above the character preview, torso
+# below it, arms flanking its left/right sides at preview-mid-height, legs
+# below the arms. Replaces a previous 2-column grid (head/torso side by
+# side at the top) that read as a jumble instead of a body, and whose
+# responsive rescale (_apply_paper_doll_responsive_layout) had mismatched
+# keys that silently froze 4 of the 6 slot widgets in place -- keep the
+# positions below in sync with that function's slot_positions dict.
 func _build_paper_doll() -> Control:
 	var doll := Control.new()
 	inventory_paper_doll = doll
-	doll.custom_minimum_size = Vector2(406, 306)
+	doll.custom_minimum_size = Vector2(406, 470)
 	doll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var center_frame := PanelContainer.new()
 	center_frame.name = "CenterFrame"
-	center_frame.position = Vector2(94, 11)
+	center_frame.position = Vector2(94, 92)
 	center_frame.size = Vector2(218, 284)
 	center_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
@@ -1322,7 +1530,7 @@ func _build_paper_doll() -> Control:
 
 	var ring := ColorRect.new()
 	ring.name = "CenterRing"
-	ring.position = Vector2(171, 96)
+	ring.position = Vector2(171, 177)
 	ring.size = Vector2(64, 64)
 	ring.rotation = PI / 4.0
 	ring.color = Color(0.87, 0.63, 0.19, 0.16)
@@ -1331,12 +1539,12 @@ func _build_paper_doll() -> Control:
 
 	doll.add_child(_build_character_preview_panel())
 	var equip_slot_size := Vector2(88, 88)
-	_place_slot(doll, "head", "Head", Vector2(0, 0), equip_slot_size)
-	_place_slot(doll, "torso", "Torso", Vector2(318, 0), equip_slot_size)
-	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 104), equip_slot_size)
-	_place_slot(doll, "right_arm", "R. Arm", Vector2(318, 104), equip_slot_size)
-	_place_slot(doll, "left_leg", "L. Leg", Vector2(0, 208), equip_slot_size)
-	_place_slot(doll, "right_leg", "R. Leg", Vector2(318, 208), equip_slot_size)
+	_place_slot(doll, "head", "Head", Vector2(159, 0), equip_slot_size)
+	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 190), equip_slot_size)
+	_place_slot(doll, "right_arm", "R. Arm", Vector2(318, 190), equip_slot_size)
+	_place_slot(doll, "left_leg", "L. Leg", Vector2(0, 286), equip_slot_size)
+	_place_slot(doll, "right_leg", "R. Leg", Vector2(318, 286), equip_slot_size)
+	_place_slot(doll, "torso", "Torso", Vector2(159, 382), equip_slot_size)
 	return doll
 
 
