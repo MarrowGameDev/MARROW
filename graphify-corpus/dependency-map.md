@@ -22,7 +22,7 @@
 - `scripts/bone_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/bone_trial_gate.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/demo_enemy_camp.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
-- `scripts/drop_pickup_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
+- `scripts/drop_pickup_rules_service.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/enemy.gd` depends on `scenes/bone.tscn` because it loads resource.
 - `scripts/enemy.gd` depends on `scripts/limb_bone_pickup.gd` because it loads resource.

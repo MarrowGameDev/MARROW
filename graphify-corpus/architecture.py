@@ -706,9 +706,9 @@ class DropPickupRulesService:
     godot_extends = ''
     gameplay_system = 'Supporting gameplay'
 
-    def depends_on_BoneDatabase(self):
-        """Relationship: references class BoneDatabase."""
-        return BoneDatabase
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
 
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
@@ -1925,7 +1925,7 @@ class Player:
         pass
 
     def gd_func_equip_bone(self):
-        """GDScript function: equip_bone(bone_id: String) -> void"""
+        """GDScript function: equip_bone(bone_id: String, target_slot: String = "") -> void"""
         pass
 
     def gd_func_unequip_slot(self):
@@ -2231,7 +2231,7 @@ class PlayerEquipmentComponent:
         pass
 
     def gd_func_equip_bone(self):
-        """GDScript function: equip_bone(bone_id: String) -> void"""
+        """GDScript function: equip_bone(bone_id: String, target_slot: String = "") -> void"""
         pass
 
     def gd_func_restore_detached_body(self):
@@ -2263,7 +2263,15 @@ class PlayerEquipmentComponent:
         pass
 
     def gd_func__equip_bone_in_slot(self):
-        """GDScript function: _equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool"""
+        """GDScript function: _equip_bone_in_slot(bone_id: String, force_core: bool = false, target_slot: String = "") -> bool"""
+        pass
+
+    def gd_func__slot_for_request(self):
+        """GDScript function: _slot_for_request(bone_id: String, target_slot: String = "") -> String"""
+        pass
+
+    def gd_func__first_open_compatible_slot(self):
+        """GDScript function: _first_open_compatible_slot(bone_id: String) -> String"""
         pass
 
     def gd_func__can_equip_slot(self):
@@ -2300,6 +2308,10 @@ class PlayerEquipmentComponent:
 
     def gd_func__get_run_stats(self):
         """GDScript function: _get_run_stats() -> Dictionary"""
+        pass
+
+    def gd_func__definition_for_slot(self):
+        """GDScript function: _definition_for_slot(bone_id: String, slot: String) -> Dictionary"""
         pass
 
     def gd_func__tint_visual(self):
@@ -2456,6 +2468,10 @@ class PlayerInventoryUI:
         """GDScript function: equip_bone(bone_id: String) -> void"""
         pass
 
+    def gd_func_equip_bone_in_slot(self):
+        """GDScript function: equip_bone_in_slot(bone_id: String, slot: String) -> void"""
+        pass
+
     def gd_func_unequip_slot(self):
         """GDScript function: unequip_slot(slot: String) -> void"""
         pass
@@ -2466,6 +2482,10 @@ class PlayerInventoryUI:
 
     def gd_func_show_bone_info(self):
         """GDScript function: show_bone_info(bone_id: String) -> void"""
+        pass
+
+    def gd_func__bone_comparison_text(self):
+        """GDScript function: _bone_comparison_text(bone_id: String) -> String"""
         pass
 
     def gd_func_clear_bone_info(self):
@@ -2686,6 +2706,10 @@ class PlayerInventoryUI:
 
     def gd_func__bone_matches_inventory_category(self):
         """GDScript function: _bone_matches_inventory_category(bone_id: String) -> bool"""
+        pass
+
+    def gd_func__compare_inventory_items(self):
+        """GDScript function: _compare_inventory_items(a: String, b: String) -> bool"""
         pass
 
     def gd_func_update_inventory_ui(self):
@@ -3909,6 +3933,14 @@ class BoneSlotWidget:
 
     def gd_func__drop_data(self):
         """GDScript function: _drop_data(_at_position: Vector2, data: Variant) -> void"""
+        pass
+
+    def gd_func__notification(self):
+        """GDScript function: _notification(what: int) -> void"""
+        pass
+
+    def gd_func__set_frame_border(self):
+        """GDScript function: _set_frame_border(color: Color) -> void"""
         pass
 
     def gd_func__gui_input(self):

@@ -309,10 +309,18 @@ Campos principales:
 - `bone_id`: id estable, por ejemplo `arm_bone`.
 - `display_name`: nombre visible.
 - `color`: color fisico del hueso.
-- `slot`: slot de equipamiento (`right_arm`, `left_arm`, `body`, `legs`,
-  `head`).
+- `slot`: slot de equipamiento canonico (`head`, `torso`, `left_arm`,
+  `right_arm`, `left_leg`, `right_leg`) o alias legacy aceptado durante
+  migracion (`body`, `legs` -- los unicos dos que aparecen realmente en
+  `data/bones/*.tres` hoy; no agregar aliases especulativos sin un
+  consumidor real).
 - `tags`: tags generales.
 - `description`: texto visible para UI.
+
+`EquipmentRulesService.normalize_slot_id` convierte aliases legacy a los ids
+canonicos que usa el runtime. Los Resources viejos pueden seguir declarando
+`body` o `legs`, pero los sistemas nuevos deben guardar y comparar slots
+canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 ## Calidad
 
@@ -1985,9 +1993,13 @@ dependan directamente del componente.
 
 ## Flujo de equipar
 
-1. La UI o el input de equip next llama `player.equip_bone(bone_id)`.
+1. La UI o el input de equip next llama `player.equip_bone(bone_id)`. Si el
+   usuario suelta una pieza sobre un slot especifico, la UI pasa tambien
+   `target_slot`.
 2. `Player` delega a `PlayerEquipmentComponent.equip_bone`.
-3. El componente pregunta el slot con `EquipmentRulesService.slot_for_bone`.
+3. El componente resuelve compatibilidad con
+   `EquipmentRulesService.compatible_slots_for_bone` y normaliza el slot con
+   `EquipmentRulesService.normalize_slot_id`.
 4. Si el hueso ya esta equipado en ese slot, no hace nada.
 5. Si hay `ModularSkeletonRig`, el componente llama `rig.equip_bone`.
 6. Se incrementa `equip_swaps`.
@@ -2011,11 +2023,24 @@ dependan directamente del componente.
 El punto central es `EquipmentRulesService`.
 
 Slots principales:
-- `right_arm`
-- `left_arm`
-- `legs`
-- `body`
 - `head`
+- `torso`
+- `left_arm`
+- `right_arm`
+- `left_leg`
+- `right_leg`
+
+Aliases legacy aceptados (solo los que tienen consumidor real en
+`data/bones/*.tres`; no agregar aliases especulativos):
+- `body` -> `torso`
+- `legs` -> compatible con `right_leg` y `left_leg` (equip-next resuelve al
+  primer lado libre via `PlayerEquipmentComponent._first_open_compatible_slot`;
+  `normalize_slot_id("legs")` sigue devolviendo `right_leg` como valor unico
+  por defecto para contextos que necesitan un solo id, como display/orden)
+
+`torso` es el slot de equipamiento. `body` sigue siendo un socket del rig y un
+valor legacy en datos viejos. No se debe mezclar socket del rig, slot de equipo
+y parte corporal sin pasar por `EquipmentRulesService`.
 
 Los huesos generados por limbs usan ids como:
 - `normal_right_arm_bone`
@@ -2058,7 +2083,8 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - El jugador inicia con `head_bone` equipado como nucleo fijo.
   - La cabeza no se puede reemplazar ni desequipar; si se rompe, el jugador
     muere.
-  - El torso (`body`) debe equiparse antes de brazos o piernas.
+  - El torso (`torso`, alias legacy `body`) debe equiparse antes de brazos o
+    piernas.
   - Si el torso se quita, las extremidades se desacoplan primero.
   - Brazos y piernas no tienen orden obligatorio entre si una vez equipado el
     torso.
@@ -2071,6 +2097,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
+- Las piezas legacy hechas a mano pueden seguir declarando `body` o `legs`
+  durante la migracion. El runtime debe normalizarlas antes de guardar estado
+  de equipamiento, pintar el rig o validar drops.
 - Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
   en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
   necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
@@ -2205,7 +2234,8 @@ En `TESTING ENVIRONMENT`:
 2. Confirmar que la cabeza inicial ya esta equipada y no se puede reemplazar.
 3. Equipar torso.
 4. Equipar huesos de brazo y piernas.
-5. Confirmar que el cuerpo del jugador cambia.
+5. Confirmar que `Left Arm`, `Right Arm`, `Left Leg` y `Right Leg` cambian solo
+   el lado correspondiente.
 6. Confirmar que el preview cambia igual que el jugador.
 7. Desequipar con right click o drag hacia zona vacia si aplica.
 8. Confirmar que stats en UI cambian.
@@ -2248,6 +2278,10 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: Equipamiento adopto seis slots canonicos (`head`, `torso`,
+  `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
+  aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus
+  sockets `body`/`body_lower` sin usarlos como ids de estado de equipo.
 - 2026-07-15: `BoneRulesService` aplica calidad, modificadores porcentuales y
   carga equipada al calculo determinista de stats del jugador.
 - 2026-07-15: Se documentaron unidades y formula exacta de peso/calidad. Se
@@ -2258,6 +2292,37 @@ En `TESTING ENVIRONMENT`:
   `quality_*_percent` en `Player.get_inventory_stats_snapshot()`, que antes
   se calculaban y se descartaban sin ningun consumidor. No se agrego
   defensa, stamina ni movilidad: esos stats no existen en el proyecto.
+- 2026-07-15 (correccion): `_slot_for_request` resolvia el slot por defecto
+  de un hueso bilateral (`legs`, o `right_arm` sin `limb_key`) llamando a
+  `EquipmentRulesService.slot_for_bone`, una funcion pura sin estado que
+  siempre devuelve el primer slot compatible. Equipar-siguiente con dos
+  huesos de pierna genericos nunca podia alcanzar `left_leg`. Se agrego
+  `PlayerEquipmentComponent._first_open_compatible_slot`, que consulta el
+  `equipped` real del componente y elige el primer slot compatible vacio.
+  Verificado en Godot 4.7 headless: dos `leg_bone` equipados via
+  equip-next ahora terminan en `{"left_leg": "leg_bone", "right_leg":
+  "leg_bone"}`. De paso se encontro y corrigio un bug de tipado de
+  GDScript: `compatible_slots_for_bone` devolvia arrays literales sin
+  tipar explicitamente, lo cual fallaba en runtime ("Trying to assign an
+  array of type Array to a variable of type Array[String]") para
+  cualquier llamador externo a la clase que asignara el resultado a una
+  variable tipada; ahora construye el array con `.append()`.
+- 2026-07-15: Se eliminaron 7 de los 9 aliases legacy de slot (`ribs`,
+  `ribcage`, `chest`, `arm_left`, `arm_right`, `leg_left`, `leg_right`):
+  ningun archivo en `data/bones/*.tres` ni codigo en `scripts/` los produce
+  (verificado por grep). Solo quedan `body` y `legs`, que si tienen datos
+  reales. `tools/validate_bone_data.py` actualizado para no exigirlos.
+- 2026-07-15: Se elimino `PlayerEquipmentComponent.get_equipped_bone_defs`
+  (cero llamadores; existe una funcion homonima pero distinta en
+  `ModularSkeletonRig` que si se usa).
+- 2026-07-15: El panel de informacion del inventario ahora compara el hueso
+  bajo el cursor contra el equipado en el mismo slot (deltas de
+  move_speed/attack_range/attack_damage/max_health via
+  `BoneRulesService.adjusted_player_bonus_for`, los unicos stats de hueso
+  que existen). No se inventaron stats de defensa/peso para la comparacion.
+- 2026-07-15: `BoneSlotWidget` pinta el borde del slot en verde/rojo
+  mientras un drag lo sobrevuela, segun `can_equip_bone_in_slot`, y lo
+  restaura en `NOTIFICATION_DRAG_END`.
 
 ## docs/flow_index.md
 
@@ -2444,10 +2509,37 @@ modificar controles desde la seccion de settings.
 - Lee datos mediante metodos publicos del player.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
-- Cachea el snapshot de equipamiento ya renderizado para evitar recrear piezas
-  del rig preview cuando llegan eventos redundantes.
-- Sincroniza el tamano del `SubViewport` con el container responsive y conserva
-  un minimo de 1 px por eje durante relayouts.
+- Cachea el snapshot de equipamiento ya aplicado con exito para evitar
+  recrear piezas del rig preview cuando llegan eventos redundantes (ver
+  `docs/inventory_flow.md` seccion de historial, 2026-07-15: el snapshot solo
+  se guarda despues de equipar cada pieza, no antes).
+- Muestra filtros por los seis slots canonicos de equipo: `head`, `torso`,
+  `left_arm`, `right_arm`, `left_leg` y `right_leg`.
+- Ordena los stacks visibles por slot corporal, rareza, calidad y nombre antes
+  de crear tiles.
+
+### Slots de inventario y equipamiento
+
+`EquipmentRulesService.CANONICAL_BODY_SLOTS` es la fuente de verdad para los
+slots de equipo que la UI debe mostrar. Los ids canonicos son:
+
+- `head`
+- `torso`
+- `left_arm`
+- `right_arm`
+- `left_leg`
+- `right_leg`
+
+`body` y `legs` son los unicos aliases legacy con datos reales hoy (verificado
+por grep en `data/bones/*.tres`); se normalizan en
+`EquipmentRulesService.normalize_slot_id`. La UI puede leer huesos viejos con
+esos slots, pero no debe crear nuevas categorias ni nuevo estado con esos ids,
+y no se deben agregar aliases especulativos sin un consumidor real. `body`
+sigue existiendo como socket del rig; `torso` es el slot de equipamiento.
+Un hueso legacy `legs` puede equiparse en `right_leg` o `left_leg` mediante
+drag/drop dirigido al slot visual, o mediante equipar-siguiente (tecla E),
+que ahora resuelve al primer lado libre en vez de forzar siempre
+`right_leg` (ver historial de cambios).
 
 ### Validacion estatica del preview
 
@@ -2559,6 +2651,9 @@ python -B tools/validate_inventory_stack_contract.py
   copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
   de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
   la ruta existente de `PlayerEquipmentComponent`.
+- Filtros: `All` muestra todos los huesos compatibles; las categorias de slot
+  usan `EquipmentRulesService.inventory_filter_matches_bone` para no duplicar
+  reglas entre UI y gameplay.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
 - El tutorial de controles debe leer los bindings actuales con
@@ -2584,6 +2679,12 @@ En `TESTING ENVIRONMENT`:
 7. Intentar equipar brazo/pierna sin torso y confirmar que se bloquea.
 8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
    solo las partes recuperadas.
+9. Arrastrar `arm_bone` a `Left Arm` y luego a `Right Arm`; debe aceptar ambos
+   lados si hay torso.
+10. Arrastrar `leg_bone` a `Left Leg` y luego a `Right Leg`; cada lado debe
+    mostrar solo su pierna correspondiente en jugador y preview.
+11. Cambiar filtros `Head`, `Torso`, `L. Arm`, `R. Arm`, `L. Leg` y `R. Leg`;
+    cada filtro debe mostrar solo piezas compatibles con ese slot.
 
 ### Pruebas manuales especificas del preview 3D (pendientes de ejecutar en editor)
 
@@ -2668,6 +2769,32 @@ observando el render y no se pueden confirmar solo con validadores de texto:
   settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
   reiniciar y confirmar que el binding persiste desde
   `user://control_settings.cfg`.
+- 2026-07-15: Se normalizo inventario/equipamiento a seis slots canonicos
+  (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`). Los slots
+  legacy siguen aceptandose como aliases de lectura, y la UI ahora filtra,
+  ordena y equipa por compatibilidad compartida desde `EquipmentRulesService`.
+- 2026-07-15: Se corrigio el equip-next para piernas (ver
+  `docs/equipment_flow.md` para el detalle completo del bug y el bug de
+  tipado que se encontro de paso), se removieron 7 aliases de slot legacy
+  sin datos reales, y se elimino un metodo de equipamiento sin llamadores.
+  Se agrego comparador con deltas de stats reales al pasar el mouse sobre
+  un hueso, y feedback verde/rojo en los slots del paper doll durante
+  drag and drop segun compatibilidad. El idioma visible de la UI ya era
+  consistente (ingles en toda la pantalla de inventario/settings); no se
+  cambio.
+
+Pruebas manuales pendientes para lo de arriba (Godot 4.7 disponible, ver
+`docs/p0_runtime_validation_suite.md`, pero esto requiere observar el
+render):
+1. Recoger dos `leg_bone` genericos, equipar-siguiente (`E` u la tecla
+   configurada) hasta que ambos esten puestos, y confirmar visualmente que
+   una pierna del rig es distinta del estado anterior a ambos lados (no
+   solo el diccionario de estado).
+2. Pasar el mouse sobre un hueso del mismo slot que uno ya equipado y
+   confirmar que aparece la linea "vs equipped ...".
+3. Arrastrar un hueso sobre un slot compatible e incompatible y confirmar
+   el color verde/rojo del borde; soltar fuera de cualquier slot y
+   confirmar que el borde vuelve a su color normal.
 
 ## docs/manual_gameplay_qa_checklist.md
 

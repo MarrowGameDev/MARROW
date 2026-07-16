@@ -618,6 +618,11 @@
 
 ### Key Variables
 - `definition`
+- `base_name`
+- `slot_label`
+- `clean_name`
+- `clean_lower`
+- `slot_lower`
 - `color_value`
 - `value`
 - `tags`
@@ -1242,6 +1247,14 @@
 ### Constants
 - `UNKNOWN_COLOR`
 - `PLAYER_BONUS_DEFAULTS`
+- `SLOT_HEAD`
+- `SLOT_TORSO`
+- `SLOT_LEFT_ARM`
+- `SLOT_RIGHT_ARM`
+- `SLOT_LEFT_LEG`
+- `SLOT_RIGHT_LEG`
+- `CANONICAL_BODY_SLOTS`
+- `LEGACY_SLOT_ALIASES`
 - `SLOT_DISPLAY`
 - `SLOT_TO_SOCKETS`
 - `LIMB_TO_SLOT`
@@ -1250,7 +1263,20 @@
 - `SOURCE_COLOR`
 
 ### Key Variables
+- `slots`
+- `result`
 - `definition`
+- `raw_slot`
+- `normalized`
+- `clean_slot`
+- `index`
+- `normalized_filter`
+- `a_slot_index`
+- `b_slot_index`
+- `a_rarity`
+- `b_rarity`
+- `a_quality`
+- `b_quality`
 - `clean_source`
 - `parsed`
 - `source_profile`
@@ -1752,7 +1778,7 @@
 - `_die_player() -> void`
 - `_flash_player_damage() -> void`
 - `_equip_next_bone() -> void`
-- `equip_bone(bone_id: String) -> void`
+- `equip_bone(bone_id: String, target_slot: String = "") -> void`
 - `unequip_slot(slot: String) -> void`
 - `show_bone_info(bone_id: String) -> void`
 - `clear_bone_info() -> void`
@@ -1933,7 +1959,10 @@
 - `bone_id`
 - `socket`
 - `visual`
+- `normalized_target`
+- `compatible`
 - `rig_value`
+- `definition`
 - `mesh`
 - `material`
 - `raw_material`
@@ -1941,7 +1970,7 @@
 ### Functions
 - `setup(player: Node) -> void`
 - `equip_starting_core() -> void`
-- `equip_bone(bone_id: String) -> void`
+- `equip_bone(bone_id: String, target_slot: String = "") -> void`
 - `restore_detached_body(bone_id: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `get_equipped_bone_id() -> String`
@@ -1949,7 +1978,9 @@
 - `has_bone_equipped(bone_id: String) -> bool`
 - `get_equipment_state() -> Dictionary`
 - `get_swap_count() -> int`
-- `_equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool`
+- `_equip_bone_in_slot(bone_id: String, force_core: bool = false, target_slot: String = "") -> bool`
+- `_slot_for_request(bone_id: String, target_slot: String = "") -> String`
+- `_first_open_compatible_slot(bone_id: String) -> String`
 - `_can_equip_slot(slot: String, bone_id: String) -> bool`
 - `_emit_equipment_hint(hint_id: String, text: String) -> void`
 - `_clear_equipped_visual(slot: String) -> void`
@@ -1959,6 +1990,7 @@
 - `_notify_equipment_changed() -> void`
 - `_get_inventory_items() -> Array`
 - `_get_run_stats() -> Dictionary`
+- `_definition_for_slot(bone_id: String, slot: String) -> Dictionary`
 - `_tint_visual(visual: Node3D, color: Color) -> void`
 - `_tint_visual_mesh(visual: Node3D, mesh_name: String, color: Color) -> void`
 
@@ -2094,9 +2126,11 @@
 - `get_inventory_tile_size() -> Vector2`
 - `has_bone_equipped(bone_id: String) -> bool`
 - `equip_bone(bone_id: String) -> void`
+- `equip_bone_in_slot(bone_id: String, slot: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `get_equipped_bone_for_slot(slot: String) -> String`
 - `show_bone_info(bone_id: String) -> void`
+- `_bone_comparison_text(bone_id: String) -> String`
 - `clear_bone_info() -> void`
 - `_build_inventory_ui() -> void`
 - `_build_right_inventory_panel() -> void`
@@ -2152,6 +2186,7 @@
 - `_set_default_control_mouse(action: String, button_index: int) -> void`
 - `rebuild_item_tiles() -> void`
 - `_bone_matches_inventory_category(bone_id: String) -> bool`
+- `_compare_inventory_items(a: String, b: String) -> bool`
 - `update_inventory_ui() -> void`
 - `_bone_inventory() -> Array`
 - `_equipment_state() -> Dictionary`
@@ -3073,15 +3108,16 @@
 - `_label`
 - `_slot_label`
 - `_slot_size`
+- `_frame`
 - `x_scale`
 - `y_scale`
 - `min_scale`
-- `frame`
 - `diamond_back`
 - `bone_id`
 - `wrap`
 - `rect`
 - `preview_size`
+- `valid`
 - `style`
 - `equipped_value`
 - `equipped`
@@ -3093,6 +3129,8 @@
 - `_get_drag_data(_at_position: Vector2) -> Variant`
 - `_can_drop_data(_at_position: Vector2, data: Variant) -> bool`
 - `_drop_data(_at_position: Vector2, data: Variant) -> void`
+- `_notification(what: int) -> void`
+- `_set_frame_border(color: Color) -> void`
 - `_gui_input(event: InputEvent) -> void`
 - `_make_slot_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat`
 - `_equipped_bone_id() -> String`
