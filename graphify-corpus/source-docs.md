@@ -1971,6 +1971,8 @@ dependan directamente del componente.
 ## Scripts y escenas principales
 
 - `scripts/player_equipment_component.gd`: estado real de equipo por slot.
+- `scripts/player_equipment_builds_component.gd`: presets guardables de
+  equipamiento que delegan aplicacion real en `PlayerEquipmentComponent`.
 - `scripts/player_stats_component.gd`: calculo de stats finales del jugador.
 - `scripts/equipment_rules_service.gd`: reglas de slots, sockets, ids generados
   por limbs y escalas visuales.
@@ -2017,6 +2019,22 @@ dependan directamente del componente.
 5. Recalcula stats.
 6. Emite `inventory_changed`.
 7. Emite `bone_unequipped`.
+
+## Flujo de build presets
+
+1. La UI llama `player.save_equipment_build(index)` para capturar el equipo
+   actual no-core.
+2. `PlayerEquipmentBuildsComponent` normaliza slots, omite la cabeza fija y
+   guarda el build en `user://equipment_builds.cfg`.
+3. La UI llama `player.apply_equipment_build(index)`.
+4. El componente valida inventario disponible, slots compatibles y torso
+   requerido antes de tocar el equipo.
+5. Si la validacion falla, no aplica cambios parciales y devuelve un mensaje
+   para la UI.
+6. Si la validacion pasa, desequipa slots no presentes en el build y equipa en
+   orden estable: torso, brazos, piernas.
+7. `PlayerEquipmentComponent` recalcula stats, actualiza rig y emite eventos por
+   la ruta normal.
 
 ## Reglas de slots
 
@@ -2170,6 +2188,9 @@ calibrados por prueba y error, igual que el resto del balance del proyecto.
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
   combinaciones de piezas. No aplican bonuses automaticamente todavia.
+- Build presets no son una segunda fuente de estado. Solo persisten una
+  intencion de equipamiento y deben revalidarse contra inventario y reglas
+  actuales cada vez que se aplican.
 - `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
   entra al inventario normal; `torso_bone` aparece como pickup starter en el
   demo.
@@ -2239,6 +2260,17 @@ En `TESTING ENVIRONMENT`:
 6. Confirmar que el preview cambia igual que el jugador.
 7. Desequipar con right click o drag hacia zona vacia si aplica.
 8. Confirmar que stats en UI cambian.
+9. Guardar un build en Settings, modificar equipo y aplicar el build guardado.
+10. Intentar aplicar un build que necesita dos copias del mismo hueso teniendo
+    solo una copia; debe mostrar error y no dejar cambios parciales.
+11. Presionar Apply una vez y confirmar que el boton cambia a "Confirm?" y el
+    equipo NO cambia todavia; presionar de nuevo dentro de unos segundos y
+    confirmar que ahora si aplica. Presionar Apply una vez y esperar mas de
+    4 segundos sin presionar de nuevo; confirmar que el boton vuelve a decir
+    "Apply" y no paso nada.
+12. Guardar sobre un build ya ocupado y confirmar que tambien pide una
+    segunda pulsacion; guardar sobre un build vacio y confirmar que NO la
+    pide (aplica directo).
 
 ## Historial de cambios
 
@@ -2282,6 +2314,10 @@ En `TESTING ENVIRONMENT`:
   `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
   aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus
   sockets `body`/`body_lower` sin usarlos como ids de estado de equipo.
+- 2026-07-15: Se agregaron build presets de equipamiento. La persistencia vive
+  en `PlayerEquipmentBuildsComponent`, la aplicacion usa
+  `PlayerEquipmentComponent`, y cada apply revalida copias, torso y
+  compatibilidad de slots.
 - 2026-07-15: `BoneRulesService` aplica calidad, modificadores porcentuales y
   carga equipada al calculo determinista de stats del jugador.
 - 2026-07-15: Se documentaron unidades y formula exacta de peso/calidad. Se
@@ -2323,6 +2359,22 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-15: `BoneSlotWidget` pinta el borde del slot en verde/rojo
   mientras un drag lo sobrevuela, segun `can_equip_bone_in_slot`, y lo
   restaura en `NOTIFICATION_DRAG_END`.
+- 2026-07-15 (correccion): `PlayerEquipmentBuildsComponent.apply_build`
+  aplicaba el estado objetivo y solo reportaba si no coincidia del todo;
+  nunca deshacia el cambio parcial. Ahora guarda un snapshot del
+  equipamiento antes de aplicar y reaplica ese snapshot si la
+  verificacion post-apply falla. Verificado en Godot 4.7 headless con 5
+  escenarios (build valido, build vacio, pieza no disponible, slot
+  incompatible, y un rollback forzado): el estado final tras el rollback
+  forzado coincidio exactamente con el estado previo a la aplicacion. De
+  paso se encontro y corrigio un bug preexistente desde el primer commit
+  de esta rama: `_summary_for_state` llamaba
+  `BoneRulesService.display_name` (nunca existio), lo cual rompia la
+  compilacion de GDScript de `player.gd` completo -- el validador estatico
+  nunca pudo detectarlo porque no ejecuta GDScript.
+- 2026-07-15: Guardar sobre un build no vacio y Aplicar un build ahora
+  requieren una segunda pulsacion del mismo boton dentro de 4 segundos
+  para confirmar (sin dialogo nativo, mismo estilo DIY del resto de la UI).
 
 ## docs/flow_index.md
 
@@ -2458,6 +2510,8 @@ modificar controles desde la seccion de settings.
   `collect_bone`, expone snapshots y emite cambios por eventos.
 - `scripts/player_inventory_ui.gd`: construye la pantalla de inventario, tabs,
   grid, detalles, settings, paper doll y preview 3D.
+- `scripts/player_equipment_builds_component.gd`: guarda y aplica presets de
+  equipamiento usando el estado real de `PlayerEquipmentComponent`.
 - `scripts/ui_bone_item.gd`: tile arrastrable de un hueso en el grid.
 - `scripts/ui_bone_slot.gd`: slot visual del paper doll.
 - `scripts/ui_inventory_empty_slot.gd`: zona para soltar items/equipamiento
@@ -2656,6 +2710,14 @@ python -B tools/validate_inventory_stack_contract.py
   reglas entre UI y gameplay.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
+- Build presets: la pestaña de settings permite guardar y aplicar 3 builds de
+  equipamiento en `user://equipment_builds.cfg`. Cada build guarda slots
+  canonicos no-core; la cabeza fija no se reemplaza ni se guarda como pieza
+  aplicable.
+- Al aplicar un build, `PlayerEquipmentBuildsComponent` valida primero que las
+  copias necesarias existan en inventario, que los slots sean compatibles y que
+  cualquier extremidad venga acompanada de torso. La UI solo muestra el resultado
+  de esa validacion.
 - El tutorial de controles debe leer los bindings actuales con
   `DropPickupRulesService.action_binding_text`, para que el texto visible siga
   los cambios hechos en settings.
@@ -2685,6 +2747,11 @@ En `TESTING ENVIRONMENT`:
     mostrar solo su pierna correspondiente en jugador y preview.
 11. Cambiar filtros `Head`, `Torso`, `L. Arm`, `R. Arm`, `L. Leg` y `R. Leg`;
     cada filtro debe mostrar solo piezas compatibles con ese slot.
+12. En Settings, guardar un build con torso + extremidades, cambiar piezas y
+    aplicar el build; debe restaurar los slots guardados si existen copias.
+13. Guardar un build que use el mismo `bone_id` en dos lados y confirmar que al
+    aplicarlo sin dos copias disponibles muestra error sin cambiar parcialmente
+    el equipamiento.
 
 ### Pruebas manuales especificas del preview 3D (pendientes de ejecutar en editor)
 
@@ -2773,6 +2840,9 @@ observando el render y no se pueden confirmar solo con validadores de texto:
   (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`). Los slots
   legacy siguen aceptandose como aliases de lectura, y la UI ahora filtra,
   ordena y equipa por compatibilidad compartida desde `EquipmentRulesService`.
+- 2026-07-15: Se agregaron build presets de equipamiento con guardado local,
+  validacion de copias disponibles, compatibilidad de slots y aplicacion mediante
+  `PlayerEquipmentComponent`.
 - 2026-07-15: Se corrigio el equip-next para piernas (ver
   `docs/equipment_flow.md` para el detalle completo del bug y el bug de
   tipado que se encontro de paso), se removieron 7 aliases de slot legacy

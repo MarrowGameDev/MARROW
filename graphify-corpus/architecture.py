@@ -1892,6 +1892,18 @@ class Player:
         """GDScript function: get_inventory_stats_snapshot() -> Dictionary"""
         pass
 
+    def gd_func_save_equipment_build(self):
+        """GDScript function: save_equipment_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_apply_equipment_build(self):
+        """GDScript function: apply_equipment_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_get_equipment_build_summaries(self):
+        """GDScript function: get_equipment_build_summaries() -> Array"""
+        pass
+
     def gd_func_take_player_damage(self):
         """GDScript function: take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void"""
         pass
@@ -2112,6 +2124,10 @@ class Player:
         """Relationship: references class PlayerCameraController."""
         return PlayerCameraController
 
+    def depends_on_PlayerEquipmentBuildsComponent(self):
+        """Relationship: references class PlayerEquipmentBuildsComponent."""
+        return PlayerEquipmentBuildsComponent
+
     def depends_on_PlayerEquipmentComponent(self):
         """Relationship: references class PlayerEquipmentComponent."""
         return PlayerEquipmentComponent
@@ -2210,6 +2226,89 @@ class PlayerCameraController:
     def gd_func__apply_orbit_rotation(self):
         """GDScript function: _apply_orbit_rotation() -> void"""
         pass
+
+class PlayerEquipmentBuildsComponent:
+    """Godot script: scripts/player_equipment_builds_component.gd
+    class_name: PlayerEquipmentBuildsComponent
+    extends: Node
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/player_equipment_builds_component.gd'
+    godot_class_name = 'PlayerEquipmentBuildsComponent'
+    godot_extends = 'Node'
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def gd_func_setup(self):
+        """GDScript function: setup(player: Node, equipment: PlayerEquipmentComponent) -> void"""
+        pass
+
+    def gd_func_save_current_build(self):
+        """GDScript function: save_current_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_apply_build(self):
+        """GDScript function: apply_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_validate_build_state(self):
+        """GDScript function: validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dictionary"""
+        pass
+
+    def gd_func_get_build_summaries(self):
+        """GDScript function: get_build_summaries() -> Array"""
+        pass
+
+    def gd_func__apply_validated_state(self):
+        """GDScript function: _apply_validated_state(target_state: Dictionary) -> void"""
+        pass
+
+    def gd_func__matches_equipment_state(self):
+        """GDScript function: _matches_equipment_state(target_state: Dictionary) -> bool"""
+        pass
+
+    def gd_func__sanitize_build_state(self):
+        """GDScript function: _sanitize_build_state(raw_state: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__bone_counts(self):
+        """GDScript function: _bone_counts(items: Array) -> Dictionary"""
+        pass
+
+    def gd_func__inventory_items(self):
+        """GDScript function: _inventory_items() -> Array"""
+        pass
+
+    def gd_func__load_builds(self):
+        """GDScript function: _load_builds() -> void"""
+        pass
+
+    def gd_func__save_builds(self):
+        """GDScript function: _save_builds() -> void"""
+        pass
+
+    def gd_func__summary_for_state(self):
+        """GDScript function: _summary_for_state(state: Dictionary) -> String"""
+        pass
+
+    def gd_func__valid_index(self):
+        """GDScript function: _valid_index(index: int) -> bool"""
+        pass
+
+    def gd_func__result(self):
+        """GDScript function: _result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary"""
+        pass
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_EquipmentRulesService(self):
+        """Relationship: references class EquipmentRulesService."""
+        return EquipmentRulesService
+
+    def depends_on_PlayerEquipmentComponent(self):
+        """Relationship: references class PlayerEquipmentComponent."""
+        return PlayerEquipmentComponent
 
 class PlayerEquipmentComponent:
     """Godot script: scripts/player_equipment_component.gd
@@ -2552,6 +2651,50 @@ class PlayerInventoryUI:
         """GDScript function: _build_settings_panel() -> ScrollContainer"""
         pass
 
+    def gd_func__build_equipment_build_presets_panel(self):
+        """GDScript function: _build_equipment_build_presets_panel() -> Control"""
+        pass
+
+    def gd_func__build_equipment_build_row(self):
+        """GDScript function: _build_equipment_build_row(index: int) -> Control"""
+        pass
+
+    def gd_func__make_build_preset_button(self):
+        """GDScript function: _make_build_preset_button(text: String) -> Button"""
+        pass
+
+    def gd_func__save_equipment_build(self):
+        """GDScript function: _save_equipment_build(index: int) -> void"""
+        pass
+
+    def gd_func__apply_equipment_build(self):
+        """GDScript function: _apply_equipment_build(index: int) -> void"""
+        pass
+
+    def gd_func__build_slot_is_empty(self):
+        """GDScript function: _build_slot_is_empty(index: int) -> bool"""
+        pass
+
+    def gd_func__consume_or_arm_confirmation(self):
+        """GDScript function: _consume_or_arm_confirmation(action: String, index: int, button_text: String) -> bool"""
+        pass
+
+    def gd_func__on_build_preset_confirm_timeout(self):
+        """GDScript function: _on_build_preset_confirm_timeout(expected_key: String) -> void"""
+        pass
+
+    def gd_func__disarm_build_preset_confirmation(self):
+        """GDScript function: _disarm_build_preset_confirmation() -> void"""
+        pass
+
+    def gd_func__refresh_build_preset_rows(self):
+        """GDScript function: _refresh_build_preset_rows() -> void"""
+        pass
+
+    def gd_func__set_build_preset_status(self):
+        """GDScript function: _set_build_preset_status(text: String) -> void"""
+        pass
+
     def gd_func__build_control_binding_row(self):
         """GDScript function: _build_control_binding_row(action: String, label_text: String) -> Control"""
         pass
@@ -2755,6 +2898,10 @@ class PlayerInventoryUI:
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
+
+    def depends_on_PlayerEquipmentBuildsComponent(self):
+        """Relationship: references class PlayerEquipmentBuildsComponent."""
+        return PlayerEquipmentBuildsComponent
 
     def depends_on_ModularSkeletonRig(self):
         """Relationship: references class ModularSkeletonRig."""

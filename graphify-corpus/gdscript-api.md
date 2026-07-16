@@ -1672,6 +1672,7 @@
 - `inventory_ui`
 - `inventory_component`
 - `equipment_component`
+- `equipment_builds_component`
 - `stats_component`
 - `last_calculated_stats`
 - `nearby_bone_pickups`
@@ -1704,7 +1705,6 @@
 - `head_detached_from_torso`
 - `detached_torso_bone_id`
 - `detached_torso_marker`
-- `detached_torso_reattach_progress`
 
 ### Functions
 - `_ready() -> void`
@@ -1770,6 +1770,9 @@
 - `get_equipment_state() -> Dictionary`
 - `get_equipped_bone_for_slot(slot: String) -> String`
 - `get_inventory_stats_snapshot() -> Dictionary`
+- `save_equipment_build(index: int) -> Dictionary`
+- `apply_equipment_build(index: int) -> Dictionary`
+- `get_equipment_build_summaries() -> Array`
 - `take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `take_player_body_part_damage(body_part: String, amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `has_body_part_hitboxes() -> bool`
@@ -1930,6 +1933,76 @@
 ### Node Path Lookups
 - none
 
+## PlayerEquipmentBuildsComponent
+
+- Source file: `scripts/player_equipment_builds_component.gd`
+- Extends: `Node`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `BUILD_SETTINGS_PATH`
+- `BUILD_SECTION`
+- `BUILD_SLOT_COUNT`
+- `APPLY_ORDER`
+
+### Key Variables
+- `owner_player`
+- `equipment_component`
+- `builds`
+- `state`
+- `validation`
+- `target_state`
+- `previous_state`
+- `required_counts`
+- `inventory_counts`
+- `slot_id`
+- `bone_id`
+- `has_limb`
+- `summaries`
+- `current_state`
+- `expected`
+- `actual`
+- `counts`
+- `config`
+- `value`
+- `parts`
+- `text`
+
+### Functions
+- `setup(player: Node, equipment: PlayerEquipmentComponent) -> void`
+- `save_current_build(index: int) -> Dictionary`
+- `apply_build(index: int) -> Dictionary`
+- `validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dictionary`
+- `get_build_summaries() -> Array`
+- `_apply_validated_state(target_state: Dictionary) -> void`
+- `_matches_equipment_state(target_state: Dictionary) -> bool`
+- `_sanitize_build_state(raw_state: Dictionary) -> Dictionary`
+- `_bone_counts(items: Array) -> Dictionary`
+- `_inventory_items() -> Array`
+- `_load_builds() -> void`
+- `_save_builds() -> void`
+- `_summary_for_state(state: Dictionary) -> String`
+- `_valid_index(index: int) -> bool`
+- `_result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## PlayerEquipmentComponent
 
 - Source file: `scripts/player_equipment_component.gd`
@@ -2070,6 +2143,7 @@
 - `CONTROL_SETTINGS_PATH`
 - `INVENTORY_PREVIEW_BASE_SIZE`
 - `CONTROL_BINDINGS`
+- `BUILD_PRESET_CONFIRM_WINDOW`
 
 ### Key Variables
 - `player`
@@ -2109,9 +2183,9 @@
 - `settings_title_label`
 - `settings_status_label`
 - `settings_reset_button`
-- `control_rows`
-- `control_labels`
-- `control_buttons`
+- `build_preset_status_label`
+- `build_preset_summary_labels`
+- `build_preset_apply_buttons`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2147,6 +2221,17 @@
 - `_apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void`
 - `_set_margin(container: MarginContainer, left: int, top: int, right: int, bottom: int) -> void`
 - `_build_settings_panel() -> ScrollContainer`
+- `_build_equipment_build_presets_panel() -> Control`
+- `_build_equipment_build_row(index: int) -> Control`
+- `_make_build_preset_button(text: String) -> Button`
+- `_save_equipment_build(index: int) -> void`
+- `_apply_equipment_build(index: int) -> void`
+- `_build_slot_is_empty(index: int) -> bool`
+- `_consume_or_arm_confirmation(action: String, index: int, button_text: String) -> bool`
+- `_on_build_preset_confirm_timeout(expected_key: String) -> void`
+- `_disarm_build_preset_confirmation() -> void`
+- `_refresh_build_preset_rows() -> void`
+- `_set_build_preset_status(text: String) -> void`
 - `_build_control_binding_row(action: String, label_text: String) -> Control`
 - `_add_footer_hint(parent: HBoxContainer, key_text: String, action_text: String) -> void`
 - `_make_rule() -> ColorRect`
