@@ -105,21 +105,6 @@ func get_equipment_state() -> Dictionary:
 	return equipped.duplicate()
 
 
-func get_equipped_bone_defs() -> Array:
-	var defs: Array = []
-	for slot_id in equipped:
-		var bone_id: String = str(equipped[slot_id])
-		var definition: Dictionary = BoneRulesService.definition_for(bone_id).duplicate(true)
-		if definition.is_empty():
-			continue
-		if str(slot_id) == EquipmentRulesService.SLOT_TORSO:
-			definition["slot"] = "body"
-		else:
-			definition["slot"] = str(slot_id)
-		defs.append(definition)
-	return defs
-
-
 func get_swap_count() -> int:
 	return equip_swaps
 
@@ -163,7 +148,25 @@ func _slot_for_request(bone_id: String, target_slot: String = "") -> String:
 	var normalized_target := EquipmentRulesService.normalize_slot_id(target_slot)
 	if normalized_target != "" and EquipmentRulesService.can_equip_bone_in_slot(bone_id, normalized_target):
 		return normalized_target
-	return EquipmentRulesService.slot_for_bone(bone_id)
+	return _first_open_compatible_slot(bone_id)
+
+
+# A bilateral bone (generic legs/right_arm data without a limb_key) is
+# compatible with two slots, e.g. [right_leg, left_leg]. Without an explicit
+# target_slot, EquipmentRulesService.slot_for_bone() (a pure, state-free
+# function) always returns the first one, so cycling equip-next with two
+# such bones could never reach the second side. This picks the first
+# compatible slot that isn't already occupied, using this component's own
+# `equipped` state, and only falls back to the static first slot when every
+# compatible slot is taken (matching the previous swap behavior).
+func _first_open_compatible_slot(bone_id: String) -> String:
+	var compatible: Array[String] = EquipmentRulesService.compatible_slots_for_bone(bone_id)
+	for slot in compatible:
+		if str(equipped.get(slot, "")) == "":
+			return slot
+	if not compatible.is_empty():
+		return compatible[0]
+	return ""
 
 
 func _can_equip_slot(slot: String, bone_id: String) -> bool:

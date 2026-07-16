@@ -18,6 +18,7 @@ INVENTORY_UI = ROOT / "scripts" / "player_inventory_ui.gd"
 ITEM_TILE = ROOT / "scripts" / "ui_bone_item.gd"
 SLOT_WIDGET = ROOT / "scripts" / "ui_bone_slot.gd"
 EQUIPMENT_RULES = ROOT / "scripts" / "equipment_rules_service.gd"
+EQUIPMENT_COMPONENT = ROOT / "scripts" / "player_equipment_component.gd"
 
 CANONICAL_SLOTS = ["head", "torso", "left_arm", "right_arm", "left_leg", "right_leg"]
 
@@ -150,8 +151,27 @@ def check_body_slot_contract(
     if '"body": "torso"' not in equipment_rules:
         errors.append("legacy body alias must normalize to torso")
     if '"legs": "right_leg"' not in equipment_rules:
-        errors.append("legacy legs alias must normalize to right_leg")
+        errors.append("legacy legs alias must normalize to right_leg (single-value display default only)")
 
+    return errors
+
+
+def check_bilateral_equip_contract(equipment_component: str) -> list[str]:
+    """A bilateral bone (generic legs/right_arm data) is compatible with two
+    slots. Without an explicit target_slot, resolving to a static "first"
+    slot every time means a second bone of the same kind could never reach
+    the other side (verified in Godot 4.7 headless: two generic leg_bone
+    pieces equipped via equip-next both landed on right_leg before this
+    fix). This only checks the fix's source markers are present -- it
+    cannot drive the actual scene tree; see docs/inventory_flow.md for the
+    real runtime verification steps and evidence."""
+    errors: list[str] = []
+    if "func _first_open_compatible_slot(bone_id: String) -> String:" not in equipment_component:
+        errors.append("missing _first_open_compatible_slot helper for bilateral slot resolution")
+    if "return _first_open_compatible_slot(bone_id)" not in equipment_component:
+        errors.append("_slot_for_request must resolve unclaimed bilateral slots via _first_open_compatible_slot")
+    if "str(equipped.get(slot, \"\")) == \"\"" not in equipment_component:
+        errors.append("_first_open_compatible_slot must check actual equipped state, not just return the first compatible slot")
     return errors
 
 
@@ -171,6 +191,7 @@ def main() -> int:
     item_tile = read(ITEM_TILE)
     slot_widget = read(SLOT_WIDGET)
     equipment_rules = read(EQUIPMENT_RULES)
+    equipment_component = read(EQUIPMENT_COMPONENT)
 
     print("Inventory stack contract validation")
     print("-----------------------------------")
@@ -191,10 +212,17 @@ def main() -> int:
         print("  [PASS] Inventory exposes six canonical body slots through shared rules.")
         print("  [PASS] Slot drops use shared compatibility instead of UI-local rules.")
 
+    bilateral_errors = check_bilateral_equip_contract(equipment_component)
+    if bilateral_errors:
+        for error in bilateral_errors:
+            print(f"  [ERROR] {error}")
+    else:
+        print("  [PASS] Equip-next resolves bilateral bones (legs/arms) to an open slot, not always the same side.")
+
     case_errors = run_cases()
 
     print("-----------------------------------")
-    errors = static_errors + slot_errors + case_errors
+    errors = static_errors + slot_errors + bilateral_errors + case_errors
     if errors:
         print(f"Result: FAIL ({len(errors)} error(s)).")
         return 1

@@ -100,20 +100,34 @@ static func slot_for_bone(bone_id: String) -> String:
 
 
 static func compatible_slots_for_bone(bone_id: String) -> Array[String]:
+	# Build the result via an explicitly declared Array[String] and
+	# .append(), not array literals/casts: a plain `[a, b]` literal (or
+	# `[a, b] as Array[String]`) built inside this function does not
+	# reliably carry Array[String] runtime typing across a static-function
+	# call from another class, which raised "Trying to assign an array of
+	# type Array to a variable of type Array[String]" for every caller
+	# outside this file that assigned the return value to a typed local.
+	var result: Array[String] = []
 	var definition: Dictionary = BoneDatabase.get_def(bone_id)
 	if definition.is_empty():
 		definition = generated_limb_definition_for(bone_id)
 	if definition.is_empty():
-		return []
+		return result
 
 	var raw_slot := str(definition.get("slot", ""))
 	if raw_slot == "legs":
-		return [SLOT_RIGHT_LEG, SLOT_LEFT_LEG]
+		result.append(SLOT_RIGHT_LEG)
+		result.append(SLOT_LEFT_LEG)
+		return result
 	if not definition.has("limb_key") and raw_slot == SLOT_RIGHT_ARM:
-		return [SLOT_RIGHT_ARM, SLOT_LEFT_ARM]
+		result.append(SLOT_RIGHT_ARM)
+		result.append(SLOT_LEFT_ARM)
+		return result
 
 	var normalized := normalize_slot_id(raw_slot)
-	return [normalized] if normalized != "" else []
+	if normalized != "":
+		result.append(normalized)
+	return result
 
 
 static func can_equip_bone_in_slot(bone_id: String, slot_id: String) -> bool:

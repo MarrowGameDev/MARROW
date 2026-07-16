@@ -12,16 +12,12 @@ from typing import Iterable
 
 
 CANONICAL_SLOTS = {"head", "torso", "right_arm", "left_arm", "right_leg", "left_leg"}
+# Mirrors EquipmentRulesService.LEGACY_SLOT_ALIASES. Only aliases with a real
+# consumer in data/bones/*.tres belong here (verified by grep across
+# scripts/, data/, docs/); do not add speculative aliases back.
 LEGACY_SLOT_ALIASES = {
     "body": "torso",
-    "ribs": "torso",
-    "ribcage": "torso",
-    "chest": "torso",
     "legs": "right_leg",
-    "arm_left": "left_arm",
-    "arm_right": "right_arm",
-    "leg_left": "left_leg",
-    "leg_right": "right_leg",
 }
 VALID_SLOTS = CANONICAL_SLOTS | set(LEGACY_SLOT_ALIASES)
 VALID_WEIGHT_CLASSES = {"light", "medium", "heavy"}
