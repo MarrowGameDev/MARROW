@@ -30,8 +30,10 @@ class Report:
 
 
 SCRIPT_CHECKS = [
+    Check("preview base size constant", "const INVENTORY_PREVIEW_BASE_SIZE := Vector2i(210, 276)"),
     Check("preview container variable", "var inventory_preview_container: SubViewportContainer = null"),
     Check("preview viewport variable", "var inventory_preview_viewport: SubViewport = null"),
+    Check("preview equipment snapshot variable", "var inventory_preview_equipment_snapshot: Dictionary = {}"),
     Check("preview rig variable", "var inventory_preview_rig: ModularSkeletonRig = null"),
     Check("preview root variable", "var inventory_preview_root: Node3D = null"),
     Check("inventory changed event connected", "GameEvents.inventory_changed.connect(_on_inventory_changed)", "setup"),
@@ -41,10 +43,11 @@ SCRIPT_CHECKS = [
     Check("equipment notification syncs preview", "sync_preview()", "notify_equipment_changed"),
     Check("preview uses SubViewportContainer", "SubViewportContainer.new()", "_build_character_preview_panel"),
     Check("preview container is named", 'inventory_preview_container.name = "CharacterPreview"', "_build_character_preview_panel"),
+    Check("preview container has minimum size", "inventory_preview_container.custom_minimum_size = _inventory_preview_base_size()", "_build_character_preview_panel"),
     Check("preview container stretches", "inventory_preview_container.stretch = true", "_build_character_preview_panel"),
     Check("preview ignores mouse", "inventory_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE", "_build_character_preview_panel"),
     Check("preview uses SubViewport", "SubViewport.new()", "_build_character_preview_panel"),
-    Check("preview has fixed base size", "inventory_preview_viewport.size = Vector2i(210, 276)", "_build_character_preview_panel"),
+    Check("preview has base viewport size", "inventory_preview_viewport.size = INVENTORY_PREVIEW_BASE_SIZE", "_build_character_preview_panel"),
     Check("preview uses isolated World3D", "inventory_preview_viewport.world_3d = World3D.new()", "_build_character_preview_panel"),
     Check("preview renders when visible", "SubViewport.UPDATE_WHEN_VISIBLE", "_build_character_preview_panel"),
     Check("preview scene is inside viewport", "inventory_preview_viewport.add_child(preview_scene)", "_build_character_preview_panel"),
@@ -54,6 +57,7 @@ SCRIPT_CHECKS = [
     Check("preview rig holder exists", 'rig_holder.name = "PreviewRigHolder"', "_build_character_preview_panel"),
     Check("preview rig is modular rig", "inventory_preview_rig = ModularSkeletonRig.new()", "_build_character_preview_panel"),
     Check("preview rig has progression enabled", "inventory_preview_rig.set_body_progression_enabled(true)", "_build_character_preview_panel"),
+    Check("preview snapshot resets with rig", "inventory_preview_equipment_snapshot = {}", "_build_character_preview_panel"),
     Check("preview camera exists", "Camera3D.new()", "_build_character_preview_panel"),
     Check("preview camera is current", "camera.current = true", "_build_character_preview_panel"),
     Check("preview defers initial sync", 'call_deferred("sync_preview")', "_build_character_preview_panel"),
@@ -63,11 +67,19 @@ SCRIPT_CHECKS = [
     Check("preview left wall exists", '"PreviewLeftWall"', "_build_preview_room"),
     Check("preview right wall exists", '"PreviewRightWall"', "_build_preview_room"),
     Check("sync guards rig validity", "is_instance_valid(inventory_preview_rig)", "sync_preview"),
+    Check("sync snapshots equipment", "var next_snapshot := _preview_equipment_snapshot()", "sync_preview"),
+    Check("sync skips unchanged equipment", "_preview_snapshot_matches(next_snapshot)", "sync_preview"),
     Check("sync clears previous slots", "inventory_preview_rig.unequip_slot(str(slot_id))", "sync_preview"),
     Check("sync reads bone definitions through service", "BoneRulesService.definition_for(bone_id)", "sync_preview"),
     Check("sync equips preview rig", "inventory_preview_rig.equip_bone(bone_id, bone_def)", "sync_preview"),
+    Check("sync only commits applied slots", "applied_snapshot[slot] = bone_id", "sync_preview"),
+    Check("sync caches snapshot after the apply loop, not before", "inventory_preview_equipment_snapshot = applied_snapshot", "sync_preview"),
+    Check("preview snapshot helper exists", "func _preview_equipment_snapshot() -> Dictionary:"),
+    Check("preview snapshot match helper exists", "func _preview_snapshot_matches(next_snapshot: Dictionary) -> bool:"),
     Check("paper doll contains preview panel", "doll.add_child(_build_character_preview_panel())", "_build_paper_doll"),
-    Check("responsive layout resizes preview", "inventory_preview_container.size = Vector2(210.0, 276.0) * doll_scale", "_apply_paper_doll_responsive_layout"),
+    Check("responsive layout uses base preview size", "var preview_size := _inventory_preview_base_size() * doll_scale", "_apply_paper_doll_responsive_layout"),
+    Check("responsive layout sets preview minimum", "inventory_preview_container.custom_minimum_size = preview_size", "_apply_paper_doll_responsive_layout"),
+    Check("preview base size helper exists", "func _inventory_preview_base_size() -> Vector2:"),
 ]
 
 DOC_CHECKS = [
@@ -121,6 +133,23 @@ def run_script_checks(script_text: str, report: Report) -> None:
         report.error("preview should create exactly one SubViewport")
     if preview_function.count("Camera3D.new()") != 1:
         report.error("preview should create exactly one preview camera")
+
+    sync_function = extract_function(script_text, "sync_preview", report)
+    apply_index = sync_function.find("applied_snapshot[slot] = bone_id")
+    commit_index = sync_function.find("inventory_preview_equipment_snapshot = applied_snapshot")
+    if apply_index == -1 or commit_index == -1:
+        report.error("sync_preview must build and commit applied_snapshot")
+    elif commit_index < apply_index:
+        report.error(
+            "sync_preview commits inventory_preview_equipment_snapshot before "
+            "applying bone definitions; a slot with an unresolved definition "
+            "would be cached as synced even though it was never equipped"
+        )
+    if "_sync_preview_viewport_size" in script_text:
+        report.error(
+            "manual SubViewport resize was reintroduced; "
+            "inventory_preview_container.stretch already resizes it"
+        )
 
     if "inventory_preview_viewport.world_3d = get_viewport().world_3d" in script_text:
         report.error("preview must not reuse the playable viewport world")

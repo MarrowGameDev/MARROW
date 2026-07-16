@@ -69,6 +69,10 @@ modificar controles desde la seccion de settings.
 - Lee datos mediante metodos publicos del player.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
+- Cachea el snapshot de equipamiento ya renderizado para evitar recrear piezas
+  del rig preview cuando llegan eventos redundantes.
+- Sincroniza el tamano del `SubViewport` con el container responsive y conserva
+  un minimo de 1 px por eje durante relayouts.
 
 ### Validacion estatica del preview
 
@@ -206,6 +210,26 @@ En `TESTING ENVIRONMENT`:
 8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
    solo las partes recuperadas.
 
+### Pruebas manuales especificas del preview 3D (pendientes de ejecutar en editor)
+
+Godot esta disponible en este equipo (ver `docs/p0_runtime_validation_suite.md`
+para el procedimiento headless), pero estas pruebas requieren un humano
+observando el render y no se pueden confirmar solo con validadores de texto:
+
+1. Equipar una pieza y confirmar que el preview la muestra sin re-crear el
+   rig completo (sin parpadeo de todas las partes al equipar solo una).
+2. Desequipar esa pieza y confirmar que desaparece del preview.
+3. Abrir y cerrar el inventario varias veces seguidas con el mismo
+   equipamiento y confirmar que no hay parpadeo ni nodos duplicados (el
+   `sync_preview()` cacheado deberia omitir el re-render).
+4. Redimensionar la ventana o cambiar de resolucion (1280x720, 1366x768,
+   1920x1080, ultrawide) con el inventario abierto y confirmar que el
+   preview no queda en blanco ni con tamano cero.
+5. Si alguna pieza no aparece en el preview inmediatamente despues de
+   equipar, volver a abrir/cerrar el inventario y confirmar que aparece (el
+   fix de esta sesion depende de que sync_preview() reintente slots cuya
+   definicion no se resolvio en el primer intento).
+
 ## Historial de cambios
 
 - 2026-07-14: Se documento el flujo actual. El inventario ya usa
@@ -235,6 +259,28 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
+- 2026-07-15: El preview 3D cachea el equipamiento ya renderizado y omite syncs
+  redundantes cuando `equipped` no cambio desde el ultimo `sync_preview()`.
+  Esto evita reconstruir las piezas del rig en cada apertura del inventario
+  cuando el equipamiento no cambio.
+- 2026-07-15 (correccion): la entrada anterior tambien agrego un
+  redimensionamiento manual de `SubViewport` en el layout responsive
+  (`_sync_preview_viewport_size()`), revirtiendo sin decirlo la decision del
+  2026-07-14 de arriba. Se elimino de nuevo: `inventory_preview_container`
+  usa `stretch = true`, por lo que `SubViewportContainer` ya redimensiona su
+  unico `SubViewport` hijo automaticamente cuando el container cambia de
+  tamano. No se encontro evidencia de un render con tamano cero causado por
+  esto; si aparece un bug concreto de tamano, investigar la causa raiz antes
+  de reintroducir un resize manual una tercera vez.
+- 2026-07-15 (correccion): `sync_preview()` marcaba el snapshot de
+  equipamiento como sincronizado ANTES de intentar equipar cada pieza en el
+  rig de preview. Si `BoneRulesService.definition_for(bone_id)` devolvia un
+  diccionario vacio para alguna pieza (definicion todavia no resuelta), esa
+  pieza quedaba cacheada como "ya renderizada" sin haberse dibujado nunca, y
+  llamadas posteriores a `sync_preview()` con el mismo equipamiento no
+  reintentaban esa pieza. Ahora el snapshot solo incluye los slots donde la
+  definicion se aplico con exito, y se asigna despues del loop de equipar,
+  no antes.
 - 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
   agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
   hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
