@@ -196,7 +196,45 @@ func show_bone_info(bone_id: String) -> void:
 	var text := BoneRulesService.quality_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id)) + "]\n"
 	text += BoneRulesService.effect_text_for(bone_id)
 	text += BoneRulesService.description_for(bone_id)
+	text += _bone_comparison_text(bone_id)
 	hover_info_label.text = text
+
+
+# Compares against whatever is equipped in the same side/slot the hovered
+# bone would occupy (slot_for_bone's default side for a bilateral bone).
+# Only compares stats that actually exist on the player
+# (move_speed/attack_range/attack_damage/max_health) -- no defense, weight,
+# or other stat this project does not have.
+func _bone_comparison_text(bone_id: String) -> String:
+	var slot := EquipmentRulesService.slot_for_bone(bone_id)
+	if slot == "":
+		return ""
+	var equipped_id := get_equipped_bone_for_slot(slot)
+	if equipped_id == "" or equipped_id == bone_id:
+		return ""
+
+	var candidate: Dictionary = BoneRulesService.adjusted_player_bonus_for(bone_id)
+	var current: Dictionary = BoneRulesService.adjusted_player_bonus_for(equipped_id)
+	var deltas := {
+		"Speed": float(candidate.get("move_speed", 0.0)) - float(current.get("move_speed", 0.0)),
+		"Reach": float(candidate.get("attack_range", 0.0)) - float(current.get("attack_range", 0.0)),
+		"Damage": float(candidate.get("attack_damage", 0.0)) - float(current.get("attack_damage", 0.0)),
+		"HP": float(candidate.get("max_health", 0.0)) - float(current.get("max_health", 0.0)),
+	}
+
+	var text := "\nvs equipped " + BoneRulesService.display_name_with_slot(equipped_id) + ": "
+	var wrote_any := false
+	for label in ["Speed", "Reach", "Damage", "HP"]:
+		var value: float = deltas[label]
+		if absf(value) < 0.001:
+			continue
+		if wrote_any:
+			text += ", "
+		text += label + " " + ("+%.1f" % value if value > 0.0 else "%.1f" % value)
+		wrote_any = true
+	if not wrote_any:
+		text += "no stat change"
+	return text
 
 
 func clear_bone_info() -> void:
