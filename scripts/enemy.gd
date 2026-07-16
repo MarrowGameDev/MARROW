@@ -1761,8 +1761,17 @@ func _set_collision_enabled(enabled: bool) -> void:
 	collision_shape.set_deferred("disabled", not enabled)
 
 
+# Vector3(sin(rotation.y), 0, cos(rotation.y)) is this enemy's own
+# convention for "forward" from yaw (see _turn_toward's
+# rotation.y = atan2(facing_direction.x, facing_direction.z)), but rotation.y
+# is LOCAL to this node's parent while callers like _is_player_behind()
+# compare it against global_position. global_transform.basis.z is the exact
+# global-space equivalent of that same formula (Godot's Y-axis Basis maps
+# local +Z to (sin(yaw), 0, cos(yaw)) before any parent transform is
+# applied), so it stays correct if this enemy is ever parented under a
+# rotated node.
 func _facing_from_rotation() -> Vector3:
-	return Vector3(sin(rotation.y), 0.0, cos(rotation.y)).normalized()
+	return global_transform.basis.z.normalized()
 
 
 # Polish: a quick squash-and-recover so a surviving hit has some weight.
