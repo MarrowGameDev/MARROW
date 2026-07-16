@@ -304,6 +304,14 @@ En `TESTING ENVIRONMENT`:
 9. Guardar un build en Settings, modificar equipo y aplicar el build guardado.
 10. Intentar aplicar un build que necesita dos copias del mismo hueso teniendo
     solo una copia; debe mostrar error y no dejar cambios parciales.
+11. Presionar Apply una vez y confirmar que el boton cambia a "Confirm?" y el
+    equipo NO cambia todavia; presionar de nuevo dentro de unos segundos y
+    confirmar que ahora si aplica. Presionar Apply una vez y esperar mas de
+    4 segundos sin presionar de nuevo; confirmar que el boton vuelve a decir
+    "Apply" y no paso nada.
+12. Guardar sobre un build ya ocupado y confirmar que tambien pide una
+    segunda pulsacion; guardar sobre un build vacio y confirmar que NO la
+    pide (aplica directo).
 
 ## Historial de cambios
 
@@ -392,3 +400,19 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-15: `BoneSlotWidget` pinta el borde del slot en verde/rojo
   mientras un drag lo sobrevuela, segun `can_equip_bone_in_slot`, y lo
   restaura en `NOTIFICATION_DRAG_END`.
+- 2026-07-15 (correccion): `PlayerEquipmentBuildsComponent.apply_build`
+  aplicaba el estado objetivo y solo reportaba si no coincidia del todo;
+  nunca deshacia el cambio parcial. Ahora guarda un snapshot del
+  equipamiento antes de aplicar y reaplica ese snapshot si la
+  verificacion post-apply falla. Verificado en Godot 4.7 headless con 5
+  escenarios (build valido, build vacio, pieza no disponible, slot
+  incompatible, y un rollback forzado): el estado final tras el rollback
+  forzado coincidio exactamente con el estado previo a la aplicacion. De
+  paso se encontro y corrigio un bug preexistente desde el primer commit
+  de esta rama: `_summary_for_state` llamaba
+  `BoneRulesService.display_name` (nunca existio), lo cual rompia la
+  compilacion de GDScript de `player.gd` completo -- el validador estatico
+  nunca pudo detectarlo porque no ejecuta GDScript.
+- 2026-07-15: Guardar sobre un build no vacio y Aplicar un build ahora
+  requieren una segunda pulsacion del mismo boton dentro de 4 segundos
+  para confirmar (sin dialogo nativo, mismo estilo DIY del resto de la UI).
