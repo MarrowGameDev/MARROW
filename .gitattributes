@@ -1,0 +1,31 @@
+# Repository text normalization policy.
+#
+# This file defines future checkout/commit behavior only; it is not a request to
+# normalize the full repository in this branch.
+* text=auto
+
+# Godot text assets should stay diffable and stable across Windows/macOS/Linux.
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.import text eol=lf
+project.godot text eol=lf
+
+# Documentation and CI files are edited by humans and automation.
+.gitattributes text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Binary/runtime assets must never be normalized as text.
+*.glb binary
+*.gltf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ogg binary
+*.wav binary
+*.mp3 binary
+*.pdf binary

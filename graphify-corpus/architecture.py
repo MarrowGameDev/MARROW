@@ -3622,6 +3622,46 @@ class TestingEnvironment:
         """GDScript function: _update_status() -> void"""
         pass
 
+    def gd_func__cycle_validation_guide(self):
+        """GDScript function: _cycle_validation_guide(direction: int) -> void"""
+        pass
+
+    def gd_func__current_validation_guide_text(self):
+        """GDScript function: _current_validation_guide_text() -> String"""
+        pass
+
+    def gd_func__begin_notes_editing(self):
+        """GDScript function: _begin_notes_editing() -> void"""
+        pass
+
+    def gd_func__cancel_notes_editing(self):
+        """GDScript function: _cancel_notes_editing() -> void"""
+        pass
+
+    def gd_func__on_notes_submitted(self):
+        """GDScript function: _on_notes_submitted(text: String) -> void"""
+        pass
+
+    def gd_func__runtime_evidence_snapshot(self):
+        """GDScript function: _runtime_evidence_snapshot() -> Dictionary"""
+        pass
+
+    def gd_func__log_validation_result(self):
+        """GDScript function: _log_validation_result(result: String) -> void"""
+        pass
+
+    def gd_func__append_log_entry_to_file(self):
+        """GDScript function: _append_log_entry_to_file(entry: Dictionary) -> void"""
+        pass
+
+    def gd_func__count_validation_results(self):
+        """GDScript function: _count_validation_results(result: String) -> int"""
+        pass
+
+    def gd_func__validation_log_summary_text(self):
+        """GDScript function: _validation_log_summary_text() -> String"""
+        pass
+
     def uses_game_event_enemy_defeated(self):
         """Uses GameEvents.enemy_defeated."""
         pass

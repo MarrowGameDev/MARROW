@@ -4,6 +4,11 @@ const MAIN_MENU_PATH: String = "res://scenes/main_menu.tscn"
 const PLAYER_SCENE: PackedScene = preload("res://scenes/player.tscn")
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
 
+# Human-reviewable evidence log for the P0 checks below. Written under
+# user:// (outside the repo) because it is per-session QA evidence, not
+# source. See docs/p0_runtime_validation_suite.md for how to retrieve it.
+const VALIDATION_LOG_PATH: String = "user://p0_validation_log.txt"
+
 @export var spawn_player_on_ready: bool = true
 @export var spawn_initial_enemies: bool = true
 @export var keep_enemy_respawn_disabled: bool = true
@@ -15,6 +20,66 @@ var live_enemies: Array[Node] = []
 var spawn_cursor: int = 0
 var enemy_serial: int = 0
 var status_label: Label = null
+var validation_guide_index: int = 0
+
+var notes_edit: LineEdit = null
+var notes_editing: bool = false
+var observed_notes: String = ""
+var validation_log: Array[Dictionary] = []
+
+
+const P0_VALIDATION_GUIDES: Array[Dictionary] = [
+	{
+		"title": "Movement, camera, and jitter",
+		"setup": "Use the walls, ramp, and open ground with the player in normal control.",
+		"steps": [
+			"Walk, sprint, stop, jump, and rotate the camera near tall and short walls.",
+			"Open and close inventory, then repeat movement and camera rotation.",
+			"Attack while moving and while idle, watching the body and camera follow.",
+		],
+		"expected": "No persistent camera/body jitter, no teleport, no stuck mouse capture, and control returns after inventory.",
+	},
+	{
+		"title": "Inventory, equipment, and preview",
+		"setup": "Open inventory with the seeded normal limbs and extra comparison bones.",
+		"steps": [
+			"Equip torso, arms, and legs, then deselect or unequip one piece at a time.",
+			"Confirm duplicate bones remain counted and equipped copies are hidden from carried tiles.",
+			"Watch the preview viewport while equipping and reopening inventory.",
+		],
+		"expected": "The preview stays isolated, reflects equipped parts, and does not duplicate nodes after reopen.",
+	},
+	{
+		"title": "Pickups, drops, and enemy profiles",
+		"setup": "Spawn normal, gorilla, lizard, ranged, and dummy enemies with number keys.",
+		"steps": [
+			"Defeat or damage each profile enough to observe drops or limb reactions.",
+			"Collect available drops and confirm inventory updates without reopening.",
+			"Remove latest enemy with Backspace and respawn to confirm scene recovery.",
+		],
+		"expected": "Drops stay slot-aware, pickups do not duplicate unexpectedly, and removed enemies do not leave stale UI state.",
+	},
+	{
+		"title": "Backstab runtime geometry",
+		"setup": "Use a dummy or normal enemy and approach from front, sides, and behind.",
+		"steps": [
+			"Try stealth finish from the front and both lateral angles.",
+			"Rotate or respawn enemies at different markers and repeat behind checks.",
+			"Confirm regular attack still works when stealth finish is unavailable.",
+		],
+		"expected": "Front and side attempts fail, behind succeeds, and no duplicate damage or stuck enemy state appears.",
+	},
+	{
+		"title": "Rig and body progression",
+		"setup": "Use seeded body parts and the RigPosePlatform area.",
+		"steps": [
+			"Observe head-only, torso, arms, and legs progression while equipping pieces.",
+			"Move, jump, crawl if available, and attack after each equipment stage.",
+			"Compare the world rig with the inventory preview state.",
+		],
+		"expected": "Sockets match equipped state, left/right parts are not swapped, and animation remains stable.",
+	},
+]
 
 
 func _ready() -> void:
@@ -38,7 +103,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_ESCAPE:
-				get_tree().change_scene_to_file(MAIN_MENU_PATH)
+				if notes_editing:
+					_cancel_notes_editing()
+				else:
+					get_tree().change_scene_to_file(MAIN_MENU_PATH)
+			KEY_O:
+				if not notes_editing:
+					_begin_notes_editing()
+			KEY_P:
+				_log_validation_result("PASS")
+			KEY_F:
+				_log_validation_result("FAIL")
 			KEY_1:
 				if not dummy_only_mode:
 					_spawn_enemy_at_next_marker("normal")
@@ -62,6 +137,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				_remove_latest_enemy()
 			KEY_R:
 				get_tree().reload_current_scene()
+			KEY_F1:
+				_cycle_validation_guide(1)
+			KEY_F2:
+				_cycle_validation_guide(-1)
 
 
 func _build_world() -> void:
@@ -335,10 +414,21 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_bottom", 10)
 	panel.add_child(margin)
 
+	var content := VBoxContainer.new()
+	content.name = "TestingPanelContent"
+	margin.add_child(content)
+
 	status_label = Label.new()
 	status_label.name = "TestingStatusLabel"
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	margin.add_child(status_label)
+	content.add_child(status_label)
+
+	notes_edit = LineEdit.new()
+	notes_edit.name = "P0NotesEdit"
+	notes_edit.placeholder_text = "Observed result, then Enter to save (Esc to cancel)"
+	notes_edit.visible = false
+	notes_edit.text_submitted.connect(_on_notes_submitted)
+	content.add_child(notes_edit)
 
 
 func _update_status() -> void:
@@ -364,5 +454,139 @@ func _update_status() -> void:
 			status_label.text += "2 or 5: respawn dummy target\n"
 	else:
 		status_label.text += "1 Normal   2 Gorilla   3 Lizard   4 Ranged   5 Dummy\n"
+	status_label.text += "F1/F2: cycle P0 validation guide\n"
+	status_label.text += "O: type observed result   P: log PASS   F: log FAIL\n"
 	status_label.text += "Backspace: remove latest enemy   R: reset scene   Esc: menu\n"
 	status_label.text += "Edit EnemySpawnPoints in this scene to add/remove default enemy positions."
+	status_label.text += "\n\n" + _current_validation_guide_text()
+	status_label.text += "\n\n" + _validation_log_summary_text()
+
+
+func _cycle_validation_guide(direction: int) -> void:
+	if P0_VALIDATION_GUIDES.is_empty():
+		return
+	validation_guide_index = posmod(validation_guide_index + direction, P0_VALIDATION_GUIDES.size())
+	_update_status()
+
+
+func _current_validation_guide_text() -> String:
+	if P0_VALIDATION_GUIDES.is_empty():
+		return "P0 validation guide: no sections configured."
+
+	var guide: Dictionary = P0_VALIDATION_GUIDES[validation_guide_index]
+	var text := "P0 CHECK " + str(validation_guide_index + 1) + "/" + str(P0_VALIDATION_GUIDES.size()) + ": "
+	text += str(guide.get("title", "Unnamed")) + "\n"
+	text += "Setup: " + str(guide.get("setup", "n/a")) + "\n"
+	text += "Steps:\n"
+	var steps: Array = guide.get("steps", [])
+	for i in range(steps.size()):
+		text += "  " + str(i + 1) + ". " + str(steps[i]) + "\n"
+	text += "Expected: " + str(guide.get("expected", "n/a")) + "\n"
+	text += "Record: scene, resolution, enabled systems, observed result, and console errors."
+	return text
+
+
+func _begin_notes_editing() -> void:
+	notes_editing = true
+	notes_edit.text = observed_notes
+	notes_edit.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	notes_edit.grab_focus()
+
+
+func _cancel_notes_editing() -> void:
+	notes_editing = false
+	notes_edit.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _on_notes_submitted(text: String) -> void:
+	observed_notes = text
+	notes_editing = false
+	notes_edit.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_update_status()
+
+
+# Objective, machine-collected facts at the moment PASS/FAIL is logged. This
+# is not a substitute for the tester's own observation; it is the evidence
+# that accompanies it (AGENTS.md: "No afirmar que algo fue probado si solo se
+# inspecciono el codigo").
+func _runtime_evidence_snapshot() -> Dictionary:
+	var enemy_names: Array[String] = []
+	var alive_count: int = 0
+	for enemy in live_enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		enemy_names.append(str(enemy.name))
+		if bool(enemy.get("alive")):
+			alive_count += 1
+
+	var snapshot: Dictionary = {
+		"fps": Engine.get_frames_per_second(),
+		"physics_ticks_per_second": Engine.physics_ticks_per_second,
+		"mouse_mode": Input.mouse_mode,
+		"dummy_only_mode": dummy_only_mode,
+		"enemies_alive": alive_count,
+		"enemies_tracked": enemy_names,
+	}
+	if player != null and is_instance_valid(player):
+		snapshot["player_position"] = str(player.global_position)
+		snapshot["player_is_dead"] = player.get("is_dead")
+		if player.has_method("get_equipment_state"):
+			snapshot["player_equipment"] = player.call("get_equipment_state")
+	return snapshot
+
+
+func _log_validation_result(result: String) -> void:
+	if P0_VALIDATION_GUIDES.is_empty():
+		return
+	var guide: Dictionary = P0_VALIDATION_GUIDES[validation_guide_index]
+	var entry: Dictionary = {
+		"timestamp": Time.get_datetime_string_from_system(),
+		"guide_index": validation_guide_index + 1,
+		"title": str(guide.get("title", "Unnamed")),
+		"result": result,
+		"observed": observed_notes if not observed_notes.is_empty() else "(no notes typed with O)",
+		"evidence": _runtime_evidence_snapshot(),
+	}
+	validation_log.append(entry)
+	_append_log_entry_to_file(entry)
+	observed_notes = ""
+	_update_status()
+
+
+func _append_log_entry_to_file(entry: Dictionary) -> void:
+	var mode := FileAccess.READ_WRITE if FileAccess.file_exists(VALIDATION_LOG_PATH) else FileAccess.WRITE
+	var file := FileAccess.open(VALIDATION_LOG_PATH, mode)
+	if file == null:
+		push_warning("P0 validation log: could not open " + VALIDATION_LOG_PATH)
+		return
+	if mode == FileAccess.READ_WRITE:
+		file.seek_end()
+	file.store_line(
+		"=== " + str(entry.get("timestamp")) + " | P0 CHECK " + str(entry.get("guide_index"))
+		+ " | " + str(entry.get("title")) + " | " + str(entry.get("result")) + " ==="
+	)
+	file.store_line("Observed: " + str(entry.get("observed")))
+	file.store_line("Evidence: " + JSON.stringify(entry.get("evidence", {})))
+	file.store_line("")
+	file.close()
+
+
+func _count_validation_results(result: String) -> int:
+	var count: int = 0
+	for entry in validation_log:
+		if str(entry.get("result", "")) == result:
+			count += 1
+	return count
+
+
+func _validation_log_summary_text() -> String:
+	var text := "Session log: " + str(_count_validation_results("PASS")) + " PASS / "
+	text += str(_count_validation_results("FAIL")) + " FAIL (saved to " + VALIDATION_LOG_PATH + ")"
+	if not validation_log.is_empty():
+		var last: Dictionary = validation_log[validation_log.size() - 1]
+		text += "\nLast: CHECK " + str(last.get("guide_index")) + " " + str(last.get("result"))
+		text += " at " + str(last.get("timestamp"))
+	return text
