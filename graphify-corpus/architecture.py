@@ -2552,6 +2552,10 @@ class PlayerInventoryUI:
         """GDScript function: _build_character_preview_panel() -> Control"""
         pass
 
+    def gd_func__inventory_preview_base_size(self):
+        """GDScript function: _inventory_preview_base_size() -> Vector2"""
+        pass
+
     def gd_func__build_preview_room(self):
         """GDScript function: _build_preview_room(parent: Node3D) -> void"""
         pass
@@ -2562,6 +2566,14 @@ class PlayerInventoryUI:
 
     def gd_func_sync_preview(self):
         """GDScript function: sync_preview() -> void"""
+        pass
+
+    def gd_func__preview_equipment_snapshot(self):
+        """GDScript function: _preview_equipment_snapshot() -> Dictionary"""
+        pass
+
+    def gd_func__preview_snapshot_matches(self):
+        """GDScript function: _preview_snapshot_matches(next_snapshot: Dictionary) -> bool"""
         pass
 
     def gd_func__build_paper_doll(self):

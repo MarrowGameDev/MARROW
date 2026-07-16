@@ -2035,6 +2035,7 @@
 ### Constants
 - `INVENTORY_EMPTY_SLOT_SCRIPT`
 - `CONTROL_SETTINGS_PATH`
+- `INVENTORY_PREVIEW_BASE_SIZE`
 - `CONTROL_BINDINGS`
 
 ### Key Variables
@@ -2064,6 +2065,7 @@
 - `inventory_preview_area`
 - `inventory_preview_container`
 - `inventory_preview_viewport`
+- `inventory_preview_equipment_snapshot`
 - `inventory_details_panel`
 - `inventory_paper_doll`
 - `inventory_footer`
@@ -2077,7 +2079,6 @@
 - `control_rows`
 - `control_labels`
 - `control_buttons`
-- `rebinding_action`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2117,9 +2118,12 @@
 - `_make_inventory_style(bg: Color, border: Color, border_width: int = 1, radius: int = 0) -> StyleBoxFlat`
 - `_make_empty_inventory_slot() -> Control`
 - `_build_character_preview_panel() -> Control`
+- `_inventory_preview_base_size() -> Vector2`
 - `_build_preview_room(parent: Node3D) -> void`
 - `_make_preview_room_box(name: String, size: Vector3, position: Vector3, color: Color) -> MeshInstance3D`
 - `sync_preview() -> void`
+- `_preview_equipment_snapshot() -> Dictionary`
+- `_preview_snapshot_matches(next_snapshot: Dictionary) -> bool`
 - `_build_paper_doll() -> Control`
 - `_place_slot(doll: Control, slot: String, short_name: String, pos: Vector2, slot_size: Vector2) -> void`
 - `_begin_rebinding(action: String, button: Button) -> void`
