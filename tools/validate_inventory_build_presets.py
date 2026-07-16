@@ -78,6 +78,22 @@ def check_static_contract() -> list[str]:
         if fragment not in component:
             errors.append(f"missing build component fragment: {fragment}")
 
+    # A previous version of apply_build() only reported a failed apply; it
+    # never restored the pre-apply equipment, so a build that failed
+    # halfway left the player in a mixed old/new state. These fragments
+    # are the actual rollback contract, verified end to end in Godot 4.7
+    # headless (5 scenarios: valid, empty, missing piece, incompatible
+    # slot, forced rollback -- see docs/equipment_flow.md changelog for
+    # the exact evidence); this check only guards the source still has it.
+    rollback_fragments = [
+        "var previous_state := equipment_component.get_equipment_state()",
+        "_apply_validated_state(previous_state)",
+        "rolled back",
+    ]
+    for fragment in rollback_fragments:
+        if fragment not in component:
+            errors.append(f"missing rollback contract fragment: {fragment}")
+
     required_player_fragments = [
         "var equipment_builds_component: PlayerEquipmentBuildsComponent = null",
         "equipment_builds_component.setup(self, equipment_component)",
