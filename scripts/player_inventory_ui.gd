@@ -1022,17 +1022,25 @@ func sync_preview() -> void:
 	var next_snapshot := _preview_equipment_snapshot()
 	if _preview_snapshot_matches(next_snapshot):
 		return
-	inventory_preview_equipment_snapshot = next_snapshot.duplicate()
 
 	var current_slots: Array = inventory_preview_rig.equipped_ids.keys()
 	for slot_id in current_slots:
 		inventory_preview_rig.unequip_slot(str(slot_id))
 
+	# Only cache the slots that actually got a definition applied. If
+	# BoneRulesService can't resolve a bone_id yet, leaving it out of the
+	# cached snapshot means the next sync_preview() call still differs from
+	# `equipped` and retries that slot, instead of the cache falsely
+	# claiming the preview is already in sync with a piece it never drew.
+	var applied_snapshot: Dictionary = {}
 	for slot in next_snapshot:
 		var bone_id: String = str(next_snapshot[slot])
 		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id)
-		if not bone_def.is_empty():
-			inventory_preview_rig.equip_bone(bone_id, bone_def)
+		if bone_def.is_empty():
+			continue
+		inventory_preview_rig.equip_bone(bone_id, bone_def)
+		applied_snapshot[slot] = bone_id
+	inventory_preview_equipment_snapshot = applied_snapshot
 
 
 func _preview_equipment_snapshot() -> Dictionary:
