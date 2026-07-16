@@ -128,12 +128,13 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   el diccionario plano que el rig, stats y slots ya esperan.
 - Los campos de calidad (`quality_rank`, `quality_score`,
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
-  No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
-  balance lo defina explicitamente.
+  `BoneRulesService.player_stats_with_equipment()` aplica `quality_multiplier`
+  sobre los bonuses directos del jugador antes de agregarlos al resultado final.
 - Los modificadores porcentuales por calidad (`quality_damage_percent`,
   `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
-  `quality_weight_percent`) son metadata granular. Pueden alimentar balance
-  futuro, pero equipamiento no los aplica automaticamente todavia.
+  `quality_weight_percent`) son metadata granular. Damage, speed, health y
+  weight ya alimentan la formula determinista de stats; drop sigue pasivo hasta
+  que una regla de drops lo consuma.
 - Las calidades canonicas son ids en minuscula y sin acentos para datos:
   `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
   acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
@@ -154,7 +155,38 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
-  animacion procedural actual.
+  animacion procedural actual. `equipment_weight` contribuye a una penalizacion
+  suave de velocidad cuando la carga equipada supera el umbral libre.
+
+### Unidades Y Formula De Peso/Calidad (`BoneRulesService`)
+
+Todas las constantes viven en `scripts/bone_rules_service.gd`. No hay
+unidades fisicas reales (kg, etc.); son numeros de diseno adimensionales
+calibrados por prueba y error, igual que el resto del balance del proyecto.
+
+- `EQUIPMENT_FREE_WEIGHT := 3.0`: suma de `equipment_weight` (peso ya
+  ajustado por calidad) que el jugador carga sin penalizacion. Mismas
+  unidades que `weight`/`equipment_weight` en los `.tres` de hueso.
+- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06`: fraccion de
+  `move_speed` que se resta por cada unidad de `equipment_weight` que
+  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 5.0 de peso equipado con 3.0
+  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.06 = 0.12 (12%).
+- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30`: techo de la penalizacion de
+  velocidad (30%), sin importar cuanto peso adicional se equipe.
+- `PLAYER_STAT_PERCENT_LIMIT := 0.75`: techo/piso (+-75%) para la suma de
+  `quality_damage_percent`, `quality_speed_percent`, `quality_health_percent`
+  y `quality_weight_percent` acumulados por todas las piezas equipadas.
+- Orden de aplicacion en `player_stats_with_equipment()`: 1) sumar bonuses
+  planos (`move_speed_bonus`, etc.) ajustados por `quality_multiplier` por
+  pieza; 2) sumar y limitar los porcentajes de calidad; 3) calcular la
+  penalizacion de carga desde `equipment_weight` total; 4) aplicar
+  `(1 + porcentaje) * (1 - penalizacion_de_carga)` sobre velocidad, y
+  `(1 + porcentaje)` sobre dano/vida.
+- `attack_damage` y `max_health` se redondean una sola vez, despues de sumar
+  los bonuses de todas las piezas equipadas como floats. Redondear cada
+  pieza por separado antes de sumar inflaria el total con mas piezas
+  equipadas incluso si la suma real no cambia (ver comentario en
+  `adjusted_player_bonus_for`).
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
   combinaciones de piezas. No aplican bonuses automaticamente todavia.
@@ -265,3 +297,13 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: `BoneRulesService` aplica calidad, modificadores porcentuales y
+  carga equipada al calculo determinista de stats del jugador.
+- 2026-07-15: Se documentaron unidades y formula exacta de peso/calidad. Se
+  corrigio `aggregate_player_bonuses` para sumar bonuses de dano/vida como
+  floats y redondear una sola vez (antes cada pieza equipada redondeaba por
+  separado, inflando el total con mas piezas equipadas). Se expusieron
+  `equipment_weight`, `inventory_weight`, `load_speed_penalty` y los
+  `quality_*_percent` en `Player.get_inventory_stats_snapshot()`, que antes
+  se calculaban y se descartaban sin ningun consumidor. No se agrego
+  defensa, stamina ni movilidad: esos stats no existen en el proyecto.

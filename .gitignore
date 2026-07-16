@@ -26,6 +26,9 @@ logs/
 # the project graph, but do not commit the rebuild cache.
 graphify-out/cache/
 
+# Accidental nested Graphify output inside the corpus folder (see AGENTS.md).
+graphify-corpus/graphify-out/
+
 # OS and editor noise.
 .DS_Store
 Thumbs.db

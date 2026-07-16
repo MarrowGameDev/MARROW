@@ -71,7 +71,11 @@ Campos:
 - `quality_weight_percent`
 
 Los porcentajes son metadata pasiva. No se aplican automaticamente a combate,
-drops, inventario o equipamiento hasta que exista una regla dedicada.
+drops o inventario hasta que exista una regla dedicada. En equipamiento,
+`BoneRulesService.player_stats_with_equipment()` ya consume
+`quality_multiplier`, `quality_damage_percent`, `quality_speed_percent`,
+`quality_health_percent` y `quality_weight_percent` para calcular stats finales
+del jugador de forma determinista.
 
 ## Rareza
 
@@ -171,6 +175,18 @@ Campos legacy equivalentes:
 El inicio del juego usa `head_bone` como pieza fija y `max_health` base bajo.
 `torso_bone`, brazos y piernas pueden aumentar `max_health`; al subir el maximo,
 `PlayerStatsComponent` recupera esa diferencia de vida.
+
+Formula activa:
+- Los bonuses directos (`player_move_speed`, `player_attack_range`,
+  `player_attack_damage`, `player_max_health`) se escalan primero con
+  `quality_multiplier`.
+- `quality_damage_percent`, `quality_speed_percent` y
+  `quality_health_percent` se acumulan y se aplican al resultado base + bonus.
+- `quality_weight_percent` ajusta `equipment_weight` e `inventory_weight` por
+  pieza.
+- Si el peso equipado total supera el umbral libre, se aplica una penalizacion
+  suave y acotada sobre la velocidad de movimiento.
+- `quality_drop_percent` sigue reservado para reglas futuras de drops.
 
 ## Stats De Enemigos
 
