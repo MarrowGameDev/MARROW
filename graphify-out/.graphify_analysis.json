@@ -282,30 +282,6 @@
       "architecture_testingenvironment_gd_func_update_status"
     ],
     "8": [
-      "architecture_arenagoalmanager_depends_on_bonerulesservice",
-      "architecture_bonedatabase",
-      "architecture_bonedatabase_depends_on_bonedatacatalog",
-      "architecture_bonedatabase_depends_on_bonerulesservice",
-      "architecture_bonedatacatalog",
-      "architecture_bonedatacatalog_depends_on_bonedatabase",
-      "architecture_bonedatacatalog_depends_on_bonerulesservice",
-      "architecture_bonedefinition_depends_on_bonedatabase",
-      "architecture_bonedefinition_depends_on_bonerulesservice",
-      "architecture_bonerulesservice",
-      "architecture_bonerulesservice_depends_on_bonedatabase",
-      "architecture_droppickuprulesservice_depends_on_bonedatabase",
-      "architecture_enemy_depends_on_bonerulesservice",
-      "architecture_equipmentrulesservice_depends_on_bonedatabase",
-      "architecture_modularskeletonrig_depends_on_bonerulesservice",
-      "architecture_player_depends_on_bonerulesservice",
-      "architecture_playerequipmentcomponent_depends_on_bonerulesservice",
-      "architecture_playerinventoryui_depends_on_bonerulesservice",
-      "architecture_rationale_214",
-      "architecture_rationale_432",
-      "architecture_rationale_455",
-      "architecture_rationale_505"
-    ],
-    "9": [
       "architecture_arenagoalmanager_uses_game_event_camp_state_changed",
       "architecture_demoenemycamp",
       "architecture_demoenemycamp_gd_func_build_chest",
@@ -329,7 +305,7 @@
       "architecture_rationale_679",
       "architecture_rationale_691"
     ],
-    "10": [
+    "9": [
       "architecture_player",
       "architecture_player_gd_func_acquire_head_launch_target",
       "architecture_player_gd_func_align_player_body_pose_to_detached_torso_marker",
@@ -353,7 +329,7 @@
       "architecture_rationale_2008",
       "architecture_rationale_70"
     ],
-    "11": [
+    "10": [
       "architecture_proceduralplayeranimator",
       "architecture_proceduralplayeranimator_gd_func_animate_body",
       "architecture_proceduralplayeranimator_gd_func_animate_feet",
@@ -376,6 +352,29 @@
       "architecture_rationale_3444",
       "architecture_rationale_3464",
       "architecture_rationale_3468"
+    ],
+    "11": [
+      "architecture_arenagoalmanager_depends_on_bonerulesservice",
+      "architecture_bonedatabase",
+      "architecture_bonedatabase_depends_on_bonedatacatalog",
+      "architecture_bonedatabase_depends_on_bonerulesservice",
+      "architecture_bonedatacatalog",
+      "architecture_bonedatacatalog_depends_on_bonedatabase",
+      "architecture_bonedatacatalog_depends_on_bonerulesservice",
+      "architecture_bonedefinition_depends_on_bonedatabase",
+      "architecture_bonerulesservice",
+      "architecture_bonerulesservice_depends_on_bonedatabase",
+      "architecture_droppickuprulesservice_depends_on_bonedatabase",
+      "architecture_enemy_depends_on_bonerulesservice",
+      "architecture_equipmentrulesservice_depends_on_bonedatabase",
+      "architecture_modularskeletonrig_depends_on_bonerulesservice",
+      "architecture_player_depends_on_bonerulesservice",
+      "architecture_playerequipmentcomponent_depends_on_bonerulesservice",
+      "architecture_playerinventoryui_depends_on_bonerulesservice",
+      "architecture_rationale_214",
+      "architecture_rationale_432",
+      "architecture_rationale_455",
+      "architecture_rationale_505"
     ],
     "12": [
       "architecture_modularskeletonrig_depends_on_playerequipmentcomponent",
@@ -630,6 +629,20 @@
       "architecture_rt6_depends_on_modularskeletonrig"
     ],
     "26": [
+      "architecture_bonedatabase_depends_on_bonedefinition",
+      "architecture_bonedatacatalog_depends_on_bonedefinition",
+      "architecture_bonedefinition",
+      "architecture_bonedefinition_depends_on_bonerulesservice",
+      "architecture_bonedefinition_gd_func_to_clean_dictionary",
+      "architecture_bonedefinition_gd_func_to_legacy_dictionary",
+      "architecture_bonerulesservice_depends_on_bonedefinition",
+      "architecture_equipmentrulesservice_depends_on_bonedefinition",
+      "architecture_rationale_447",
+      "architecture_rationale_478",
+      "architecture_rationale_489",
+      "architecture_rationale_493"
+    ],
+    "27": [
       "architecture_boneitemtile_depends_on_equipmentrulesservice",
       "architecture_bonerulesservice_depends_on_equipmentrulesservice",
       "architecture_boneslotwidget_depends_on_equipmentrulesservice",
@@ -643,7 +656,7 @@
       "architecture_rationale_528",
       "architecture_testingenvironment_depends_on_equipmentrulesservice"
     ],
-    "27": [
+    "28": [
       "architecture_rationale_3978",
       "architecture_rationale_4110",
       "architecture_rationale_4131",
@@ -657,7 +670,7 @@
       "architecture_scenerigtest_contains_proceduralplayeranimator",
       "architecture_scenerigtest_contains_rigtestplayer"
     ],
-    "28": [
+    "29": [
       "architecture_arenagoalmanager_depends_on_droppickuprulesservice",
       "architecture_bone_depends_on_droppickuprulesservice",
       "architecture_bonerulesservice_depends_on_droppickuprulesservice",
@@ -669,19 +682,6 @@
       "architecture_player_depends_on_droppickuprulesservice",
       "architecture_rationale_218",
       "architecture_rationale_699"
-    ],
-    "29": [
-      "architecture_bonedatabase_depends_on_bonedefinition",
-      "architecture_bonedatacatalog_depends_on_bonedefinition",
-      "architecture_bonedefinition",
-      "architecture_bonedefinition_gd_func_to_clean_dictionary",
-      "architecture_bonedefinition_gd_func_to_legacy_dictionary",
-      "architecture_bonerulesservice_depends_on_bonedefinition",
-      "architecture_equipmentrulesservice_depends_on_bonedefinition",
-      "architecture_rationale_447",
-      "architecture_rationale_478",
-      "architecture_rationale_489",
-      "architecture_rationale_493"
     ],
     "30": [
       "architecture",
@@ -2459,10 +2459,10 @@
     "5": 0.07692307692307693,
     "6": 0.08,
     "7": 0.08333333333333333,
-    "8": 0.1645021645021645,
-    "9": 0.09523809523809523,
+    "8": 0.09523809523809523,
+    "9": 0.1038961038961039,
     "10": 0.1038961038961039,
-    "11": 0.1038961038961039,
+    "11": 0.17142857142857143,
     "12": 0.09523809523809523,
     "13": 0.10526315789473684,
     "14": 0.1286549707602339,
@@ -2477,10 +2477,10 @@
     "23": 0.15384615384615385,
     "24": 0.16666666666666666,
     "25": 0.24358974358974358,
-    "26": 0.2878787878787879,
-    "27": 0.24242424242424243,
-    "28": 0.3090909090909091,
-    "29": 0.23636363636363636,
+    "26": 0.21212121212121213,
+    "27": 0.2878787878787879,
+    "28": 0.24242424242424243,
+    "29": 0.3090909090909091,
     "30": 0.2222222222222222,
     "31": 0.2,
     "32": 0.2,
@@ -2952,7 +2952,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "rationale_for",
-      "note": "Bridges community 10 \u2192 community 5"
+      "note": "Bridges community 9 \u2192 community 5"
     },
     {
       "source": "Godot script: scripts/player_equipment_component.gd     class_name: PlayerEquipm",
@@ -2974,7 +2974,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "rationale_for",
-      "note": "Bridges community 11 \u2192 community 32"
+      "note": "Bridges community 10 \u2192 community 32"
     },
     {
       "source": "Godot scene: scenes/bone.tscn",
