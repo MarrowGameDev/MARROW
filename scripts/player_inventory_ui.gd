@@ -123,7 +123,10 @@ func set_open(open: bool) -> void:
 
 
 func cycle_category() -> void:
-	var categories: Array[String] = ["all", "right_arm", "legs", "body", "head", "settings"]
+	var categories: Array[String] = ["all"]
+	for slot_id in EquipmentRulesService.CANONICAL_BODY_SLOTS:
+		categories.append(str(slot_id))
+	categories.append("settings")
 	var index: int = categories.find(inventory_category)
 	if index < 0:
 		index = 0
@@ -173,6 +176,11 @@ func equip_bone(bone_id: String) -> void:
 		player.call("equip_bone", bone_id)
 
 
+func equip_bone_in_slot(bone_id: String, slot: String) -> void:
+	if player != null:
+		player.call("equip_bone", bone_id, slot)
+
+
 func unequip_slot(slot: String) -> void:
 	if player != null:
 		player.call("unequip_slot", slot)
@@ -188,7 +196,45 @@ func show_bone_info(bone_id: String) -> void:
 	var text := BoneRulesService.quality_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id)) + "]\n"
 	text += BoneRulesService.effect_text_for(bone_id)
 	text += BoneRulesService.description_for(bone_id)
+	text += _bone_comparison_text(bone_id)
 	hover_info_label.text = text
+
+
+# Compares against whatever is equipped in the same side/slot the hovered
+# bone would occupy (slot_for_bone's default side for a bilateral bone).
+# Only compares stats that actually exist on the player
+# (move_speed/attack_range/attack_damage/max_health) -- no defense, weight,
+# or other stat this project does not have.
+func _bone_comparison_text(bone_id: String) -> String:
+	var slot := EquipmentRulesService.slot_for_bone(bone_id)
+	if slot == "":
+		return ""
+	var equipped_id := get_equipped_bone_for_slot(slot)
+	if equipped_id == "" or equipped_id == bone_id:
+		return ""
+
+	var candidate: Dictionary = BoneRulesService.adjusted_player_bonus_for(bone_id)
+	var current: Dictionary = BoneRulesService.adjusted_player_bonus_for(equipped_id)
+	var deltas := {
+		"Speed": float(candidate.get("move_speed", 0.0)) - float(current.get("move_speed", 0.0)),
+		"Reach": float(candidate.get("attack_range", 0.0)) - float(current.get("attack_range", 0.0)),
+		"Damage": float(candidate.get("attack_damage", 0.0)) - float(current.get("attack_damage", 0.0)),
+		"HP": float(candidate.get("max_health", 0.0)) - float(current.get("max_health", 0.0)),
+	}
+
+	var text := "\nvs equipped " + BoneRulesService.display_name_with_slot(equipped_id) + ": "
+	var wrote_any := false
+	for label in ["Speed", "Reach", "Damage", "HP"]:
+		var value: float = deltas[label]
+		if absf(value) < 0.001:
+			continue
+		if wrote_any:
+			text += ", "
+		text += label + " " + ("+%.1f" % value if value > 0.0 else "%.1f" % value)
+		wrote_any = true
+	if not wrote_any:
+		text += "no stat change"
+	return text
 
 
 func clear_bone_info() -> void:
@@ -313,7 +359,7 @@ func _build_inventory_ui() -> void:
 	inventory_grid_margin.add_child(items_grid)
 
 	inventory_sort_label = Label.new()
-	inventory_sort_label.text = "Sort: Newest    Empty slots show room for new pieces"
+	inventory_sort_label.text = "Sort: Body slot, rarity, quality, name"
 	inventory_sort_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inventory_sort_label.add_theme_font_size_override("font_size", 16)
 	inventory_sort_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
@@ -428,10 +474,12 @@ func _build_inventory_tabs(parent: VBoxContainer) -> void:
 	parent.add_child(inventory_tabs_container)
 
 	_add_inventory_tab(inventory_tabs_container, "all", "All")
-	_add_inventory_tab(inventory_tabs_container, "right_arm", "Arms")
-	_add_inventory_tab(inventory_tabs_container, "legs", "Legs")
-	_add_inventory_tab(inventory_tabs_container, "body", "Torsos")
-	_add_inventory_tab(inventory_tabs_container, "head", "Heads")
+	_add_inventory_tab(inventory_tabs_container, "head", "Head")
+	_add_inventory_tab(inventory_tabs_container, "torso", "Torso")
+	_add_inventory_tab(inventory_tabs_container, "left_arm", "L. Arm")
+	_add_inventory_tab(inventory_tabs_container, "right_arm", "R. Arm")
+	_add_inventory_tab(inventory_tabs_container, "left_leg", "L. Leg")
+	_add_inventory_tab(inventory_tabs_container, "right_leg", "R. Leg")
 	_add_inventory_tab(inventory_tabs_container, "settings", "Settings")
 	_refresh_inventory_tabs()
 
@@ -1035,9 +1083,14 @@ func sync_preview() -> void:
 	var applied_snapshot: Dictionary = {}
 	for slot in next_snapshot:
 		var bone_id: String = str(next_snapshot[slot])
-		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id)
+		# Duplicate before mutating: definition_for() can return a cached
+		# shared dictionary, and the preview rig must not equip pieces
+		# under a non-canonical slot id (legacy defs may carry "body"
+		# instead of "torso").
+		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id).duplicate(true)
 		if bone_def.is_empty():
 			continue
+		bone_def["slot"] = EquipmentRulesService.normalize_slot_id(str(slot))
 		inventory_preview_rig.equip_bone(bone_id, bone_def)
 		applied_snapshot[slot] = bone_id
 	inventory_preview_equipment_snapshot = applied_snapshot
@@ -1086,11 +1139,13 @@ func _build_paper_doll() -> Control:
 	doll.add_child(ring)
 
 	doll.add_child(_build_character_preview_panel())
-	var equip_slot_size := Vector2(96, 96)
-	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 12), equip_slot_size)
-	_place_slot(doll, "right_arm", "R. Arm", Vector2(310, 12), equip_slot_size)
-	_place_slot(doll, "body", "Torso", Vector2(0, 128), equip_slot_size)
-	_place_slot(doll, "legs", "Legs", Vector2(310, 128), equip_slot_size)
+	var equip_slot_size := Vector2(88, 88)
+	_place_slot(doll, "head", "Head", Vector2(0, 0), equip_slot_size)
+	_place_slot(doll, "torso", "Torso", Vector2(318, 0), equip_slot_size)
+	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 104), equip_slot_size)
+	_place_slot(doll, "right_arm", "R. Arm", Vector2(318, 104), equip_slot_size)
+	_place_slot(doll, "left_leg", "L. Leg", Vector2(0, 208), equip_slot_size)
+	_place_slot(doll, "right_leg", "R. Leg", Vector2(318, 208), equip_slot_size)
 	return doll
 
 
@@ -1461,6 +1516,7 @@ func rebuild_item_tiles() -> void:
 		visible_counts[id] = int(visible_counts[id]) + 1
 
 	var shown := 0
+	visible_order.sort_custom(Callable(self, "_compare_inventory_items"))
 	for id in visible_order:
 		var tile := BoneItemTile.new()
 		tile.setup(id, self, int(visible_counts.get(id, 1)))
@@ -1475,10 +1531,11 @@ func rebuild_item_tiles() -> void:
 func _bone_matches_inventory_category(bone_id: String) -> bool:
 	if inventory_category == "all":
 		return true
-	var slot: String = EquipmentRulesService.slot_for_bone(bone_id)
-	if inventory_category == "right_arm":
-		return slot == "right_arm" or slot == "left_arm"
-	return slot == inventory_category
+	return EquipmentRulesService.inventory_filter_matches_bone(inventory_category, bone_id)
+
+
+func _compare_inventory_items(a: String, b: String) -> bool:
+	return EquipmentRulesService.compare_bones_for_inventory(a, b)
 
 
 func update_inventory_ui() -> void:

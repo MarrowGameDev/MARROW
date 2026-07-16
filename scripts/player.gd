@@ -1218,9 +1218,9 @@ func _equip_next_bone() -> void:
 		inventory_component.equip_next_bone()
 
 
-func equip_bone(bone_id: String) -> void:
+func equip_bone(bone_id: String, target_slot: String = "") -> void:
 	if equipment_component != null:
-		equipment_component.equip_bone(bone_id)
+		equipment_component.equip_bone(bone_id, target_slot)
 
 
 func unequip_slot(slot: String) -> void:

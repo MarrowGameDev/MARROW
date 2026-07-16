@@ -11,7 +11,15 @@ from pathlib import Path
 from typing import Iterable
 
 
-VALID_SLOTS = {"head", "body", "right_arm", "left_arm", "legs"}
+CANONICAL_SLOTS = {"head", "torso", "right_arm", "left_arm", "right_leg", "left_leg"}
+# Mirrors EquipmentRulesService.LEGACY_SLOT_ALIASES. Only aliases with a real
+# consumer in data/bones/*.tres belong here (verified by grep across
+# scripts/, data/, docs/); do not add speculative aliases back.
+LEGACY_SLOT_ALIASES = {
+    "body": "torso",
+    "legs": "right_leg",
+}
+VALID_SLOTS = CANONICAL_SLOTS | set(LEGACY_SLOT_ALIASES)
 VALID_WEIGHT_CLASSES = {"light", "medium", "heavy"}
 REQUIRED_RESOURCE_FIELDS = {
     "bone_id",
@@ -76,9 +84,13 @@ def main() -> int:
     constants = parse_definition_constants(definition_path)
     resources = load_tres_resources(bones_dir)
 
+    rules_path = root / "scripts" / "equipment_rules_service.gd"
+    rules_text = rules_path.read_text(encoding="utf-8")
+
     validate_catalog_paths(root, resource_paths, resources, report)
     validate_resource_files(resource_paths, resources, constants, report)
     validate_fallback_overlap(resource_paths, fallback_ids, report)
+    validate_equipment_slot_contract(rules_text, report)
 
     print_report(report, resource_paths, fallback_ids, resources)
     return 1 if report.errors else 0
@@ -317,6 +329,10 @@ def validate_identity_fields(
         report.error(f"{label}: unknown rarity {rarity!r}")
     if slot not in VALID_SLOTS:
         report.error(f"{label}: unknown slot {slot!r}")
+    elif slot in LEGACY_SLOT_ALIASES:
+        report.warning(
+            f"{label}: legacy slot {slot!r} must normalize to {LEGACY_SLOT_ALIASES[slot]!r}"
+        )
     if mutation_family not in constants["mutation_family"]:
         report.error(f"{label}: unknown mutation_family {mutation_family!r}")
     if weight_class not in VALID_WEIGHT_CLASSES:
@@ -372,6 +388,27 @@ def validate_fallback_overlap(
         )
 
 
+def validate_equipment_slot_contract(rules_text: str, report: ValidationReport) -> None:
+    required_fragments = [
+        "const SLOT_HEAD := \"head\"",
+        "const SLOT_TORSO := \"torso\"",
+        "const SLOT_LEFT_ARM := \"left_arm\"",
+        "const SLOT_RIGHT_ARM := \"right_arm\"",
+        "const SLOT_LEFT_LEG := \"left_leg\"",
+        "const SLOT_RIGHT_LEG := \"right_leg\"",
+        "const CANONICAL_BODY_SLOTS",
+        "const LEGACY_SLOT_ALIASES",
+        "static func normalize_slot_id(slot_id: String) -> String:",
+        "static func compatible_slots_for_bone(bone_id: String) -> Array[String]:",
+        "static func slot_sort_index(slot_id: String) -> int:",
+    ]
+    for fragment in required_fragments:
+        if fragment not in rules_text:
+            report.error(
+                f"EquipmentRulesService missing canonical slot contract fragment: {fragment}"
+            )
+
+
 def validate_vector3_positive(
     label: str, field: str, value: str, report: ValidationReport
 ) -> None:
@@ -422,6 +459,7 @@ def print_report(
     print(f"- catalog resource paths: {len(resource_paths)}")
     print(f"- catalog fallback ids: {len(set(fallback_ids))}")
     print(f"- .tres resources: {len(resources)}")
+    print(f"- canonical body slots: {len(CANONICAL_SLOTS)}")
 
     if report.warnings:
         print("\nWarnings:")

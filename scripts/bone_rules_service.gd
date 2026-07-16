@@ -41,7 +41,20 @@ static func display_name_with_slot(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
 		return str(definition.get("display_name", "Enemy Bone"))
-	return BoneDatabase.display_name_with_slot(bone_id)
+	var base_name := BoneDatabase.display_name(bone_id)
+	var slot_label := EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id))
+	if slot_label == "":
+		return base_name
+
+	var clean_name := base_name
+	if clean_name.ends_with(" Bone"):
+		clean_name = clean_name.substr(0, clean_name.length() - " Bone".length())
+
+	var clean_lower := clean_name.to_lower()
+	var slot_lower := slot_label.to_lower()
+	if slot_lower.contains(clean_lower):
+		return slot_label + " Bone"
+	return clean_name + " " + slot_label
 
 
 static func quality_for(bone_id: String) -> String:
