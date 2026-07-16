@@ -31,6 +31,10 @@ REQUIRED_RESOURCE_FIELDS = {
     "rarity",
     "rarity_rank",
     "rarity_drop_weight",
+    "durability_max",
+    "durability_start",
+    "durability_repair_cost",
+    "durability_tags",
     "slot",
     "description",
     "weight",
@@ -303,6 +307,8 @@ def validate_resource_files(
 
         validate_identity_fields(label, fields, constants, report)
         validate_numeric_fields(label, fields, report)
+        validate_durability_fields(label, fields, report)
+        validate_synergy_fields(label, fields, report)
 
 
 def validate_identity_fields(
@@ -347,6 +353,9 @@ def validate_numeric_fields(
         "quality_rank",
         "rarity_rank",
         "rarity_drop_weight",
+        "durability_max",
+        "durability_start",
+        "durability_repair_cost",
         "weight",
         "physical_weight",
         "equipment_weight",
@@ -375,6 +384,41 @@ def validate_numeric_fields(
         validate_vector3_positive(label, "visual_scale", fields["visual_scale"], report)
     if "hitbox_scale" in fields:
         validate_vector3_positive(label, "hitbox_scale", fields["hitbox_scale"], report)
+
+
+def validate_durability_fields(
+    label: str, fields: dict[str, str], report: ValidationReport
+) -> None:
+    maximum = int(numeric_value(fields.get("durability_max", "0")))
+    start = int(numeric_value(fields.get("durability_start", "0")))
+    repair_cost = int(numeric_value(fields.get("durability_repair_cost", "0")))
+
+    if maximum <= 0:
+        report.error(f"{label}: durability_max must be greater than 0")
+    if start <= 0:
+        report.error(f"{label}: durability_start must be greater than 0")
+    if start > maximum:
+        report.error(f"{label}: durability_start cannot exceed durability_max")
+    if repair_cost < 0:
+        report.error(f"{label}: durability_repair_cost cannot be negative")
+    if "durability_tags" in fields and not fields["durability_tags"].startswith("Array[String]("):
+        report.error(f"{label}: durability_tags must be an Array[String]")
+
+
+def validate_synergy_fields(
+    label: str, fields: dict[str, str], report: ValidationReport
+) -> None:
+    set_id = string_value(fields.get("set_id", ""))
+    set_name = string_value(fields.get("set_name", ""))
+    set_piece_key = string_value(fields.get("set_piece_key", ""))
+    if set_id and not set_name:
+        report.error(f"{label}: set_name is required when set_id is present")
+    if set_id and not set_piece_key:
+        report.error(f"{label}: set_piece_key is required when set_id is present")
+    if "synergy_ids" in fields and not fields["synergy_ids"].startswith("Array[String]("):
+        report.error(f"{label}: synergy_ids must be an Array[String]")
+    if "synergy_tags" in fields and not fields["synergy_tags"].startswith("Array[String]("):
+        report.error(f"{label}: synergy_tags must be an Array[String]")
 
 
 def validate_fallback_overlap(

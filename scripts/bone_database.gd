@@ -220,6 +220,33 @@ static func rarity_drop_weight(id: String) -> float:
 	return 0.0
 
 
+static func durability_max(id: String) -> int:
+	if _bones().has(id):
+		return int(_bones()[id].get("durability_max", 100))
+	return 0
+
+
+static func durability_start(id: String) -> int:
+	if _bones().has(id):
+		return int(_bones()[id].get("durability_start", durability_max(id)))
+	return 0
+
+
+static func durability_repair_cost(id: String) -> int:
+	if _bones().has(id):
+		return int(_bones()[id].get("durability_repair_cost", 1))
+	return 0
+
+
+static func durability_tags(id: String) -> Array:
+	if _bones().has(id):
+		var value: Variant = _bones()[id].get("durability_tags", [])
+		if value is Array:
+			var tags: Array = value
+			return tags.duplicate()
+	return []
+
+
 static func mutation_id(id: String) -> String:
 	if _bones().has(id):
 		return str(_bones()[id].get("mutation_id", ""))

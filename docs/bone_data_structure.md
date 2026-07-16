@@ -106,6 +106,43 @@ Campos:
 `rarity_drop_weight` esta listo para tablas ponderadas, pero no cambia drops
 automaticamente todavia.
 
+## Alcance De Durabilidad, Mutacion Y Set/Sinergia
+
+Estas tres secciones (Durabilidad, Mutacion, Set Y Sinergia) son
+deliberadamente solo esquema de datos y helpers puros y deterministas en
+`BoneRulesService`. Nada de esto esta conectado a gameplay todavia:
+
+- La durabilidad no disminuye en runtime; no existe estado por copia.
+- Reparar no hace nada; `durability_repair_cost_for` solo calcula un numero.
+- Los sets/sinergias no aplican bonus a stats; `equipment_synergy_summary`
+  solo resume que hay repetido.
+- Las mutaciones no producen ningun efecto (visual, de rig, de IA o de
+  combate).
+- Ninguna de las funciones nuevas de `BoneRulesService` para estos temas
+  tiene un llamador fuera de si misma o del validador que las prueba.
+
+Esto es intencional: el objetivo de este hito era preparar datos y reglas
+puras reutilizables, no implementar las mecanicas de juego. Ver
+`docs/roadmap_1_165.md` objetivos 70-75, marcados "No iniciado".
+
+## Durabilidad
+
+Durabilidad describe resistencia authorable de la pieza, no el estado persistido
+de una copia concreta del inventario.
+
+Campos:
+- `durability_max`: capacidad maxima de la pieza.
+- `durability_start`: durabilidad inicial al crear o dropear la pieza.
+- `durability_repair_cost`: coste relativo para reparar esa pieza.
+- `durability_tags`: tags para futuras reglas de reparacion, rotura o UI.
+
+`BoneRulesService.durability_profile_for(bone_id, current_durability)` calcula
+un perfil determinista con `current`, `max`, `ratio`, `state`, `repair_cost` y
+`tags`. Los estados canonicos son `intact`, `cracked` y `broken`.
+
+El Resource no debe guardar el desgaste runtime de cada copia. Ese estado debe
+vivir luego en inventario/save y consultar estas reglas compartidas.
+
 ## Mutacion
 
 Mutacion describe variantes visuales, biologicas o de comportamiento que una
@@ -127,6 +164,9 @@ Campos:
 
 Mutacion no debe modificar rig, AI o combate por si sola. Debe haber una regla
 documentada que lea estos campos.
+
+`BoneRulesService.mutation_profile_for(bone_id)` centraliza id, familia, etapa,
+intensidad y tags para que UI, drops o combate futuro no dupliquen lecturas.
 
 ## Ataque Y Combo
 
@@ -165,6 +205,11 @@ Campos:
 
 Estos campos son metadata pasiva para futuras reglas de combinacion. No aplican
 bonuses automaticamente.
+
+`BoneRulesService.synergy_profile_for(bone_id)` entrega la metadata de una pieza
+y `equipment_synergy_summary(equipment_state)` resume piezas equipadas por set,
+synergy id, tags y familias de mutacion. Un set o synergy id queda activo cuando
+aparece al menos dos veces. El resumen no aplica bonuses por si mismo.
 
 ## Stats Del Jugador
 

@@ -180,12 +180,17 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Las rarezas canonicas son `comun`, `corrupto`, `maldito`, `especial` y
   `legendario`. Las familias de mutacion canonicas actuales son vacio,
   `corrupto`, `maldito`, `especial` e `hibrido`.
+- Los campos de durabilidad (`durability_max`, `durability_start`,
+  `durability_repair_cost`, `durability_tags`) describen resistencia y coste de
+  reparacion por tipo de pieza. `BoneRulesService` calcula perfiles y estados,
+  pero equipar una pieza no desgasta ni repara automaticamente todavia.
 - Rareza y mutacion siguen siendo metadata pasiva hasta que una regla de drops,
   rig o combate las consuma explicitamente.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
-  regla de equipamiento que los consuma.
+  regla de equipamiento que los consuma. `mutation_profile_for` centraliza su
+  lectura para futuros consumidores.
 - Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
   `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
   una pieza podria participar en cadenas de combate. Actualmente solo alimentan
@@ -228,7 +233,8 @@ calibrados por prueba y error, igual que el resto del balance del proyecto.
   `adjusted_player_bonus_for`).
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
-  combinaciones de piezas. No aplican bonuses automaticamente todavia.
+  combinaciones de piezas. `equipment_synergy_summary` puede detectar sets e
+  ids repetidos en el equipo, pero no aplica bonuses automaticamente todavia.
 - Build presets no son una segunda fuente de estado. Solo persisten una
   intencion de equipamiento y deben revalidarse contra inventario y reglas
   actuales cada vez que se aplican.
@@ -351,6 +357,8 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: Se agregaron campos de durabilidad authorable y helpers puros
+  para perfiles de durabilidad, mutacion y resumen de sinergias equipadas.
 - 2026-07-15: Equipamiento adopto seis slots canonicos (`head`, `torso`,
   `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
   aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus

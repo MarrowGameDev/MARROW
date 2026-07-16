@@ -64,13 +64,17 @@ refactor pass.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
   `legendario`; canonical mutation families are empty, `corrupto`, `maldito`,
   `especial` and `hibrido`.
+- Bone durability fields define authoring defaults for max durability, starting
+  durability, repair cost and durability tags. Runtime wear is not stored on the
+  Resource.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`. Equipped
   load can apply a capped movement-speed penalty through `BoneRulesService`.
-- Bone set/synergy fields are present as passive metadata; no automatic set
-  bonuses are active yet.
+- Bone set/synergy fields can be summarized from equipped state through
+  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
+  applied to stats yet, and durability does not decrease at runtime.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
