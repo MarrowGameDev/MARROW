@@ -30,6 +30,10 @@ gameplay debe actualizar el archivo de flujo correspondiente.
    - Tabla operativa de lotes, ramas, evidencia, PRs y pendientes.
 3. `docs/p0_runtime_validation_suite.md`
    - Guia especifica para la suite P0 dentro de `scenes/testing_environment.tscn`.
+4. `docs/roadmap_1_165.md`
+   - Fuente numerada y auditable del roadmap tecnico.
+5. `docs/repo_stability_and_graphify.md`
+   - Politica de Graphify, line endings, caches y preflight de commits.
 
 ## Politica
 
