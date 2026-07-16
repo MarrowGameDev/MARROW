@@ -149,6 +149,15 @@ var backstab_execution_hit_from: Vector3 = Vector3.ZERO
 var backstab_execution_impact_timer: float = 0.0
 var backstab_execution_recovery_timer: float = 0.0
 var backstab_execution_damage_applied: bool = false
+# Tracks "a backstab is in progress" independently of
+# backstab_execution_target: GDScript's `== null` / `!= null` compare a
+# freed Object reference AS IF it were null (not just is_instance_valid()),
+# so once the target is queue_free()'d mid-execution (an instant-kill
+# ambush cleaning up its corpse before the recovery window ends), a plain
+# `backstab_execution_target != null` check silently starts reporting
+# false while cleanup never runs, leaving can_attack stuck false forever.
+# This plain bool has no such quirk.
+var backstab_execution_in_progress: bool = false
 
 # Enemy the current head-launch attack is aimed at, if any.
 var head_launch_target: Node3D = null
@@ -239,8 +248,18 @@ func _physics_process(delta: float) -> void:
 		_equip_next_bone()
 
 	# While the inventory is open (paused) or the player is dead, stop here:
-	# no movement, no attacking.
+	# no movement, no attacking. Cancel any active backstab BEFORE this
+	# early return, not after: _update_backstab_execution() never runs
+	# past this point, so its own is_dead guard was unreachable dead code
+	# and a player killed mid-backstab (e.g. by a second enemy) left the
+	# target's stealth_execution_player set forever, freezing that
+	# enemy's AI permanently. This still lets a live enemy update its own
+	# hold animation for one extra frame after death via
+	# cancel_stealth_execution's cleanup, same as the existing target-
+	# invalid/is_dead branches inside _update_backstab_execution.
 	if get_tree().paused or is_dead:
+		if _is_backstab_executing():
+			_cancel_backstab_execution()
 		_cancel_bow_aim()
 		_set_stealth_prompt("")
 		return
@@ -795,8 +814,10 @@ func _try_stealth_finish() -> void:
 	noise_timer = maxf(noise_timer, 0.35)
 	_face_backstab_target(stealth_target)
 	if animator != null:
-		# Feedback only: the finisher must not throw the head off the body.
-		animator.trigger_attack(3, false)
+		# Forces the finisher pose (torso twist + lunge + head dip) so a
+		# backstab always looks distinct from a normal swing, even with
+		# only one arm equipped -- see trigger_stealth_finish_attack().
+		animator.trigger_stealth_finish_attack()
 	_flash_player_attack()
 	var finished := bool(stealth_target.call("try_stealth_finish", self, attack_damage, global_position))
 	if not finished:
@@ -813,10 +834,20 @@ func _start_backstab_execution(target: Node3D, damage: int, hit_from: Vector3) -
 	backstab_execution_impact_timer = clampf(backstab_execution_impact_time, 0.0, maxf(backstab_execution_duration, 0.01))
 	backstab_execution_recovery_timer = maxf(backstab_execution_duration + backstab_execution_recovery_time, attack_cooldown)
 	backstab_execution_damage_applied = false
+	backstab_execution_in_progress = true
+	if animator != null and not animator.attack_impact_reached.is_connected(_on_backstab_animator_impact):
+		animator.attack_impact_reached.connect(_on_backstab_animator_impact)
 
 
 func _update_backstab_execution(delta: float) -> void:
-	if not _is_backstab_executing():
+	# Gate on backstab_execution_in_progress, NOT on the target reference:
+	# GDScript's `== null` / `!= null` treat a freed Object as equal to
+	# null, not just is_instance_valid(). Once the target is queue_free()'d
+	# mid-execution (an instant-kill ambush cleaning up its corpse before
+	# the recovery window ends), a check against the reference itself
+	# would return early here on every subsequent frame and never reach
+	# the cleanup below, leaving can_attack stuck false forever.
+	if not backstab_execution_in_progress:
 		return
 	if backstab_execution_target == null or not is_instance_valid(backstab_execution_target):
 		_cancel_backstab_execution()
@@ -829,20 +860,38 @@ func _update_backstab_execution(delta: float) -> void:
 	backstab_execution_impact_timer = maxf(backstab_execution_impact_timer - delta, 0.0)
 	backstab_execution_recovery_timer = maxf(backstab_execution_recovery_timer - delta, 0.0)
 
-	if not backstab_execution_damage_applied and backstab_execution_impact_timer <= 0.0:
-		backstab_execution_damage_applied = true
-		if backstab_execution_target.has_method("apply_stealth_finish_impact"):
-			backstab_execution_target.call(
-				"apply_stealth_finish_impact",
-				self,
-				backstab_execution_damage,
-				backstab_execution_hit_from
-			)
-		elif backstab_execution_target.has_method("take_damage"):
-			backstab_execution_target.call("take_damage", backstab_execution_damage, backstab_execution_hit_from, self, "backstab")
+	# Fallback only: normally _on_backstab_animator_impact() (connected to
+	# ProceduralPlayerAnimator.attack_impact_reached in
+	# _start_backstab_execution) applies damage in sync with the strike
+	# pose. This timer exists so damage still lands even if the animator
+	# is missing, the signal never fires for some reason, or the finisher
+	# pose's strike phase somehow lands after backstab_execution_impact_time.
+	if backstab_execution_impact_timer <= 0.0:
+		_apply_backstab_impact_once()
 
 	if backstab_execution_recovery_timer <= 0.0:
 		_finish_backstab_execution()
+
+
+func _on_backstab_animator_impact() -> void:
+	_apply_backstab_impact_once()
+
+
+func _apply_backstab_impact_once() -> void:
+	if backstab_execution_damage_applied:
+		return
+	if backstab_execution_target == null or not is_instance_valid(backstab_execution_target):
+		return
+	backstab_execution_damage_applied = true
+	if backstab_execution_target.has_method("apply_stealth_finish_impact"):
+		backstab_execution_target.call(
+			"apply_stealth_finish_impact",
+			self,
+			backstab_execution_damage,
+			backstab_execution_hit_from
+		)
+	elif backstab_execution_target.has_method("take_damage"):
+		backstab_execution_target.call("take_damage", backstab_execution_damage, backstab_execution_hit_from, self, "backstab")
 
 
 func _finish_backstab_execution() -> void:
@@ -868,10 +917,19 @@ func _clear_backstab_execution_state() -> void:
 	backstab_execution_impact_timer = 0.0
 	backstab_execution_recovery_timer = 0.0
 	backstab_execution_damage_applied = false
+	backstab_execution_in_progress = false
+	if animator != null and animator.attack_impact_reached.is_connected(_on_backstab_animator_impact):
+		animator.attack_impact_reached.disconnect(_on_backstab_animator_impact)
 
 
+# Reads the plain backstab_execution_in_progress bool rather than the
+# target reference: every call site in this file (inventory, equip,
+# attack, jump, movement gating) reads this function, and GDScript
+# compares a freed Object as equal to null, so checking the reference
+# itself would silently misreport "not executing" the instant the target
+# is queue_free()'d mid-execution.
 func _is_backstab_executing() -> bool:
-	return backstab_execution_target != null
+	return backstab_execution_in_progress
 
 
 func _face_backstab_target(target: Node3D) -> void:
