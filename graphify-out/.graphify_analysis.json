@@ -813,10 +813,10 @@
     ],
     "36": [
       "architecture_rationale_3718",
-      "architecture_rationale_3781",
+      "architecture_rationale_3785",
       "architecture_rationale_3833",
       "architecture_testingenvironment",
-      "architecture_testingenvironment_gd_func_apply_profile",
+      "architecture_testingenvironment_gd_func_bone_for_profile",
       "architecture_testingenvironment_gd_func_runtime_evidence_snapshot",
       "architecture_testingenvironment_gd_func_update_status"
     ],
@@ -2540,8 +2540,8 @@
       "architecture_testingenvironment_gd_func_spawn_enemy"
     ],
     "437": [
-      "architecture_rationale_3785",
-      "architecture_testingenvironment_gd_func_bone_for_profile"
+      "architecture_rationale_3781",
+      "architecture_testingenvironment_gd_func_apply_profile"
     ],
     "438": [
       "architecture_rationale_3789",

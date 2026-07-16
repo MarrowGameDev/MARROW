@@ -373,6 +373,43 @@ Campos:
 `rarity_drop_weight` esta listo para tablas ponderadas, pero no cambia drops
 automaticamente todavia.
 
+## Alcance De Durabilidad, Mutacion Y Set/Sinergia
+
+Estas tres secciones (Durabilidad, Mutacion, Set Y Sinergia) son
+deliberadamente solo esquema de datos y helpers puros y deterministas en
+`BoneRulesService`. Nada de esto esta conectado a gameplay todavia:
+
+- La durabilidad no disminuye en runtime; no existe estado por copia.
+- Reparar no hace nada; `durability_repair_cost_for` solo calcula un numero.
+- Los sets/sinergias no aplican bonus a stats; `equipment_synergy_summary`
+  solo resume que hay repetido.
+- Las mutaciones no producen ningun efecto (visual, de rig, de IA o de
+  combate).
+- Ninguna de las funciones nuevas de `BoneRulesService` para estos temas
+  tiene un llamador fuera de si misma o del validador que las prueba.
+
+Esto es intencional: el objetivo de este hito era preparar datos y reglas
+puras reutilizables, no implementar las mecanicas de juego. Ver
+`docs/roadmap_1_165.md` objetivos 70-75, marcados "No iniciado".
+
+## Durabilidad
+
+Durabilidad describe resistencia authorable de la pieza, no el estado persistido
+de una copia concreta del inventario.
+
+Campos:
+- `durability_max`: capacidad maxima de la pieza.
+- `durability_start`: durabilidad inicial al crear o dropear la pieza.
+- `durability_repair_cost`: coste relativo para reparar esa pieza.
+- `durability_tags`: tags para futuras reglas de reparacion, rotura o UI.
+
+`BoneRulesService.durability_profile_for(bone_id, current_durability)` calcula
+un perfil determinista con `current`, `max`, `ratio`, `state`, `repair_cost` y
+`tags`. Los estados canonicos son `intact`, `cracked` y `broken`.
+
+El Resource no debe guardar el desgaste runtime de cada copia. Ese estado debe
+vivir luego en inventario/save y consultar estas reglas compartidas.
+
 ## Mutacion
 
 Mutacion describe variantes visuales, biologicas o de comportamiento que una
@@ -394,6 +431,9 @@ Campos:
 
 Mutacion no debe modificar rig, AI o combate por si sola. Debe haber una regla
 documentada que lea estos campos.
+
+`BoneRulesService.mutation_profile_for(bone_id)` centraliza id, familia, etapa,
+intensidad y tags para que UI, drops o combate futuro no dupliquen lecturas.
 
 ## Ataque Y Combo
 
@@ -432,6 +472,11 @@ Campos:
 
 Estos campos son metadata pasiva para futuras reglas de combinacion. No aplican
 bonuses automaticamente.
+
+`BoneRulesService.synergy_profile_for(bone_id)` entrega la metadata de una pieza
+y `equipment_synergy_summary(equipment_state)` resume piezas equipadas por set,
+synergy id, tags y familias de mutacion. Un set o synergy id queda activo cuando
+aparece al menos dos veces. El resumen no aplica bonuses por si mismo.
 
 ## Stats Del Jugador
 
@@ -1755,13 +1800,17 @@ refactor pass.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
   `legendario`; canonical mutation families are empty, `corrupto`, `maldito`,
   `especial` and `hibrido`.
+- Bone durability fields define authoring defaults for max durability, starting
+  durability, repair cost and durability tags. Runtime wear is not stored on the
+  Resource.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`. Equipped
   load can apply a capped movement-speed penalty through `BoneRulesService`.
-- Bone set/synergy fields are present as passive metadata; no automatic set
-  bonuses are active yet.
+- Bone set/synergy fields can be summarized from equipped state through
+  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
+  applied to stats yet, and durability does not decrease at runtime.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -2139,12 +2188,17 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Las rarezas canonicas son `comun`, `corrupto`, `maldito`, `especial` y
   `legendario`. Las familias de mutacion canonicas actuales son vacio,
   `corrupto`, `maldito`, `especial` e `hibrido`.
+- Los campos de durabilidad (`durability_max`, `durability_start`,
+  `durability_repair_cost`, `durability_tags`) describen resistencia y coste de
+  reparacion por tipo de pieza. `BoneRulesService` calcula perfiles y estados,
+  pero equipar una pieza no desgasta ni repara automaticamente todavia.
 - Rareza y mutacion siguen siendo metadata pasiva hasta que una regla de drops,
   rig o combate las consuma explicitamente.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
-  regla de equipamiento que los consuma.
+  regla de equipamiento que los consuma. `mutation_profile_for` centraliza su
+  lectura para futuros consumidores.
 - Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
   `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
   una pieza podria participar en cadenas de combate. Actualmente solo alimentan
@@ -2187,7 +2241,8 @@ calibrados por prueba y error, igual que el resto del balance del proyecto.
   `adjusted_player_bonus_for`).
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
-  combinaciones de piezas. No aplican bonuses automaticamente todavia.
+  combinaciones de piezas. `equipment_synergy_summary` puede detectar sets e
+  ids repetidos en el equipo, pero no aplica bonuses automaticamente todavia.
 - Build presets no son una segunda fuente de estado. Solo persisten una
   intencion de equipamiento y deben revalidarse contra inventario y reglas
   actuales cada vez que se aplican.
@@ -2310,6 +2365,8 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: Se agregaron campos de durabilidad authorable y helpers puros
+  para perfiles de durabilidad, mutacion y resumen de sinergias equipadas.
 - 2026-07-15: Equipamiento adopto seis slots canonicos (`head`, `torso`,
   `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
   aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus

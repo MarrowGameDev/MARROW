@@ -498,6 +498,10 @@
 - `slot`
 - `tags`
 - `description`
+- `durability_max`
+- `durability_start`
+- `durability_repair_cost`
+- `durability_tags`
 - `mutation_id`
 - `mutation_family`
 - `mutation_stage`
@@ -559,6 +563,9 @@
 - `MUTATION_CURSED`
 - `MUTATION_SPECIAL`
 - `MUTATION_HYBRID`
+- `DURABILITY_INTACT`
+- `DURABILITY_CRACKED`
+- `DURABILITY_BROKEN`
 
 ### Key Variables
 - `visual`
@@ -566,6 +573,7 @@
 - `definition`
 - `identity`
 - `quality_modifiers`
+- `durability`
 - `player_stats`
 - `mutation`
 - `attack_combo`
@@ -609,6 +617,7 @@
 
 ### Constants
 - `PLAYER_BONUS_DEFAULTS`
+- `DURABILITY_CRACKED_THRESHOLD`
 - `PLAYER_STAT_MODIFIER_DEFAULTS`
 - `PLAYER_STAT_PERCENT_LIMIT`
 - `EQUIPMENT_FREE_WEIGHT`
@@ -624,9 +633,27 @@
 - `clean_lower`
 - `slot_lower`
 - `color_value`
+- `maximum`
 - `value`
 - `tags`
+- `ratio`
+- `current`
 - `ids`
+- `set_counts`
+- `set_names`
+- `set_pieces`
+- `synergy_counts`
+- `tag_counts`
+- `mutation_counts`
+- `total_synergy_score`
+- `total_mutation_intensity`
+- `bone_id`
+- `set_id`
+- `pieces`
+- `piece_key`
+- `clean_synergy_id`
+- `clean_tag`
+- `mutation_family`
 - `text`
 - `bonus`
 - `move_bonus`
@@ -637,15 +664,8 @@
 - `total`
 - `attack_damage_total`
 - `max_health_total`
-- `bone_id`
 - `weight_multiplier`
 - `load_over_free`
-- `modifiers`
-- `move_before_percent`
-- `move_multiplier`
-- `damage_before_percent`
-- `health_before_percent`
-- `keys`
 
 ### Functions
 - none
@@ -1288,6 +1308,7 @@
 - `color`
 - `bonus`
 - `prefix`
+- `base`
 - `tags`
 - `equipment_weight`
 - `base_weight`

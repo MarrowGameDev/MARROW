@@ -8830,7 +8830,7 @@
       "source_location": "L3780",
       "_origin": "ast",
       "id": "architecture_testingenvironment_gd_func_apply_profile",
-      "community": 36,
+      "community": 437,
       "norm_label": ".gd_func__apply_profile()"
     },
     {
@@ -8840,7 +8840,7 @@
       "source_location": "L3784",
       "_origin": "ast",
       "id": "architecture_testingenvironment_gd_func_bone_for_profile",
-      "community": 437,
+      "community": 36,
       "norm_label": ".gd_func__bone_for_profile()"
     },
     {
@@ -16220,7 +16220,7 @@
       "source_location": "L3781",
       "_origin": "ast",
       "id": "architecture_rationale_3781",
-      "community": 36,
+      "community": 437,
       "norm_label": "gdscript function: _apply_profile(enemy: node, profile: string) -> void"
     },
     {
@@ -16230,7 +16230,7 @@
       "source_location": "L3785",
       "_origin": "ast",
       "id": "architecture_rationale_3785",
-      "community": 437,
+      "community": 36,
       "norm_label": "gdscript function: _bone_for_profile(profile: string) -> string"
     },
     {
@@ -40782,5 +40782,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "9ad5983e0aadc26c27eaeb5c77056dadceed2e6d"
+  "built_at_commit": "2e93cc78bd1df1ae98347e3e46f1773f1f4dca79"
 }
