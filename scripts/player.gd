@@ -99,6 +99,10 @@ var inventory_ui: PlayerInventoryUI = null
 var inventory_component: PlayerInventoryComponent = null
 var equipment_component: PlayerEquipmentComponent = null
 var stats_component: PlayerStatsComponent = null
+# Full dictionary from the last stats_component.calculate() call, kept so
+# get_inventory_stats_snapshot() can expose load/quality fields without
+# recomputing equipment stats on every UI refresh.
+var last_calculated_stats: Dictionary = {}
 
 # This counts nearby world interactions that use the Interact action.
 # When it is above 0, that action is reserved for the world prompt.
@@ -1114,12 +1118,24 @@ func get_equipped_bone_for_slot(slot: String) -> String:
 
 
 func get_inventory_stats_snapshot() -> Dictionary:
+	# BoneRulesService.player_stats_with_equipment computes load/quality
+	# fields on every recalculation but nothing previously read them past
+	# PlayerStatsComponent.calculate(); expose the cached result here so any
+	# consumer (inventory UI, HUD, future tooltips) can show that context
+	# without recomputing equipment stats.
 	return {
 		"move_speed": move_speed,
 		"attack_range": attack_range,
 		"attack_damage": attack_damage,
 		"health": health,
 		"max_health": max_health,
+		"equipment_weight": float(last_calculated_stats.get("equipment_weight", 0.0)),
+		"inventory_weight": float(last_calculated_stats.get("inventory_weight", 0.0)),
+		"load_speed_penalty": float(last_calculated_stats.get("load_speed_penalty", 0.0)),
+		"quality_damage_percent": float(last_calculated_stats.get("quality_damage_percent", 0.0)),
+		"quality_speed_percent": float(last_calculated_stats.get("quality_speed_percent", 0.0)),
+		"quality_health_percent": float(last_calculated_stats.get("quality_health_percent", 0.0)),
+		"quality_weight_percent": float(last_calculated_stats.get("quality_weight_percent", 0.0)),
 	}
 
 
@@ -1255,6 +1271,7 @@ func _recalculate_stats() -> void:
 		return
 	var equipment_state: Dictionary = get_equipment_state()
 	var calculated_stats: Dictionary = stats_component.calculate(equipment_state, health, max_health)
+	last_calculated_stats = calculated_stats
 	move_speed = float(calculated_stats["move_speed"])
 	attack_range = float(calculated_stats["attack_range"])
 	attack_damage = int(calculated_stats["attack_damage"])
