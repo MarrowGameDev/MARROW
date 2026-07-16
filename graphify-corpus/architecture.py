@@ -2151,6 +2151,10 @@ class PlayerCameraController:
         """GDScript function: _ready() -> void"""
         pass
 
+    def gd_func__physics_process(self):
+        """GDScript function: _physics_process(delta: float) -> void"""
+        pass
+
     def gd_func__process(self):
         """GDScript function: _process(delta: float) -> void"""
         pass

@@ -1876,6 +1876,7 @@
 
 ### Functions
 - `_ready() -> void`
+- `_physics_process(delta: float) -> void`
 - `_process(delta: float) -> void`
 - `_unhandled_input(event: InputEvent) -> void`
 - `capture_mouse() -> void`
