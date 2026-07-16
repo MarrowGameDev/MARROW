@@ -5,6 +5,13 @@ extends Node3D
 # Reads ACTUAL velocity (not raw input) so it reacts to slopes, knockback, and
 # speed bonuses, and moves the rig's sockets. Bones parented to sockets follow.
 
+# Fires once per attack when the strike phase begins (see attack_windup_portion),
+# i.e. the moment the pose actually "connects" rather than winding up or
+# following through. Callers that need to land damage in sync with the
+# animation (backstab) should use this instead of a fixed timer guessed to
+# roughly line up with attack_overlay_duration.
+signal attack_impact_reached
+
 @export var rig: ModularSkeletonRig
 @export var turn_target: Node3D            # usually VisualRoot; rotates toward facing
 @export var player_body_progression_enabled := false
@@ -223,6 +230,11 @@ var _attack_timer := 0.0
 var _attack_blend := 0.0
 var _attack_duration_current := 0.16
 var _attack_combo_step := 1
+var _attack_impact_signaled := false
+# When true, _apply_attack_overlay() forces the finisher combo pose
+# regardless of combo step / equipped-arm count. Set by
+# trigger_stealth_finish_attack(); cleared when that attack ends.
+var _is_stealth_finish_attack := false
 var _head_only_attack_contacted := true
 var _head_only_attack_landed := true
 var _head_only_base_world_offset := Vector3.ZERO
@@ -735,6 +747,8 @@ func _update_head_launch_attack_aim() -> void:
 # reads wrong and (via the body catch-up) physically displaces the player. In
 # torso-only it is worse, because a launch that misses detaches the head.
 func trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void:
+	_attack_impact_signaled = false
+	_is_stealth_finish_attack = false
 	if combo_step <= 0:
 		_attack_combo_step = (_attack_combo_step % 3) + 1
 	else:
@@ -784,6 +798,20 @@ func trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void
 		_attack_duration_current *= 1.15
 	_attack_timer = _attack_duration_current
 	_attack_blend = maxf(_attack_blend, 0.25)
+
+
+# A backstab kill needs a pose visually distinct from a regular swing.
+# trigger_attack(3, false) alone is NOT enough: _combo_step_for_equipped_arms()
+# overrides combo step 3 back down to 1 or 2 whenever the player has exactly
+# one arm equipped (a very common state before both arm slots are filled),
+# silently falling back to a normal one-arm swing instead of the finisher
+# pose. _is_stealth_finish_attack bypasses that override in
+# _apply_attack_overlay() so the finisher pose (torso twist + forward lunge +
+# head dip; see _apply_finisher_combo_pose below) always plays, regardless
+# of what is equipped.
+func trigger_stealth_finish_attack() -> void:
+	trigger_attack(3, false)
+	_is_stealth_finish_attack = true
 
 
 func _capture_torso_head_miss_body_hold_transform() -> void:
@@ -1526,6 +1554,9 @@ func _apply_aim_overlay() -> void:
 
 func _update_attack_overlay(delta: float) -> void:
 	_attack_timer = max(_attack_timer - delta, 0.0)
+	if not _attack_impact_signaled and _attack_timer > 0.0 and _attack_phase() >= attack_windup_portion:
+		_attack_impact_signaled = true
+		attack_impact_reached.emit()
 	if _head_only_hit_recoil_timer > 0.0:
 		_head_only_hit_recoil_timer = maxf(_head_only_hit_recoil_timer - delta, 0.0)
 	var target := 1.0 if _attack_timer > 0.0 else 0.0
@@ -1557,6 +1588,9 @@ func _apply_attack_overlay() -> void:
 		_apply_torso_head_attack_pose()
 		return
 	var punch: float = _attack_pose_strength()
+	if _is_stealth_finish_attack:
+		_apply_finisher_combo_pose(punch)
+		return
 	match _combo_step_for_equipped_arms():
 		2:
 			_apply_left_combo_pose(punch)

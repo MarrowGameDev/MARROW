@@ -25,6 +25,8 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/combat_targeting_service.gd`: reglas puras de auto-target para
   ataques head-launch (head-only y torso-only). No accede a la escena: recibe
   posiciones candidatas y devuelve el indice del mejor objetivo.
+- `scripts/backstab_rules_service.gd`: regla pura de cono trasero para stealth
+  finish/backstab. Recibe posicion, facing y threshold; no accede a la escena.
 - `scripts/ballistics_service.gd`: regla pura de lanzamiento para proyectiles con
   gravedad (saliva, flecha enemiga, roca de gorilla). Recibe posiciones y tuning,
   devuelve la velocidad de lanzamiento. Ver "Solve balistico compartido".
@@ -337,11 +339,75 @@ compromete al jugador en el lugar mientras dura la animacion.
 ## Flujo stealth
 
 1. `Player` busca target con `can_be_stealth_finished_by`.
-2. El enemigo valida distancia y que el player este detras.
+2. El enemigo valida distancia y delega el cono trasero en
+   `BackstabRulesService.is_attacker_behind_target()`.
 3. UI muestra `get_stealth_prompt_text`.
 4. Al presionar stealth:
-   - Si enemy health <= threshold, muere.
-   - Si tiene demasiada vida, recibe dano extra y responde atacando/buscando.
+   - `Player` bloquea ataques, inventario/equip y movimiento normal durante la
+     ejecucion corta.
+   - `Player` dispara la pose de finisher con `animator.trigger_stealth_finish_attack()`
+     (ver "Animacion y sincronizacion de impacto" abajo).
+   - `Enemy.try_stealth_finish` solo inicia la ejecucion; no aplica dano todavia.
+     `_begin_stealth_execution` NO gira al enemigo hacia el jugador.
+   - El impacto se aplica una sola vez, disparado por
+     `ProceduralPlayerAnimator.attack_impact_reached` (o por
+     `backstab_execution_impact_timer` como respaldo si la senal no llega).
+   - `Enemy.apply_stealth_finish_impact` resuelve muerte o ambush y evita un
+     segundo impacto con `stealth_execution_impact_applied`.
+   - `finish_stealth_execution` o `cancel_stealth_execution` limpian el estado y
+     restauran control/IA.
+
+### Correcciones 2026-07-16
+
+- **Freeze si el jugador moria o el juego se pausaba durante un backstab**:
+  `_update_backstab_execution` nunca se volvia a llamar tras el `return`
+  temprano de `paused or is_dead` en `_physics_process`, asi que
+  `cancel_stealth_execution` jamas se disparaba y el enemigo objetivo quedaba
+  con `stealth_execution_player` seteado para siempre (IA congelada, imposible
+  de volver a backstabear). Se movio la cancelacion antes de ese `return`.
+- **Segundo freeze relacionado, mas sutil**: incluso con lo anterior corregido,
+  si el enemigo objetivo se liberaba (`queue_free`) durante la ejecucion (por
+  ejemplo, un ambush letal cuyo cadaver se limpia antes de que termine la
+  ventana de recovery), `_is_backstab_executing()` (`backstab_execution_target
+  != null`) empezaba a devolver `false` de golpe -- GDScript compara un Object
+  liberado como igual a `null`, no solo `is_instance_valid()` lo detecta -- y
+  `_update_backstab_execution` retornaba en su primera linea sin llegar nunca
+  a la limpieza. Resultado: `can_attack` quedaba en `false` para siempre; el
+  jugador no podia volver a atacar. Se agrego `backstab_execution_in_progress`
+  (bool plano, sin el problema de comparacion) como la fuente de verdad de
+  "hay un backstab en curso", separada de la validez de la referencia al
+  objetivo.
+- **La victima ya no gira para mirar a su atacante**: `_begin_stealth_execution`
+  y `_update_stealth_execution_hold` llamaban `_turn_toward` cada frame durante
+  toda la ejecucion, dando pistas visuales que contradicen un stealth kill.
+  Se eliminaron ambas llamadas.
+- **Direccion global coherente**: `Enemy._facing_from_rotation()` mezclaba
+  `rotation.y` (local al padre) con `global_position` (global) en el calculo
+  del cono trasero. Ahora usa `global_transform.basis.z`, el equivalente
+  global exacto de la misma formula, correcto incluso si el enemigo queda
+  parentado bajo un nodo rotado.
+- **Reaccion del enemigo**: ya existia via `apply_stealth_finish_impact` ->
+  `take_hit()` (flash + punch scale) en el caso de ambush sobrevivido, o
+  `die()` en el caso letal. No se agrego nada nuevo aqui; se confirmo que
+  funciona.
+
+### Animacion y sincronizacion de impacto
+
+Antes, `trigger_attack(3, false)` no garantizaba la pose de finisher: con
+exactamente un brazo equipado (un estado muy comun antes de completar el
+equipo), `_combo_step_for_equipped_arms()` en
+`ProceduralPlayerAnimator` sobreescribia el paso de combo 3 a 1 o 2,
+cayendo silenciosamente al swing generico de un brazo en vez de la pose de
+finisher (giro de torso + lunge + inclinacion de cabeza). Se agrego
+`trigger_stealth_finish_attack()`, que fuerza esa pose de finisher via un
+flag (`_is_stealth_finish_attack`) sin importar que este equipado.
+
+El impacto se sincroniza ahora con una senal real del animador,
+`attack_impact_reached`, emitida una vez por ataque cuando la fase del
+ataque cruza `attack_windup_portion` (el momento en que el golpe realmente
+"conecta", no el timer fijo adivinado antes). `backstab_execution_impact_timer`
+sigue existiendo como respaldo (si el animador es null o la senal no llega
+por alguna razon), pero ya no es el disparador principal.
 
 ### Validacion geometrica de backstab
 
@@ -351,12 +417,44 @@ Antes de cambiar la regla de stealth finish, ejecutar:
 python tools/validate_backstab_geometry.py
 ```
 
-El arnes reproduce la formula actual de `Enemy._is_player_behind()` sin abrir
-Godot. Cubre frente, detras, laterales, enemigos rotados, angulos del cono
-trasero y posiciones con offset vertical. Esta validacion es estatica; la
-confirmacion visual/runtime de que `facing_direction` coincide con el frente
-real del enemigo debe hacerse en `TESTING ENVIRONMENT` antes de una correccion
-funcional.
+El arnes reproduce la formula de `BackstabRulesService` sin abrir Godot y
+comprueba que `Enemy._is_player_behind()` delegue en ese servicio. Cubre frente,
+detras, laterales, enemigos rotados, angulos del cono trasero y posiciones con
+offset vertical. Esta validacion es estatica; la confirmacion visual/runtime de
+que `facing_direction` coincide con el frente real del enemigo debe hacerse en
+`TESTING ENVIRONMENT`. A diferencia de antes, los chequeos de contrato
+(`verify_backstab_service_shape`, `verify_enemy_uses_backstab_service`,
+`verify_backstab_execution_contract`) ahora SI afectan el exit code -- antes
+solo imprimian `WARNING` y el script podia salir 0 aunque se vaciara por
+completo `BackstabRulesService`. Verificado adversarialmente: revertir el fix
+de freeze o reintroducir el giro hacia el atacante hace fallar el validador.
+
+### Evidencia runtime (Godot 4.7 headless, 2026-07-16)
+
+Verificado con una escena de prueba temporal (jugador + enemigo real,
+eliminada tras el uso), no solo con el validador estatico:
+
+- Backstab exitoso letal: deteccion "detras" correcta con geometria rotada,
+  ejecucion completa, dano aplicado (enemigo murio), limpieza correcta
+  (`can_attack` vuelve a `true`, estado de ejecucion vuelve a vacio).
+- Objetivo invalido a mitad de ejecucion (el enemigo se libera tras morir):
+  confirmado que ya NO deja `can_attack` bloqueado para siempre (bug
+  encontrado y corregido en esta misma sesion, ver arriba).
+- Muerte del jugador a mitad de un backstab (por un segundo enemigo):
+  confirmado que el enemigo objetivo queda con `stealth_execution_player ==
+  null` (no congelado) despues de la muerte.
+- Senal `attack_impact_reached` del animador: confirmada disparando durante
+  la animacion, antes de que la ejecucion termine.
+
+Pendiente de prueba manual en editor (no cubierto por la escena headless, que
+no simula input de teclado/mouse ni observacion visual humana):
+
+- Pausa real (abrir inventario) a mitad de un backstab -- el codigo usa la
+  MISMA rama de fix que la muerte, pero no se ejecuto ese camino especifico.
+- Confirmacion visual de que la pose de finisher se ve distinta a un swing
+  normal, y que la reaccion del enemigo (flash/punch scale o death-pop) se
+  lee bien en pantalla.
+- Camara durante la ejecucion (no se toco codigo de camara en esta rama).
 
 ## Flujo de dano enemigo
 
@@ -858,6 +956,13 @@ En `TESTING ENVIRONMENT`:
   sin lock. Enemigos no afectados. Pruebas: en `DUMMY TESTING ENVIRONMENT`, como
   cabeza, click derecho no debe moverte ni congelarte; click izquierdo si debe
   embestir.
+- 2026-07-15: `scripts/player.gd`, `scripts/enemy.gd`,
+  `scripts/backstab_rules_service.gd` — stealth finish ahora separa deteccion,
+  inicio de ejecucion, momento de impacto y limpieza. `Player` bloquea ataque,
+  inventario/equip, salto y movimiento durante una ventana corta; `Enemy` pausa
+  IA/ataques mientras `stealth_execution_player` esta activo. El dano se aplica
+  desde `apply_stealth_finish_impact` una sola vez y queda pendiente validarlo en
+  runtime con las guias P0 de `TESTING ENVIRONMENT`.
 - 2026-07-15: `scripts/testing_environment.gd` — en `dummy_only_mode` el dummy
   ahora se respawnea con `2` en vez de `1` (`1` ya no hace nada ahi; en el
   `TESTING ENVIRONMENT` normal `2` sigue siendo gorilla). Nuevo `_try_spawn_dummy()`

@@ -115,6 +115,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var stealth_finish_range: float = 2.2
 @export_range(0.0, 1.0, 0.05) var stealth_behind_dot: float = 0.45
 @export var failed_stealth_damage_multiplier: int = 2
+@export var stealth_execution_reaction_lock: float = 0.45
 @export var respawn_enabled: bool = true
 @export var near_respawn_delay: float = 120.0
 @export var far_respawn_delay: float = 30.0
@@ -174,6 +175,8 @@ var recovering_limb_key: String = ""
 var detached_limb_bodies: Dictionary = {}
 var limb_detach_damage_progress: float = 0.0
 var last_hit_body_part: String = ""
+var stealth_execution_player: Node3D = null
+var stealth_execution_impact_applied: bool = false
 
 # Tier 1D polish: one reusable tween so hit-squash, attack-lunge, and death-pop
 # never fight over the scale, plus a procedurally built placeholder "hit" sound.
@@ -258,6 +261,9 @@ func _physics_process(delta: float) -> void:
 		velocity.x = knockback_velocity.x
 		velocity.z = knockback_velocity.z
 		move_and_slide()
+		return
+
+	if _update_stealth_execution_hold():
 		return
 
 	if dummy_target_enabled:
@@ -705,6 +711,8 @@ func _get_rock_throw_socket() -> Node3D:
 func can_be_stealth_finished_by(player: Node3D) -> bool:
 	if not alive or player == null:
 		return false
+	if stealth_execution_player != null:
+		return false
 	if returning_to_spawn:
 		return false
 	if global_position.distance_to(player.global_position) > stealth_finish_range:
@@ -724,23 +732,36 @@ func get_drop_display_name() -> String:
 
 
 func _is_player_behind(player: Node3D) -> bool:
-	var to_player := player.global_position - global_position
-	to_player.y = 0.0
-	if to_player.length() <= 0.01:
-		return false
-
 	var enemy_forward := facing_direction
 	enemy_forward.y = 0.0
 	if enemy_forward.length() <= 0.01:
 		enemy_forward = _facing_from_rotation()
 
-	return enemy_forward.normalized().dot(to_player.normalized()) <= -stealth_behind_dot
+	return BackstabRulesService.is_attacker_behind_target(
+		global_position,
+		enemy_forward,
+		player.global_position,
+		stealth_behind_dot
+	)
 
 
 func try_stealth_finish(player: Node3D, player_damage: int, hit_from: Vector3) -> bool:
 	if not can_be_stealth_finished_by(player):
 		return false
 
+	_begin_stealth_execution(player, hit_from)
+	return true
+
+
+func apply_stealth_finish_impact(player: Node3D, player_damage: int, hit_from: Vector3) -> bool:
+	if not alive:
+		return false
+	if stealth_execution_player != player:
+		return false
+	if stealth_execution_impact_applied:
+		return false
+
+	stealth_execution_impact_applied = true
 	last_hit_from_position = hit_from
 	if health <= stealth_finish_max_health:
 		health = 0
@@ -759,9 +780,63 @@ func try_stealth_finish(player: Node3D, player_damage: int, hit_from: Vector3) -
 		returning_to_spawn = false
 		_set_player_visible(true)
 		_turn_toward((player.global_position - global_position).normalized())
-		attack_timer = 0.0
-		_try_attack_player(player)
-	return false
+		attack_timer = maxf(attack_timer, stealth_execution_reaction_lock)
+	return true
+
+
+func finish_stealth_execution(player: Node3D) -> void:
+	if stealth_execution_player != player:
+		return
+	_clear_stealth_execution()
+
+
+func cancel_stealth_execution(player: Node3D) -> void:
+	if stealth_execution_player != player:
+		return
+	_clear_stealth_execution()
+
+
+func _begin_stealth_execution(player: Node3D, hit_from: Vector3) -> void:
+	stealth_execution_player = player
+	stealth_execution_impact_applied = false
+	last_hit_from_position = hit_from
+	returning_to_spawn = false
+	ranged_attack_windup_timer = 0.0
+	rock_throw_windup_timer = 0.0
+	saliva_spit_windup_timer = 0.0
+	_cancel_held_rock()
+	attack_timer = maxf(attack_timer, stealth_execution_reaction_lock)
+	# Deliberately does NOT turn toward the player: a backstab only
+	# triggers when the enemy is facing away (see can_be_stealth_finished_by
+	# / BackstabRulesService.is_attacker_behind_target), and spinning the
+	# victim to face its attacker would give away the whole point of a
+	# stealth take-down from behind.
+
+
+func _clear_stealth_execution() -> void:
+	stealth_execution_player = null
+	stealth_execution_impact_applied = false
+
+
+func _update_stealth_execution_hold() -> bool:
+	if stealth_execution_player == null:
+		return false
+	if not is_instance_valid(stealth_execution_player):
+		_clear_stealth_execution()
+		return false
+	if not alive:
+		_clear_stealth_execution()
+		return false
+
+	# No _turn_toward() here either: the victim stays facing away from its
+	# attacker for the whole hold, matching _begin_stealth_execution.
+	ranged_attack_windup_timer = 0.0
+	rock_throw_windup_timer = 0.0
+	saliva_spit_windup_timer = 0.0
+	velocity.x = knockback_velocity.x
+	velocity.z = knockback_velocity.z
+	move_and_slide()
+	return true
 
 
 # Vision check: player must be inside the enemy's cone, inside detection range,
@@ -1686,8 +1761,17 @@ func _set_collision_enabled(enabled: bool) -> void:
 	collision_shape.set_deferred("disabled", not enabled)
 
 
+# Vector3(sin(rotation.y), 0, cos(rotation.y)) is this enemy's own
+# convention for "forward" from yaw (see _turn_toward's
+# rotation.y = atan2(facing_direction.x, facing_direction.z)), but rotation.y
+# is LOCAL to this node's parent while callers like _is_player_behind()
+# compare it against global_position. global_transform.basis.z is the exact
+# global-space equivalent of that same formula (Godot's Y-axis Basis maps
+# local +Z to (sin(yaw), 0, cos(yaw)) before any parent transform is
+# applied), so it stays correct if this enemy is ever parented under a
+# rotated node.
 func _facing_from_rotation() -> Vector3:
-	return Vector3(sin(rotation.y), 0.0, cos(rotation.y)).normalized()
+	return global_transform.basis.z.normalized()
 
 
 # Polish: a quick squash-and-recover so a surviving hit has some weight.
