@@ -340,19 +340,28 @@ static func player_bonus_for(bone_id: String) -> Dictionary:
 	}
 
 
+# Returns the quality-adjusted bonus for a single bone as floats. Callers
+# that aggregate several bones must sum these floats first and round once
+# at the end (see aggregate_player_bonuses): rounding attack_damage/max_health
+# per bone before summing would let each bone's fraction round up
+# independently (e.g. three bones at +0.5 would total +3 instead of the
+# correct +2 for a combined +1.5), inflating stats with more equipped
+# pieces even when the underlying bonus total is unchanged.
 static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
 	var bonus := player_bonus_for(bone_id)
 	var multiplier := quality_multiplier_for(bone_id)
 	return {
 		"move_speed": float(bonus["move_speed"]) * multiplier,
 		"attack_range": float(bonus["attack_range"]) * multiplier,
-		"attack_damage": roundi(float(bonus["attack_damage"]) * multiplier),
-		"max_health": roundi(float(bonus["max_health"]) * multiplier),
+		"attack_damage": float(bonus["attack_damage"]) * multiplier,
+		"max_health": float(bonus["max_health"]) * multiplier,
 	}
 
 
 static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 	var total: Dictionary = PLAYER_BONUS_DEFAULTS.duplicate()
+	var attack_damage_total := 0.0
+	var max_health_total := 0.0
 	for slot_id in equipment_state:
 		var bone_id: String = str(equipment_state[slot_id])
 		if bone_id == "":
@@ -360,8 +369,10 @@ static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 		var bonus: Dictionary = adjusted_player_bonus_for(bone_id)
 		total["move_speed"] = float(total["move_speed"]) + float(bonus["move_speed"])
 		total["attack_range"] = float(total["attack_range"]) + float(bonus["attack_range"])
-		total["attack_damage"] = int(total["attack_damage"]) + int(bonus["attack_damage"])
-		total["max_health"] = int(total["max_health"]) + int(bonus["max_health"])
+		attack_damage_total += float(bonus["attack_damage"])
+		max_health_total += float(bonus["max_health"])
+	total["attack_damage"] = roundi(attack_damage_total)
+	total["max_health"] = roundi(max_health_total)
 	return total
 
 
