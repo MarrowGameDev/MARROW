@@ -44,8 +44,9 @@ Campos principales:
 - `color`: color fisico del hueso.
 - `slot`: slot de equipamiento canonico (`head`, `torso`, `left_arm`,
   `right_arm`, `left_leg`, `right_leg`) o alias legacy aceptado durante
-  migracion (`body`, `legs`, `ribs`, `ribcage`, `chest`, `arm_left`,
-  `arm_right`, `leg_left`, `leg_right`).
+  migracion (`body`, `legs` -- los unicos dos que aparecen realmente en
+  `data/bones/*.tres` hoy; no agregar aliases especulativos sin un
+  consumidor real).
 - `tags`: tags generales.
 - `description`: texto visible para UI.
 

@@ -71,10 +71,13 @@ Slots principales:
 - `left_leg`
 - `right_leg`
 
-Aliases legacy aceptados:
-- `body`, `ribs`, `ribcage`, `chest` -> `torso`
-- `legs` -> compatible con `right_leg` y `left_leg`
-- `arm_left`, `arm_right`, `leg_left`, `leg_right` -> lado canonico
+Aliases legacy aceptados (solo los que tienen consumidor real en
+`data/bones/*.tres`; no agregar aliases especulativos):
+- `body` -> `torso`
+- `legs` -> compatible con `right_leg` y `left_leg` (equip-next resuelve al
+  primer lado libre via `PlayerEquipmentComponent._first_open_compatible_slot`;
+  `normalize_slot_id("legs")` sigue devolviendo `right_leg` como valor unico
+  por defecto para contextos que necesitan un solo id, como display/orden)
 
 `torso` es el slot de equipamiento. `body` sigue siendo un socket del rig y un
 valor legacy en datos viejos. No se debe mezclar socket del rig, slot de equipo
@@ -330,3 +333,34 @@ En `TESTING ENVIRONMENT`:
   `quality_*_percent` en `Player.get_inventory_stats_snapshot()`, que antes
   se calculaban y se descartaban sin ningun consumidor. No se agrego
   defensa, stamina ni movilidad: esos stats no existen en el proyecto.
+- 2026-07-15 (correccion): `_slot_for_request` resolvia el slot por defecto
+  de un hueso bilateral (`legs`, o `right_arm` sin `limb_key`) llamando a
+  `EquipmentRulesService.slot_for_bone`, una funcion pura sin estado que
+  siempre devuelve el primer slot compatible. Equipar-siguiente con dos
+  huesos de pierna genericos nunca podia alcanzar `left_leg`. Se agrego
+  `PlayerEquipmentComponent._first_open_compatible_slot`, que consulta el
+  `equipped` real del componente y elige el primer slot compatible vacio.
+  Verificado en Godot 4.7 headless: dos `leg_bone` equipados via
+  equip-next ahora terminan en `{"left_leg": "leg_bone", "right_leg":
+  "leg_bone"}`. De paso se encontro y corrigio un bug de tipado de
+  GDScript: `compatible_slots_for_bone` devolvia arrays literales sin
+  tipar explicitamente, lo cual fallaba en runtime ("Trying to assign an
+  array of type Array to a variable of type Array[String]") para
+  cualquier llamador externo a la clase que asignara el resultado a una
+  variable tipada; ahora construye el array con `.append()`.
+- 2026-07-15: Se eliminaron 7 de los 9 aliases legacy de slot (`ribs`,
+  `ribcage`, `chest`, `arm_left`, `arm_right`, `leg_left`, `leg_right`):
+  ningun archivo en `data/bones/*.tres` ni codigo en `scripts/` los produce
+  (verificado por grep). Solo quedan `body` y `legs`, que si tienen datos
+  reales. `tools/validate_bone_data.py` actualizado para no exigirlos.
+- 2026-07-15: Se elimino `PlayerEquipmentComponent.get_equipped_bone_defs`
+  (cero llamadores; existe una funcion homonima pero distinta en
+  `ModularSkeletonRig` que si se usa).
+- 2026-07-15: El panel de informacion del inventario ahora compara el hueso
+  bajo el cursor contra el equipado en el mismo slot (deltas de
+  move_speed/attack_range/attack_damage/max_health via
+  `BoneRulesService.adjusted_player_bonus_for`, los unicos stats de hueso
+  que existen). No se inventaron stats de defensa/peso para la comparacion.
+- 2026-07-15: `BoneSlotWidget` pinta el borde del slot en verde/rojo
+  mientras un drag lo sobrevuela, segun `can_equip_bone_in_slot`, y lo
+  restaura en `NOTIFICATION_DRAG_END`.
