@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
-"""Validate bone durability, mutation and synergy rule contracts.
+"""Validate bone durability, mutation and synergy DATA SCHEMA and pure
+rule helpers.
 
-This is a read-only static/simulated check for the shared BoneRulesService
-contract. Runtime state for individual item durability can be added later
-without duplicating these formulas in UI or Player.
+Scope (deliberately limited -- see docs/bone_data_structure.md): this
+milestone is data schema plus pure, stateless helper functions in
+BoneRulesService (durability_profile_for, mutation_profile_for,
+synergy_profile_for, equipment_synergy_summary). None of it is wired
+into gameplay yet -- durability never decreases, repair does nothing,
+set/synergy bonuses are never applied to stats, and mutations produce no
+effect. This is a read-only static/simulated check; it confirms the pure
+functions exist and compute correctly against Python-mirrored expected
+values, not that anything calls them at runtime. Runtime state for
+individual item durability, and the rules that consume these helpers,
+are future work.
 """
 
 from __future__ import annotations
@@ -229,7 +238,7 @@ def main() -> int:
     if errors:
         print(f"Result: FAIL ({len(errors)} error(s)).")
         return 1
-    print("Result: OK (durability and synergy contracts intact).")
+    print("Result: OK (data schema and pure rule helpers intact; NOT wired into gameplay).")
     return 0
 
 

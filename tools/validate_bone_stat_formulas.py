@@ -63,8 +63,8 @@ def clamp(value: float, minimum: float, maximum: float) -> float:
 def calculate(case: Case) -> dict[str, float]:
     move_bonus = 0.0
     range_bonus = 0.0
-    damage_bonus = 0
-    health_bonus = 0
+    damage_bonus_float = 0.0
+    health_bonus_float = 0.0
     damage_percent = 0.0
     speed_percent = 0.0
     health_percent = 0.0
@@ -77,8 +77,12 @@ def calculate(case: Case) -> dict[str, float]:
             continue
         move_bonus += bone.move_speed_bonus * bone.quality_multiplier
         range_bonus += bone.attack_range_bonus * bone.quality_multiplier
-        damage_bonus += godot_roundi(bone.attack_damage_bonus * bone.quality_multiplier)
-        health_bonus += godot_roundi(bone.max_health_bonus * bone.quality_multiplier)
+        # Sum as floats and round once after the loop (see
+        # BoneRulesService.adjusted_player_bonus_for): rounding each bone's
+        # bonus before summing would let per-bone fractions round up
+        # independently and inflate the total as more pieces are equipped.
+        damage_bonus_float += bone.attack_damage_bonus * bone.quality_multiplier
+        health_bonus_float += bone.max_health_bonus * bone.quality_multiplier
         damage_percent += bone.quality_damage_percent
         speed_percent += bone.quality_speed_percent
         health_percent += bone.quality_health_percent
@@ -95,6 +99,11 @@ def calculate(case: Case) -> dict[str, float]:
 
     load_over_free = max(0.0, equipment_weight - FREE_WEIGHT)
     load_speed_penalty = clamp(load_over_free * PENALTY_PER_WEIGHT, 0.0, PENALTY_MAX)
+
+    # Round the summed float bonus once here (matching
+    # BoneRulesService.aggregate_player_bonuses), not per bone before summing.
+    damage_bonus = godot_roundi(damage_bonus_float)
+    health_bonus = godot_roundi(health_bonus_float)
 
     move_before_percent = case.base_move_speed + move_bonus
     move_multiplier = max(0.1, (1.0 + speed_percent) * (1.0 - load_speed_penalty))
@@ -183,6 +192,29 @@ CASES = [
             "equipment_weight": 3.5,
             "load_speed_penalty": 0.03,
             "quality_speed_percent": -0.05,
+        },
+    ),
+    Case(
+        name="fractional per-bone bonuses round once after summing, not per bone",
+        base_move_speed=5.0,
+        base_attack_range=1.0,
+        base_attack_damage=0,
+        base_max_health=1,
+        bones=[
+            # Three bones each contribute +0.5 damage and +0.5 health
+            # (1 * 0.5 quality_multiplier). Rounding each bone before
+            # summing would give 1+1+1=3 damage and 1+1+1+base(1)=4
+            # health; rounding the 1.5 sum once gives 2 and 3 instead.
+            Bone(0.0, 0.0, 1, 1, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            Bone(0.0, 0.0, 1, 1, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            Bone(0.0, 0.0, 1, 1, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        ],
+        expected={
+            "move_speed": 5.0,
+            "attack_range": 1.0,
+            "attack_damage": 2,
+            "max_health": 3,
+            "load_speed_penalty": 0.0,
         },
     ),
 ]

@@ -42,10 +42,18 @@ Campos principales:
 - `bone_id`: id estable, por ejemplo `arm_bone`.
 - `display_name`: nombre visible.
 - `color`: color fisico del hueso.
-- `slot`: slot de equipamiento (`right_arm`, `left_arm`, `body`, `legs`,
-  `head`).
+- `slot`: slot de equipamiento canonico (`head`, `torso`, `left_arm`,
+  `right_arm`, `left_leg`, `right_leg`) o alias legacy aceptado durante
+  migracion (`body`, `legs` -- los unicos dos que aparecen realmente en
+  `data/bones/*.tres` hoy; no agregar aliases especulativos sin un
+  consumidor real).
 - `tags`: tags generales.
 - `description`: texto visible para UI.
+
+`EquipmentRulesService.normalize_slot_id` convierte aliases legacy a los ids
+canonicos que usa el runtime. Los Resources viejos pueden seguir declarando
+`body` o `legs`, pero los sistemas nuevos deben guardar y comparar slots
+canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 ## Calidad
 
@@ -97,6 +105,25 @@ Campos:
 
 `rarity_drop_weight` esta listo para tablas ponderadas, pero no cambia drops
 automaticamente todavia.
+
+## Alcance De Durabilidad, Mutacion Y Set/Sinergia
+
+Estas tres secciones (Durabilidad, Mutacion, Set Y Sinergia) son
+deliberadamente solo esquema de datos y helpers puros y deterministas en
+`BoneRulesService`. Nada de esto esta conectado a gameplay todavia:
+
+- La durabilidad no disminuye en runtime; no existe estado por copia.
+- Reparar no hace nada; `durability_repair_cost_for` solo calcula un numero.
+- Los sets/sinergias no aplican bonus a stats; `equipment_synergy_summary`
+  solo resume que hay repetido.
+- Las mutaciones no producen ningun efecto (visual, de rig, de IA o de
+  combate).
+- Ninguna de las funciones nuevas de `BoneRulesService` para estos temas
+  tiene un llamador fuera de si misma o del validador que las prueba.
+
+Esto es intencional: el objetivo de este hito era preparar datos y reglas
+puras reutilizables, no implementar las mecanicas de juego. Ver
+`docs/roadmap_1_165.md` objetivos 70-75, marcados "No iniciado".
 
 ## Durabilidad
 

@@ -72,13 +72,13 @@ SCRIPT_CHECKS = [
     Check("sync clears previous slots", "inventory_preview_rig.unequip_slot(str(slot_id))", "sync_preview"),
     Check("sync reads bone definitions through service", "BoneRulesService.definition_for(bone_id)", "sync_preview"),
     Check("sync equips preview rig", "inventory_preview_rig.equip_bone(bone_id, bone_def)", "sync_preview"),
+    Check("sync only commits applied slots", "applied_snapshot[slot] = bone_id", "sync_preview"),
+    Check("sync caches snapshot after the apply loop, not before", "inventory_preview_equipment_snapshot = applied_snapshot", "sync_preview"),
     Check("preview snapshot helper exists", "func _preview_equipment_snapshot() -> Dictionary:"),
     Check("preview snapshot match helper exists", "func _preview_snapshot_matches(next_snapshot: Dictionary) -> bool:"),
     Check("paper doll contains preview panel", "doll.add_child(_build_character_preview_panel())", "_build_paper_doll"),
     Check("responsive layout uses base preview size", "var preview_size := _inventory_preview_base_size() * doll_scale", "_apply_paper_doll_responsive_layout"),
     Check("responsive layout sets preview minimum", "inventory_preview_container.custom_minimum_size = preview_size", "_apply_paper_doll_responsive_layout"),
-    Check("responsive layout syncs viewport size", "_sync_preview_viewport_size()", "_apply_paper_doll_responsive_layout"),
-    Check("preview viewport size helper exists", "func _sync_preview_viewport_size() -> void:"),
     Check("preview base size helper exists", "func _inventory_preview_base_size() -> Vector2:"),
 ]
 
@@ -134,11 +134,22 @@ def run_script_checks(script_text: str, report: Report) -> None:
     if preview_function.count("Camera3D.new()") != 1:
         report.error("preview should create exactly one preview camera")
 
-    viewport_size_function = extract_function(script_text, "_sync_preview_viewport_size", report)
-    if "maxi(1, roundi(target_size.x))" not in viewport_size_function:
-        report.error("preview viewport width should be clamped to at least 1 pixel")
-    if "maxi(1, roundi(target_size.y))" not in viewport_size_function:
-        report.error("preview viewport height should be clamped to at least 1 pixel")
+    sync_function = extract_function(script_text, "sync_preview", report)
+    apply_index = sync_function.find("applied_snapshot[slot] = bone_id")
+    commit_index = sync_function.find("inventory_preview_equipment_snapshot = applied_snapshot")
+    if apply_index == -1 or commit_index == -1:
+        report.error("sync_preview must build and commit applied_snapshot")
+    elif commit_index < apply_index:
+        report.error(
+            "sync_preview commits inventory_preview_equipment_snapshot before "
+            "applying bone definitions; a slot with an unresolved definition "
+            "would be cached as synced even though it was never equipped"
+        )
+    if "_sync_preview_viewport_size" in script_text:
+        report.error(
+            "manual SubViewport resize was reintroduced; "
+            "inventory_preview_container.stretch already resizes it"
+        )
 
     if "inventory_preview_viewport.world_3d = get_viewport().world_3d" in script_text:
         report.error("preview must not reuse the playable viewport world")

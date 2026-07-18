@@ -150,6 +150,59 @@ Para reproducir manualmente en `TESTING ENVIRONMENT`:
 10. Confirmar que no existe doble interpolacion: el pivot de camara se mueve en
     `_physics_process`, mientras `_process` solo ajusta `SpringArm3D.spring_length`.
 
+## Comportamiento Esperado Sobre 60 FPS Y Physics Interpolation
+
+`project.godot` no sobreescribe `physics/common/physics_ticks_per_second`
+(el default de Godot 4 es 60) ni `physics/common/physics_interpolation`
+(el default es `false`, apagado). Con el follow de camara en
+`_physics_process`, esto implica:
+
+- A 60 FPS o menos, el pivot de camara se actualiza en el mismo tick de
+  fisica que el movimiento del jugador. No deberia haber diferencia visible
+  respecto al comportamiento anterior en `_process` para ese caso, salvo la
+  correccion de orden ya descrita en "Diagnostico de jitter".
+- Por encima de 60 FPS (monitor con mas Hz que la tasa de fisica), el motor
+  sigue corriendo `_physics_process` a 60 Hz. El pivot de camara ahora se
+  mueve en pasos discretos de fisica en vez de interpolar cada frame de
+  render, lo que puede sentirse menos fluido que un follow en `_process`
+  puro, aunque evita el desfase de un tick contra el movimiento del jugador
+  que motivo este fix. Este es el trade-off estandar documentado por Godot
+  para mover camara en `_physics_process`.
+- `physics_interpolation = true` es la herramienta que Godot ofrece
+  especificamente para ese caso (interpola la posicion visual entre ticks de
+  fisica sin mover la logica de gameplay a `_process`). No se activo en esta
+  rama: es un cambio de configuracion de proyecto con superficie mas amplia
+  que este fix puntual (afecta todo nodo con `top_level`/fisica, no solo la
+  camara), y activarlo sin poder probarlo con FPS alto en este equipo seria
+  especulativo. Queda como candidato a evaluar en una rama separada si el
+  jitter persiste en runtime por encima de 60 FPS.
+
+## Escrituras Directas De global_position (Examinadas, No Modificadas)
+
+`tools/validate_jitter_update_contract.py` senala dos escrituras directas a
+`global_position` en `scripts/player.gd` como sospechosas de jitter porque
+evitan `move_and_slide()`. Se examinaron sin corregirlas especulativamente,
+ya que ninguna es parte del movimiento normal por frame:
+
+- `player.gd:1331` (`_detach_head_from_torso_after_miss`): teleport de una
+  sola vez cuando el torso se separa de la cabeza. Ya tiene compensacion de
+  camara: fija `detached_camera_offset_carry` y
+  `detached_camera_offset_carry_timer = 0.16`, que
+  `_update_camera_animation_follow_offset` (`player.gd:1069-1071`) usa para
+  interpolar `animation_offset` hacia el offset del salto durante 0.16s en
+  vez de que la camara salte de golpe con el jugador.
+- `player.gd:1556` (`_align_player_body_pose_to_detached_torso_marker`,
+  llamada una sola vez desde `_finish_reattach_head_to_detached_torso` al
+  completar el reattach): tambien es un teleport de una sola vez, pero **no**
+  se encontro ningun mecanismo equivalente de `*_carry` que compense la
+  camara para este caso. Es asimetrico respecto al detach.
+
+Esto es una observacion, no un fix: no se toco ninguna de las dos escrituras
+en esta rama. Si el jitter reportado ocurre especificamente al completar un
+reattach de torso, el paso 6 de "Diagnostico de jitter" arriba ya pide
+anotar ese momento por separado; la ausencia de compensacion en el reattach
+es el sospechoso principal a revisar primero si esa prueba lo confirma.
+
 ## Historial de cambios
 
 - 2026-07-14: Se documento el flujo actual de camara.
@@ -162,3 +215,15 @@ Para reproducir manualmente en `TESTING ENVIRONMENT`:
 - 2026-07-15: Se sincronizo el follow de camara y el offset horizontal de
   animacion con `_physics_process`; runtime queda pendiente de validacion en
   Godot.
+- 2026-07-15: Se documento el comportamiento esperado sobre 60 FPS y la
+  relacion con `physics_interpolation` (no activado, candidato a rama
+  separada). Se examinaron las dos escrituras directas de `global_position`
+  senaladas por el validador (`player.gd:1331` y `:1556`, ambas teleports de
+  un solo evento del mecanismo de detach/reattach de torso, no movimiento
+  por frame) sin modificarlas: la de detach ya compensa la camara con
+  `detached_camera_offset_carry`; la de reattach no tiene compensacion
+  equivalente, lo cual queda registrado como sospechoso a revisar si el
+  jitter runtime se confirma en ese momento especifico. Godot 4.7 esta
+  disponible en este equipo (ver `docs/p0_runtime_validation_suite.md`),
+  pero confirmar o descartar el jitter en si requiere un humano jugando la
+  escena; no se afirma aqui que el jitter haya quedado resuelto.

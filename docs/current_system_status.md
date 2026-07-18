@@ -72,8 +72,9 @@ refactor pass.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`. Equipped
   load can apply a capped movement-speed penalty through `BoneRulesService`.
-- Bone set/synergy fields can now be summarized from equipped state through
-  `BoneRulesService`; no automatic set bonuses are active yet.
+- Bone set/synergy fields can be summarized from equipped state through
+  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
+  applied to stats yet, and durability does not decrease at runtime.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 

@@ -12,6 +12,10 @@ var _box: ColorRect
 var _label: Label
 var _slot_label: Label
 var _slot_size: Vector2 = Vector2(82, 80)
+var _frame: PanelContainer
+const _FRAME_BORDER_DEFAULT := Color(0.87, 0.63, 0.19, 0.68)
+const _FRAME_BORDER_VALID := Color(0.34, 0.78, 0.36, 0.85)
+const _FRAME_BORDER_INVALID := Color(0.82, 0.24, 0.20, 0.85)
 
 
 func setup(slot: String, short: String, player_ref: Node, requested_size: Vector2 = Vector2(96, 96)) -> void:
@@ -26,12 +30,12 @@ func setup(slot: String, short: String, player_ref: Node, requested_size: Vector
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var frame := PanelContainer.new()
-	frame.position = Vector2(0, 0)
-	frame.size = _slot_size
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_theme_stylebox_override("panel", _make_slot_style(Color(1.0, 1.0, 1.0, 0.22), Color(0.87, 0.63, 0.19, 0.68), 1))
-	add_child(frame)
+	_frame = PanelContainer.new()
+	_frame.position = Vector2(0, 0)
+	_frame.size = _slot_size
+	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_frame.add_theme_stylebox_override("panel", _make_slot_style(Color(1.0, 1.0, 1.0, 0.22), _FRAME_BORDER_DEFAULT, 1))
+	add_child(_frame)
 
 	_slot_label = Label.new()
 	_slot_label.position = Vector2(4.0 * x_scale, 5.0 * y_scale)
@@ -119,16 +123,40 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	return {"bone_id": bone_id, "source": "slot", "slot": slot_name}
 
 
-# Accept a bone only if it belongs to THIS slot.
+# Accept a bone only if it belongs to THIS slot. Also paints the frame
+# border green/red while the drag hovers this slot, so the player sees
+# whether dropping here would work before releasing.
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	if typeof(data) != TYPE_DICTIONARY or not data.has("bone_id"):
+		_set_frame_border(_FRAME_BORDER_DEFAULT)
 		return false
-	return EquipmentRulesService.slot_for_bone(data["bone_id"]) == slot_name
+	var valid := EquipmentRulesService.can_equip_bone_in_slot(str(data["bone_id"]), slot_name)
+	_set_frame_border(_FRAME_BORDER_VALID if valid else _FRAME_BORDER_INVALID)
+	return valid
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
-	if player != null and player.has_method("equip_bone"):
-		player.equip_bone(data["bone_id"])
+	_set_frame_border(_FRAME_BORDER_DEFAULT)
+	if player != null and player.has_method("equip_bone_in_slot"):
+		player.equip_bone_in_slot(str(data["bone_id"]), slot_name)
+
+
+# _can_drop_data stops being called once the cursor leaves this control
+# without a drop, so the border would otherwise stay tinted from the last
+# hover. NOTIFICATION_DRAG_END fires on every widget when any drag ends
+# anywhere, which resets it even if the piece was dropped elsewhere.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		_set_frame_border(_FRAME_BORDER_DEFAULT)
+
+
+func _set_frame_border(color: Color) -> void:
+	if _frame == null:
+		return
+	var style := _frame.get_theme_stylebox("panel") as StyleBoxFlat
+	if style == null or style.border_color == color:
+		return
+	style.border_color = color
 
 
 # Right-click clears this slot.

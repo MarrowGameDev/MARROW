@@ -23,6 +23,7 @@
 - `scripts/bone_trial_gate.gd`
 - `scripts/equipment_rules_service.gd`
 - `scripts/limb_bone_pickup.gd`
+- `scripts/player_equipment_builds_component.gd`
 - `scripts/player_equipment_component.gd`
 - `scripts/player_inventory_component.gd`
 - `scripts/player_inventory_ui.gd`
@@ -43,6 +44,7 @@
 ## Supporting gameplay
 
 - `scripts/_rt6.gd`
+- `scripts/backstab_rules_service.gd`
 - `scripts/ballistics_service.gd`
 - `scripts/combat_targeting_service.gd`
 - `scripts/drop_pickup_rules_service.gd`

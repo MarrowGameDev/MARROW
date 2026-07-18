@@ -352,6 +352,19 @@ class AttackHitbox:
         """Godot signal: hit_confirmed(target: Node)"""
         pass
 
+class BackstabRulesService:
+    """Godot script: scripts/backstab_rules_service.gd
+    class_name: BackstabRulesService
+    extends: unknown
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/backstab_rules_service.gd'
+    godot_class_name = 'BackstabRulesService'
+    godot_extends = ''
+    gameplay_system = 'Supporting gameplay'
+
+    pass
+
 class BallisticsService:
     """Godot script: scripts/ballistics_service.gd
     class_name: BallisticsService
@@ -706,9 +719,9 @@ class DropPickupRulesService:
     godot_extends = ''
     gameplay_system = 'Supporting gameplay'
 
-    def depends_on_BoneDatabase(self):
-        """Relationship: references class BoneDatabase."""
-        return BoneDatabase
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
 
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
@@ -855,6 +868,30 @@ class Enemy:
 
     def gd_func_try_stealth_finish(self):
         """GDScript function: try_stealth_finish(player: Node3D, player_damage: int, hit_from: Vector3) -> bool"""
+        pass
+
+    def gd_func_apply_stealth_finish_impact(self):
+        """GDScript function: apply_stealth_finish_impact(player: Node3D, player_damage: int, hit_from: Vector3) -> bool"""
+        pass
+
+    def gd_func_finish_stealth_execution(self):
+        """GDScript function: finish_stealth_execution(player: Node3D) -> void"""
+        pass
+
+    def gd_func_cancel_stealth_execution(self):
+        """GDScript function: cancel_stealth_execution(player: Node3D) -> void"""
+        pass
+
+    def gd_func__begin_stealth_execution(self):
+        """GDScript function: _begin_stealth_execution(player: Node3D, hit_from: Vector3) -> void"""
+        pass
+
+    def gd_func__clear_stealth_execution(self):
+        """GDScript function: _clear_stealth_execution() -> void"""
+        pass
+
+    def gd_func__update_stealth_execution_hold(self):
+        """GDScript function: _update_stealth_execution_hold() -> bool"""
         pass
 
     def gd_func__can_see_player(self):
@@ -1224,6 +1261,10 @@ class Enemy:
     def depends_on_ArrowProjectile(self):
         """Relationship: loads resource."""
         return ArrowProjectile
+
+    def depends_on_BackstabRulesService(self):
+        """Relationship: references class BackstabRulesService."""
+        return BackstabRulesService
 
     def depends_on_BallisticsService(self):
         """Relationship: references class BallisticsService."""
@@ -1788,6 +1829,42 @@ class Player:
         """GDScript function: _try_stealth_finish() -> void"""
         pass
 
+    def gd_func__start_backstab_execution(self):
+        """GDScript function: _start_backstab_execution(target: Node3D, damage: int, hit_from: Vector3) -> void"""
+        pass
+
+    def gd_func__update_backstab_execution(self):
+        """GDScript function: _update_backstab_execution(delta: float) -> void"""
+        pass
+
+    def gd_func__on_backstab_animator_impact(self):
+        """GDScript function: _on_backstab_animator_impact() -> void"""
+        pass
+
+    def gd_func__apply_backstab_impact_once(self):
+        """GDScript function: _apply_backstab_impact_once() -> void"""
+        pass
+
+    def gd_func__finish_backstab_execution(self):
+        """GDScript function: _finish_backstab_execution() -> void"""
+        pass
+
+    def gd_func__cancel_backstab_execution(self):
+        """GDScript function: _cancel_backstab_execution() -> void"""
+        pass
+
+    def gd_func__clear_backstab_execution_state(self):
+        """GDScript function: _clear_backstab_execution_state() -> void"""
+        pass
+
+    def gd_func__is_backstab_executing(self):
+        """GDScript function: _is_backstab_executing() -> bool"""
+        pass
+
+    def gd_func__face_backstab_target(self):
+        """GDScript function: _face_backstab_target(target: Node3D) -> void"""
+        pass
+
     def gd_func__next_combo_animation_step(self):
         """GDScript function: _next_combo_animation_step() -> int"""
         pass
@@ -1892,6 +1969,18 @@ class Player:
         """GDScript function: get_inventory_stats_snapshot() -> Dictionary"""
         pass
 
+    def gd_func_save_equipment_build(self):
+        """GDScript function: save_equipment_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_apply_equipment_build(self):
+        """GDScript function: apply_equipment_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_get_equipment_build_summaries(self):
+        """GDScript function: get_equipment_build_summaries() -> Array"""
+        pass
+
     def gd_func_take_player_damage(self):
         """GDScript function: take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void"""
         pass
@@ -1925,7 +2014,7 @@ class Player:
         pass
 
     def gd_func_equip_bone(self):
-        """GDScript function: equip_bone(bone_id: String) -> void"""
+        """GDScript function: equip_bone(bone_id: String, target_slot: String = "") -> void"""
         pass
 
     def gd_func_unequip_slot(self):
@@ -2112,6 +2201,10 @@ class Player:
         """Relationship: references class PlayerCameraController."""
         return PlayerCameraController
 
+    def depends_on_PlayerEquipmentBuildsComponent(self):
+        """Relationship: references class PlayerEquipmentBuildsComponent."""
+        return PlayerEquipmentBuildsComponent
+
     def depends_on_PlayerEquipmentComponent(self):
         """Relationship: references class PlayerEquipmentComponent."""
         return PlayerEquipmentComponent
@@ -2149,6 +2242,10 @@ class PlayerCameraController:
 
     def gd_func__ready(self):
         """GDScript function: _ready() -> void"""
+        pass
+
+    def gd_func__physics_process(self):
+        """GDScript function: _physics_process(delta: float) -> void"""
         pass
 
     def gd_func__process(self):
@@ -2207,6 +2304,89 @@ class PlayerCameraController:
         """GDScript function: _apply_orbit_rotation() -> void"""
         pass
 
+class PlayerEquipmentBuildsComponent:
+    """Godot script: scripts/player_equipment_builds_component.gd
+    class_name: PlayerEquipmentBuildsComponent
+    extends: Node
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/player_equipment_builds_component.gd'
+    godot_class_name = 'PlayerEquipmentBuildsComponent'
+    godot_extends = 'Node'
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def gd_func_setup(self):
+        """GDScript function: setup(player: Node, equipment: PlayerEquipmentComponent) -> void"""
+        pass
+
+    def gd_func_save_current_build(self):
+        """GDScript function: save_current_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_apply_build(self):
+        """GDScript function: apply_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_validate_build_state(self):
+        """GDScript function: validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dictionary"""
+        pass
+
+    def gd_func_get_build_summaries(self):
+        """GDScript function: get_build_summaries() -> Array"""
+        pass
+
+    def gd_func__apply_validated_state(self):
+        """GDScript function: _apply_validated_state(target_state: Dictionary) -> void"""
+        pass
+
+    def gd_func__matches_equipment_state(self):
+        """GDScript function: _matches_equipment_state(target_state: Dictionary) -> bool"""
+        pass
+
+    def gd_func__sanitize_build_state(self):
+        """GDScript function: _sanitize_build_state(raw_state: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__bone_counts(self):
+        """GDScript function: _bone_counts(items: Array) -> Dictionary"""
+        pass
+
+    def gd_func__inventory_items(self):
+        """GDScript function: _inventory_items() -> Array"""
+        pass
+
+    def gd_func__load_builds(self):
+        """GDScript function: _load_builds() -> void"""
+        pass
+
+    def gd_func__save_builds(self):
+        """GDScript function: _save_builds() -> void"""
+        pass
+
+    def gd_func__summary_for_state(self):
+        """GDScript function: _summary_for_state(state: Dictionary) -> String"""
+        pass
+
+    def gd_func__valid_index(self):
+        """GDScript function: _valid_index(index: int) -> bool"""
+        pass
+
+    def gd_func__result(self):
+        """GDScript function: _result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary"""
+        pass
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_EquipmentRulesService(self):
+        """Relationship: references class EquipmentRulesService."""
+        return EquipmentRulesService
+
+    def depends_on_PlayerEquipmentComponent(self):
+        """Relationship: references class PlayerEquipmentComponent."""
+        return PlayerEquipmentComponent
+
 class PlayerEquipmentComponent:
     """Godot script: scripts/player_equipment_component.gd
     class_name: PlayerEquipmentComponent
@@ -2227,7 +2407,7 @@ class PlayerEquipmentComponent:
         pass
 
     def gd_func_equip_bone(self):
-        """GDScript function: equip_bone(bone_id: String) -> void"""
+        """GDScript function: equip_bone(bone_id: String, target_slot: String = "") -> void"""
         pass
 
     def gd_func_restore_detached_body(self):
@@ -2259,7 +2439,15 @@ class PlayerEquipmentComponent:
         pass
 
     def gd_func__equip_bone_in_slot(self):
-        """GDScript function: _equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool"""
+        """GDScript function: _equip_bone_in_slot(bone_id: String, force_core: bool = false, target_slot: String = "") -> bool"""
+        pass
+
+    def gd_func__slot_for_request(self):
+        """GDScript function: _slot_for_request(bone_id: String, target_slot: String = "") -> String"""
+        pass
+
+    def gd_func__first_open_compatible_slot(self):
+        """GDScript function: _first_open_compatible_slot(bone_id: String) -> String"""
         pass
 
     def gd_func__can_equip_slot(self):
@@ -2296,6 +2484,10 @@ class PlayerEquipmentComponent:
 
     def gd_func__get_run_stats(self):
         """GDScript function: _get_run_stats() -> Dictionary"""
+        pass
+
+    def gd_func__definition_for_slot(self):
+        """GDScript function: _definition_for_slot(bone_id: String, slot: String) -> Dictionary"""
         pass
 
     def gd_func__tint_visual(self):
@@ -2452,6 +2644,10 @@ class PlayerInventoryUI:
         """GDScript function: equip_bone(bone_id: String) -> void"""
         pass
 
+    def gd_func_equip_bone_in_slot(self):
+        """GDScript function: equip_bone_in_slot(bone_id: String, slot: String) -> void"""
+        pass
+
     def gd_func_unequip_slot(self):
         """GDScript function: unequip_slot(slot: String) -> void"""
         pass
@@ -2462,6 +2658,10 @@ class PlayerInventoryUI:
 
     def gd_func_show_bone_info(self):
         """GDScript function: show_bone_info(bone_id: String) -> void"""
+        pass
+
+    def gd_func__bone_comparison_text(self):
+        """GDScript function: _bone_comparison_text(bone_id: String) -> String"""
         pass
 
     def gd_func_clear_bone_info(self):
@@ -2528,6 +2728,70 @@ class PlayerInventoryUI:
         """GDScript function: _build_settings_panel() -> ScrollContainer"""
         pass
 
+    def gd_func__build_equipment_builds_tab(self):
+        """GDScript function: _build_equipment_builds_tab() -> ScrollContainer"""
+        pass
+
+    def gd_func__build_equipment_build_card(self):
+        """GDScript function: _build_equipment_build_card(index: int) -> Control"""
+        pass
+
+    def gd_func__build_build_preview(self):
+        """GDScript function: _build_build_preview(index: int) -> Control"""
+        pass
+
+    def gd_func__sync_all_build_previews(self):
+        """GDScript function: _sync_all_build_previews() -> void"""
+        pass
+
+    def gd_func__sync_build_preview(self):
+        """GDScript function: _sync_build_preview(index: int) -> void"""
+        pass
+
+    def gd_func__equip_bone_on_rig(self):
+        """GDScript function: _equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void"""
+        pass
+
+    def gd_func__raw_build_state(self):
+        """GDScript function: _raw_build_state(index: int) -> Dictionary"""
+        pass
+
+    def gd_func__make_build_preset_button(self):
+        """GDScript function: _make_build_preset_button(text: String) -> Button"""
+        pass
+
+    def gd_func__save_equipment_build(self):
+        """GDScript function: _save_equipment_build(index: int) -> void"""
+        pass
+
+    def gd_func__apply_equipment_build(self):
+        """GDScript function: _apply_equipment_build(index: int) -> void"""
+        pass
+
+    def gd_func__build_slot_is_empty(self):
+        """GDScript function: _build_slot_is_empty(index: int) -> bool"""
+        pass
+
+    def gd_func__consume_or_arm_confirmation(self):
+        """GDScript function: _consume_or_arm_confirmation(action: String, index: int, button_text: String) -> bool"""
+        pass
+
+    def gd_func__on_build_preset_confirm_timeout(self):
+        """GDScript function: _on_build_preset_confirm_timeout(expected_key: String) -> void"""
+        pass
+
+    def gd_func__disarm_build_preset_confirmation(self):
+        """GDScript function: _disarm_build_preset_confirmation() -> void"""
+        pass
+
+    def gd_func__refresh_build_preset_rows(self):
+        """GDScript function: _refresh_build_preset_rows() -> void"""
+        pass
+
+    def gd_func__set_build_preset_status(self):
+        """GDScript function: _set_build_preset_status(text: String) -> void"""
+        pass
+
     def gd_func__build_control_binding_row(self):
         """GDScript function: _build_control_binding_row(action: String, label_text: String) -> Control"""
         pass
@@ -2552,6 +2816,10 @@ class PlayerInventoryUI:
         """GDScript function: _build_character_preview_panel() -> Control"""
         pass
 
+    def gd_func__inventory_preview_base_size(self):
+        """GDScript function: _inventory_preview_base_size() -> Vector2"""
+        pass
+
     def gd_func__build_preview_room(self):
         """GDScript function: _build_preview_room(parent: Node3D) -> void"""
         pass
@@ -2562,6 +2830,14 @@ class PlayerInventoryUI:
 
     def gd_func_sync_preview(self):
         """GDScript function: sync_preview() -> void"""
+        pass
+
+    def gd_func__preview_equipment_snapshot(self):
+        """GDScript function: _preview_equipment_snapshot() -> Dictionary"""
+        pass
+
+    def gd_func__preview_snapshot_matches(self):
+        """GDScript function: _preview_snapshot_matches(next_snapshot: Dictionary) -> bool"""
         pass
 
     def gd_func__build_paper_doll(self):
@@ -2672,6 +2948,10 @@ class PlayerInventoryUI:
         """GDScript function: _bone_matches_inventory_category(bone_id: String) -> bool"""
         pass
 
+    def gd_func__compare_inventory_items(self):
+        """GDScript function: _compare_inventory_items(a: String, b: String) -> bool"""
+        pass
+
     def gd_func_update_inventory_ui(self):
         """GDScript function: update_inventory_ui() -> void"""
         pass
@@ -2715,6 +2995,10 @@ class PlayerInventoryUI:
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
+
+    def depends_on_PlayerEquipmentBuildsComponent(self):
+        """Relationship: references class PlayerEquipmentBuildsComponent."""
+        return PlayerEquipmentBuildsComponent
 
     def depends_on_ModularSkeletonRig(self):
         """Relationship: references class ModularSkeletonRig."""
@@ -3128,6 +3412,10 @@ class ProceduralPlayerAnimator:
         """GDScript function: trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void"""
         pass
 
+    def gd_func_trigger_stealth_finish_attack(self):
+        """GDScript function: trigger_stealth_finish_attack() -> void"""
+        pass
+
     def gd_func__capture_torso_head_miss_body_hold_transform(self):
         """GDScript function: _capture_torso_head_miss_body_hold_transform() -> void"""
         pass
@@ -3476,6 +3764,10 @@ class ProceduralPlayerAnimator:
         """GDScript function: _animate_facing(delta: float, facing_direction: Vector3) -> void"""
         pass
 
+    def signal_attack_impact_reached(self):
+        """Godot signal: attack_impact_reached()"""
+        pass
+
     def depends_on_ModularSkeletonRig(self):
         """Relationship: references class ModularSkeletonRig."""
         return ModularSkeletonRig
@@ -3620,6 +3912,46 @@ class TestingEnvironment:
 
     def gd_func__update_status(self):
         """GDScript function: _update_status() -> void"""
+        pass
+
+    def gd_func__cycle_validation_guide(self):
+        """GDScript function: _cycle_validation_guide(direction: int) -> void"""
+        pass
+
+    def gd_func__current_validation_guide_text(self):
+        """GDScript function: _current_validation_guide_text() -> String"""
+        pass
+
+    def gd_func__begin_notes_editing(self):
+        """GDScript function: _begin_notes_editing() -> void"""
+        pass
+
+    def gd_func__cancel_notes_editing(self):
+        """GDScript function: _cancel_notes_editing() -> void"""
+        pass
+
+    def gd_func__on_notes_submitted(self):
+        """GDScript function: _on_notes_submitted(text: String) -> void"""
+        pass
+
+    def gd_func__runtime_evidence_snapshot(self):
+        """GDScript function: _runtime_evidence_snapshot() -> Dictionary"""
+        pass
+
+    def gd_func__log_validation_result(self):
+        """GDScript function: _log_validation_result(result: String) -> void"""
+        pass
+
+    def gd_func__append_log_entry_to_file(self):
+        """GDScript function: _append_log_entry_to_file(entry: Dictionary) -> void"""
+        pass
+
+    def gd_func__count_validation_results(self):
+        """GDScript function: _count_validation_results(result: String) -> int"""
+        pass
+
+    def gd_func__validation_log_summary_text(self):
+        """GDScript function: _validation_log_summary_text() -> String"""
         pass
 
     def uses_game_event_enemy_defeated(self):
@@ -3853,6 +4185,14 @@ class BoneSlotWidget:
 
     def gd_func__drop_data(self):
         """GDScript function: _drop_data(_at_position: Vector2, data: Variant) -> void"""
+        pass
+
+    def gd_func__notification(self):
+        """GDScript function: _notification(what: int) -> void"""
+        pass
+
+    def gd_func__set_frame_border(self):
+        """GDScript function: _set_frame_border(color: Color) -> void"""
         pass
 
     def gd_func__gui_input(self):

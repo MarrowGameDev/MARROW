@@ -309,10 +309,18 @@ Campos principales:
 - `bone_id`: id estable, por ejemplo `arm_bone`.
 - `display_name`: nombre visible.
 - `color`: color fisico del hueso.
-- `slot`: slot de equipamiento (`right_arm`, `left_arm`, `body`, `legs`,
-  `head`).
+- `slot`: slot de equipamiento canonico (`head`, `torso`, `left_arm`,
+  `right_arm`, `left_leg`, `right_leg`) o alias legacy aceptado durante
+  migracion (`body`, `legs` -- los unicos dos que aparecen realmente en
+  `data/bones/*.tres` hoy; no agregar aliases especulativos sin un
+  consumidor real).
 - `tags`: tags generales.
 - `description`: texto visible para UI.
+
+`EquipmentRulesService.normalize_slot_id` convierte aliases legacy a los ids
+canonicos que usa el runtime. Los Resources viejos pueden seguir declarando
+`body` o `legs`, pero los sistemas nuevos deben guardar y comparar slots
+canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 ## Calidad
 
@@ -338,7 +346,11 @@ Campos:
 - `quality_weight_percent`
 
 Los porcentajes son metadata pasiva. No se aplican automaticamente a combate,
-drops, inventario o equipamiento hasta que exista una regla dedicada.
+drops o inventario hasta que exista una regla dedicada. En equipamiento,
+`BoneRulesService.player_stats_with_equipment()` ya consume
+`quality_multiplier`, `quality_damage_percent`, `quality_speed_percent`,
+`quality_health_percent` y `quality_weight_percent` para calcular stats finales
+del jugador de forma determinista.
 
 ## Rareza
 
@@ -361,6 +373,43 @@ Campos:
 `rarity_drop_weight` esta listo para tablas ponderadas, pero no cambia drops
 automaticamente todavia.
 
+## Alcance De Durabilidad, Mutacion Y Set/Sinergia
+
+Estas tres secciones (Durabilidad, Mutacion, Set Y Sinergia) son
+deliberadamente solo esquema de datos y helpers puros y deterministas en
+`BoneRulesService`. Nada de esto esta conectado a gameplay todavia:
+
+- La durabilidad no disminuye en runtime; no existe estado por copia.
+- Reparar no hace nada; `durability_repair_cost_for` solo calcula un numero.
+- Los sets/sinergias no aplican bonus a stats; `equipment_synergy_summary`
+  solo resume que hay repetido.
+- Las mutaciones no producen ningun efecto (visual, de rig, de IA o de
+  combate).
+- Ninguna de las funciones nuevas de `BoneRulesService` para estos temas
+  tiene un llamador fuera de si misma o del validador que las prueba.
+
+Esto es intencional: el objetivo de este hito era preparar datos y reglas
+puras reutilizables, no implementar las mecanicas de juego. Ver
+`docs/roadmap_1_165.md` objetivos 70-75, marcados "No iniciado".
+
+## Durabilidad
+
+Durabilidad describe resistencia authorable de la pieza, no el estado persistido
+de una copia concreta del inventario.
+
+Campos:
+- `durability_max`: capacidad maxima de la pieza.
+- `durability_start`: durabilidad inicial al crear o dropear la pieza.
+- `durability_repair_cost`: coste relativo para reparar esa pieza.
+- `durability_tags`: tags para futuras reglas de reparacion, rotura o UI.
+
+`BoneRulesService.durability_profile_for(bone_id, current_durability)` calcula
+un perfil determinista con `current`, `max`, `ratio`, `state`, `repair_cost` y
+`tags`. Los estados canonicos son `intact`, `cracked` y `broken`.
+
+El Resource no debe guardar el desgaste runtime de cada copia. Ese estado debe
+vivir luego en inventario/save y consultar estas reglas compartidas.
+
 ## Mutacion
 
 Mutacion describe variantes visuales, biologicas o de comportamiento que una
@@ -382,6 +431,9 @@ Campos:
 
 Mutacion no debe modificar rig, AI o combate por si sola. Debe haber una regla
 documentada que lea estos campos.
+
+`BoneRulesService.mutation_profile_for(bone_id)` centraliza id, familia, etapa,
+intensidad y tags para que UI, drops o combate futuro no dupliquen lecturas.
 
 ## Ataque Y Combo
 
@@ -421,6 +473,11 @@ Campos:
 Estos campos son metadata pasiva para futuras reglas de combinacion. No aplican
 bonuses automaticamente.
 
+`BoneRulesService.synergy_profile_for(bone_id)` entrega la metadata de una pieza
+y `equipment_synergy_summary(equipment_state)` resume piezas equipadas por set,
+synergy id, tags y familias de mutacion. Un set o synergy id queda activo cuando
+aparece al menos dos veces. El resumen no aplica bonuses por si mismo.
+
 ## Stats Del Jugador
 
 Campos limpios:
@@ -438,6 +495,18 @@ Campos legacy equivalentes:
 El inicio del juego usa `head_bone` como pieza fija y `max_health` base bajo.
 `torso_bone`, brazos y piernas pueden aumentar `max_health`; al subir el maximo,
 `PlayerStatsComponent` recupera esa diferencia de vida.
+
+Formula activa:
+- Los bonuses directos (`player_move_speed`, `player_attack_range`,
+  `player_attack_damage`, `player_max_health`) se escalan primero con
+  `quality_multiplier`.
+- `quality_damage_percent`, `quality_speed_percent` y
+  `quality_health_percent` se acumulan y se aplican al resultado base + bonus.
+- `quality_weight_percent` ajusta `equipment_weight` e `inventory_weight` por
+  pieza.
+- Si el peso equipado total supera el umbral libre, se aplica una penalizacion
+  suave y acotada sobre la velocidad de movimiento.
+- `quality_drop_percent` sigue reservado para reglas futuras de drops.
 
 ## Stats De Enemigos
 
@@ -549,6 +618,8 @@ un punto de disparo consistente desde el centro de pantalla.
 - Cambia a aim zoom.
 - Aplica `set_animation_follow_offset` para seguir offsets visuales horizontales
   de animacion sin mover verticalmente la camara.
+- Actualiza follow y offsets de animacion en `_physics_process`, sincronizado
+  con `Player._physics_process`.
 - Expone `get_flat_forward`, `get_flat_right`.
 - Expone `get_center_aim_point`.
 
@@ -585,9 +656,10 @@ un punto de disparo consistente desde el centro de pantalla.
 3. Ese offset ya viene en mundo horizontal e incluye tanto el salto actual como
    la posicion adelantada acumulada por golpes anteriores.
 4. `Player` lo entrega a la camara con Y en cero.
-5. `PlayerCameraController.set_animation_follow_offset` suaviza ese offset en
-   el pivot de camara.
-6. La camara sigue solo la distancia horizontal del salto; el arco vertical se
+5. `PlayerCameraController.set_animation_follow_offset` actualiza el objetivo.
+6. `PlayerCameraController._physics_process` suaviza ese offset y mueve el
+   pivot de camara en el mismo reloj de fisica que el player.
+7. La camara sigue solo la distancia horizontal del salto; el arco vertical se
    queda en la animacion del socket de cabeza.
 
 ## Flujo de mouse
@@ -628,8 +700,15 @@ En `TESTING ENVIRONMENT`:
 
 ## Diagnostico de jitter
 
-El bug de jitter/vibracion no tiene causa confirmada. Antes de tocar
-`Player`, `PlayerCameraController` o el rig procedural, correr:
+La causa runtime del jitter debe confirmarse en Godot, pero el contrato estatico
+mostraba una fuente concreta de desincronizacion: `Player._physics_process`
+mueve con `move_and_slide`, actualiza el rig procedural y entrega el offset de
+animacion, mientras `PlayerCameraController` aplicaba el follow suavizado en
+`_process`. Esa mezcla de relojes podia muestrear el target entre ticks de
+fisica y producir vibracion visible, especialmente durante offsets de cabeza o
+cerca de colisiones.
+
+Antes de tocar `Player`, `PlayerCameraController` o el rig procedural, correr:
 
 ```bash
 python -B tools/validate_jitter_update_contract.py
@@ -637,22 +716,81 @@ python -B tools/validate_jitter_update_contract.py
 
 Ese validador es estatico y read-only. Confirma el contrato actual de update:
 `Player._physics_process` mueve con `move_and_slide`, luego llama
-`ProceduralPlayerAnimator.update_from_player`, y despues entrega offsets
-horizontales de animacion a `PlayerCameraController.set_animation_follow_offset`.
-Tambien marca como hipotesis a aislar que la camara suaviza follow en `_process`
-mientras el jugador se mueve en fisica.
+`ProceduralPlayerAnimator.update_from_player`, despues entrega offsets
+horizontales de animacion a `PlayerCameraController.set_animation_follow_offset`,
+y finalmente la camara suaviza follow y offset en `_physics_process`. El zoom
+del `SpringArm3D` permanece en `_process` porque no mueve el target del player.
 
 Para reproducir manualmente en `TESTING ENVIRONMENT`:
 
-1. Probar idle, caminar, sprintar, saltar y rozar paredes con camara activa.
-2. Repetir abriendo/cerrando inventario para confirmar que el bloqueo de look no
+1. Probar idle, caminar, sprintar, saltar y caer con camara activa.
+2. Repetir rozando paredes y esquinas para confirmar collision del SpringArm.
+3. Acercar y alejar con rueda para confirmar que el zoom sigue suave.
+4. Repetir abriendo/cerrando inventario para confirmar que el bloqueo de look no
    introduce vibracion.
-3. Comparar head-only, torso-only y cuerpo completo.
-4. Repetir ataques de head launch y reattach de torso, anotando si el jitter
+5. Comparar head-only, torso-only y cuerpo completo.
+6. Repetir ataques de head launch y reattach de torso, anotando si el jitter
    aparece durante el offset de animacion o despues de volver a cero.
-5. Aislar en una escena temporal deshabilitando solo camara follow, luego solo
-   offset de animacion, y luego solo rig procedural.
-6. Aplicar un fix solo cuando una de esas pruebas reproduzca y elimine la causa.
+7. Comparar smoothing normal contra smoothing bajo/casi apagado desde el
+   inspector.
+8. Comparar rig procedural habilitado contra deshabilitado temporalmente desde
+   la escena de prueba.
+9. Probar la misma ruta con FPS estable y FPS bajo si el editor lo permite.
+10. Confirmar que no existe doble interpolacion: el pivot de camara se mueve en
+    `_physics_process`, mientras `_process` solo ajusta `SpringArm3D.spring_length`.
+
+## Comportamiento Esperado Sobre 60 FPS Y Physics Interpolation
+
+`project.godot` no sobreescribe `physics/common/physics_ticks_per_second`
+(el default de Godot 4 es 60) ni `physics/common/physics_interpolation`
+(el default es `false`, apagado). Con el follow de camara en
+`_physics_process`, esto implica:
+
+- A 60 FPS o menos, el pivot de camara se actualiza en el mismo tick de
+  fisica que el movimiento del jugador. No deberia haber diferencia visible
+  respecto al comportamiento anterior en `_process` para ese caso, salvo la
+  correccion de orden ya descrita en "Diagnostico de jitter".
+- Por encima de 60 FPS (monitor con mas Hz que la tasa de fisica), el motor
+  sigue corriendo `_physics_process` a 60 Hz. El pivot de camara ahora se
+  mueve en pasos discretos de fisica en vez de interpolar cada frame de
+  render, lo que puede sentirse menos fluido que un follow en `_process`
+  puro, aunque evita el desfase de un tick contra el movimiento del jugador
+  que motivo este fix. Este es el trade-off estandar documentado por Godot
+  para mover camara en `_physics_process`.
+- `physics_interpolation = true` es la herramienta que Godot ofrece
+  especificamente para ese caso (interpola la posicion visual entre ticks de
+  fisica sin mover la logica de gameplay a `_process`). No se activo en esta
+  rama: es un cambio de configuracion de proyecto con superficie mas amplia
+  que este fix puntual (afecta todo nodo con `top_level`/fisica, no solo la
+  camara), y activarlo sin poder probarlo con FPS alto en este equipo seria
+  especulativo. Queda como candidato a evaluar en una rama separada si el
+  jitter persiste en runtime por encima de 60 FPS.
+
+## Escrituras Directas De global_position (Examinadas, No Modificadas)
+
+`tools/validate_jitter_update_contract.py` senala dos escrituras directas a
+`global_position` en `scripts/player.gd` como sospechosas de jitter porque
+evitan `move_and_slide()`. Se examinaron sin corregirlas especulativamente,
+ya que ninguna es parte del movimiento normal por frame:
+
+- `player.gd:1331` (`_detach_head_from_torso_after_miss`): teleport de una
+  sola vez cuando el torso se separa de la cabeza. Ya tiene compensacion de
+  camara: fija `detached_camera_offset_carry` y
+  `detached_camera_offset_carry_timer = 0.16`, que
+  `_update_camera_animation_follow_offset` (`player.gd:1069-1071`) usa para
+  interpolar `animation_offset` hacia el offset del salto durante 0.16s en
+  vez de que la camara salte de golpe con el jugador.
+- `player.gd:1556` (`_align_player_body_pose_to_detached_torso_marker`,
+  llamada una sola vez desde `_finish_reattach_head_to_detached_torso` al
+  completar el reattach): tambien es un teleport de una sola vez, pero **no**
+  se encontro ningun mecanismo equivalente de `*_carry` que compense la
+  camara para este caso. Es asimetrico respecto al detach.
+
+Esto es una observacion, no un fix: no se toco ninguna de las dos escrituras
+en esta rama. Si el jitter reportado ocurre especificamente al completar un
+reattach de torso, el paso 6 de "Diagnostico de jitter" arriba ya pide
+anotar ese momento por separado; la ausencia de compensacion en el reattach
+es el sospechoso principal a revisar primero si esa prueba lo confirma.
 
 ## Historial de cambios
 
@@ -663,6 +801,21 @@ Para reproducir manualmente en `TESTING ENVIRONMENT`:
   se usa para acompanar el ataque de cabeza sin copiar su salto vertical.
 - 2026-07-15: Se agrego diagnostico estatico de contrato de update para jitter,
   sin modificar runtime ni confirmar todavia la causa.
+- 2026-07-15: Se sincronizo el follow de camara y el offset horizontal de
+  animacion con `_physics_process`; runtime queda pendiente de validacion en
+  Godot.
+- 2026-07-15: Se documento el comportamiento esperado sobre 60 FPS y la
+  relacion con `physics_interpolation` (no activado, candidato a rama
+  separada). Se examinaron las dos escrituras directas de `global_position`
+  senaladas por el validador (`player.gd:1331` y `:1556`, ambas teleports de
+  un solo evento del mecanismo de detach/reattach de torso, no movimiento
+  por frame) sin modificarlas: la de detach ya compensa la camara con
+  `detached_camera_offset_carry`; la de reattach no tiene compensacion
+  equivalente, lo cual queda registrado como sospechoso a revisar si el
+  jitter runtime se confirma en ese momento especifico. Godot 4.7 esta
+  disponible en este equipo (ver `docs/p0_runtime_validation_suite.md`),
+  pero confirmar o descartar el jitter en si requiere un humano jugando la
+  escena; no se afirma aqui que el jitter haya quedado resuelto.
 
 ## docs/change_documentation_policy.md
 
@@ -734,6 +887,8 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/combat_targeting_service.gd`: reglas puras de auto-target para
   ataques head-launch (head-only y torso-only). No accede a la escena: recibe
   posiciones candidatas y devuelve el indice del mejor objetivo.
+- `scripts/backstab_rules_service.gd`: regla pura de cono trasero para stealth
+  finish/backstab. Recibe posicion, facing y threshold; no accede a la escena.
 - `scripts/ballistics_service.gd`: regla pura de lanzamiento para proyectiles con
   gravedad (saliva, flecha enemiga, roca de gorilla). Recibe posiciones y tuning,
   devuelve la velocidad de lanzamiento. Ver "Solve balistico compartido".
@@ -1046,11 +1201,75 @@ compromete al jugador en el lugar mientras dura la animacion.
 ## Flujo stealth
 
 1. `Player` busca target con `can_be_stealth_finished_by`.
-2. El enemigo valida distancia y que el player este detras.
+2. El enemigo valida distancia y delega el cono trasero en
+   `BackstabRulesService.is_attacker_behind_target()`.
 3. UI muestra `get_stealth_prompt_text`.
 4. Al presionar stealth:
-   - Si enemy health <= threshold, muere.
-   - Si tiene demasiada vida, recibe dano extra y responde atacando/buscando.
+   - `Player` bloquea ataques, inventario/equip y movimiento normal durante la
+     ejecucion corta.
+   - `Player` dispara la pose de finisher con `animator.trigger_stealth_finish_attack()`
+     (ver "Animacion y sincronizacion de impacto" abajo).
+   - `Enemy.try_stealth_finish` solo inicia la ejecucion; no aplica dano todavia.
+     `_begin_stealth_execution` NO gira al enemigo hacia el jugador.
+   - El impacto se aplica una sola vez, disparado por
+     `ProceduralPlayerAnimator.attack_impact_reached` (o por
+     `backstab_execution_impact_timer` como respaldo si la senal no llega).
+   - `Enemy.apply_stealth_finish_impact` resuelve muerte o ambush y evita un
+     segundo impacto con `stealth_execution_impact_applied`.
+   - `finish_stealth_execution` o `cancel_stealth_execution` limpian el estado y
+     restauran control/IA.
+
+### Correcciones 2026-07-16
+
+- **Freeze si el jugador moria o el juego se pausaba durante un backstab**:
+  `_update_backstab_execution` nunca se volvia a llamar tras el `return`
+  temprano de `paused or is_dead` en `_physics_process`, asi que
+  `cancel_stealth_execution` jamas se disparaba y el enemigo objetivo quedaba
+  con `stealth_execution_player` seteado para siempre (IA congelada, imposible
+  de volver a backstabear). Se movio la cancelacion antes de ese `return`.
+- **Segundo freeze relacionado, mas sutil**: incluso con lo anterior corregido,
+  si el enemigo objetivo se liberaba (`queue_free`) durante la ejecucion (por
+  ejemplo, un ambush letal cuyo cadaver se limpia antes de que termine la
+  ventana de recovery), `_is_backstab_executing()` (`backstab_execution_target
+  != null`) empezaba a devolver `false` de golpe -- GDScript compara un Object
+  liberado como igual a `null`, no solo `is_instance_valid()` lo detecta -- y
+  `_update_backstab_execution` retornaba en su primera linea sin llegar nunca
+  a la limpieza. Resultado: `can_attack` quedaba en `false` para siempre; el
+  jugador no podia volver a atacar. Se agrego `backstab_execution_in_progress`
+  (bool plano, sin el problema de comparacion) como la fuente de verdad de
+  "hay un backstab en curso", separada de la validez de la referencia al
+  objetivo.
+- **La victima ya no gira para mirar a su atacante**: `_begin_stealth_execution`
+  y `_update_stealth_execution_hold` llamaban `_turn_toward` cada frame durante
+  toda la ejecucion, dando pistas visuales que contradicen un stealth kill.
+  Se eliminaron ambas llamadas.
+- **Direccion global coherente**: `Enemy._facing_from_rotation()` mezclaba
+  `rotation.y` (local al padre) con `global_position` (global) en el calculo
+  del cono trasero. Ahora usa `global_transform.basis.z`, el equivalente
+  global exacto de la misma formula, correcto incluso si el enemigo queda
+  parentado bajo un nodo rotado.
+- **Reaccion del enemigo**: ya existia via `apply_stealth_finish_impact` ->
+  `take_hit()` (flash + punch scale) en el caso de ambush sobrevivido, o
+  `die()` en el caso letal. No se agrego nada nuevo aqui; se confirmo que
+  funciona.
+
+### Animacion y sincronizacion de impacto
+
+Antes, `trigger_attack(3, false)` no garantizaba la pose de finisher: con
+exactamente un brazo equipado (un estado muy comun antes de completar el
+equipo), `_combo_step_for_equipped_arms()` en
+`ProceduralPlayerAnimator` sobreescribia el paso de combo 3 a 1 o 2,
+cayendo silenciosamente al swing generico de un brazo en vez de la pose de
+finisher (giro de torso + lunge + inclinacion de cabeza). Se agrego
+`trigger_stealth_finish_attack()`, que fuerza esa pose de finisher via un
+flag (`_is_stealth_finish_attack`) sin importar que este equipado.
+
+El impacto se sincroniza ahora con una senal real del animador,
+`attack_impact_reached`, emitida una vez por ataque cuando la fase del
+ataque cruza `attack_windup_portion` (el momento en que el golpe realmente
+"conecta", no el timer fijo adivinado antes). `backstab_execution_impact_timer`
+sigue existiendo como respaldo (si el animador es null o la senal no llega
+por alguna razon), pero ya no es el disparador principal.
 
 ### Validacion geometrica de backstab
 
@@ -1060,12 +1279,44 @@ Antes de cambiar la regla de stealth finish, ejecutar:
 python tools/validate_backstab_geometry.py
 ```
 
-El arnes reproduce la formula actual de `Enemy._is_player_behind()` sin abrir
-Godot. Cubre frente, detras, laterales, enemigos rotados, angulos del cono
-trasero y posiciones con offset vertical. Esta validacion es estatica; la
-confirmacion visual/runtime de que `facing_direction` coincide con el frente
-real del enemigo debe hacerse en `TESTING ENVIRONMENT` antes de una correccion
-funcional.
+El arnes reproduce la formula de `BackstabRulesService` sin abrir Godot y
+comprueba que `Enemy._is_player_behind()` delegue en ese servicio. Cubre frente,
+detras, laterales, enemigos rotados, angulos del cono trasero y posiciones con
+offset vertical. Esta validacion es estatica; la confirmacion visual/runtime de
+que `facing_direction` coincide con el frente real del enemigo debe hacerse en
+`TESTING ENVIRONMENT`. A diferencia de antes, los chequeos de contrato
+(`verify_backstab_service_shape`, `verify_enemy_uses_backstab_service`,
+`verify_backstab_execution_contract`) ahora SI afectan el exit code -- antes
+solo imprimian `WARNING` y el script podia salir 0 aunque se vaciara por
+completo `BackstabRulesService`. Verificado adversarialmente: revertir el fix
+de freeze o reintroducir el giro hacia el atacante hace fallar el validador.
+
+### Evidencia runtime (Godot 4.7 headless, 2026-07-16)
+
+Verificado con una escena de prueba temporal (jugador + enemigo real,
+eliminada tras el uso), no solo con el validador estatico:
+
+- Backstab exitoso letal: deteccion "detras" correcta con geometria rotada,
+  ejecucion completa, dano aplicado (enemigo murio), limpieza correcta
+  (`can_attack` vuelve a `true`, estado de ejecucion vuelve a vacio).
+- Objetivo invalido a mitad de ejecucion (el enemigo se libera tras morir):
+  confirmado que ya NO deja `can_attack` bloqueado para siempre (bug
+  encontrado y corregido en esta misma sesion, ver arriba).
+- Muerte del jugador a mitad de un backstab (por un segundo enemigo):
+  confirmado que el enemigo objetivo queda con `stealth_execution_player ==
+  null` (no congelado) despues de la muerte.
+- Senal `attack_impact_reached` del animador: confirmada disparando durante
+  la animacion, antes de que la ejecucion termine.
+
+Pendiente de prueba manual en editor (no cubierto por la escena headless, que
+no simula input de teclado/mouse ni observacion visual humana):
+
+- Pausa real (abrir inventario) a mitad de un backstab -- el codigo usa la
+  MISMA rama de fix que la muerte, pero no se ejecuto ese camino especifico.
+- Confirmacion visual de que la pose de finisher se ve distinta a un swing
+  normal, y que la reaccion del enemigo (flash/punch scale o death-pop) se
+  lee bien en pantalla.
+- Camara durante la ejecucion (no se toco codigo de camara en esta rama).
 
 ## Flujo de dano enemigo
 
@@ -1567,6 +1818,13 @@ En `TESTING ENVIRONMENT`:
   sin lock. Enemigos no afectados. Pruebas: en `DUMMY TESTING ENVIRONMENT`, como
   cabeza, click derecho no debe moverte ni congelarte; click izquierdo si debe
   embestir.
+- 2026-07-15: `scripts/player.gd`, `scripts/enemy.gd`,
+  `scripts/backstab_rules_service.gd` — stealth finish ahora separa deteccion,
+  inicio de ejecucion, momento de impacto y limpieza. `Player` bloquea ataque,
+  inventario/equip, salto y movimiento durante una ventana corta; `Enemy` pausa
+  IA/ataques mientras `stealth_execution_player` esta activo. El dano se aplica
+  desde `apply_stealth_finish_impact` una sola vez y queda pendiente validarlo en
+  runtime con las guias P0 de `TESTING ENVIRONMENT`.
 - 2026-07-15: `scripts/testing_environment.gd` — en `dummy_only_mode` el dummy
   ahora se respawnea con `2` en vez de `1` (`1` ya no hace nada ahi; en el
   `TESTING ENVIRONMENT` normal `2` sigue siendo gorilla). Nuevo `_try_spawn_dummy()`
@@ -1642,17 +1900,22 @@ refactor pass.
   they are intentionally separate from loot rarity.
 - Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
   `legendario`; UI can localize display text separately.
-- Quality percentage modifiers are stored as passive metadata for damage, speed,
-  health, drop and weight tuning; no automatic formula consumes them yet.
+- Quality percentage modifiers now feed the deterministic player stat formula
+  for damage, speed, health and equipped weight; drop tuning remains passive.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
   `legendario`; canonical mutation families are empty, `corrupto`, `maldito`,
   `especial` and `hibrido`.
+- Bone durability fields define authoring defaults for max durability, starting
+  durability, repair cost and durability tags. Runtime wear is not stored on the
+  Resource.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
-  equipment load and inventory weight while keeping legacy `weight`.
-- Bone set/synergy fields are present as passive metadata; no automatic set
-  bonuses are active yet.
+  equipment load and inventory weight while keeping legacy `weight`. Equipped
+  load can apply a capped movement-speed penalty through `BoneRulesService`.
+- Bone set/synergy fields can be summarized from equipped state through
+  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
+  applied to stats yet, and durability does not decrease at runtime.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -1660,6 +1923,9 @@ refactor pass.
 
 - `scenes/testing_environment.tscn` is the unified sandbox for camera, enemies,
   movement, animation, rig, drops, and equipment checks.
+- The testing environment status panel includes P0 validation guide sections
+  that can be cycled with F1/F2 for jitter, inventory/preview, pickups/drops,
+  backstab runtime geometry, and rig progression checks.
 - TESTING ENVIRONMENT can spawn a passive dummy target with `5`; it stays still,
   does not attack, and keeps normal damage/limb-loss reactions active.
 - `scenes/dummy_testing_environment.tscn` is a separate passive-target room that
@@ -1859,6 +2125,8 @@ dependan directamente del componente.
 ## Scripts y escenas principales
 
 - `scripts/player_equipment_component.gd`: estado real de equipo por slot.
+- `scripts/player_equipment_builds_component.gd`: presets guardables de
+  equipamiento que delegan aplicacion real en `PlayerEquipmentComponent`.
 - `scripts/player_stats_component.gd`: calculo de stats finales del jugador.
 - `scripts/equipment_rules_service.gd`: reglas de slots, sockets, ids generados
   por limbs y escalas visuales.
@@ -1881,9 +2149,13 @@ dependan directamente del componente.
 
 ## Flujo de equipar
 
-1. La UI o el input de equip next llama `player.equip_bone(bone_id)`.
+1. La UI o el input de equip next llama `player.equip_bone(bone_id)`. Si el
+   usuario suelta una pieza sobre un slot especifico, la UI pasa tambien
+   `target_slot`.
 2. `Player` delega a `PlayerEquipmentComponent.equip_bone`.
-3. El componente pregunta el slot con `EquipmentRulesService.slot_for_bone`.
+3. El componente resuelve compatibilidad con
+   `EquipmentRulesService.compatible_slots_for_bone` y normaliza el slot con
+   `EquipmentRulesService.normalize_slot_id`.
 4. Si el hueso ya esta equipado en ese slot, no hace nada.
 5. Si hay `ModularSkeletonRig`, el componente llama `rig.equip_bone`.
 6. Se incrementa `equip_swaps`.
@@ -1902,16 +2174,45 @@ dependan directamente del componente.
 6. Emite `inventory_changed`.
 7. Emite `bone_unequipped`.
 
+## Flujo de build presets
+
+1. La UI llama `player.save_equipment_build(index)` para capturar el equipo
+   actual no-core.
+2. `PlayerEquipmentBuildsComponent` normaliza slots, omite la cabeza fija y
+   guarda el build en `user://equipment_builds.cfg`.
+3. La UI llama `player.apply_equipment_build(index)`.
+4. El componente valida inventario disponible, slots compatibles y torso
+   requerido antes de tocar el equipo.
+5. Si la validacion falla, no aplica cambios parciales y devuelve un mensaje
+   para la UI.
+6. Si la validacion pasa, desequipa slots no presentes en el build y equipa en
+   orden estable: torso, brazos, piernas.
+7. `PlayerEquipmentComponent` recalcula stats, actualiza rig y emite eventos por
+   la ruta normal.
+
 ## Reglas de slots
 
 El punto central es `EquipmentRulesService`.
 
 Slots principales:
-- `right_arm`
-- `left_arm`
-- `legs`
-- `body`
 - `head`
+- `torso`
+- `left_arm`
+- `right_arm`
+- `left_leg`
+- `right_leg`
+
+Aliases legacy aceptados (solo los que tienen consumidor real en
+`data/bones/*.tres`; no agregar aliases especulativos):
+- `body` -> `torso`
+- `legs` -> compatible con `right_leg` y `left_leg` (equip-next resuelve al
+  primer lado libre via `PlayerEquipmentComponent._first_open_compatible_slot`;
+  `normalize_slot_id("legs")` sigue devolviendo `right_leg` como valor unico
+  por defecto para contextos que necesitan un solo id, como display/orden)
+
+`torso` es el slot de equipamiento. `body` sigue siendo un socket del rig y un
+valor legacy en datos viejos. No se debe mezclar socket del rig, slot de equipo
+y parte corporal sin pasar por `EquipmentRulesService`.
 
 Los huesos generados por limbs usan ids como:
 - `normal_right_arm_bone`
@@ -1954,7 +2255,8 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - El jugador inicia con `head_bone` equipado como nucleo fijo.
   - La cabeza no se puede reemplazar ni desequipar; si se rompe, el jugador
     muere.
-  - El torso (`body`) debe equiparse antes de brazos o piernas.
+  - El torso (`torso`, alias legacy `body`) debe equiparse antes de brazos o
+    piernas.
   - Si el torso se quita, las extremidades se desacoplan primero.
   - Brazos y piernas no tienen orden obligatorio entre si una vez equipado el
     torso.
@@ -1967,6 +2269,9 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
+- Las piezas legacy hechas a mano pueden seguir declarando `body` o `legs`
+  durante la migracion. El runtime debe normalizarlas antes de guardar estado
+  de equipamiento, pintar el rig o validar drops.
 - Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
   en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
   necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
@@ -1975,24 +2280,30 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   el diccionario plano que el rig, stats y slots ya esperan.
 - Los campos de calidad (`quality_rank`, `quality_score`,
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
-  No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
-  balance lo defina explicitamente.
+  `BoneRulesService.player_stats_with_equipment()` aplica `quality_multiplier`
+  sobre los bonuses directos del jugador antes de agregarlos al resultado final.
 - Los modificadores porcentuales por calidad (`quality_damage_percent`,
   `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
-  `quality_weight_percent`) son metadata granular. Pueden alimentar balance
-  futuro, pero equipamiento no los aplica automaticamente todavia.
+  `quality_weight_percent`) son metadata granular. Damage, speed, health y
+  weight ya alimentan la formula determinista de stats; drop sigue pasivo hasta
+  que una regla de drops lo consuma.
 - Las calidades canonicas son ids en minuscula y sin acentos para datos:
   `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
   acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
 - Las rarezas canonicas son `comun`, `corrupto`, `maldito`, `especial` y
   `legendario`. Las familias de mutacion canonicas actuales son vacio,
   `corrupto`, `maldito`, `especial` e `hibrido`.
+- Los campos de durabilidad (`durability_max`, `durability_start`,
+  `durability_repair_cost`, `durability_tags`) describen resistencia y coste de
+  reparacion por tipo de pieza. `BoneRulesService` calcula perfiles y estados,
+  pero equipar una pieza no desgasta ni repara automaticamente todavia.
 - Rareza y mutacion siguen siendo metadata pasiva hasta que una regla de drops,
   rig o combate las consuma explicitamente.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
-  regla de equipamiento que los consuma.
+  regla de equipamiento que los consuma. `mutation_profile_for` centraliza su
+  lectura para futuros consumidores.
 - Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
   `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
   una pieza podria participar en cadenas de combate. Actualmente solo alimentan
@@ -2001,10 +2312,45 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
-  animacion procedural actual.
+  animacion procedural actual. `equipment_weight` contribuye a una penalizacion
+  suave de velocidad cuando la carga equipada supera el umbral libre.
+
+### Unidades Y Formula De Peso/Calidad (`BoneRulesService`)
+
+Todas las constantes viven en `scripts/bone_rules_service.gd`. No hay
+unidades fisicas reales (kg, etc.); son numeros de diseno adimensionales
+calibrados por prueba y error, igual que el resto del balance del proyecto.
+
+- `EQUIPMENT_FREE_WEIGHT := 3.0`: suma de `equipment_weight` (peso ya
+  ajustado por calidad) que el jugador carga sin penalizacion. Mismas
+  unidades que `weight`/`equipment_weight` en los `.tres` de hueso.
+- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06`: fraccion de
+  `move_speed` que se resta por cada unidad de `equipment_weight` que
+  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 5.0 de peso equipado con 3.0
+  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.06 = 0.12 (12%).
+- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30`: techo de la penalizacion de
+  velocidad (30%), sin importar cuanto peso adicional se equipe.
+- `PLAYER_STAT_PERCENT_LIMIT := 0.75`: techo/piso (+-75%) para la suma de
+  `quality_damage_percent`, `quality_speed_percent`, `quality_health_percent`
+  y `quality_weight_percent` acumulados por todas las piezas equipadas.
+- Orden de aplicacion en `player_stats_with_equipment()`: 1) sumar bonuses
+  planos (`move_speed_bonus`, etc.) ajustados por `quality_multiplier` por
+  pieza; 2) sumar y limitar los porcentajes de calidad; 3) calcular la
+  penalizacion de carga desde `equipment_weight` total; 4) aplicar
+  `(1 + porcentaje) * (1 - penalizacion_de_carga)` sobre velocidad, y
+  `(1 + porcentaje)` sobre dano/vida.
+- `attack_damage` y `max_health` se redondean una sola vez, despues de sumar
+  los bonuses de todas las piezas equipadas como floats. Redondear cada
+  pieza por separado antes de sumar inflaria el total con mas piezas
+  equipadas incluso si la suma real no cambia (ver comentario en
+  `adjusted_player_bonus_for`).
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
-  combinaciones de piezas. No aplican bonuses automaticamente todavia.
+  combinaciones de piezas. `equipment_synergy_summary` puede detectar sets e
+  ids repetidos en el equipo, pero no aplica bonuses automaticamente todavia.
+- Build presets no son una segunda fuente de estado. Solo persisten una
+  intencion de equipamiento y deben revalidarse contra inventario y reglas
+  actuales cada vez que se aplican.
 - `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
   entra al inventario normal; `torso_bone` aparece como pickup starter en el
   demo.
@@ -2069,10 +2415,22 @@ En `TESTING ENVIRONMENT`:
 2. Confirmar que la cabeza inicial ya esta equipada y no se puede reemplazar.
 3. Equipar torso.
 4. Equipar huesos de brazo y piernas.
-5. Confirmar que el cuerpo del jugador cambia.
+5. Confirmar que `Left Arm`, `Right Arm`, `Left Leg` y `Right Leg` cambian solo
+   el lado correspondiente.
 6. Confirmar que el preview cambia igual que el jugador.
 7. Desequipar con right click o drag hacia zona vacia si aplica.
 8. Confirmar que stats en UI cambian.
+9. Guardar un build en Settings, modificar equipo y aplicar el build guardado.
+10. Intentar aplicar un build que necesita dos copias del mismo hueso teniendo
+    solo una copia; debe mostrar error y no dejar cambios parciales.
+11. Presionar Apply una vez y confirmar que el boton cambia a "Confirm?" y el
+    equipo NO cambia todavia; presionar de nuevo dentro de unos segundos y
+    confirmar que ahora si aplica. Presionar Apply una vez y esperar mas de
+    4 segundos sin presionar de nuevo; confirmar que el boton vuelve a decir
+    "Apply" y no paso nada.
+12. Guardar sobre un build ya ocupado y confirmar que tambien pide una
+    segunda pulsacion; guardar sobre un build vacio y confirmar que NO la
+    pide (aplica directo).
 
 ## Historial de cambios
 
@@ -2112,6 +2470,73 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
+- 2026-07-15: Se agregaron campos de durabilidad authorable y helpers puros
+  para perfiles de durabilidad, mutacion y resumen de sinergias equipadas.
+- 2026-07-15: Equipamiento adopto seis slots canonicos (`head`, `torso`,
+  `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
+  aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus
+  sockets `body`/`body_lower` sin usarlos como ids de estado de equipo.
+- 2026-07-15: Se agregaron build presets de equipamiento. La persistencia vive
+  en `PlayerEquipmentBuildsComponent`, la aplicacion usa
+  `PlayerEquipmentComponent`, y cada apply revalida copias, torso y
+  compatibilidad de slots.
+- 2026-07-15: `BoneRulesService` aplica calidad, modificadores porcentuales y
+  carga equipada al calculo determinista de stats del jugador.
+- 2026-07-15: Se documentaron unidades y formula exacta de peso/calidad. Se
+  corrigio `aggregate_player_bonuses` para sumar bonuses de dano/vida como
+  floats y redondear una sola vez (antes cada pieza equipada redondeaba por
+  separado, inflando el total con mas piezas equipadas). Se expusieron
+  `equipment_weight`, `inventory_weight`, `load_speed_penalty` y los
+  `quality_*_percent` en `Player.get_inventory_stats_snapshot()`, que antes
+  se calculaban y se descartaban sin ningun consumidor. No se agrego
+  defensa, stamina ni movilidad: esos stats no existen en el proyecto.
+- 2026-07-15 (correccion): `_slot_for_request` resolvia el slot por defecto
+  de un hueso bilateral (`legs`, o `right_arm` sin `limb_key`) llamando a
+  `EquipmentRulesService.slot_for_bone`, una funcion pura sin estado que
+  siempre devuelve el primer slot compatible. Equipar-siguiente con dos
+  huesos de pierna genericos nunca podia alcanzar `left_leg`. Se agrego
+  `PlayerEquipmentComponent._first_open_compatible_slot`, que consulta el
+  `equipped` real del componente y elige el primer slot compatible vacio.
+  Verificado en Godot 4.7 headless: dos `leg_bone` equipados via
+  equip-next ahora terminan en `{"left_leg": "leg_bone", "right_leg":
+  "leg_bone"}`. De paso se encontro y corrigio un bug de tipado de
+  GDScript: `compatible_slots_for_bone` devolvia arrays literales sin
+  tipar explicitamente, lo cual fallaba en runtime ("Trying to assign an
+  array of type Array to a variable of type Array[String]") para
+  cualquier llamador externo a la clase que asignara el resultado a una
+  variable tipada; ahora construye el array con `.append()`.
+- 2026-07-15: Se eliminaron 7 de los 9 aliases legacy de slot (`ribs`,
+  `ribcage`, `chest`, `arm_left`, `arm_right`, `leg_left`, `leg_right`):
+  ningun archivo en `data/bones/*.tres` ni codigo en `scripts/` los produce
+  (verificado por grep). Solo quedan `body` y `legs`, que si tienen datos
+  reales. `tools/validate_bone_data.py` actualizado para no exigirlos.
+- 2026-07-15: Se elimino `PlayerEquipmentComponent.get_equipped_bone_defs`
+  (cero llamadores; existe una funcion homonima pero distinta en
+  `ModularSkeletonRig` que si se usa).
+- 2026-07-15: El panel de informacion del inventario ahora compara el hueso
+  bajo el cursor contra el equipado en el mismo slot (deltas de
+  move_speed/attack_range/attack_damage/max_health via
+  `BoneRulesService.adjusted_player_bonus_for`, los unicos stats de hueso
+  que existen). No se inventaron stats de defensa/peso para la comparacion.
+- 2026-07-15: `BoneSlotWidget` pinta el borde del slot en verde/rojo
+  mientras un drag lo sobrevuela, segun `can_equip_bone_in_slot`, y lo
+  restaura en `NOTIFICATION_DRAG_END`.
+- 2026-07-15 (correccion): `PlayerEquipmentBuildsComponent.apply_build`
+  aplicaba el estado objetivo y solo reportaba si no coincidia del todo;
+  nunca deshacia el cambio parcial. Ahora guarda un snapshot del
+  equipamiento antes de aplicar y reaplica ese snapshot si la
+  verificacion post-apply falla. Verificado en Godot 4.7 headless con 5
+  escenarios (build valido, build vacio, pieza no disponible, slot
+  incompatible, y un rollback forzado): el estado final tras el rollback
+  forzado coincidio exactamente con el estado previo a la aplicacion. De
+  paso se encontro y corrigio un bug preexistente desde el primer commit
+  de esta rama: `_summary_for_state` llamaba
+  `BoneRulesService.display_name` (nunca existio), lo cual rompia la
+  compilacion de GDScript de `player.gd` completo -- el validador estatico
+  nunca pudo detectarlo porque no ejecuta GDScript.
+- 2026-07-15: Guardar sobre un build no vacio y Aplicar un build ahora
+  requieren una segunda pulsacion del mismo boton dentro de 4 segundos
+  para confirmar (sin dialogo nativo, mismo estilo DIY del resto de la UI).
 
 ## docs/flow_index.md
 
@@ -2145,6 +2570,12 @@ gameplay debe actualizar el archivo de flujo correspondiente.
      evidencia de PR.
 2. `docs/roadmap_progress.md`
    - Tabla operativa de lotes, ramas, evidencia, PRs y pendientes.
+3. `docs/p0_runtime_validation_suite.md`
+   - Guia especifica para la suite P0 dentro de `scenes/testing_environment.tscn`.
+4. `docs/roadmap_1_165.md`
+   - Fuente numerada y auditable del roadmap tecnico.
+5. `docs/repo_stability_and_graphify.md`
+   - Politica de Graphify, line endings, caches y preflight de commits.
 
 ## Politica
 
@@ -2241,6 +2672,8 @@ modificar controles desde la seccion de settings.
   `collect_bone`, expone snapshots y emite cambios por eventos.
 - `scripts/player_inventory_ui.gd`: construye la pantalla de inventario, tabs,
   grid, detalles, settings, paper doll y preview 3D.
+- `scripts/player_equipment_builds_component.gd`: guarda y aplica presets de
+  equipamiento usando el estado real de `PlayerEquipmentComponent`.
 - `scripts/ui_bone_item.gd`: tile arrastrable de un hueso en el grid.
 - `scripts/ui_bone_slot.gd`: slot visual del paper doll.
 - `scripts/ui_inventory_empty_slot.gd`: zona para soltar items/equipamiento
@@ -2292,6 +2725,37 @@ modificar controles desde la seccion de settings.
 - Lee datos mediante metodos publicos del player.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
+- Cachea el snapshot de equipamiento ya aplicado con exito para evitar
+  recrear piezas del rig preview cuando llegan eventos redundantes (ver
+  `docs/inventory_flow.md` seccion de historial, 2026-07-15: el snapshot solo
+  se guarda despues de equipar cada pieza, no antes).
+- Muestra filtros por los seis slots canonicos de equipo: `head`, `torso`,
+  `left_arm`, `right_arm`, `left_leg` y `right_leg`.
+- Ordena los stacks visibles por slot corporal, rareza, calidad y nombre antes
+  de crear tiles.
+
+### Slots de inventario y equipamiento
+
+`EquipmentRulesService.CANONICAL_BODY_SLOTS` es la fuente de verdad para los
+slots de equipo que la UI debe mostrar. Los ids canonicos son:
+
+- `head`
+- `torso`
+- `left_arm`
+- `right_arm`
+- `left_leg`
+- `right_leg`
+
+`body` y `legs` son los unicos aliases legacy con datos reales hoy (verificado
+por grep en `data/bones/*.tres`); se normalizan en
+`EquipmentRulesService.normalize_slot_id`. La UI puede leer huesos viejos con
+esos slots, pero no debe crear nuevas categorias ni nuevo estado con esos ids,
+y no se deben agregar aliases especulativos sin un consumidor real. `body`
+sigue existiendo como socket del rig; `torso` es el slot de equipamiento.
+Un hueso legacy `legs` puede equiparse en `right_leg` o `left_leg` mediante
+drag/drop dirigido al slot visual, o mediante equipar-siguiente (tecla E),
+que ahora resuelve al primer lado libre en vez de forzar siempre
+`right_leg` (ver historial de cambios).
 
 ### Validacion estatica del preview
 
@@ -2403,8 +2867,19 @@ python -B tools/validate_inventory_stack_contract.py
   copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
   de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
   la ruta existente de `PlayerEquipmentComponent`.
+- Filtros: `All` muestra todos los huesos compatibles; las categorias de slot
+  usan `EquipmentRulesService.inventory_filter_matches_bone` para no duplicar
+  reglas entre UI y gameplay.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
+- Build presets: la pestaña de settings permite guardar y aplicar 3 builds de
+  equipamiento en `user://equipment_builds.cfg`. Cada build guarda slots
+  canonicos no-core; la cabeza fija no se reemplaza ni se guarda como pieza
+  aplicable.
+- Al aplicar un build, `PlayerEquipmentBuildsComponent` valida primero que las
+  copias necesarias existan en inventario, que los slots sean compatibles y que
+  cualquier extremidad venga acompanada de torso. La UI solo muestra el resultado
+  de esa validacion.
 - El tutorial de controles debe leer los bindings actuales con
   `DropPickupRulesService.action_binding_text`, para que el texto visible siga
   los cambios hechos en settings.
@@ -2428,6 +2903,37 @@ En `TESTING ENVIRONMENT`:
 7. Intentar equipar brazo/pierna sin torso y confirmar que se bloquea.
 8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
    solo las partes recuperadas.
+9. Arrastrar `arm_bone` a `Left Arm` y luego a `Right Arm`; debe aceptar ambos
+   lados si hay torso.
+10. Arrastrar `leg_bone` a `Left Leg` y luego a `Right Leg`; cada lado debe
+    mostrar solo su pierna correspondiente en jugador y preview.
+11. Cambiar filtros `Head`, `Torso`, `L. Arm`, `R. Arm`, `L. Leg` y `R. Leg`;
+    cada filtro debe mostrar solo piezas compatibles con ese slot.
+12. En Settings, guardar un build con torso + extremidades, cambiar piezas y
+    aplicar el build; debe restaurar los slots guardados si existen copias.
+13. Guardar un build que use el mismo `bone_id` en dos lados y confirmar que al
+    aplicarlo sin dos copias disponibles muestra error sin cambiar parcialmente
+    el equipamiento.
+
+### Pruebas manuales especificas del preview 3D (pendientes de ejecutar en editor)
+
+Godot esta disponible en este equipo (ver `docs/p0_runtime_validation_suite.md`
+para el procedimiento headless), pero estas pruebas requieren un humano
+observando el render y no se pueden confirmar solo con validadores de texto:
+
+1. Equipar una pieza y confirmar que el preview la muestra sin re-crear el
+   rig completo (sin parpadeo de todas las partes al equipar solo una).
+2. Desequipar esa pieza y confirmar que desaparece del preview.
+3. Abrir y cerrar el inventario varias veces seguidas con el mismo
+   equipamiento y confirmar que no hay parpadeo ni nodos duplicados (el
+   `sync_preview()` cacheado deberia omitir el re-render).
+4. Redimensionar la ventana o cambiar de resolucion (1280x720, 1366x768,
+   1920x1080, ultrawide) con el inventario abierto y confirmar que el
+   preview no queda en blanco ni con tamano cero.
+5. Si alguna pieza no aparece en el preview inmediatamente despues de
+   equipar, volver a abrir/cerrar el inventario y confirmar que aparece (el
+   fix de esta sesion depende de que sync_preview() reintente slots cuya
+   definicion no se resolvio en el primer intento).
 
 ## Historial de cambios
 
@@ -2458,6 +2964,28 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
+- 2026-07-15: El preview 3D cachea el equipamiento ya renderizado y omite syncs
+  redundantes cuando `equipped` no cambio desde el ultimo `sync_preview()`.
+  Esto evita reconstruir las piezas del rig en cada apertura del inventario
+  cuando el equipamiento no cambio.
+- 2026-07-15 (correccion): la entrada anterior tambien agrego un
+  redimensionamiento manual de `SubViewport` en el layout responsive
+  (`_sync_preview_viewport_size()`), revirtiendo sin decirlo la decision del
+  2026-07-14 de arriba. Se elimino de nuevo: `inventory_preview_container`
+  usa `stretch = true`, por lo que `SubViewportContainer` ya redimensiona su
+  unico `SubViewport` hijo automaticamente cuando el container cambia de
+  tamano. No se encontro evidencia de un render con tamano cero causado por
+  esto; si aparece un bug concreto de tamano, investigar la causa raiz antes
+  de reintroducir un resize manual una tercera vez.
+- 2026-07-15 (correccion): `sync_preview()` marcaba el snapshot de
+  equipamiento como sincronizado ANTES de intentar equipar cada pieza en el
+  rig de preview. Si `BoneRulesService.definition_for(bone_id)` devolvia un
+  diccionario vacio para alguna pieza (definicion todavia no resuelta), esa
+  pieza quedaba cacheada como "ya renderizada" sin haberse dibujado nunca, y
+  llamadas posteriores a `sync_preview()` con el mismo equipamiento no
+  reintentaban esa pieza. Ahora el snapshot solo incluye los slots donde la
+  definicion se aplico con exito, y se asigna despues del loop de equipar,
+  no antes.
 - 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
   agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
   hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
@@ -2470,6 +2998,35 @@ En `TESTING ENVIRONMENT`:
   settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
   reiniciar y confirmar que el binding persiste desde
   `user://control_settings.cfg`.
+- 2026-07-15: Se normalizo inventario/equipamiento a seis slots canonicos
+  (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`). Los slots
+  legacy siguen aceptandose como aliases de lectura, y la UI ahora filtra,
+  ordena y equipa por compatibilidad compartida desde `EquipmentRulesService`.
+- 2026-07-15: Se agregaron build presets de equipamiento con guardado local,
+  validacion de copias disponibles, compatibilidad de slots y aplicacion mediante
+  `PlayerEquipmentComponent`.
+- 2026-07-15: Se corrigio el equip-next para piernas (ver
+  `docs/equipment_flow.md` para el detalle completo del bug y el bug de
+  tipado que se encontro de paso), se removieron 7 aliases de slot legacy
+  sin datos reales, y se elimino un metodo de equipamiento sin llamadores.
+  Se agrego comparador con deltas de stats reales al pasar el mouse sobre
+  un hueso, y feedback verde/rojo en los slots del paper doll durante
+  drag and drop segun compatibilidad. El idioma visible de la UI ya era
+  consistente (ingles en toda la pantalla de inventario/settings); no se
+  cambio.
+
+Pruebas manuales pendientes para lo de arriba (Godot 4.7 disponible, ver
+`docs/p0_runtime_validation_suite.md`, pero esto requiere observar el
+render):
+1. Recoger dos `leg_bone` genericos, equipar-siguiente (`E` u la tecla
+   configurada) hasta que ambos esten puestos, y confirmar visualmente que
+   una pierna del rig es distinta del estado anterior a ambos lados (no
+   solo el diccionario de estado).
+2. Pasar el mouse sobre un hueso del mismo slot que uno ya equipado y
+   confirmar que aparece la linea "vs equipped ...".
+3. Arrastrar un hueso sobre un slot compatible e incompatible y confirmar
+   el color verde/rojo del borde; soltar fuera de cualquier slot y
+   confirmar que el borde vuelve a su color normal.
 
 ## docs/manual_gameplay_qa_checklist.md
 
@@ -2704,6 +3261,185 @@ Once the layout feels readable, move enemies/trials into the matching stage regi
 - 2026-07-14: Tutorial island builder now uses local positions for existing
   scene nodes and generated spawns. This avoids `global_transform` errors before
   nodes are fully inside the scene tree.
+
+## docs/p0_runtime_validation_suite.md
+
+# P0 Runtime Validation Suite
+
+Fecha base: 2026-07-15
+
+Esta suite agrupa las validaciones runtime de mayor riesgo dentro de
+`scenes/testing_environment.tscn`. No corrige P0 por si sola: prepara una pasada
+manual reproducible para observar backstab, preview, jitter, inventario,
+equipamiento, pickups, enemigos, camara y rig antes de aplicar fixes.
+
+## Escena
+
+- `scenes/testing_environment.tscn`
+- Script: `scripts/testing_environment.gd`
+- Validador estatico: `python -B tools/validate_p0_runtime_suite.py`
+
+La escena muestra un panel con enemigos activos, controles de spawn, una guia
+P0 por seccion y un registro de resultados por chequeo. Usa:
+
+- `F1`: siguiente guia P0.
+- `F2`: guia P0 anterior.
+- `O`: escribir el resultado observado (libera el mouse, `Enter` guarda, `Esc` cancela).
+- `P`: registrar PASS para la guia P0 activa.
+- `F`: registrar FAIL para la guia P0 activa.
+- `1`: enemigo normal.
+- `2`: gorilla.
+- `3`: lizard.
+- `4`: ranged.
+- `5`: dummy pasivo.
+- `Backspace`: eliminar el ultimo enemigo.
+- `R`: reiniciar la escena.
+- `Esc`: volver al menu (o cancelar edicion de notas si esta activa).
+
+## Registro De Resultados (PASS/FAIL/observado/evidencia)
+
+Cada vez que se presiona `P` o `F`, la escena escribe una entrada en
+`user://p0_validation_log.txt` (fuera del repo, en la carpeta de datos de
+usuario de Godot) con:
+
+- Marca de tiempo (`Time.get_datetime_string_from_system()`).
+- Numero y titulo de la guia P0 activa.
+- Resultado (`PASS` o `FAIL`).
+- Texto observado escrito con `O` (o `"(no notes typed with O)"` si no se
+  escribio nada).
+- Evidencia automatica: FPS, tasa de fisica, modo de mouse, enemigos vivos y
+  sus nombres, posicion y estado `is_dead` del jugador si existe, y el estado
+  de equipamiento del jugador si el metodo esta disponible.
+
+El panel en pantalla muestra el conteo de PASS/FAIL de la sesion y el ultimo
+resultado registrado. Esto es una herramienta de captura de evidencia para un
+humano frente al teclado, **no** un test automatizado: la evidencia es un
+respaldo objetivo de lo que la maquina puede observar en el momento del
+registro, no un reemplazo del juicio del tester sobre si el comportamiento es
+correcto.
+
+## Ejecucion Headless Real (No Solo Estatica)
+
+A diferencia de los validadores en `tools/*.py` (que solo revisan texto fuente
+o reimplementan formulas en Python), esta escena SI puede ejecutarse con el
+motor real en modo headless. Requiere un paso previo que no estaba
+documentado antes:
+
+```powershell
+# 1. Una sola vez por checkout: construir el cache de class_name globales.
+#    Sin este paso, cargar la escena falla con "Parse Error: Identifier
+#    'X' not declared in the current scope" para casi todas las clases
+#    con class_name (BoneRulesService, EquipmentRulesService, etc.),
+#    porque .godot/global_script_class_cache.cfg todavia no existe.
+Godot_v4.7-stable_win64_console.exe --headless --editor --quit --path .
+
+# 2. Correr la escena real N frames y salir solo:
+Godot_v4.7-stable_win64_console.exe --headless --path . scenes/testing_environment.tscn --quit-after 60
+```
+
+Verificado en este repositorio (2026-07-15, Godot 4.7.stable): tras el
+warmup, la escena carga sin `SCRIPT ERROR`, el jugador spawnea, el
+inventario de prueba se siembla (`Collected bone: ...` por consola) y los
+enemigos se generan. Esto prueba que la escena y el arbol de nodos son
+validos en runtime, no solo por inspeccion de codigo.
+
+Limite honesto: correr la escena sin interaccion no ejerce las teclas de
+juego (mover, atacar, equipar, backstab) ni las teclas `O/P/F` de este
+registro. Confirmar esos flujos sigue requiriendo un humano jugando la
+escena; esta ejecucion automatizada solo prueba que la escena arranca y
+corre sin excepciones durante N frames.
+
+Nota: el paso 1 y la ejecucion de la escena reimportan algunos `.import`
+binarios (modelos/texturas). Revisar `git status` despues y descartar ese
+ruido si no es intencional (`git checkout -- '*.import'`), para no
+commitear cambios de import accidentales.
+
+## Secciones P0
+
+### Movement, Camera, And Jitter
+
+Objetivo: reproducir o descartar jitter persistente antes de tocar camara,
+player o animador.
+
+Registrar:
+
+- FPS aproximado si el editor lo muestra.
+- Si el jugador esta en piso, rampa, pared cercana o aire.
+- Si el inventario fue abierto/cerrado antes del jitter.
+- Si el jitter aparece con ataque, idle, salto o movimiento continuo.
+
+### Inventory, Equipment, And Preview
+
+Objetivo: comprobar que el inventario seeded permite equipar cuerpo completo y
+que el preview no duplica nodos ni comparte mundo jugable.
+
+Registrar:
+
+- Pieza equipada o desequipada.
+- Si el tile desaparece solo cuando corresponde.
+- Si los stacks `xN` siguen representando duplicados.
+- Si preview y jugador real coinciden.
+
+### Pickups, Drops, And Enemy Profiles
+
+Objetivo: comprobar que los perfiles de enemigo siguen spawneando, reaccionan y
+generan drops/pickups observables.
+
+Registrar:
+
+- Perfil usado.
+- Drop observado.
+- Si el pickup se puede recoger.
+- Si el inventario se actualiza sin reabrir.
+
+### Backstab Runtime Geometry
+
+Objetivo: validar el comportamiento real, no solo el producto punto estatico.
+
+Registrar:
+
+- Angulo aproximado: frente, lateral o detras.
+- Perfil del enemigo.
+- Si aparece prompt o se ejecuta stealth finish.
+- Si hubo dano duplicado o estado bloqueado.
+
+### Rig And Body Progression
+
+Objetivo: observar progresion visual y estabilidad del rig con piezas equipadas.
+
+Registrar:
+
+- Estado corporal: head-only, torso, brazos, piernas.
+- Si izquierda/derecha se ven invertidas.
+- Si el preview coincide con el rig del jugador.
+- Si el ataque o movimiento deja piezas flotantes.
+
+## Resultado Esperado
+
+Cada pasada manual debe terminar con una evidencia corta (complementaria al
+registro automatico en `user://p0_validation_log.txt` descrito arriba):
+
+```text
+Rama:
+Commit:
+Escena:
+Resolucion:
+Guia P0:
+Sistemas habilitados:
+Pasos ejecutados:
+Resultado observado:
+Errores de consola:
+Pendientes:
+```
+
+Si Godot no esta disponible, no marcar como validado runtime. Ejecutar los
+validadores estaticos y dejar esta guia lista para una pasada manual en
+editor. Si Godot SI esta disponible pero solo en modo headless (sin un
+humano frente al teclado), seguir sin marcar los chequeos interactivos
+(equipar, atacar, backstab, etc.) como validados: la ejecucion headless sin
+interaccion solo prueba que la escena carga y corre sin excepciones, no que
+el comportamiento observado sea correcto. Ver la seccion "Ejecucion Headless
+Real" arriba para el procedimiento exacto y sus limites.
 
 ## docs/project_graph_map.md
 
@@ -3049,6 +3785,89 @@ enemy, and rig boundaries before the component refactor.
 
 `docs/tutorial_flow.md` describes the demo controls tutorial and onboarding
 checklist.
+
+## docs/repo_stability_and_graphify.md
+
+# Repo Stability And Graphify Policy
+
+Fecha base: 2026-07-15
+
+Este documento define como mantener estable el repositorio mientras el roadmap
+avanza por ramas de hito. No cambia gameplay.
+
+## Estado Actual
+
+- `graphify-out/` y `graphify-corpus/` siguen versionados como artefactos
+  revisables del mapa de arquitectura.
+- `graphify-out/cache/` y `graphify-corpus/graphify-out/cache/` son caches y no
+  deben entrar al control de versiones.
+- El workflow de Graphify solo debe ejecutarse en `main` y `develop`.
+- Las ramas feature, fix y test no deben incluir regeneraciones de Graphify.
+- Los cambios de line endings deben controlarse mediante `.gitattributes`, no
+  por normalizaciones masivas accidentales.
+
+## Politica De Ramas
+
+- Las ramas de gameplay no deben modificar `graphify-out/` ni
+  `graphify-corpus/` salvo que el hito sea explicitamente de arquitectura o
+  estabilidad del repositorio.
+- Si Graphify aparece modificado en una rama de gameplay, tratarlo como salida
+  generada accidental y no incluirlo en el commit.
+- No usar `Accept Both Changes` en JSON generado.
+- No configurar `merge=ours` como solucion silenciosa permanente.
+- Si un conflicto de Graphify bloquea un PR, resolverlo en una rama de
+  estabilidad o regenerarlo desde la rama oficial, no mezclarlo con la feature.
+
+## Regeneracion
+
+Graphify se regenera con el workflow `.github/workflows/update-graphify.yml`.
+El flujo esperado es:
+
+1. Cambios funcionales entran primero por PR normal.
+2. El workflow corre en `main` o `develop`.
+3. El bot crea un commit `chore: actualiza grafo de arquitectura` solo si la
+   salida cambia.
+4. Las ramas siguientes parten de la punta actualizada de `origin/main`.
+
+No regenerar Graphify manualmente en ramas de inventario, combate, camara,
+preview, jitter, enemigos, stats, animaciones o progresion.
+
+## Line Endings
+
+`.gitattributes` define LF para scripts, escenas, resources, documentacion,
+workflows, JSON y archivos `.import`.
+
+Esta politica no normaliza archivos ya existentes por si sola. Si un archivo
+aparece modificado solo por CRLF/LF, no debe incluirse automaticamente. Crear
+una rama exclusiva de normalizacion solo si hay evidencia de que el ruido de
+line endings bloquea el trabajo.
+
+## Preflight De Commit
+
+Antes de cada commit:
+
+```powershell
+git status --short --branch
+git diff --check
+git diff --stat
+git diff --name-status
+git diff
+```
+
+Comprobar especificamente:
+
+- Sin conflictos.
+- Sin caches.
+- Sin Graphify accidental.
+- Sin archivos `.import` accidentales.
+- Sin normalizacion masiva de line endings.
+- Sin cambios fuera del hito.
+
+## Fuente Del Roadmap
+
+El roadmap numerado vive en `docs/roadmap_1_165.md`. Ese archivo es la fuente
+auditable para clasificar objetivos como no iniciados, preparados, parciales,
+integrados o validados.
 
 ## docs/rig_notes.md
 
@@ -3561,11 +4380,205 @@ Combo overlay:
   needs step-up logic to climb vertical steps).
 - Not merged into the real player (Phase G) — do that only after this feels good.
 
+## docs/roadmap_1_165.md
+
+# Roadmap Tecnico 1-165
+
+Fecha base: 2026-07-15. Ultima actualizacion: 2026-07-16 (integracion de 9
+ramas de hito en `origin/develop`, ver `docs/roadmap_progress.md`).
+
+Este archivo es la fuente auditable del roadmap tecnico. Los estados son
+conservadores: un objetivo no se marca como cumplido si solo existe metadata,
+documentacion o una prueba estatica sin integracion/runtime cuando el objetivo
+requiere gameplay.
+
+Estados usados:
+
+- No iniciado.
+- Preparado.
+- Parcial.
+- Integrado.
+- Validacion pendiente.
+- Validado estaticamente.
+- Validado manualmente.
+- Bloqueado.
+- Obsoleto por implementacion existente.
+
+## Tabla
+
+| N | Sistema | Objetivo | Estado actual | Evidencia / pendiente |
+| --- | --- | --- | --- | --- |
+| 1 | Repo | Mantener trabajo fuera de `main` mediante ramas de hito. | Integrado | 2026-07-16: 9 ramas de hito trabajadas, validadas y fusionadas en `origin/develop` (no en `main`); ver `docs/roadmap_progress.md`. |
+| 2 | Repo | Mantener commits pequenos y reversibles dentro de cada rama. | Parcial | Commits anteriores pequenos; seguir auditando por PR. |
+| 3 | Repo | Evitar force-push y reescritura de historial. | Preparado | Politica en goal y docs; sin evidencia de force-push local. |
+| 4 | Repo | Crear preflight de commits reproducible. | Integrado | `docs/repo_stability_and_graphify.md`. |
+| 5 | Repo | Definir politica de line endings. | Integrado | `.gitattributes`. |
+| 6 | Repo | Evitar commits accidentales de `.import`. | Preparado | Politica documentada; requiere disciplina en PRs. |
+| 7 | Repo | Definir politica de caches. | Integrado | `.gitignore` y politica Graphify. |
+| 8 | Repo | Definir politica Graphify para ramas feature. | Integrado | Workflow limitado y politica documentada. |
+| 9 | Arquitectura | Confirmar componentes de inventario existentes. | Preparado | `PlayerInventoryComponent` documentado; requiere auditoria puntual por rama. |
+| 10 | Arquitectura | Confirmar componentes de equipamiento existentes. | Preparado | `PlayerEquipmentComponent` documentado; requiere auditoria puntual. |
+| 11 | Arquitectura | Confirmar componentes de stats existentes. | Preparado | `PlayerStatsComponent` documentado; requiere auditoria puntual. |
+| 12 | Arquitectura | Evitar duplicar reglas entre UI y gameplay. | Parcial | Politica documentada; validacion continua pendiente. |
+| 13 | Arquitectura | Usar servicios compartidos para reglas de slots. | Integrado | 2026-07-16: seis slots canonicos (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`) integrados en `develop` via `feat/inventory-equipment-ux-core`; solo `body` y `legs` como aliases legacy con datos reales (7 aliases especulativos sin consumidor eliminados). |
+| 14 | Arquitectura | Usar catalogo de huesos como fuente de datos. | Parcial | `BoneDataCatalog` existe; migracion incompleta. |
+| 15 | Arquitectura | Mantener `Player` como orquestador. | Parcial | Estado documentado; hotspots siguen grandes. |
+| 16 | Arquitectura | Documentar arquitectura por flujos. | Integrado | `docs/flow_index.md` y docs de flujo. |
+| 17 | QA | Probar inventario con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
+| 18 | QA | Probar combate con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
+| 19 | QA | Probar camara y movimiento con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
+| 20 | QA | Probar rig y preview con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
+| 21 | Docs | Mantener docs de inventario actualizadas. | Parcial | `docs/inventory_flow.md`; actualizar por cada hito. |
+| 22 | Docs | Mantener docs de equipamiento actualizadas. | Parcial | `docs/equipment_flow.md`; seis slots pendiente. |
+| 23 | Docs | Mantener docs de combate actualizadas. | Parcial | `docs/combat_flow.md`; backstab runtime pendiente. |
+| 24 | Docs | Mantener docs de camara actualizadas. | Parcial | `docs/camera_flow.md`; jitter runtime pendiente. |
+| 25 | Docs | Mantener docs de drops actualizadas. | Parcial | `docs/drops_flow.md`; drops side-aware pendiente. |
+| 26 | Docs | Mantener docs de tutorial actualizadas. | Parcial | `docs/tutorial_flow.md`. |
+| 27 | Docs | Mantener estado actual del sistema. | Parcial | `docs/current_system_status.md`; revisar tras hitos. |
+| 28 | Docs | Mantener mapa de arquitectura. | Parcial | Graphify versionado; politica actualizada. |
+| 29 | Datos | Definir ids estables de huesos. | Parcial | Resources existentes; auditoria de ids pendiente. |
+| 30 | Datos | Definir nombres visibles. | Parcial | Resources existentes; glosario UI pendiente. |
+| 31 | Datos | Definir rarezas. | Integrado | Documentado en historial y `BoneDefinition`. |
+| 32 | Datos | Definir mutaciones. | Integrado | Documentado en historial y `BoneDefinition`. |
+| 33 | Datos | Definir peso. | Integrado | 2026-07-16: `BoneRulesService.player_stats_with_equipment` aplica `equipment_weight` a una penalizacion de velocidad con umbral y techo; verificado en Godot 4.7 headless con datos reales (`equipment_weight: 3.2`, `load_speed_penalty: 0.012`). |
+| 34 | Datos | Definir stats base. | Parcial | Metadata existe; comparador pendiente. |
+| 35 | Datos | Definir sets y sinergias. | Parcial | Metadata pasiva; reglas activas pendientes. |
+| 36 | Datos | Definir ataque y combo. | Parcial | Metadata pasiva; combate avanzado pendiente. |
+| 37 | Datos | Definir modificadores porcentuales de calidad. | Integrado | 2026-07-16: `quality_damage_percent`/`speed_percent`/`health_percent`/`weight_percent` se suman y limitan (+-75%) y se aplican al calculo final de stats; verificado headless con datos reales de hueso. |
+| 38 | Datos | Definir calidades. | Integrado | Documentado en `docs/bone_data_structure.md`. |
+| 39 | Datos | Definir rarezas y mutaciones en docs. | Integrado | Documentacion existente. |
+| 40 | Datos | Documentar estructura de datos de huesos. | Integrado | `docs/bone_data_structure.md`. |
+| 41 | Inventario | Stacks visuales reales. | Parcial | Contador `xN` integrado; runtime pendiente. |
+| 42 | Inventario | Tiles con cantidad y drag and drop. | Parcial | `ui_bone_item.gd` y validador; runtime pendiente. |
+| 43 | Inventario | Comparador de stats. | Integrado | 2026-07-16: panel de info compara hueso bajo cursor vs equipado en el mismo slot (deltas reales via `BoneRulesService.adjusted_player_bonus_for`); verificado headless: "vs equipped Torso Bone: Speed -1.7, Damage +2.3, HP +0.3". |
+| 44 | Inventario | Mostrar subidas y bajadas de stats. | Integrado | 2026-07-16: mismo cambio que 43; deltas con signo (+/-) por stat. |
+| 45 | Inventario | Filtro por slot. | Integrado | Preexistente a esta sesion; confirmado funcional por `EquipmentRulesService.inventory_filter_matches_bone` y las 6 tabs de la UI. |
+| 46 | Inventario | Filtro por rareza. | No iniciado | Pendiente; sin dato de rareza expuesto en filtro. |
+| 47 | Inventario | Filtro por peso. | No iniciado | Pendiente. |
+| 48 | Inventario | Filtro por dano. | No iniciado | Pendiente. |
+| 49 | Inventario | Filtro por defensa. | No iniciado | No aplica: el proyecto no tiene stat de defensa (ver fila 67). |
+| 50 | Inventario | Ordenar por nuevo. | No iniciado | Pendiente; no existe campo de orden de adquisicion. |
+| 51 | Inventario | Ordenar por rareza o calidad. | Integrado | Preexistente; `compare_bones_for_inventory` ordena por slot -> rareza -> calidad -> nombre (compuesto, no seleccionable por el usuario). |
+| 52 | Inventario | Ordenar por slot. | Integrado | Mismo comparador que fila 51. |
+| 53 | Inventario | Ordenar por poder. | No iniciado | Pendiente; no existe metrica de "poder". |
+| 54 | Inventario | Ordenar por nombre. | Integrado | Mismo comparador que fila 51 (ultimo criterio de desempate). |
+| 55 | Inventario | Tooltip con color por calidad. | Integrado | Preexistente a esta sesion; panel de info ya mostraba calidad. |
+| 56 | Inventario | Tooltip con resumen. | Integrado | Preexistente; `show_bone_info` ya incluia efecto y descripcion. |
+| 57 | Inventario | Feedback de slot valido. | Integrado | 2026-07-16: `BoneSlotWidget` pinta el borde verde durante un drag compatible, via `can_equip_bone_in_slot`. |
+| 58 | Inventario | Feedback de slot invalido. | Integrado | 2026-07-16: mismo cambio que 57, borde rojo para drag incompatible; se restaura en `NOTIFICATION_DRAG_END`. |
+| 59 | Inventario | Confirmacion o animacion al equipar. | No iniciado | Solo hay `print()` de consola y el evento `bone_equipped`; sin confirmacion visual de usuario. |
+| 60 | Builds | Guardar builds de equipamiento. | Integrado | 2026-07-16: `PlayerEquipmentBuildsComponent` persiste 3 slots en `user://equipment_builds.cfg`; verificado headless (guardar, recargar). |
+| 61 | Builds | Cambiar builds de equipamiento. | Integrado | 2026-07-16: `apply_build` aplica un build guardado via `PlayerEquipmentComponent`; ahora con rollback real si la aplicacion falla a mitad de camino (snapshot previo + reaplicacion si la verificacion post-apply falla). Verificado headless en 5 escenarios: valido, vacio, pieza ausente, slot incompatible, rollback forzado. |
+| 62 | Builds | Validar builds disponibles. | Integrado | `validate_build_state` revisa copias disponibles, torso requerido para extremidades, y compatibilidad de slot antes de aplicar. |
+| 63 | Stats | Formula determinista de stats. | Parcial | `PlayerStatsComponent` existe; ampliar reglas. |
+| 64 | Stats | Comparacion contra pieza equipada. | No iniciado | Pendiente. |
+| 65 | Stats | Balance inicial de calidad. | Integrado | 2026-07-16: `quality_multiplier` escala bonuses directos; unidades y formula documentadas en `docs/equipment_flow.md`. |
+| 66 | Stats | Balance inicial de peso. | Integrado | 2026-07-16: `EQUIPMENT_FREE_WEIGHT`/`EQUIPMENT_LOAD_SPEED_PENALTY_*` activos y documentados con ejemplo numerico. |
+| 67 | Stats | Defensa en calculo final. | No iniciado | Pendiente. |
+| 68 | Stats | Movilidad en calculo final. | Parcial | Stats actuales; auditoria pendiente. |
+| 69 | Stats | Stamina en calculo final. | No iniciado | Pendiente. |
+| 70 | Durabilidad | Durabilidad de huesos. | No iniciado | Pendiente. |
+| 71 | Durabilidad | Estado roto o agrietado. | No iniciado | Pendiente. |
+| 72 | Durabilidad | Reparacion de huesos. | No iniciado | Pendiente. |
+| 73 | Sinergias | Bonus de set completos. | No iniciado | Pendiente. |
+| 74 | Sinergias | Bonus de set parciales. | No iniciado | Pendiente. |
+| 75 | Sinergias | Efectos negativos y mutaciones. | No iniciado | Pendiente. |
+| 76 | Backstab | Validar frente bloqueado. | Validado estaticamente | `validate_backstab_geometry.py` (ahora con exit code real); geometria confirmada en Godot 4.7 headless con enemigo real, pero solo para el caso "detras", no explicitamente "frente" en runtime. |
+| 77 | Backstab | Validar laterales bloqueados. | Validado estaticamente | Igual que fila 76; caso lateral no ejercido en runtime esta sesion. |
+| 78 | Backstab | Validar detras permitido. | Validado manualmente | 2026-07-16: confirmado en Godot 4.7 headless con jugador y enemigo reales, geometria rotada (`can_be_stealth_finished_by` = true, ejecucion completa). |
+| 79 | Backstab | Validar enemigos rotados. | Validado manualmente | 2026-07-16: `_facing_from_rotation()` corregido a `global_transform.basis.z` (antes mezclaba yaw local con posicion global); caso de prueba con `rotation.y = PI` confirmado en headless. |
+| 80 | Backstab | Confirmar forward logico y visual. | Validado manualmente | 2026-07-16: confirmado logicamente (headless); confirmacion visual en editor sigue pendiente. |
+| 81 | Backstab | Centralizar regla compartida. | Integrado | `BackstabRulesService.is_attacker_behind_target` ya centralizada; sin duplicacion encontrada. |
+| 82 | Backstab | Ajustar distancia valida. | No iniciado | Sin evidencia de que la distancia actual (`stealth_finish_range = 2.2`) sea incorrecta; no se toco. |
+| 83 | Backstab | Ajustar umbral angular. | No iniciado | Sin evidencia de que `stealth_behind_dot = 0.45` sea incorrecto; no se toco. |
+| 84 | Backstab | Prevenir doble dano. | Integrado | Preexistente (guardas en 3 capas); ahora con un segundo camino de disparo (senal del animador) que pasa por la MISMA guarda `backstab_execution_damage_applied`, verificado headless. |
+| 85 | Backstab | Cooldown o ventana de ejecucion. | Integrado | Preexistente; `backstab_execution_recovery_timer` y bloqueo de input durante ejecucion. |
+| 86 | Backstab | Animacion base de ejecucion. | Validado manualmente | 2026-07-16: `trigger_stealth_finish_attack()` fuerza la pose de finisher (antes `trigger_attack(3, false)` caia silenciosamente al swing generico con un solo brazo equipado). Confirmacion visual en pantalla sigue pendiente. |
+| 87 | Backstab | Reaccion del enemigo. | Integrado | Preexistente: `apply_stealth_finish_impact` llama `take_hit()` (flash + punch scale) o `die()`; confirmado por lectura de codigo, no se agrego nada nuevo. |
+| 88 | Backstab | Sincronizar momento de impacto. | Validado manualmente | 2026-07-16: nueva senal `attack_impact_reached` del animador, emitida en la fase de golpe real; timer fijo queda como respaldo. Disparo de la senal confirmado en headless. |
+| 89 | Backstab | Restaurar control tras ejecucion. | Validado manualmente | 2026-07-16: corregidos 2 bugs de freeze (jugador muere/pausa a mitad de ejecucion; objetivo liberado a mitad de ejecucion). Confirmado headless: `can_attack` se restaura correctamente en ambos casos. |
+| 90 | Backstab | Fallback para enemigos incompatibles. | Integrado | Preexistente; rama `elif backstab_execution_target.has_method("take_damage")` en `_apply_backstab_impact_once` (defensivo, dificil de alcanzar en la practica). |
+| 91 | Backstab | Documentar flujo final. | Integrado | `docs/combat_flow.md` actualizado 2026-07-16 con todos los fixes, evidencia runtime y pendientes de prueba manual explicitos. |
+| 92 | Cuerpo jugador | Contrato de dano corporal. | No iniciado | Pendiente. |
+| 93 | Cuerpo jugador | Perdida de partes. | No iniciado | Pendiente. |
+| 94 | Cuerpo jugador | Partes permitidas. | No iniciado | Pendiente. |
+| 95 | Cuerpo jugador | Penalizaciones por parte perdida. | No iniciado | Pendiente. |
+| 96 | Cuerpo jugador | Recuperacion de partes. | No iniciado | Pendiente. |
+| 97 | Cuerpo jugador | Tiempo de recogida. | No iniciado | Pendiente. |
+| 98 | Cuerpo jugador | Feedback visual de perdida. | No iniciado | Pendiente. |
+| 99 | Cuerpo jugador | Feedback sonoro de perdida. | No iniciado | Pendiente. |
+| 100 | Cuerpo jugador | Integracion con inventario. | No iniciado | Pendiente. |
+| 101 | Cuerpo jugador | Integracion con equipamiento. | No iniciado | Pendiente. |
+| 102 | Cuerpo jugador | Integracion con animacion. | No iniciado | Pendiente. |
+| 103 | Cuerpo jugador | Compatibilidad con slots corporales. | Integrado | 2026-07-16: seis slots canonicos integrados via `feat/inventory-equipment-ux-core`. |
+| 104 | Cuerpo jugador | Compatibilidad con camara. | No iniciado | Pendiente. |
+| 105 | Cuerpo jugador | Validacion de recuperacion. | No iniciado | Pendiente. |
+| 106 | Enemigos | Variante rapida. | Parcial | Enemigos existentes; catalogacion pendiente. |
+| 107 | Enemigos | Variante tanque. | Parcial | Enemigos existentes; catalogacion pendiente. |
+| 108 | Enemigos | Variante crawler. | Parcial | Crawling documentado; runtime pendiente. |
+| 109 | Enemigos | Variante lanzadora. | Parcial | Ranged/gorilla/lizard existen; auditoria pendiente. |
+| 110 | Enemigos | Minijefes. | No iniciado | Pendiente. |
+| 111 | Enemigos | Estado corporal enemigo. | Parcial | Limb detachment existe; consolidar reglas. |
+| 112 | Enemigos | Perdida de brazos. | Parcial | Existe en drops/limbs; validar side-aware. |
+| 113 | Enemigos | Perdida de piernas. | Parcial | Existe en drops/limbs; validar side-aware. |
+| 114 | Enemigos | Perdida de torso. | Parcial | Existe parcialmente; validar. |
+| 115 | Enemigos | Partes recuperables. | Parcial | Documentado; runtime pendiente. |
+| 116 | Enemigos | Alertas grupales. | Parcial | Estado actual documentado; validar. |
+| 117 | Enemigos | Ruido. | Parcial | Documentado en combate; validar. |
+| 118 | Enemigos | Reaccion a muerte. | Parcial | Drops/eventos existentes; validar. |
+| 119 | Enemigos | Drop inteligente. | Parcial | Servicios existentes; ampliar. |
+| 120 | Enemigos | Claridad visual del drop. | Parcial | Pendiente UX. |
+| 121 | Drops | Preservar slot canonico del drop. | Integrado | 2026-07-16: `DropPickupRulesService`/`EquipmentRulesService` ya usan los seis slots canonicos; `slot_for_bone` para huesos bilaterales ahora resuelve al primer lado libre en vez de forzar siempre el mismo lado (ver fila 43 del backlog original de equip-next). |
+| 122 | Drops | Preservar lado de origen cuando aplique. | No iniciado | Pendiente. |
+| 123 | Camara | Reproducir jitter. | Preparado | Validador diagnostico; runtime pendiente. |
+| 124 | Camara | Aislar camara habilitada/deshabilitada. | No iniciado | Pendiente runtime. |
+| 125 | Camara | Aislar rig procedural. | No iniciado | Pendiente runtime. |
+| 126 | Camara | Comparar `_process` y `_physics_process`. | Integrado | Follow de camara movido a `_physics_process` (rama previa a esta sesion); 2026-07-16: confirmado que sigue coherente tras los merges posteriores (orden padre-antes-que-hijo intacto). Comportamiento sobre 60 FPS y relacion con `physics_interpolation` documentados en `docs/camera_flow.md`. |
+| 127 | Camara | Corregir causa demostrada del jitter. | No iniciado | Pendiente causa. |
+| 128 | Camara | Sensibilidad configurable. | No iniciado | Pendiente. |
+| 129 | Camara | Invertir eje Y. | No iniciado | Pendiente. |
+| 130 | Camara | Persistencia de controles. | No iniciado | Pendiente. |
+| 131 | Camara | Modo crawler. | No iniciado | Pendiente. |
+| 132 | Camara | Modo combate. | No iniciado | Pendiente. |
+| 133 | Camara | Lock-on. | No iniciado | Pendiente. |
+| 134 | Animacion | Animaciones por equipamiento. | No iniciado | Pendiente. |
+| 135 | Animacion | Animacion de pickup. | No iniciado | Pendiente. |
+| 136 | Animacion | Animacion de crawlers. | Parcial | Rig tiene estados; validar. |
+| 137 | Animacion | Feedback sonoro. | No iniciado | Pendiente. |
+| 138 | Animacion | Feedback visual. | Parcial | Algunos flashes existen; consolidar. |
+| 139 | Animacion | Transiciones de ataque. | Parcial | Combo visual existe; validar. |
+| 140 | Animacion | Transiciones de dano. | Parcial | Enemigos tienen feedback; validar. |
+| 141 | Animacion | Transiciones de muerte. | Parcial | Enemigos tienen muerte/drops; validar. |
+| 142 | Progresion | Arbol de mejoras. | No iniciado | Pendiente. |
+| 143 | Progresion | NPC. | No iniciado | Pendiente. |
+| 144 | Progresion | Mesa de ensamblaje. | No iniciado | Pendiente. |
+| 145 | Mundo | Zonas por salto. | No iniciado | Pendiente. |
+| 146 | Mundo | Zonas por escalada. | No iniciado | Pendiente. |
+| 147 | Mundo | Zonas por alas. | No iniciado | Pendiente. |
+| 148 | Mundo | Zonas por fuerza. | No iniciado | Pendiente. |
+| 149 | Mundo | Pruebas por brazos. | Parcial | Trial gates existen; validar y ampliar. |
+| 150 | Mundo | Pruebas por piernas. | Parcial | Trial gates existen; validar y ampliar. |
+| 151 | Mundo | Pruebas por torso. | Parcial | Trial gates existen; validar y ampliar. |
+| 152 | Mundo | Pruebas por cabeza. | Parcial | Trial gates existen; validar y ampliar. |
+| 153 | Objetivos | ArenaGoalManager narrativo. | Parcial | Manager existe; ampliar narrativa. |
+| 154 | Objetivos | Misiones. | Parcial | Tutorial/checklist existe; sistema formal pendiente. |
+| 155 | Objetivos | Tutoriales. | Parcial | Tutorial flow existe; validar runtime. |
+| 156 | Objetivos | Recompensas de arenas. | Parcial | Arena flow existe; validar. |
+| 157 | Objetivos | Salida/portal de objetivo. | Parcial | Exit portal existe; validar. |
+| 158 | Objetivos | Registro de progreso de demo. | Parcial | ArenaGoalManager; persistencia pendiente. |
+| 159 | Mantenimiento | Actualizar docs por cambio funcional. | Parcial | Politica existe; aplicar por PR. |
+| 160 | Mantenimiento | Ejecutar validadores por rama. | Parcial | Validadores existen; checklist por PR. |
+| 161 | Mantenimiento | Revisar caches por rama. | Preparado | Politica documentada. |
+| 162 | Mantenimiento | Revisar conflictos por rama. | Preparado | Preflight documentado. |
+| 163 | Mantenimiento | Mantener commits pequenos. | Preparado | Politica documentada. |
+| 164 | Mantenimiento | Registrar decisiones arquitectonicas. | Preparado | Docs de flujo y politica. |
+| 165 | Mantenimiento | Refrescar roadmap tras grupos de ramas integradas. | Integrado | 2026-07-16: este archivo refrescado tras integrar 9 ramas en `origin/develop`; `docs/roadmap_progress.md` actualizado con la tabla de ramas. Sigue siendo un proceso manual, no automatizado. |
+
 ## docs/roadmap_progress.md
 
 # Roadmap Progress
 
-Fecha base: 2026-07-15
+Fecha base: 2026-07-15. Ultima actualizacion: 2026-07-16.
 
 Este archivo mantiene una tabla operativa de lotes pequenos para MARROW. Su
 objetivo es que cada cambio tenga rama, evidencia y estado verificable sin
@@ -3587,7 +4600,24 @@ tocar `main` directamente.
 
 | Fecha | Rama | Tipo | Objetivo | Estado | Evidencia | Pendiente |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-07-15 | `codex/qa-validation-baseline` | Docs / QA | Crear checklist manual y tablero de seguimiento para futuros lotes. | En progreso | `git status`, `git diff --check`, revision documental. | Commit, push y PR draft. |
+| 2026-07-15 | `docs/qa-validation-baseline` | Docs / QA | Crear checklist manual y tablero de seguimiento para futuros lotes. | Integrado en `main`; validado estaticamente. | Incluido por la cascada de integracion; `git diff --check`; revision documental. | Ejecutar checklist manual dentro de Godot. |
+| 2026-07-15 | `chore/data-bone-validator` | Tools / Datos | Validar integridad de definiciones de huesos y compatibilidad del catalogo. | Integrado en `main`; validado estaticamente. | PR #1; `python -B tools\validate_bone_data.py` OK. | Ejecutar flujo manual de pickups/equipamiento con datos reales. |
+| 2026-07-15 | `test/p0-backstab-validation` | Tools / Combate | Cubrir casos de backstab frente, detras, laterales y enemigos rotados sin tocar IA general. | Integrado en `main`; validado estaticamente. | PR #2; `python -B tools\validate_backstab_geometry.py` OK. | Confirmar manualmente en `scenes/testing_environment.tscn` o escena equivalente. |
+| 2026-07-15 | `test/p0-preview-validation` | Tools / Preview | Registrar contrato estatico del preview de inventario sin reconstruir `SubViewport` ni `World3D`. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_preview_contract.py` OK. | Validar render, equip/unequip y lifecycle dentro de Godot. |
+| 2026-07-15 | `test/p0-jitter-diagnostics` | Tools / Camara / Rig | Diagnosticar contrato de actualizacion de movimiento, camara y rig sin aplicar correccion especulativa. | Integrado en `main`; validado estaticamente con advertencias. | PR #3; `python -B tools\validate_jitter_update_contract.py` OK; advierte hipotesis runtime no demostradas. | Reproducir jitter en runtime antes de cualquier fix. |
+| 2026-07-15 | `test/inventory-stack-contract` | Tools / Inventario | Validar que el inventario oculte solo las copias equipadas y conserve duplicados visibles. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_stack_contract.py` OK. | Probar abrir inventario, recoger duplicados y equipar/desequipar en juego. |
+| 2026-07-15 | `feature/inventory-stack-count` | UI / Inventario | Mostrar cantidades `xN` agrupando duplicados visibles sin cambiar payload de drag and drop. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_stack_count.py` OK. | Confirmar layout responsive y comportamiento drag/drop en runtime. |
+| 2026-07-15 | `integration/marrow-validation-cascade` | Integracion | Juntar lotes de validacion en cascada y limitar Graphify Actions a `main` y `develop`. | Integrado en `main`; remoto de ramas de trabajo ya podado. | PR #3; `45be471` incluido en `origin/main`; Graphify limitado por workflow. | Monitorear checks de GitHub y ejecutar QA manual post-merge. |
+| 2026-07-15 | `chore/repo-stability-and-graphify` | Repo / CI / Docs | Definir politica de Graphify, line endings y fuente auditable del roadmap 1-165. | Listo para revision; validado estaticamente. | `.gitattributes`, `docs/repo_stability_and_graphify.md`, `docs/roadmap_1_165.md`; rama sincronizada con `origin/main`. | Abrir PR draft o entregar enlace manual; monitorear que Graphify solo regenere en `main`/`develop`. |
+| 2026-07-16 | `chore/repo-stability-and-graphify` | Repo / CI | Cerrar el pendiente de `.gitignore` para el output anidado accidental de Graphify. | Integrado en `develop`. | `.gitignore` actualizado; verificado que 0 archivos requerian renormalizacion (`git ls-files --eol`). | Ninguno. |
+| 2026-07-16 | `test/p0-runtime-validation-suite` | Tools / QA | Convertir la guia P0 en un flujo de registro PASS/FAIL/observado/evidencia. | Integrado en `develop`. | Teclas O/P/F en `testing_environment.gd`; log en `user://p0_validation_log.txt`; verificado headless (Godot 4.7, escena real corre 60 frames sin error tras warmup de cache de clases). | Ejecucion manual interactiva de las teclas O/P/F (headless no simula input). |
+| 2026-07-16 | `feat/bone-stats-quality-and-weight` | Datos / Stats | Corregir orden de redondeo, exponer claves sin consumidor, documentar unidades. | Integrado en `develop`. | Fix de `aggregate_player_bonuses` (sumar floats, redondear una vez); `get_inventory_stats_snapshot` expone weight/quality; verificado headless con datos reales de hueso. | Ninguno. |
+| 2026-07-16 | `fix/inventory-preview-stability` | Inventario / Preview | Corregir orden del snapshot y eliminar resize manual redundante. | Integrado en `develop`. | `sync_preview` cachea solo tras aplicar con exito; `_sync_preview_viewport_size` eliminado (redundante bajo `stretch=true`); verificado headless, escena corre sin error. | Pruebas manuales de render (equipar/desequipar, reapertura, resoluciones). |
+| 2026-07-16 | `fix/player-camera-movement-stability` | Camara | Documentar comportamiento sobre 60 FPS y examinar escrituras directas de `global_position`. | Integrado en `develop`. | Documentacion agregada; asimetria encontrada entre detach (compensado) y reattach (sin compensar) de torso/cabeza, registrada sin corregir. | Confirmar/descartar jitter con un humano jugando; QA runtime del reattach. |
+| 2026-07-16 | `feat/inventory-equipment-ux-core` | Inventario / Equipamiento | Corregir bug de piernas, limpiar aliases, agregar comparador/deltas/feedback de drag. | Integrado en `develop`. | Bug real de equip-next (siempre `right_leg`) corregido; bug de tipado de GDScript encontrado y corregido de paso; verificado headless: `{"left_leg": "leg_bone", "right_leg": "leg_bone"}`. | Ninguno de lo especificado; UI en ingles ya consistente. |
+| 2026-07-16 | `feat/inventory-build-presets` | Inventario / Builds | Implementar aplicacion transaccional real con rollback. | Integrado en `develop`. | Snapshot previo + reaplicacion si falla la verificacion post-apply; bug preexistente de compilacion (`display_name` inexistente) encontrado y corregido; verificado headless en 5 escenarios (valido, vacio, pieza ausente, slot incompatible, rollback forzado). | Ninguno. |
+| 2026-07-16 | `feat/bone-durability-mutations-and-synergies` | Datos | Elegir Ruta A (esquema de datos puro) y documentar honestamente el alcance. | Integrado en `develop`. | Cero llamadores externos confirmado por grep; validador y docs corregidos para no sugerir funcionalidad runtime. | Ruta B (runtime real) queda para una rama futura si se decide implementarla. |
+| 2026-07-16 | `fix/combat-backstab-stability` | Combate | Corregir freeze, animacion faltante, sincronizacion de impacto. | Integrado en `develop`. | 2 bugs de freeze corregidos (muerte/pausa a mitad de ejecucion; objetivo liberado a mitad de ejecucion); pose de finisher forzada; senal de impacto del animador; verificado headless con jugador y enemigo reales. | Pausa real en editor (mismo codigo que muerte, no ejercido); confirmacion visual de pose/reaccion/camara. |
 
 ## Backlog Tecnico Inmediato
 

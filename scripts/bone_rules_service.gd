@@ -42,7 +42,20 @@ static func display_name_with_slot(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
 		return str(definition.get("display_name", "Enemy Bone"))
-	return BoneDatabase.display_name_with_slot(bone_id)
+	var base_name := BoneDatabase.display_name(bone_id)
+	var slot_label := EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id))
+	if slot_label == "":
+		return base_name
+
+	var clean_name := base_name
+	if clean_name.ends_with(" Bone"):
+		clean_name = clean_name.substr(0, clean_name.length() - " Bone".length())
+
+	var clean_lower := clean_name.to_lower()
+	var slot_lower := slot_label.to_lower()
+	if slot_lower.contains(clean_lower):
+		return slot_label + " Bone"
+	return clean_name + " " + slot_label
 
 
 static func quality_for(bone_id: String) -> String:
@@ -469,19 +482,28 @@ static func player_bonus_for(bone_id: String) -> Dictionary:
 	}
 
 
+# Returns the quality-adjusted bonus for a single bone as floats. Callers
+# that aggregate several bones must sum these floats first and round once
+# at the end (see aggregate_player_bonuses): rounding attack_damage/max_health
+# per bone before summing would let each bone's fraction round up
+# independently (e.g. three bones at +0.5 would total +3 instead of the
+# correct +2 for a combined +1.5), inflating stats with more equipped
+# pieces even when the underlying bonus total is unchanged.
 static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
 	var bonus := player_bonus_for(bone_id)
 	var multiplier := quality_multiplier_for(bone_id)
 	return {
 		"move_speed": float(bonus["move_speed"]) * multiplier,
 		"attack_range": float(bonus["attack_range"]) * multiplier,
-		"attack_damage": roundi(float(bonus["attack_damage"]) * multiplier),
-		"max_health": roundi(float(bonus["max_health"]) * multiplier),
+		"attack_damage": float(bonus["attack_damage"]) * multiplier,
+		"max_health": float(bonus["max_health"]) * multiplier,
 	}
 
 
 static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 	var total: Dictionary = PLAYER_BONUS_DEFAULTS.duplicate()
+	var attack_damage_total := 0.0
+	var max_health_total := 0.0
 	for slot_id in equipment_state:
 		var bone_id: String = str(equipment_state[slot_id])
 		if bone_id == "":
@@ -489,8 +511,10 @@ static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 		var bonus: Dictionary = adjusted_player_bonus_for(bone_id)
 		total["move_speed"] = float(total["move_speed"]) + float(bonus["move_speed"])
 		total["attack_range"] = float(total["attack_range"]) + float(bonus["attack_range"])
-		total["attack_damage"] = int(total["attack_damage"]) + int(bonus["attack_damage"])
-		total["max_health"] = int(total["max_health"]) + int(bonus["max_health"])
+		attack_damage_total += float(bonus["attack_damage"])
+		max_health_total += float(bonus["max_health"])
+	total["attack_damage"] = roundi(attack_damage_total)
+	total["max_health"] = roundi(max_health_total)
 	return total
 
 

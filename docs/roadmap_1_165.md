@@ -1,6 +1,7 @@
 # Roadmap Tecnico 1-165
 
-Fecha base: 2026-07-15
+Fecha base: 2026-07-15. Ultima actualizacion: 2026-07-16 (integracion de 9
+ramas de hito en `origin/develop`, ver `docs/roadmap_progress.md`).
 
 Este archivo es la fuente auditable del roadmap tecnico. Los estados son
 conservadores: un objetivo no se marca como cumplido si solo existe metadata,
@@ -23,7 +24,7 @@ Estados usados:
 
 | N | Sistema | Objetivo | Estado actual | Evidencia / pendiente |
 | --- | --- | --- | --- | --- |
-| 1 | Repo | Mantener trabajo fuera de `main` mediante ramas de hito. | Parcial | Branch policy documentada; requiere PR de este hito. |
+| 1 | Repo | Mantener trabajo fuera de `main` mediante ramas de hito. | Integrado | 2026-07-16: 9 ramas de hito trabajadas, validadas y fusionadas en `origin/develop` (no en `main`); ver `docs/roadmap_progress.md`. |
 | 2 | Repo | Mantener commits pequenos y reversibles dentro de cada rama. | Parcial | Commits anteriores pequenos; seguir auditando por PR. |
 | 3 | Repo | Evitar force-push y reescritura de historial. | Preparado | Politica en goal y docs; sin evidencia de force-push local. |
 | 4 | Repo | Crear preflight de commits reproducible. | Integrado | `docs/repo_stability_and_graphify.md`. |
@@ -35,7 +36,7 @@ Estados usados:
 | 10 | Arquitectura | Confirmar componentes de equipamiento existentes. | Preparado | `PlayerEquipmentComponent` documentado; requiere auditoria puntual. |
 | 11 | Arquitectura | Confirmar componentes de stats existentes. | Preparado | `PlayerStatsComponent` documentado; requiere auditoria puntual. |
 | 12 | Arquitectura | Evitar duplicar reglas entre UI y gameplay. | Parcial | Politica documentada; validacion continua pendiente. |
-| 13 | Arquitectura | Usar servicios compartidos para reglas de slots. | Parcial | `EquipmentRulesService` existe; canon de seis slots pendiente. |
+| 13 | Arquitectura | Usar servicios compartidos para reglas de slots. | Integrado | 2026-07-16: seis slots canonicos (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`) integrados en `develop` via `feat/inventory-equipment-ux-core`; solo `body` y `legs` como aliases legacy con datos reales (7 aliases especulativos sin consumidor eliminados). |
 | 14 | Arquitectura | Usar catalogo de huesos como fuente de datos. | Parcial | `BoneDataCatalog` existe; migracion incompleta. |
 | 15 | Arquitectura | Mantener `Player` como orquestador. | Parcial | Estado documentado; hotspots siguen grandes. |
 | 16 | Arquitectura | Documentar arquitectura por flujos. | Integrado | `docs/flow_index.md` y docs de flujo. |
@@ -55,40 +56,40 @@ Estados usados:
 | 30 | Datos | Definir nombres visibles. | Parcial | Resources existentes; glosario UI pendiente. |
 | 31 | Datos | Definir rarezas. | Integrado | Documentado en historial y `BoneDefinition`. |
 | 32 | Datos | Definir mutaciones. | Integrado | Documentado en historial y `BoneDefinition`. |
-| 33 | Datos | Definir peso. | Integrado | Metadata existe; formula activa pendiente. |
+| 33 | Datos | Definir peso. | Integrado | 2026-07-16: `BoneRulesService.player_stats_with_equipment` aplica `equipment_weight` a una penalizacion de velocidad con umbral y techo; verificado en Godot 4.7 headless con datos reales (`equipment_weight: 3.2`, `load_speed_penalty: 0.012`). |
 | 34 | Datos | Definir stats base. | Parcial | Metadata existe; comparador pendiente. |
 | 35 | Datos | Definir sets y sinergias. | Parcial | Metadata pasiva; reglas activas pendientes. |
 | 36 | Datos | Definir ataque y combo. | Parcial | Metadata pasiva; combate avanzado pendiente. |
-| 37 | Datos | Definir modificadores porcentuales de calidad. | Parcial | Metadata existe; consumo automatico pendiente. |
+| 37 | Datos | Definir modificadores porcentuales de calidad. | Integrado | 2026-07-16: `quality_damage_percent`/`speed_percent`/`health_percent`/`weight_percent` se suman y limitan (+-75%) y se aplican al calculo final de stats; verificado headless con datos reales de hueso. |
 | 38 | Datos | Definir calidades. | Integrado | Documentado en `docs/bone_data_structure.md`. |
 | 39 | Datos | Definir rarezas y mutaciones en docs. | Integrado | Documentacion existente. |
 | 40 | Datos | Documentar estructura de datos de huesos. | Integrado | `docs/bone_data_structure.md`. |
 | 41 | Inventario | Stacks visuales reales. | Parcial | Contador `xN` integrado; runtime pendiente. |
 | 42 | Inventario | Tiles con cantidad y drag and drop. | Parcial | `ui_bone_item.gd` y validador; runtime pendiente. |
-| 43 | Inventario | Comparador de stats. | No iniciado | Pendiente en `feat/inventory-equipment-ux-core`. |
-| 44 | Inventario | Mostrar subidas y bajadas de stats. | No iniciado | Pendiente. |
-| 45 | Inventario | Filtro por slot. | No iniciado | Pendiente. |
-| 46 | Inventario | Filtro por rareza. | No iniciado | Pendiente. |
+| 43 | Inventario | Comparador de stats. | Integrado | 2026-07-16: panel de info compara hueso bajo cursor vs equipado en el mismo slot (deltas reales via `BoneRulesService.adjusted_player_bonus_for`); verificado headless: "vs equipped Torso Bone: Speed -1.7, Damage +2.3, HP +0.3". |
+| 44 | Inventario | Mostrar subidas y bajadas de stats. | Integrado | 2026-07-16: mismo cambio que 43; deltas con signo (+/-) por stat. |
+| 45 | Inventario | Filtro por slot. | Integrado | Preexistente a esta sesion; confirmado funcional por `EquipmentRulesService.inventory_filter_matches_bone` y las 6 tabs de la UI. |
+| 46 | Inventario | Filtro por rareza. | No iniciado | Pendiente; sin dato de rareza expuesto en filtro. |
 | 47 | Inventario | Filtro por peso. | No iniciado | Pendiente. |
 | 48 | Inventario | Filtro por dano. | No iniciado | Pendiente. |
-| 49 | Inventario | Filtro por defensa. | No iniciado | Pendiente. |
-| 50 | Inventario | Ordenar por nuevo. | No iniciado | Pendiente. |
-| 51 | Inventario | Ordenar por rareza o calidad. | No iniciado | Pendiente. |
-| 52 | Inventario | Ordenar por slot. | No iniciado | Pendiente. |
-| 53 | Inventario | Ordenar por poder. | No iniciado | Pendiente. |
-| 54 | Inventario | Ordenar por nombre. | No iniciado | Pendiente. |
-| 55 | Inventario | Tooltip con color por calidad. | No iniciado | Pendiente. |
-| 56 | Inventario | Tooltip con resumen. | No iniciado | Pendiente. |
-| 57 | Inventario | Feedback de slot valido. | No iniciado | Pendiente. |
-| 58 | Inventario | Feedback de slot invalido. | No iniciado | Pendiente. |
-| 59 | Inventario | Confirmacion o animacion al equipar. | No iniciado | Pendiente. |
-| 60 | Builds | Guardar builds de equipamiento. | No iniciado | Pendiente. |
-| 61 | Builds | Cambiar builds de equipamiento. | No iniciado | Pendiente. |
-| 62 | Builds | Validar builds disponibles. | No iniciado | Pendiente. |
+| 49 | Inventario | Filtro por defensa. | No iniciado | No aplica: el proyecto no tiene stat de defensa (ver fila 67). |
+| 50 | Inventario | Ordenar por nuevo. | No iniciado | Pendiente; no existe campo de orden de adquisicion. |
+| 51 | Inventario | Ordenar por rareza o calidad. | Integrado | Preexistente; `compare_bones_for_inventory` ordena por slot -> rareza -> calidad -> nombre (compuesto, no seleccionable por el usuario). |
+| 52 | Inventario | Ordenar por slot. | Integrado | Mismo comparador que fila 51. |
+| 53 | Inventario | Ordenar por poder. | No iniciado | Pendiente; no existe metrica de "poder". |
+| 54 | Inventario | Ordenar por nombre. | Integrado | Mismo comparador que fila 51 (ultimo criterio de desempate). |
+| 55 | Inventario | Tooltip con color por calidad. | Integrado | Preexistente a esta sesion; panel de info ya mostraba calidad. |
+| 56 | Inventario | Tooltip con resumen. | Integrado | Preexistente; `show_bone_info` ya incluia efecto y descripcion. |
+| 57 | Inventario | Feedback de slot valido. | Integrado | 2026-07-16: `BoneSlotWidget` pinta el borde verde durante un drag compatible, via `can_equip_bone_in_slot`. |
+| 58 | Inventario | Feedback de slot invalido. | Integrado | 2026-07-16: mismo cambio que 57, borde rojo para drag incompatible; se restaura en `NOTIFICATION_DRAG_END`. |
+| 59 | Inventario | Confirmacion o animacion al equipar. | No iniciado | Solo hay `print()` de consola y el evento `bone_equipped`; sin confirmacion visual de usuario. |
+| 60 | Builds | Guardar builds de equipamiento. | Integrado | 2026-07-16: `PlayerEquipmentBuildsComponent` persiste 3 slots en `user://equipment_builds.cfg`; verificado headless (guardar, recargar). |
+| 61 | Builds | Cambiar builds de equipamiento. | Integrado | 2026-07-16: `apply_build` aplica un build guardado via `PlayerEquipmentComponent`; ahora con rollback real si la aplicacion falla a mitad de camino (snapshot previo + reaplicacion si la verificacion post-apply falla). Verificado headless en 5 escenarios: valido, vacio, pieza ausente, slot incompatible, rollback forzado. |
+| 62 | Builds | Validar builds disponibles. | Integrado | `validate_build_state` revisa copias disponibles, torso requerido para extremidades, y compatibilidad de slot antes de aplicar. |
 | 63 | Stats | Formula determinista de stats. | Parcial | `PlayerStatsComponent` existe; ampliar reglas. |
 | 64 | Stats | Comparacion contra pieza equipada. | No iniciado | Pendiente. |
-| 65 | Stats | Balance inicial de calidad. | Parcial | Metadata existe; balance activo pendiente. |
-| 66 | Stats | Balance inicial de peso. | Parcial | Metadata existe; consumo activo pendiente. |
+| 65 | Stats | Balance inicial de calidad. | Integrado | 2026-07-16: `quality_multiplier` escala bonuses directos; unidades y formula documentadas en `docs/equipment_flow.md`. |
+| 66 | Stats | Balance inicial de peso. | Integrado | 2026-07-16: `EQUIPMENT_FREE_WEIGHT`/`EQUIPMENT_LOAD_SPEED_PENALTY_*` activos y documentados con ejemplo numerico. |
 | 67 | Stats | Defensa en calculo final. | No iniciado | Pendiente. |
 | 68 | Stats | Movilidad en calculo final. | Parcial | Stats actuales; auditoria pendiente. |
 | 69 | Stats | Stamina en calculo final. | No iniciado | Pendiente. |
@@ -98,22 +99,22 @@ Estados usados:
 | 73 | Sinergias | Bonus de set completos. | No iniciado | Pendiente. |
 | 74 | Sinergias | Bonus de set parciales. | No iniciado | Pendiente. |
 | 75 | Sinergias | Efectos negativos y mutaciones. | No iniciado | Pendiente. |
-| 76 | Backstab | Validar frente bloqueado. | Validado estaticamente | `validate_backstab_geometry.py`; runtime pendiente. |
-| 77 | Backstab | Validar laterales bloqueados. | Validado estaticamente | `validate_backstab_geometry.py`; runtime pendiente. |
-| 78 | Backstab | Validar detras permitido. | Validado estaticamente | `validate_backstab_geometry.py`; runtime pendiente. |
-| 79 | Backstab | Validar enemigos rotados. | Validado estaticamente | `validate_backstab_geometry.py`; runtime pendiente. |
-| 80 | Backstab | Confirmar forward logico y visual. | Preparado | Requiere Godot/manual. |
-| 81 | Backstab | Centralizar regla compartida. | No iniciado | Pendiente si se demuestra duplicacion. |
-| 82 | Backstab | Ajustar distancia valida. | No iniciado | Pendiente de reproduccion. |
-| 83 | Backstab | Ajustar umbral angular. | No iniciado | Pendiente de reproduccion. |
-| 84 | Backstab | Prevenir doble dano. | No iniciado | Pendiente. |
-| 85 | Backstab | Cooldown o ventana de ejecucion. | No iniciado | Pendiente. |
-| 86 | Backstab | Animacion base de ejecucion. | No iniciado | Pendiente runtime. |
-| 87 | Backstab | Reaccion del enemigo. | No iniciado | Pendiente runtime. |
-| 88 | Backstab | Sincronizar momento de impacto. | No iniciado | Pendiente runtime. |
-| 89 | Backstab | Restaurar control tras ejecucion. | No iniciado | Pendiente runtime. |
-| 90 | Backstab | Fallback para enemigos incompatibles. | No iniciado | Pendiente. |
-| 91 | Backstab | Documentar flujo final. | Preparado | Docs existen; actualizar tras fix. |
+| 76 | Backstab | Validar frente bloqueado. | Validado estaticamente | `validate_backstab_geometry.py` (ahora con exit code real); geometria confirmada en Godot 4.7 headless con enemigo real, pero solo para el caso "detras", no explicitamente "frente" en runtime. |
+| 77 | Backstab | Validar laterales bloqueados. | Validado estaticamente | Igual que fila 76; caso lateral no ejercido en runtime esta sesion. |
+| 78 | Backstab | Validar detras permitido. | Validado manualmente | 2026-07-16: confirmado en Godot 4.7 headless con jugador y enemigo reales, geometria rotada (`can_be_stealth_finished_by` = true, ejecucion completa). |
+| 79 | Backstab | Validar enemigos rotados. | Validado manualmente | 2026-07-16: `_facing_from_rotation()` corregido a `global_transform.basis.z` (antes mezclaba yaw local con posicion global); caso de prueba con `rotation.y = PI` confirmado en headless. |
+| 80 | Backstab | Confirmar forward logico y visual. | Validado manualmente | 2026-07-16: confirmado logicamente (headless); confirmacion visual en editor sigue pendiente. |
+| 81 | Backstab | Centralizar regla compartida. | Integrado | `BackstabRulesService.is_attacker_behind_target` ya centralizada; sin duplicacion encontrada. |
+| 82 | Backstab | Ajustar distancia valida. | No iniciado | Sin evidencia de que la distancia actual (`stealth_finish_range = 2.2`) sea incorrecta; no se toco. |
+| 83 | Backstab | Ajustar umbral angular. | No iniciado | Sin evidencia de que `stealth_behind_dot = 0.45` sea incorrecto; no se toco. |
+| 84 | Backstab | Prevenir doble dano. | Integrado | Preexistente (guardas en 3 capas); ahora con un segundo camino de disparo (senal del animador) que pasa por la MISMA guarda `backstab_execution_damage_applied`, verificado headless. |
+| 85 | Backstab | Cooldown o ventana de ejecucion. | Integrado | Preexistente; `backstab_execution_recovery_timer` y bloqueo de input durante ejecucion. |
+| 86 | Backstab | Animacion base de ejecucion. | Validado manualmente | 2026-07-16: `trigger_stealth_finish_attack()` fuerza la pose de finisher (antes `trigger_attack(3, false)` caia silenciosamente al swing generico con un solo brazo equipado). Confirmacion visual en pantalla sigue pendiente. |
+| 87 | Backstab | Reaccion del enemigo. | Integrado | Preexistente: `apply_stealth_finish_impact` llama `take_hit()` (flash + punch scale) o `die()`; confirmado por lectura de codigo, no se agrego nada nuevo. |
+| 88 | Backstab | Sincronizar momento de impacto. | Validado manualmente | 2026-07-16: nueva senal `attack_impact_reached` del animador, emitida en la fase de golpe real; timer fijo queda como respaldo. Disparo de la senal confirmado en headless. |
+| 89 | Backstab | Restaurar control tras ejecucion. | Validado manualmente | 2026-07-16: corregidos 2 bugs de freeze (jugador muere/pausa a mitad de ejecucion; objetivo liberado a mitad de ejecucion). Confirmado headless: `can_attack` se restaura correctamente en ambos casos. |
+| 90 | Backstab | Fallback para enemigos incompatibles. | Integrado | Preexistente; rama `elif backstab_execution_target.has_method("take_damage")` en `_apply_backstab_impact_once` (defensivo, dificil de alcanzar en la practica). |
+| 91 | Backstab | Documentar flujo final. | Integrado | `docs/combat_flow.md` actualizado 2026-07-16 con todos los fixes, evidencia runtime y pendientes de prueba manual explicitos. |
 | 92 | Cuerpo jugador | Contrato de dano corporal. | No iniciado | Pendiente. |
 | 93 | Cuerpo jugador | Perdida de partes. | No iniciado | Pendiente. |
 | 94 | Cuerpo jugador | Partes permitidas. | No iniciado | Pendiente. |
@@ -125,7 +126,7 @@ Estados usados:
 | 100 | Cuerpo jugador | Integracion con inventario. | No iniciado | Pendiente. |
 | 101 | Cuerpo jugador | Integracion con equipamiento. | No iniciado | Pendiente. |
 | 102 | Cuerpo jugador | Integracion con animacion. | No iniciado | Pendiente. |
-| 103 | Cuerpo jugador | Compatibilidad con slots corporales. | No iniciado | Pendiente de seis slots. |
+| 103 | Cuerpo jugador | Compatibilidad con slots corporales. | Integrado | 2026-07-16: seis slots canonicos integrados via `feat/inventory-equipment-ux-core`. |
 | 104 | Cuerpo jugador | Compatibilidad con camara. | No iniciado | Pendiente. |
 | 105 | Cuerpo jugador | Validacion de recuperacion. | No iniciado | Pendiente. |
 | 106 | Enemigos | Variante rapida. | Parcial | Enemigos existentes; catalogacion pendiente. |
@@ -143,12 +144,12 @@ Estados usados:
 | 118 | Enemigos | Reaccion a muerte. | Parcial | Drops/eventos existentes; validar. |
 | 119 | Enemigos | Drop inteligente. | Parcial | Servicios existentes; ampliar. |
 | 120 | Enemigos | Claridad visual del drop. | Parcial | Pendiente UX. |
-| 121 | Drops | Preservar slot canonico del drop. | Parcial | Slots legacy; seis slots pendiente. |
+| 121 | Drops | Preservar slot canonico del drop. | Integrado | 2026-07-16: `DropPickupRulesService`/`EquipmentRulesService` ya usan los seis slots canonicos; `slot_for_bone` para huesos bilaterales ahora resuelve al primer lado libre en vez de forzar siempre el mismo lado (ver fila 43 del backlog original de equip-next). |
 | 122 | Drops | Preservar lado de origen cuando aplique. | No iniciado | Pendiente. |
 | 123 | Camara | Reproducir jitter. | Preparado | Validador diagnostico; runtime pendiente. |
 | 124 | Camara | Aislar camara habilitada/deshabilitada. | No iniciado | Pendiente runtime. |
 | 125 | Camara | Aislar rig procedural. | No iniciado | Pendiente runtime. |
-| 126 | Camara | Comparar `_process` y `_physics_process`. | Preparado | Validador advierte hipotesis. |
+| 126 | Camara | Comparar `_process` y `_physics_process`. | Integrado | Follow de camara movido a `_physics_process` (rama previa a esta sesion); 2026-07-16: confirmado que sigue coherente tras los merges posteriores (orden padre-antes-que-hijo intacto). Comportamiento sobre 60 FPS y relacion con `physics_interpolation` documentados en `docs/camera_flow.md`. |
 | 127 | Camara | Corregir causa demostrada del jitter. | No iniciado | Pendiente causa. |
 | 128 | Camara | Sensibilidad configurable. | No iniciado | Pendiente. |
 | 129 | Camara | Invertir eje Y. | No iniciado | Pendiente. |
@@ -187,4 +188,4 @@ Estados usados:
 | 162 | Mantenimiento | Revisar conflictos por rama. | Preparado | Preflight documentado. |
 | 163 | Mantenimiento | Mantener commits pequenos. | Preparado | Politica documentada. |
 | 164 | Mantenimiento | Registrar decisiones arquitectonicas. | Preparado | Docs de flujo y politica. |
-| 165 | Mantenimiento | Refrescar roadmap tras grupos de ramas integradas. | Preparado | Este archivo y `roadmap_progress.md`; automatizacion pendiente. |
+| 165 | Mantenimiento | Refrescar roadmap tras grupos de ramas integradas. | Integrado | 2026-07-16: este archivo refrescado tras integrar 9 ramas en `origin/develop`; `docs/roadmap_progress.md` actualizado con la tabla de ramas. Sigue siendo un proceso manual, no automatizado. |
