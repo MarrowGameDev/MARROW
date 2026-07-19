@@ -81,6 +81,68 @@ const LEGACY_QUALITY_ALIASES := {
 	"legendario": QUALITY_PRISTINE,
 }
 
+# Visual profile per quality, applied on top of whatever the base material
+# already is. Normal is deliberately all-neutral (x1 colour, no offsets, no
+# emission) so a Normal piece -- and any legacy piece, which resolves to Normal
+# -- renders byte-for-byte as it did before quality visuals existed.
+#
+# These are OFFSETS and MULTIPLIERS, never absolute values: the base material
+# keeps owning the look, quality only nudges it. That is what keeps quality
+# separable from rarity, mutation, corruption, durability and hit feedback,
+# which layer on afterwards (see apply_to_material).
+const QUALITY_VISUALS := {
+	QUALITY_FRAIL: {
+		# Grey, desaturated and dry. No emission: it must read as brittle,
+		# never as broken or as glowing.
+		"color_multiplier": Color(0.82, 0.80, 0.78, 1.0),
+		"saturation": 0.45,
+		"roughness_offset": 0.12,
+		"specular_offset": -0.06,
+		"emission_color": Color(0, 0, 0, 1),
+		"emission_energy": 0.0,
+	},
+	QUALITY_WORN: {
+		# Beige/ochre with a touch more roughness than Normal.
+		"color_multiplier": Color(0.94, 0.87, 0.72, 1.0),
+		"saturation": 0.85,
+		"roughness_offset": 0.06,
+		"specular_offset": -0.02,
+		"emission_color": Color(0, 0, 0, 1),
+		"emission_energy": 0.0,
+	},
+	QUALITY_NORMAL: {
+		"color_multiplier": Color(1, 1, 1, 1),
+		"saturation": 1.0,
+		"roughness_offset": 0.0,
+		"specular_offset": 0.0,
+		"emission_color": Color(0, 0, 0, 1),
+		"emission_energy": 0.0,
+	},
+	QUALITY_STRONG: {
+		# Cool blue-grey, tighter highlight. Solid, not enchanted: no emission.
+		"color_multiplier": Color(0.88, 0.95, 1.0, 1.0),
+		# Left at 1.0 deliberately: the bone palette is warm, so boosting
+		# saturation amplifies the existing yellow and cancels out the cool
+		# shift. The contrast for this tier comes from roughness/specular.
+		"saturation": 1.0,
+		"roughness_offset": -0.10,
+		"specular_offset": 0.10,
+		"emission_color": Color(0, 0, 0, 1),
+		"emission_energy": 0.0,
+	},
+	QUALITY_PRISTINE: {
+		# Clean ivory with a restrained gold accent. The only tier with
+		# emission, and kept very low so it reads as well-kept rather than
+		# magical.
+		"color_multiplier": Color(1.03, 1.0, 0.94, 1.0),
+		"saturation": 1.05,
+		"roughness_offset": -0.16,
+		"specular_offset": 0.16,
+		"emission_color": Color(1.0, 0.86, 0.55, 1.0),
+		"emission_energy": 0.07,
+	},
+}
+
 static var _rng: RandomNumberGenerator = null
 
 
@@ -155,3 +217,68 @@ static func color_for(quality_id: String) -> Color:
 
 static func probability_for(quality_id: String) -> float:
 	return float(QUALITY_TABLE[normalize_quality_id(quality_id)]["probability"])
+
+
+static func visual_profile_for(quality_id: String) -> Dictionary:
+	return QUALITY_VISUALS[normalize_quality_id(quality_id)]
+
+
+# Tints a material the CALLER owns. Never pass a shared/imported material in:
+# every call site duplicates or news up its own (see bone.gd _prepare_materials
+# and ModularSkeletonRig's material_override), so one piece changing quality
+# can never touch another piece that happens to share a base material.
+#
+# Composition order: this is step 2. The base material (step 1) must already be
+# applied; mutation/corruption (3), durability (4) and temporary hit feedback
+# (5) layer on afterwards and must not be folded in here -- keeping them in
+# separate passes is what lets a player tell them apart.
+#
+# Call this only when the instance, its quality, or the visual context changes.
+# It allocates nothing, but it is not free, and nothing here belongs in
+# _process.
+static func apply_to_material(material: StandardMaterial3D, quality_id: String) -> void:
+	if material == null:
+		return
+	var profile: Dictionary = visual_profile_for(quality_id)
+
+	var tint: Color = profile["color_multiplier"]
+	var base_color: Color = material.albedo_color
+	var tinted := Color(
+		base_color.r * tint.r,
+		base_color.g * tint.g,
+		base_color.b * tint.b,
+		base_color.a
+	)
+	# Saturation is pulled toward/away from the colour's own luminance, so a
+	# desaturated tier greys out without shifting hue.
+	var saturation := float(profile["saturation"])
+	if absf(saturation - 1.0) > 0.001:
+		var luminance: float = tinted.r * 0.2126 + tinted.g * 0.7152 + tinted.b * 0.0722
+		tinted = Color(
+			lerpf(luminance, tinted.r, saturation),
+			lerpf(luminance, tinted.g, saturation),
+			lerpf(luminance, tinted.b, saturation),
+			tinted.a
+		)
+	material.albedo_color = Color(
+		clampf(tinted.r, 0.0, 1.0),
+		clampf(tinted.g, 0.0, 1.0),
+		clampf(tinted.b, 0.0, 1.0),
+		clampf(tinted.a, 0.0, 1.0)
+	)
+
+	material.roughness = clampf(material.roughness + float(profile["roughness_offset"]), 0.0, 1.0)
+	material.metallic_specular = clampf(material.metallic_specular + float(profile["specular_offset"]), 0.0, 1.0)
+
+	var emission_energy := float(profile["emission_energy"])
+	if emission_energy > 0.0:
+		material.emission_enabled = true
+		material.emission = profile["emission_color"]
+		material.emission_energy_multiplier = emission_energy
+	# No else: a tier with no emission of its own must not switch off emission
+	# the base material or another system (a pickup's glow) deliberately set.
+
+
+# Convenience for the common case: resolve the instance's quality and tint.
+static func apply_instance_to_material(material: StandardMaterial3D, instance_or_bone_id: String) -> void:
+	apply_to_material(material, BoneInstanceService.quality_id_of(instance_or_bone_id))

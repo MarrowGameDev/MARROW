@@ -70,6 +70,25 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	top_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_rule)
 
+	# Non-colour quality indicator: one pip per rung of the ladder, so Frail
+	# (1) through Pristine (5) are countable. The accent bar and the tier name
+	# already carry the same information -- this third channel is what makes
+	# the tiers distinguishable without relying on colour at all.
+	var quality_id := BoneInstanceService.quality_id_of(id)
+	var pip_count: int = BoneQualityService.rank_for(quality_id) + 1
+	var pip_size: float = clampf(min_side * 0.055, 3.0, 6.0)
+	var pip_gap: float = pip_size * 0.7
+	var pip_total: float = float(pip_count) * pip_size + float(pip_count - 1) * pip_gap
+	var pip_y: float = pad + maxf(1.0, tile_size.y * 0.03) + maxf(2.0, tile_size.y * 0.035) + pip_size * 0.6
+	for i in range(pip_count):
+		var pip := ColorRect.new()
+		pip.color = BoneQualityService.color_for(quality_id)
+		pip.size = Vector2(pip_size, pip_size)
+		pip.position = Vector2(tile_size.x * 0.5 - pip_total * 0.5 + float(i) * (pip_size + pip_gap), pip_y)
+		pip.rotation = PI / 4.0
+		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(pip)
+
 	var art_centre := Vector2(tile_size.x * 0.5, art_top + art_height * 0.5)
 	var art_span: float = minf(inner_width, art_height)
 
@@ -209,7 +228,14 @@ func _repaint() -> void:
 	if _frame == null:
 		return
 	var background := _BG_SELECTED if _selected else _BG_IDLE
-	var border := _BORDER_SELECTED if _selected else _BORDER_IDLE
+	# Quality-tinted border, blended toward the panel's own accent so it stays
+	# part of the parchment rather than five clashing outlines. Selection still
+	# wins: knowing what you picked matters more than the tier.
+	var quality_border: Color = _BORDER_IDLE.lerp(
+		BoneQualityService.color_for(BoneInstanceService.quality_id_of(bone_id)), 0.55
+	)
+	quality_border.a = _BORDER_IDLE.a
+	var border := _BORDER_SELECTED if _selected else quality_border
 	# A selected card carries a heavier border plus a glow, so it is legible
 	# as "the one I picked" even next to identically coloured siblings.
 	var width: int = 3 if _selected else 1

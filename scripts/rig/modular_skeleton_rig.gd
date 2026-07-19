@@ -660,6 +660,22 @@ func _get_head_model_mesh() -> Mesh:
 
 # Equip a bone: swap the target socket(s) grey limb for a bone-colored, bone-scaled
 # part. bone_def comes from BoneRulesService.definition_for(bone_id).
+# Tints every mesh of a freshly built limb by its piece's quality.
+#
+# Only touches material_override, which _make_limb created for THIS part a
+# moment ago, so no shared or imported material is ever mutated -- two pieces
+# built from the same base look different without affecting each other. A head
+# kept on its imported material has no override and is skipped untouched.
+func _apply_quality_visual(node: Node, bone_id: String) -> void:
+	var mesh_instance := node as MeshInstance3D
+	if mesh_instance != null:
+		var material := mesh_instance.material_override as StandardMaterial3D
+		if material != null:
+			BoneQualityService.apply_instance_to_material(material, bone_id)
+	for child in node.get_children():
+		_apply_quality_visual(child, bone_id)
+
+
 func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 	var slot_id := EquipmentRulesService.normalize_slot_id(str(bone_def.get("slot", "")))
 	if slot_id == "":
@@ -689,6 +705,9 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 			base_visuals[key].visible = false
 
 		var part := _make_limb(key, color, vis_scale)
+		# Step 2 of the visual stack: the base material is already on the part,
+		# so quality tints it in place. Runs once per equip, never per frame.
+		_apply_quality_visual(part, bone_id)
 		# Per-bone corrections on top of the natural hang offset. Both ADD rather
 		# than assign: grey boxes leave _make_limb at rotation zero so the result is
 		# unchanged for them, but the head model arrives already rotated by

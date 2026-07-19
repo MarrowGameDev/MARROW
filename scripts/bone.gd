@@ -141,6 +141,13 @@ func _update_appearance() -> void:
 		bone_material.emission_enabled = true
 		bone_material.emission = color
 		bone_material.emission_energy_multiplier = 0.35
+		# Quality tints the piece AFTER its base look is set, so a dropped
+		# piece in the world reads as the same piece it will be in the
+		# inventory, the preview and on the player. bone_material is a
+		# duplicate owned by this pickup (see _prepare_materials), never the
+		# imported resource, so tinting it cannot affect any other bone.
+		# Runs on bone_id changes only -- _process never touches materials.
+		BoneQualityService.apply_instance_to_material(bone_material, bone_id)
 
 	if marker_material != null:
 		marker_material.albedo_color = color
