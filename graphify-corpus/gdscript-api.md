@@ -1939,6 +1939,11 @@
 - `save_equipment_build(index: int) -> Dictionary`
 - `apply_equipment_build(index: int) -> Dictionary`
 - `get_equipment_build_summaries() -> Array`
+- `get_equipment_build_report(index: int) -> Dictionary`
+- `get_equipment_build_indices() -> Array`
+- `create_equipment_build() -> int`
+- `delete_equipment_build(index: int) -> Dictionary`
+- `rename_equipment_build(index: int, new_name: String) -> Dictionary`
 - `take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `take_player_body_part_damage(body_part: String, amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `has_body_part_hitboxes() -> bool`
@@ -2114,40 +2119,56 @@
 ### Constants
 - `BUILD_SETTINGS_PATH`
 - `BUILD_SECTION`
+- `INSTANCE_SECTION`
 - `BUILD_SLOT_COUNT`
 - `APPLY_ORDER`
+- `STAT_EPSILON`
+- `STATE_EMPTY`
+- `STATE_SAVED`
+- `STATE_EQUIPPED`
+- `STATE_MISSING`
 
 ### Key Variables
 - `owner_player`
 - `equipment_component`
 - `builds`
 - `state`
+- `record`
 - `validation`
 - `target_state`
 - `resolved_state`
 - `previous_state`
-- `required_counts`
-- `inventory_counts`
+- `availability`
+- `missing`
+- `entry`
 - `slot_id`
 - `bone_id`
 - `has_limb`
 - `summaries`
-- `current_state`
-- `expected`
-- `actual`
-- `counts`
-- `carried`
-- `claimed`
-- `resolved`
-- `wanted_type`
-- `best_id`
-- `best_rank`
-- `candidate`
-- `rank`
-- `config`
+- `current`
+- `build_state`
+- `worn`
+- `snapshot`
+- `report`
+- `saved_counts`
+- `slot_quality`
+- `matches`
+- `current_equipment`
+- `build_stats`
+- `current_stats`
+- `comparison`
+- `delta`
+- `stats`
 - `value`
-- `parts`
-- `text`
+- `counts`
+- `piece`
+- `quality_id`
+- `summary`
+- `effects`
+- `set_names`
+- `set_counts`
+- `label`
+- `current_state`
 
 ### Functions
 - `setup(player: Node, equipment: PlayerEquipmentComponent) -> void`
@@ -2155,14 +2176,32 @@
 - `apply_build(index: int) -> Dictionary`
 - `validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dictionary`
 - `get_build_summaries() -> Array`
+- `matches_current_equipment(snapshot: Dictionary) -> bool`
+- `build_state_label(index: int) -> String`
+- `get_build_report(index: int) -> Dictionary`
+- `build_display_name(index: int) -> String`
+- `_stats_for_state(state: Dictionary) -> Dictionary`
+- `_player_base(property: String, fallback: float) -> float`
+- `_quality_counts_for(state: Dictionary) -> Dictionary`
+- `_effects_for_state(state: Dictionary) -> Array`
 - `_apply_validated_state(target_state: Dictionary) -> void`
 - `_matches_equipment_state(target_state: Dictionary) -> bool`
 - `_sanitize_build_state(raw_state: Dictionary) -> Dictionary`
 - `_bone_counts(items: Array) -> Dictionary`
-- `_resolve_build_to_instances(type_state: Dictionary) -> Dictionary`
+- `resolve_build_snapshot(raw_state: Dictionary, items: Variant = null) -> Dictionary`
+- `_with_current_head(build_state: Dictionary, current_equipment: Dictionary) -> Dictionary`
+- `_equipment_state_from_slots(slots: Dictionary) -> Dictionary`
+- `_resolve_build_to_instances(state: Dictionary) -> Dictionary`
 - `_inventory_items() -> Array`
 - `_load_builds() -> void`
+- `_ensure_minimum_builds() -> void`
+- `_as_record(raw: Dictionary, index: int) -> Dictionary`
 - `_save_builds() -> void`
+- `build_indices() -> Array`
+- `create_build() -> int`
+- `delete_build(index: int) -> Dictionary`
+- `rename_build(index: int, new_name: String) -> Dictionary`
+- `build_slots(index: int) -> Dictionary`
 - `_summary_for_state(state: Dictionary) -> String`
 - `_valid_index(index: int) -> bool`
 - `_result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary`
@@ -2321,6 +2360,9 @@
 - `INVENTORY_PREVIEW_BASE_SIZE`
 - `BUILD_PREVIEW_BASE_SIZE`
 - `INVENTORY_FILTER_OPTIONS`
+- `BUILD_REPORT_MAX_LINES`
+- `BUILD_DETAIL_PREVIEW_KEY`
+- `BUILD_TABLE_SLOTS`
 - `INVENTORY_SORT_OPTIONS`
 - `PAPER_DOLL_BASE_SIZE`
 - `PAPER_DOLL_SLOT_SIZE`
@@ -2424,7 +2466,13 @@
 - `_set_margin(container: MarginContainer, left: int, top: int, right: int, bottom: int) -> void`
 - `_build_settings_panel() -> ScrollContainer`
 - `_build_equipment_builds_tab() -> ScrollContainer`
-- `_build_equipment_build_card(index: int) -> Control`
+- `_build_builds_sidebar() -> Control`
+- `_build_builds_detail_panel() -> Control`
+- `_make_build_slot_card(slot_id: String, title: String) -> Control`
+- `_build_detail_card(parent: HBoxContainer, heading_text: String) -> VBoxContainer`
+- `_build_equipment_table() -> Control`
+- `_build_builds_action_row() -> Control`
+- `_style_badge(label: Label, text: String, base_color: Color) -> void`
 - `_build_build_preview(index: int) -> Control`
 - `_sync_all_build_previews() -> void`
 - `_sync_build_preview(index: int) -> void`
@@ -2436,8 +2484,30 @@
 - `_build_slot_is_empty(index: int) -> bool`
 - `_consume_or_arm_confirmation(action: String, index: int, button_text: String) -> bool`
 - `_on_build_preset_confirm_timeout(expected_key: String) -> void`
+- `_confirm_button_for(action: String) -> Button`
 - `_disarm_build_preset_confirmation() -> void`
-- `_refresh_build_preset_rows() -> void`
+- `_on_new_build_pressed() -> void`
+- `_select_build(index: int) -> void`
+- `_on_save_current_pressed() -> void`
+- `_on_apply_pressed() -> void`
+- `_on_rename_pressed() -> void`
+- `_on_rename_submitted(new_name: String) -> void`
+- `_on_delete_pressed() -> void`
+- `_first_build_index() -> int`
+- `_build_indices() -> Array`
+- `_build_name_for(index: int) -> String`
+- `_build_report_for(index: int) -> Dictionary`
+- `_refresh_builds_screen() -> void`
+- `_make_build_sidebar_card(index: int) -> Control`
+- `_build_parts_available(state: String, slots: Dictionary, missing: int) -> int`
+- `_make_new_build_card() -> Control`
+- `_build_state_color(state: String) -> Color`
+- `_apply_build_report_to_detail(report: Dictionary) -> void`
+- `_fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void`
+- `_make_stat_row(stat_name: String, value: float, delta: float) -> Control`
+- `_make_composition_row(quality_id: String, count: int) -> Control`
+- `_make_dim_row(text: String) -> Control`
+- `_clear_children(node: Node) -> void`
 - `_set_build_preset_status(text: String) -> void`
 - `_build_control_binding_row(action: String, label_text: String) -> Control`
 - `_add_footer_hint(parent: HBoxContainer, key_text: String, action_text: String) -> void`

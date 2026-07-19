@@ -2059,6 +2059,26 @@ class Player:
         """GDScript function: get_equipment_build_summaries() -> Array"""
         pass
 
+    def gd_func_get_equipment_build_report(self):
+        """GDScript function: get_equipment_build_report(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_get_equipment_build_indices(self):
+        """GDScript function: get_equipment_build_indices() -> Array"""
+        pass
+
+    def gd_func_create_equipment_build(self):
+        """GDScript function: create_equipment_build() -> int"""
+        pass
+
+    def gd_func_delete_equipment_build(self):
+        """GDScript function: delete_equipment_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_rename_equipment_build(self):
+        """GDScript function: rename_equipment_build(index: int, new_name: String) -> Dictionary"""
+        pass
+
     def gd_func_take_player_damage(self):
         """GDScript function: take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void"""
         pass
@@ -2413,6 +2433,38 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: get_build_summaries() -> Array"""
         pass
 
+    def gd_func_matches_current_equipment(self):
+        """GDScript function: matches_current_equipment(snapshot: Dictionary) -> bool"""
+        pass
+
+    def gd_func_build_state_label(self):
+        """GDScript function: build_state_label(index: int) -> String"""
+        pass
+
+    def gd_func_get_build_report(self):
+        """GDScript function: get_build_report(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_build_display_name(self):
+        """GDScript function: build_display_name(index: int) -> String"""
+        pass
+
+    def gd_func__stats_for_state(self):
+        """GDScript function: _stats_for_state(state: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__player_base(self):
+        """GDScript function: _player_base(property: String, fallback: float) -> float"""
+        pass
+
+    def gd_func__quality_counts_for(self):
+        """GDScript function: _quality_counts_for(state: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__effects_for_state(self):
+        """GDScript function: _effects_for_state(state: Dictionary) -> Array"""
+        pass
+
     def gd_func__apply_validated_state(self):
         """GDScript function: _apply_validated_state(target_state: Dictionary) -> void"""
         pass
@@ -2429,8 +2481,20 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: _bone_counts(items: Array) -> Dictionary"""
         pass
 
+    def gd_func_resolve_build_snapshot(self):
+        """GDScript function: resolve_build_snapshot(raw_state: Dictionary, items: Variant = null) -> Dictionary"""
+        pass
+
+    def gd_func__with_current_head(self):
+        """GDScript function: _with_current_head(build_state: Dictionary, current_equipment: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__equipment_state_from_slots(self):
+        """GDScript function: _equipment_state_from_slots(slots: Dictionary) -> Dictionary"""
+        pass
+
     def gd_func__resolve_build_to_instances(self):
-        """GDScript function: _resolve_build_to_instances(type_state: Dictionary) -> Dictionary"""
+        """GDScript function: _resolve_build_to_instances(state: Dictionary) -> Dictionary"""
         pass
 
     def gd_func__inventory_items(self):
@@ -2441,8 +2505,36 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: _load_builds() -> void"""
         pass
 
+    def gd_func__ensure_minimum_builds(self):
+        """GDScript function: _ensure_minimum_builds() -> void"""
+        pass
+
+    def gd_func__as_record(self):
+        """GDScript function: _as_record(raw: Dictionary, index: int) -> Dictionary"""
+        pass
+
     def gd_func__save_builds(self):
         """GDScript function: _save_builds() -> void"""
+        pass
+
+    def gd_func_build_indices(self):
+        """GDScript function: build_indices() -> Array"""
+        pass
+
+    def gd_func_create_build(self):
+        """GDScript function: create_build() -> int"""
+        pass
+
+    def gd_func_delete_build(self):
+        """GDScript function: delete_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_rename_build(self):
+        """GDScript function: rename_build(index: int, new_name: String) -> Dictionary"""
+        pass
+
+    def gd_func_build_slots(self):
+        """GDScript function: build_slots(index: int) -> Dictionary"""
         pass
 
     def gd_func__summary_for_state(self):
@@ -2874,8 +2966,32 @@ class PlayerInventoryUI:
         """GDScript function: _build_equipment_builds_tab() -> ScrollContainer"""
         pass
 
-    def gd_func__build_equipment_build_card(self):
-        """GDScript function: _build_equipment_build_card(index: int) -> Control"""
+    def gd_func__build_builds_sidebar(self):
+        """GDScript function: _build_builds_sidebar() -> Control"""
+        pass
+
+    def gd_func__build_builds_detail_panel(self):
+        """GDScript function: _build_builds_detail_panel() -> Control"""
+        pass
+
+    def gd_func__make_build_slot_card(self):
+        """GDScript function: _make_build_slot_card(slot_id: String, title: String) -> Control"""
+        pass
+
+    def gd_func__build_detail_card(self):
+        """GDScript function: _build_detail_card(parent: HBoxContainer, heading_text: String) -> VBoxContainer"""
+        pass
+
+    def gd_func__build_equipment_table(self):
+        """GDScript function: _build_equipment_table() -> Control"""
+        pass
+
+    def gd_func__build_builds_action_row(self):
+        """GDScript function: _build_builds_action_row() -> Control"""
+        pass
+
+    def gd_func__style_badge(self):
+        """GDScript function: _style_badge(label: Label, text: String, base_color: Color) -> void"""
         pass
 
     def gd_func__build_build_preview(self):
@@ -2922,12 +3038,100 @@ class PlayerInventoryUI:
         """GDScript function: _on_build_preset_confirm_timeout(expected_key: String) -> void"""
         pass
 
+    def gd_func__confirm_button_for(self):
+        """GDScript function: _confirm_button_for(action: String) -> Button"""
+        pass
+
     def gd_func__disarm_build_preset_confirmation(self):
         """GDScript function: _disarm_build_preset_confirmation() -> void"""
         pass
 
-    def gd_func__refresh_build_preset_rows(self):
-        """GDScript function: _refresh_build_preset_rows() -> void"""
+    def gd_func__on_new_build_pressed(self):
+        """GDScript function: _on_new_build_pressed() -> void"""
+        pass
+
+    def gd_func__select_build(self):
+        """GDScript function: _select_build(index: int) -> void"""
+        pass
+
+    def gd_func__on_save_current_pressed(self):
+        """GDScript function: _on_save_current_pressed() -> void"""
+        pass
+
+    def gd_func__on_apply_pressed(self):
+        """GDScript function: _on_apply_pressed() -> void"""
+        pass
+
+    def gd_func__on_rename_pressed(self):
+        """GDScript function: _on_rename_pressed() -> void"""
+        pass
+
+    def gd_func__on_rename_submitted(self):
+        """GDScript function: _on_rename_submitted(new_name: String) -> void"""
+        pass
+
+    def gd_func__on_delete_pressed(self):
+        """GDScript function: _on_delete_pressed() -> void"""
+        pass
+
+    def gd_func__first_build_index(self):
+        """GDScript function: _first_build_index() -> int"""
+        pass
+
+    def gd_func__build_indices(self):
+        """GDScript function: _build_indices() -> Array"""
+        pass
+
+    def gd_func__build_name_for(self):
+        """GDScript function: _build_name_for(index: int) -> String"""
+        pass
+
+    def gd_func__build_report_for(self):
+        """GDScript function: _build_report_for(index: int) -> Dictionary"""
+        pass
+
+    def gd_func__refresh_builds_screen(self):
+        """GDScript function: _refresh_builds_screen() -> void"""
+        pass
+
+    def gd_func__make_build_sidebar_card(self):
+        """GDScript function: _make_build_sidebar_card(index: int) -> Control"""
+        pass
+
+    def gd_func__build_parts_available(self):
+        """GDScript function: _build_parts_available(state: String, slots: Dictionary, missing: int) -> int"""
+        pass
+
+    def gd_func__make_new_build_card(self):
+        """GDScript function: _make_new_build_card() -> Control"""
+        pass
+
+    def gd_func__build_state_color(self):
+        """GDScript function: _build_state_color(state: String) -> Color"""
+        pass
+
+    def gd_func__apply_build_report_to_detail(self):
+        """GDScript function: _apply_build_report_to_detail(report: Dictionary) -> void"""
+        pass
+
+    def gd_func__fill_slot_widgets(self):
+        """GDScript function: _fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void"""
+        pass
+
+    def gd_func__make_stat_row(self):
+        """GDScript function: _make_stat_row(stat_name: String, value: float, delta: float) -> Control"""
+        pass
+
+    def gd_func__make_composition_row(self):
+        """GDScript function: _make_composition_row(quality_id: String, count: int) -> Control"""
+        pass
+
+    def gd_func__make_dim_row(self):
+        """GDScript function: _make_dim_row(text: String) -> Control"""
+        pass
+
+    def gd_func__clear_children(self):
+        """GDScript function: _clear_children(node: Node) -> void"""
         pass
 
     def gd_func__set_build_preset_status(self):
