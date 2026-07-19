@@ -120,8 +120,11 @@ def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
         "var stack_count: int = 1",
         "func setup(id: String, player_ref: Node, quantity: int = 1) -> void:",
         "stack_count = maxi(1, quantity)",
-        '_stack_label.text = "x" + str(stack_count) if stack_count > 1 else ""',
-        "_stack_label.visible = stack_count > 1",
+        # The count text is now unconditional and the CHIP carries the
+        # visibility, so a single-copy tile shows no badge at all rather than
+        # an empty label. Both halves are pinned so neither can drift away.
+        '_stack_label.text = "x" + str(stack_count)',
+        "_stack_badge.visible = stack_count > 1",
         'return {"bone_id": bone_id, "source": "item"}',
     ]
     for fragment in required_tile_fragments:

@@ -14,9 +14,14 @@ var _slot_label: Label
 var _diamond_back: ColorRect
 var _slot_size: Vector2 = Vector2(82, 80)
 var _frame: PanelContainer
+var _unequip_button: Button = null
+var _highlighted: bool = false
+var _drag_state: String = ""
 const _FRAME_BORDER_DEFAULT := Color(0.87, 0.63, 0.19, 0.68)
 const _FRAME_BORDER_VALID := Color(0.34, 0.78, 0.36, 0.85)
 const _FRAME_BORDER_INVALID := Color(0.82, 0.24, 0.20, 0.85)
+# Gold: this slot accepts the piece currently being dragged or selected.
+const _FRAME_BORDER_TARGET := Color(0.95, 0.72, 0.16, 1.0)
 
 
 func setup(slot: String, short: String, player_ref: Node, requested_size: Vector2 = Vector2(96, 96)) -> void:
@@ -66,6 +71,21 @@ func setup(slot: String, short: String, player_ref: Node, requested_size: Vector
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_label)
 
+	# Compact "remove" affordance for the worn piece. An 88px slot cannot hold
+	# the word "Unequip" without clipping it -- which is the exact failure this
+	# pass is meant to fix -- so the glyph carries the label in its tooltip.
+	_unequip_button = Button.new()
+	_unequip_button.text = "✕"
+	_unequip_button.flat = true
+	_unequip_button.focus_mode = Control.FOCUS_NONE
+	_unequip_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	_unequip_button.tooltip_text = "Unequip (or right-click the slot)"
+	_unequip_button.add_theme_color_override("font_color", Color(0.55, 0.20, 0.16, 0.95))
+	_unequip_button.add_theme_color_override("font_hover_color", Color(0.82, 0.24, 0.20, 1.0))
+	_unequip_button.pressed.connect(_on_unequip_pressed)
+	_unequip_button.visible = false
+	add_child(_unequip_button)
+
 	resize(requested_size)
 	refresh()
 
@@ -109,6 +129,12 @@ func resize(target_size: Vector2) -> void:
 	_label.size = Vector2(inner_width, bottom_height)
 	_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.115), 8, 14))
 
+	if _unequip_button != null:
+		var button_side: float = clampf(min_side * 0.22, 14.0, 22.0)
+		_unequip_button.size = Vector2(button_side, button_side)
+		_unequip_button.position = Vector2(_slot_size.x - button_side - pad, pad)
+		_unequip_button.add_theme_font_size_override("font_size", clampi(int(button_side * 0.62), 9, 14))
+
 
 # A ColorRect rotated 45 degrees turns about its own origin, so its visual
 # centre lands at position + (0, side * sqrt(2) / 2). Solve for the position
@@ -139,10 +165,68 @@ func refresh() -> void:
 	var bone_id := _equipped_bone_id()
 	if bone_id != "":
 		_box.color = BoneRulesService.color_for(bone_id)
-		_label.text = BoneRulesService.display_name_with_slot(bone_id)
+		# Abbreviated in the slot, full name on hover -- the slot is far too
+		# narrow for names like "Gorilla Right Arm Bone".
+		_label.text = BoneRulesService.short_display_name(bone_id)
+		tooltip_text = BoneRulesService.display_name_with_slot(bone_id)
 	else:
 		_box.color = Color(0.87, 0.63, 0.19, 0.28)
 		_label.text = "Empty"
+		tooltip_text = short_name + " slot (empty)"
+	if _unequip_button != null:
+		_unequip_button.visible = bone_id != ""
+
+
+func _on_unequip_pressed() -> void:
+	if player != null and player.has_method("unequip_slot"):
+		player.unequip_slot(slot_name)
+
+
+# Painted when a bone is selected in the grid: shows where it could go.
+func set_highlighted(value: bool) -> void:
+	if _highlighted == value:
+		return
+	_highlighted = value
+	_repaint()
+
+
+# "" = no drag, "compatible" / "incompatible" while one is in flight.
+func set_drag_state(state: String) -> void:
+	if _drag_state == state:
+		return
+	_drag_state = state
+	_repaint()
+
+
+func _repaint() -> void:
+	if _frame == null:
+		return
+	var border := _FRAME_BORDER_DEFAULT
+	var background := Color(1.0, 1.0, 1.0, 0.22)
+	var width := 1
+	var alpha := 1.0
+	# A border alone was almost invisible against the parchment panel, so a
+	# targeted slot also gets a warm fill. Both cues change together.
+	if _drag_state == "compatible":
+		border = _FRAME_BORDER_TARGET
+		background = Color(1.0, 0.85, 0.45, 0.55)
+		width = 4
+	elif _drag_state == "incompatible":
+		border = _FRAME_BORDER_INVALID
+		# Attenuated rather than hidden: the player still needs to see the
+		# slot exists, just not consider it a target.
+		alpha = 0.35
+	elif _highlighted:
+		border = _FRAME_BORDER_TARGET
+		background = Color(1.0, 0.87, 0.52, 0.40)
+		width = 3
+	var style := _make_slot_style(background, border, width)
+	if _drag_state == "compatible" or _highlighted:
+		style.shadow_color = Color(0.95, 0.72, 0.16, 0.45)
+		style.shadow_size = 6
+		style.shadow_offset = Vector2.ZERO
+	_frame.add_theme_stylebox_override("panel", style)
+	modulate = Color(1.0, 1.0, 1.0, alpha)
 
 
 # Drag the worn bone OUT of this slot.
@@ -162,6 +246,8 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	rect.rotation = PI / 4.0
 	wrap.add_child(rect)
 	set_drag_preview(wrap)
+	if player != null and player.has_method("begin_bone_drag"):
+		player.call("begin_bone_drag", bone_id)
 	return {"bone_id": bone_id, "source": "slot", "slot": slot_name}
 
 
@@ -170,15 +256,14 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 # whether dropping here would work before releasing.
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	if typeof(data) != TYPE_DICTIONARY or not data.has("bone_id"):
-		_set_frame_border(_FRAME_BORDER_DEFAULT)
 		return false
-	var valid := EquipmentRulesService.can_equip_bone_in_slot(str(data["bone_id"]), slot_name)
-	_set_frame_border(_FRAME_BORDER_VALID if valid else _FRAME_BORDER_INVALID)
-	return valid
+	# Border colour is painted centrally for every slot when the drag starts
+	# (see PlayerInventoryUI.begin_bone_drag), so this only answers the
+	# question Godot is actually asking.
+	return EquipmentRulesService.can_equip_bone_in_slot(str(data["bone_id"]), slot_name)
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
-	_set_frame_border(_FRAME_BORDER_DEFAULT)
 	if player != null and player.has_method("equip_bone_in_slot"):
 		player.equip_bone_in_slot(str(data["bone_id"]), slot_name)
 
@@ -188,17 +273,13 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 # hover. NOTIFICATION_DRAG_END fires on every widget when any drag ends
 # anywhere, which resets it even if the piece was dropped elsewhere.
 func _notification(what: int) -> void:
+	# Fires on every Control when any drag ends, including drops that landed
+	# somewhere else or were cancelled. Routed through the owner so all slots
+	# and the details panel are reset together; calling it once per slot is
+	# harmless because end_bone_drag is idempotent.
 	if what == NOTIFICATION_DRAG_END:
-		_set_frame_border(_FRAME_BORDER_DEFAULT)
-
-
-func _set_frame_border(color: Color) -> void:
-	if _frame == null:
-		return
-	var style := _frame.get_theme_stylebox("panel") as StyleBoxFlat
-	if style == null or style.border_color == color:
-		return
-	style.border_color = color
+		if player != null and player.has_method("end_bone_drag"):
+			player.call("end_bone_drag")
 
 
 # Right-click clears this slot.

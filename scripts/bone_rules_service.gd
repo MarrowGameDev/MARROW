@@ -38,6 +38,23 @@ static func slot_display_name(slot_id: String) -> String:
 	return EquipmentRulesService.slot_display_name(slot_id)
 
 
+# Card-sized version of display_name_with_slot: same name, abbreviated so it
+# fits a tile without being cut off. The full name always stays available via
+# display_name_with_slot for the details panel and tooltips -- the short form
+# is a display convenience and must never become the identity of a bone.
+static func short_display_name(bone_id: String) -> String:
+	var full := display_name_with_slot(bone_id)
+	if full.ends_with(" Bone"):
+		full = full.substr(0, full.length() - " Bone".length())
+	var replacements := {
+		"Left ": "L. ",
+		"Right ": "R. ",
+	}
+	for needle in replacements:
+		full = full.replace(str(needle), str(replacements[needle]))
+	return full
+
+
 static func display_name_with_slot(bone_id: String) -> String:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():

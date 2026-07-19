@@ -11,6 +11,14 @@ var stack_count: int = 1
 var _label: Label = null
 var _slot_label: Label = null
 var _stack_label: Label = null
+var _stack_badge: PanelContainer = null
+var _frame: PanelContainer = null
+var _selected: bool = false
+
+const _BORDER_IDLE := Color(0.87, 0.63, 0.19, 0.78)
+const _BORDER_SELECTED := Color(0.0, 0.60, 0.62, 1.0)
+const _BG_IDLE := Color(1.0, 1.0, 1.0, 0.58)
+const _BG_SELECTED := Color(0.86, 0.98, 0.98, 0.92)
 
 
 # Called right after .new() to fill in the tile's look and data.
@@ -41,11 +49,16 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	var art_height: float = maxf(8.0, tile_size.y - name_height - slot_height - art_top - pad)
 
 	var frame := PanelContainer.new()
+	_frame = frame
 	frame.position = Vector2(0, 0)
 	frame.size = tile_size
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_theme_stylebox_override("panel", _make_tile_style(Color(1.0, 1.0, 1.0, 0.58), Color(0.87, 0.63, 0.19, 0.78), 1))
+	frame.add_theme_stylebox_override("panel", _make_tile_style(_BG_IDLE, _BORDER_IDLE, 1))
 	add_child(frame)
+
+	# Full name is always reachable on hover even though the card shows the
+	# abbreviated one.
+	tooltip_text = BoneRulesService.display_name_with_slot(id)
 
 	var top_rule := ColorRect.new()
 	top_rule.color = Color(0.87, 0.63, 0.19, 0.36)
@@ -72,15 +85,24 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	add_child(core)
 	_place_diamond(core, art_centre, art_span * 0.70)
 
+	# Stack count sits in the BOTTOM-RIGHT corner as a filled chip. It used to
+	# be pale text floating over the artwork, where it competed with the
+	# diamond and was easy to miss; a chip reads as a count at a glance.
+	var badge_size := Vector2(maxf(20.0, inner_width * 0.30), maxf(14.0, tile_size.y * 0.17))
+	_stack_badge = PanelContainer.new()
+	_stack_badge.size = badge_size
+	_stack_badge.position = Vector2(tile_size.x - pad - badge_size.x, tile_size.y - pad - badge_size.y)
+	_stack_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stack_badge.add_theme_stylebox_override("panel", _make_tile_style(Color(0.05, 0.35, 0.38, 0.92), Color(0.99, 0.97, 0.90, 0.55), 1))
+	add_child(_stack_badge)
+
 	_stack_label = Label.new()
-	_stack_label.size = Vector2(maxf(16.0, inner_width * 0.30), maxf(12.0, art_height * 0.34))
-	_stack_label.position = Vector2(tile_size.x - pad - _stack_label.size.x, art_top)
 	_stack_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.13), 9, 15))
-	_stack_label.add_theme_color_override("font_color", Color(0.96, 0.91, 0.72, 1.0))
+	_stack_label.add_theme_color_override("font_color", Color(0.99, 0.97, 0.90, 1.0))
 	_stack_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_stack_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_stack_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_stack_label)
+	_stack_badge.add_child(_stack_label)
 
 	# The bone name under it.
 	_label = Label.new()
@@ -100,9 +122,14 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_label)
 
+	# The badge occupies the bottom-right corner, so the slot caption gives up
+	# that width instead of drawing underneath it.
+	var caption_width: float = inner_width
+	if stack_count > 1:
+		caption_width = maxf(24.0, inner_width - badge_size.x - 4.0)
 	_slot_label = Label.new()
 	_slot_label.position = Vector2(pad, tile_size.y - slot_height - pad * 0.5)
-	_slot_label.size = Vector2(inner_width, slot_height)
+	_slot_label.size = Vector2(caption_width, slot_height)
 	var slot_text := EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(id))
 	if slot_text == "":
 		slot_text = "Piece"
@@ -131,6 +158,15 @@ func _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> v
 	rect.position = centre - Vector2(0.0, side * sqrt(2.0) * 0.5)
 
 
+func _gui_input(event: InputEvent) -> void:
+	# Left press selects. Godot only turns a press into a drag once the cursor
+	# moves past its threshold, so selecting here does not interfere with
+	# dragging the same card out to a slot.
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if player != null and player.has_method("select_bone"):
+			player.call("select_bone", bone_id)
+
+
 func _on_mouse_entered() -> void:
 	if player != null and player.has_method("show_bone_info"):
 		player.show_bone_info(bone_id)
@@ -146,15 +182,45 @@ func _on_mouse_exited() -> void:
 func refresh() -> void:
 	if _label == null:
 		return
-	_label.text = BoneRulesService.display_name_with_slot(bone_id)
+	# Abbreviated on the card; the full name lives in the tooltip and in the
+	# details panel, so nothing is lost to the shortening.
+	_label.text = BoneRulesService.short_display_name(bone_id)
+	tooltip_text = BoneRulesService.display_name_with_slot(bone_id)
 	if _stack_label != null:
-		_stack_label.text = "x" + str(stack_count) if stack_count > 1 else ""
-		_stack_label.visible = stack_count > 1
+		_stack_label.text = "x" + str(stack_count)
+	if _stack_badge != null:
+		_stack_badge.visible = stack_count > 1
+
+
+# Painted by PlayerInventoryUI when the player picks a card.
+func set_selected(value: bool) -> void:
+	if _selected == value:
+		return
+	_selected = value
+	_repaint()
+
+
+func _repaint() -> void:
+	if _frame == null:
+		return
+	var background := _BG_SELECTED if _selected else _BG_IDLE
+	var border := _BORDER_SELECTED if _selected else _BORDER_IDLE
+	# A selected card carries a heavier border plus a glow, so it is legible
+	# as "the one I picked" even next to identically coloured siblings.
+	var width: int = 3 if _selected else 1
+	var style := _make_tile_style(background, border, width)
+	if _selected:
+		style.shadow_color = Color(0.0, 0.78, 0.78, 0.45)
+		style.shadow_size = 8
+		style.shadow_offset = Vector2.ZERO
+	_frame.add_theme_stylebox_override("panel", style)
 
 
 # Godot calls this when a drag begins on the tile. Returning data starts the drag.
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	set_drag_preview(_make_preview())
+	if player != null and player.has_method("begin_bone_drag"):
+		player.call("begin_bone_drag", bone_id)
 	return {"bone_id": bone_id, "source": "item"}
 
 

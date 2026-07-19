@@ -32,14 +32,20 @@ const PAPER_DOLL_RING_SIZE := Vector2(64.0, 64.0)
 # so its centre is y 234, and the arm+leg block (arms at y 142 through legs
 # ending at y 326) is centred on that same 234. Head and torso stay anchored
 # above and below the frame.
+# Head and torso are wider than the limb slots: they sit alone on their row
+# and carry the longest names ("Gorilla Right Arm Bone" style), so the extra
+# width buys legibility where there is free space anyway. Their x is
+# (406 - 128) / 2 = 139, keeping them centred on the doll's axis.
 const PAPER_DOLL_SLOT_POSITIONS := {
-	"head": Vector2(159.0, 0.0),
+	"head": Vector2(139.0, 0.0),
 	"left_arm": Vector2(0.0, 142.0),
 	"right_arm": Vector2(318.0, 142.0),
 	"left_leg": Vector2(0.0, 238.0),
 	"right_leg": Vector2(318.0, 238.0),
-	"torso": Vector2(159.0, 382.0),
+	"torso": Vector2(139.0, 382.0),
 }
+const PAPER_DOLL_WIDE_SLOT_SIZE := Vector2(128.0, 88.0)
+const PAPER_DOLL_WIDE_SLOTS: Array = ["head", "torso"]
 const CONTROL_BINDINGS: Array = [
 	{"action": "move_forward", "label": "Move Forward"},
 	{"action": "move_back", "label": "Move Back"},
@@ -66,6 +72,8 @@ var inventory_label: Label = null
 var hover_info_label: Label = null
 var inventory_status_label: Label = null
 var inventory_category: String = "all"
+var selected_bone_id: String = ""
+var dragging_bone_id: String = ""
 var inventory_tab_buttons: Dictionary = {}
 var inventory_safe_area: Control = null
 var inventory_panel: PanelContainer = null
@@ -256,8 +264,81 @@ func get_equipped_bone_for_slot(slot: String) -> String:
 	return str(equipped.get(slot, ""))
 
 
+# The card the player picked. Drives the highlighted tile, the highlighted
+# paper-doll slot, and what the details panel falls back to when the cursor is
+# not over anything.
+func select_bone(bone_id: String) -> void:
+	selected_bone_id = "" if bone_id == selected_bone_id else bone_id
+	_refresh_selection_visuals()
+	if selected_bone_id == "":
+		clear_bone_info()
+	else:
+		show_bone_info(selected_bone_id)
+
+
+func _refresh_selection_visuals() -> void:
+	if items_grid != null:
+		for tile in items_grid.get_children():
+			if tile.has_method("set_selected"):
+				tile.call("set_selected", str(tile.get("bone_id")) == selected_bone_id and selected_bone_id != "")
+	# Show which slots the selected piece could go into.
+	var compatible: Array[String] = []
+	if selected_bone_id != "":
+		compatible = EquipmentRulesService.compatible_slots_for_bone(selected_bone_id)
+	for slot in slot_widgets:
+		var widget := slot_widgets[slot] as Control
+		if widget != null and widget.has_method("set_highlighted"):
+			widget.call("set_highlighted", compatible.has(str(slot)))
+
+
+# Called once when a bone starts being dragged, from either the item grid or a
+# worn slot. Paints every slot at once so the player can see the whole board:
+# gold where the piece fits, dimmed red where it does not.
+func begin_bone_drag(bone_id: String) -> void:
+	dragging_bone_id = bone_id
+	var compatible: Array[String] = EquipmentRulesService.compatible_slots_for_bone(bone_id)
+	for slot in slot_widgets:
+		var widget := slot_widgets[slot] as Control
+		if widget != null and widget.has_method("set_drag_state"):
+			widget.call("set_drag_state", "compatible" if compatible.has(str(slot)) else "incompatible")
+	if hover_info_label != null:
+		hover_info_label.text = "Dragging %s\nCompatible with: %s" % [
+			BoneRulesService.display_name_with_slot(bone_id),
+			_slot_list_text(compatible),
+		]
+
+
+# Idempotent: fires from every slot when any drag ends, including cancelled
+# drags and drops that landed outside the panel.
+func end_bone_drag() -> void:
+	if dragging_bone_id == "":
+		return
+	dragging_bone_id = ""
+	for slot in slot_widgets:
+		var widget := slot_widgets[slot] as Control
+		if widget != null and widget.has_method("set_drag_state"):
+			widget.call("set_drag_state", "")
+	_refresh_selection_visuals()
+	clear_bone_info()
+
+
+func _slot_list_text(slots: Array[String]) -> String:
+	if slots.is_empty():
+		return "nothing (no matching slot)"
+	var names: Array[String] = []
+	for slot in slots:
+		names.append(EquipmentRulesService.slot_display_name(slot))
+	return " / ".join(names)
+
+
 func show_bone_info(bone_id: String) -> void:
 	if hover_info_label == null:
+		return
+	# A drag in flight owns the details panel. Without this, passing the
+	# cursor over any card while dragging replaced the "Compatible with:"
+	# message with that card's stats -- exactly when the player needs to know
+	# where the dragged piece can land.
+	if dragging_bone_id != "":
 		return
 	var text := BoneRulesService.quality_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id)) + "]\n"
 	text += BoneRulesService.effect_text_for(bone_id)
@@ -304,8 +385,17 @@ func _bone_comparison_text(bone_id: String) -> String:
 
 
 func clear_bone_info() -> void:
-	if hover_info_label != null:
-		hover_info_label.text = "Select an item to view details."
+	if hover_info_label == null:
+		return
+	if dragging_bone_id != "":
+		return
+	# Moving the cursor off a card falls back to whatever is selected rather
+	# than blanking the panel, so a selection stays inspectable while the
+	# player reaches for a slot.
+	if selected_bone_id != "":
+		show_bone_info(selected_bone_id)
+		return
+	hover_info_label.text = "Select an item to view details."
 
 
 func _build_inventory_ui() -> void:
@@ -1001,7 +1091,7 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 		# earlier version set both `scale` and a scaled `size`, which left the
 		# input rect at 88 * doll_scale^2 against visuals at 88 * doll_scale
 		# and made neighbouring drop targets overlap.
-		widget.resize(PAPER_DOLL_SLOT_SIZE * doll_scale)
+		widget.resize(_paper_doll_slot_size(str(slot)) * doll_scale)
 
 
 func _apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void:
@@ -1757,8 +1847,12 @@ func _build_paper_doll() -> Control:
 	}
 	for slot in PAPER_DOLL_SLOT_POSITIONS:
 		var slot_id := str(slot)
-		_place_slot(doll, slot_id, str(slot_titles[slot_id]), PAPER_DOLL_SLOT_POSITIONS[slot_id], PAPER_DOLL_SLOT_SIZE)
+		_place_slot(doll, slot_id, str(slot_titles[slot_id]), PAPER_DOLL_SLOT_POSITIONS[slot_id], _paper_doll_slot_size(slot_id))
 	return doll
+
+
+func _paper_doll_slot_size(slot_id: String) -> Vector2:
+	return PAPER_DOLL_WIDE_SLOT_SIZE if PAPER_DOLL_WIDE_SLOTS.has(slot_id) else PAPER_DOLL_SLOT_SIZE
 
 
 func _place_slot(doll: Control, slot: String, short_name: String, pos: Vector2, slot_size: Vector2) -> void:
@@ -2140,6 +2234,13 @@ func rebuild_item_tiles() -> void:
 	var target_slots: int = maxi(12, items_grid.columns * maxi(1, inventory_visible_rows))
 	for i in range(shown, target_slots):
 		items_grid.add_child(_make_empty_inventory_slot())
+
+	# Tiles are rebuilt on every responsive pass and on every inventory change,
+	# so the selection has to be re-applied or it would visually vanish the
+	# first time the window is resized or a bone is picked up.
+	if selected_bone_id != "" and not visible_order.has(selected_bone_id):
+		selected_bone_id = ""
+	_refresh_selection_visuals()
 
 
 func _bone_matches_inventory_category(bone_id: String) -> bool:

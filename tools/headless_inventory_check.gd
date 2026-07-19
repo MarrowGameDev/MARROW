@@ -161,6 +161,71 @@ func _initialize() -> void:
 				if res == RESOLUTIONS[0]:
 					print("  filter %-12s -> %d tiles" % [cat, shown.size()])
 
+		# Selection and drag feedback, exercised on the real widgets.
+		if res == RESOLUTIONS[0]:
+			ui.call("_select_inventory_category", "all")
+			await process_frame
+			var slots: Dictionary = ui.get("slot_widgets")
+
+			ui.call("select_bone", "arm_bone")
+			await process_frame
+			if str(ui.get("selected_bone_id")) != "arm_bone":
+				failures.append("select_bone did not record the selection")
+			var lit: Array = []
+			for slot_key in slots.keys():
+				if bool((slots[slot_key] as Control).get("_highlighted")):
+					lit.append(str(slot_key))
+			lit.sort()
+			if lit != ["left_arm", "right_arm"]:
+				failures.append("selecting arm_bone lit %s, expected both arms" % str(lit))
+			var details: Label = ui.get("hover_info_label")
+			if details != null and not details.text.contains("Arm"):
+				failures.append("details panel does not name the selected bone: %s" % details.text)
+
+			# Clicking the same card again clears the selection.
+			ui.call("select_bone", "arm_bone")
+			await process_frame
+			if str(ui.get("selected_bone_id")) != "":
+				failures.append("re-selecting the same bone did not clear it")
+
+			ui.call("begin_bone_drag", "leg_bone")
+			await process_frame
+			var compatible: Array = []
+			var incompatible: Array = []
+			for slot_key in slots.keys():
+				var st := str((slots[slot_key] as Control).get("_drag_state"))
+				if st == "compatible":
+					compatible.append(str(slot_key))
+				elif st == "incompatible":
+					incompatible.append(str(slot_key))
+			compatible.sort()
+			if compatible != ["left_leg", "right_leg"]:
+				failures.append("dragging leg_bone marked %s compatible, expected both legs" % str(compatible))
+			if incompatible.size() != slots.size() - compatible.size():
+				failures.append("drag left some slots unpainted")
+			if details != null and not details.text.contains("Compatible with:"):
+				failures.append("no 'Compatible with:' message during drag")
+			# Hovering another card mid-drag must not steal the panel.
+			ui.call("show_bone_info", "head_bone")
+			ui.call("clear_bone_info")
+			await process_frame
+			if details != null and not details.text.contains("Compatible with:"):
+				failures.append("hovering during a drag clobbered the 'Compatible with:' message")
+
+			ui.call("end_bone_drag")
+			await process_frame
+			for slot_key in slots.keys():
+				if str((slots[slot_key] as Control).get("_drag_state")) != "":
+					failures.append("%s kept its drag state after end_bone_drag" % str(slot_key))
+			ui.call("end_bone_drag")  # idempotent
+
+			# Wide slots really are wider than the limb slots.
+			var head_w: float = (slots["head"] as Control).size.x
+			var arm_w: float = (slots["left_arm"] as Control).size.x
+			if head_w <= arm_w:
+				failures.append("head slot (%.0f) is not wider than an arm slot (%.0f)" % [head_w, arm_w])
+			print("  head slot %.0f wide vs arm %.0f" % [head_w, arm_w])
+
 		# Measure the doll on a grid view: the loop above ends on Settings,
 		# where the paper doll is hidden and its geometry is whatever the
 		# previous resolution left behind.
