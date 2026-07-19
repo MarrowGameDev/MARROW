@@ -720,9 +720,16 @@ func can_be_stealth_finished_by(player: Node3D) -> bool:
 	return _is_player_behind(player)
 
 
+# True when a stealth finish would EXECUTE (instant kill) rather than only
+# deal ambush damage. The prompt, the impact branch and the player's choice
+# of animation all read this one method so they can never disagree.
+func is_stealth_finish_lethal() -> bool:
+	return health <= stealth_finish_max_health
+
+
 func get_stealth_prompt_text() -> String:
 	var bone_name: String = BoneRulesService.display_name_with_slot(dropped_bone_id)
-	if health <= stealth_finish_max_health:
+	if is_stealth_finish_lethal():
 		return "F: Finish " + bone_name + " enemy"
 	return "F: Ambush " + bone_name + " enemy"
 
@@ -763,7 +770,7 @@ func apply_stealth_finish_impact(player: Node3D, player_damage: int, hit_from: V
 
 	stealth_execution_impact_applied = true
 	last_hit_from_position = hit_from
-	if health <= stealth_finish_max_health:
+	if is_stealth_finish_lethal():
 		health = 0
 		_update_health_label()
 		_play_hit_sound()

@@ -167,7 +167,6 @@ var builds_match_banner: Label = null
 var builds_equipment_rows: Dictionary = {}
 var builds_save_button: Button = null
 var builds_apply_button: Button = null
-var builds_rename_button: Button = null
 var builds_delete_button: Button = null
 var builds_rename_edit: LineEdit = null
 var builds_new_button: Button = null
@@ -493,6 +492,33 @@ func _bone_comparison_text(bone_id: String) -> String:
 		wrote_any = true
 	if not wrote_any:
 		text += "no stat change"
+	return text + _synergy_preview_text(bone_id, slot)
+
+
+# Which set/symmetry/quality rules equipping this piece would turn on or off.
+# Purely a preview: it builds a hypothetical state and asks the SAME evaluator
+# the stat pipeline uses, then throws the state away. Nothing is applied until
+# the piece is really equipped.
+func _synergy_preview_text(bone_id: String, slot: String) -> String:
+	var current := _equipment_state()
+	if current.is_empty():
+		return ""
+
+	var candidate := current.duplicate()
+	candidate[slot] = bone_id
+	var difference: Dictionary = SynergyRulesService.difference_between(current, candidate)
+
+	var text := ""
+	var activated: Array = difference.get("activated", [])
+	if not activated.is_empty():
+		text += "\nWould activate:"
+		for entry in activated:
+			text += "\n  " + SynergyRulesService.summary_line_for(entry)
+	var broken: Array = difference.get("broken", [])
+	if not broken.is_empty():
+		text += "\nWould break:"
+		for entry in broken:
+			text += "\n  " + SynergyRulesService.summary_line_for(entry)
 	return text
 
 
@@ -1469,7 +1495,23 @@ func _build_builds_detail_panel() -> Control:
 	builds_detail_title.text = "Build"
 	builds_detail_title.add_theme_font_size_override("font_size", 20)
 	builds_detail_title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	# The title IS the rename control: click it and it turns into an editor in
+	# place. Labels ignore the mouse by default, so both the filter and the
+	# cursor shape have to say "this is clickable".
+	builds_detail_title.mouse_filter = Control.MOUSE_FILTER_STOP
+	builds_detail_title.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	builds_detail_title.tooltip_text = "Click to rename"
+	builds_detail_title.gui_input.connect(_on_build_title_gui_input)
 	header.add_child(builds_detail_title)
+
+	builds_rename_edit = LineEdit.new()
+	builds_rename_edit.custom_minimum_size = Vector2(230, 0)
+	builds_rename_edit.add_theme_font_size_override("font_size", 20)
+	builds_rename_edit.process_mode = Node.PROCESS_MODE_ALWAYS
+	builds_rename_edit.visible = false
+	builds_rename_edit.text_submitted.connect(_on_rename_submitted)
+	builds_rename_edit.focus_exited.connect(_cancel_title_rename)
+	header.add_child(builds_rename_edit)
 
 	builds_header_badge = Label.new()
 	builds_header_badge.add_theme_font_size_override("font_size", 12)
@@ -1729,24 +1771,11 @@ func _build_builds_action_row() -> Control:
 	builds_apply_button.pressed.connect(_on_apply_pressed)
 	builds_action_row.add_child(builds_apply_button)
 
-	builds_rename_button = _make_build_preset_button("Rename")
-	builds_rename_button.pressed.connect(_on_rename_pressed)
-	builds_action_row.add_child(builds_rename_button)
-
 	builds_delete_button = _make_build_preset_button("Delete")
 	builds_delete_button.add_theme_color_override("font_color", Color(0.62, 0.20, 0.16, 1.0))
 	builds_delete_button.pressed.connect(_on_delete_pressed)
 	builds_action_row.add_child(builds_delete_button)
 
-	# Rename needs text entry, which this panel had none of. Hidden until the
-	# player asks for it so the action row stays uncluttered.
-	builds_rename_edit = LineEdit.new()
-	builds_rename_edit.placeholder_text = "New name, then Enter"
-	builds_rename_edit.custom_minimum_size = Vector2(190, 0)
-	builds_rename_edit.process_mode = Node.PROCESS_MODE_ALWAYS
-	builds_rename_edit.visible = false
-	builds_rename_edit.text_submitted.connect(_on_rename_submitted)
-	builds_action_row.add_child(builds_rename_edit)
 	return builds_action_row
 
 
@@ -2031,14 +2060,31 @@ func _on_apply_pressed() -> void:
 		notify_equipment_changed()
 
 
-func _on_rename_pressed() -> void:
-	if builds_rename_edit == null:
+func _on_build_title_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_begin_title_rename()
+
+
+func _begin_title_rename() -> void:
+	if builds_rename_edit == null or builds_detail_title == null:
 		return
-	builds_rename_edit.visible = not builds_rename_edit.visible
-	if builds_rename_edit.visible:
-		builds_rename_edit.text = _build_name_for(builds_selected_index)
-		builds_rename_edit.grab_focus()
-		_set_build_preset_status("Type a new name and press Enter.")
+	builds_rename_edit.text = _build_name_for(builds_selected_index)
+	builds_detail_title.visible = false
+	builds_rename_edit.visible = true
+	builds_rename_edit.grab_focus()
+	builds_rename_edit.select_all()
+	_set_build_preset_status("Type a new name and press Enter.")
+
+
+# Clicking away abandons the edit without renaming. Submitting hides the
+# editor FIRST, so the focus_exited that follows finds it already hidden and
+# does nothing -- that ordering is what keeps submit and cancel from racing.
+func _cancel_title_rename() -> void:
+	if builds_rename_edit == null or not builds_rename_edit.visible:
+		return
+	builds_rename_edit.visible = false
+	if builds_detail_title != null:
+		builds_detail_title.visible = true
 
 
 func _on_rename_submitted(new_name: String) -> void:
@@ -2047,6 +2093,8 @@ func _on_rename_submitted(new_name: String) -> void:
 	var result := player.call("rename_equipment_build", builds_selected_index, new_name) as Dictionary
 	if builds_rename_edit != null:
 		builds_rename_edit.visible = false
+	if builds_detail_title != null:
+		builds_detail_title.visible = true
 	# Renaming touches the label only: pieces and stats are untouched, so the
 	# refresh below re-reads the same snapshot it had before.
 	_set_build_preset_status(str(result.get("message", "")))
@@ -2271,20 +2319,47 @@ func _apply_build_report_to_detail(report: Dictionary) -> void:
 		if missing > 0:
 			builds_composition_list.add_child(_make_dim_row("%d of these missing" % missing))
 
+	# Families, matched pairs and the high-quality tally, straight from the
+	# report. The panel counts nothing itself.
+	var composition: Dictionary = report.get("composition", {})
+	if not composition.is_empty():
+		var families: Dictionary = composition.get("families", {})
+		for set_id in families:
+			var family: Dictionary = families[set_id]
+			builds_composition_list.add_child(_make_count_row(
+				str(family.get("label", set_id)),
+				"%d / %d" % [int(family.get("count", 0)), int(family.get("max", 0))]
+			))
+		for pair_label in composition.get("matched_pairs", []):
+			builds_composition_list.add_child(_make_count_row(str(pair_label), ""))
+		var high_quality := int(composition.get("high_quality_count", 0))
+		if high_quality > 0:
+			builds_composition_list.add_child(_make_count_row(
+				"Strong or Pristine",
+				"%d / %d" % [high_quality, int(composition.get("worn_count", 0))]
+			))
+
 	# --- effects ----------------------------------------------------------
+	# Every row is a synergy the central evaluator reported as active for the
+	# state these stats were computed from, printed with its real effects. A
+	# name with no numbers would leave the player guessing what it did.
 	_clear_children(builds_effects_list)
 	var effects: Array = report.get("effects", [])
-	if missing > 0:
-		builds_effects_list.add_child(_make_dim_row("Unavailable - missing parts"))
-	elif effects.is_empty():
+	if state == "Empty":
 		builds_effects_list.add_child(_make_dim_row("No active effects"))
 	else:
-		for effect in effects:
-			var row := Label.new()
-			row.text = str(effect)
-			row.add_theme_font_size_override("font_size", 13)
-			row.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
-			builds_effects_list.add_child(row)
+		if bool(report.get("effects_partial", false)):
+			# Saved-but-unresolvable pieces grant nothing. Say which of the two
+			# the list describes instead of letting a short list read as "this
+			# build has few synergies".
+			builds_effects_list.add_child(_make_dim_row(
+				"From resolvable parts only - %d missing" % missing
+			))
+		if effects.is_empty():
+			builds_effects_list.add_child(_make_dim_row("No active effects"))
+		else:
+			for entry in effects:
+				builds_effects_list.add_child(_make_synergy_rows(entry))
 
 	# --- banner: one phrase, tinted by state ------------------------------
 	var banner_color := _build_state_color(state)
@@ -2321,8 +2396,6 @@ func _apply_build_report_to_detail(report: Dictionary) -> void:
 		builds_apply_button.disabled = state == "Empty" or missing > 0 or bool(report.get("matches_current", false))
 	if builds_delete_button != null:
 		builds_delete_button.disabled = _build_indices().size() <= 1
-	if builds_rename_button != null:
-		builds_rename_button.disabled = false
 
 
 func _fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void:
@@ -2439,6 +2512,59 @@ func _make_composition_row(quality_id: String, count: int) -> Control:
 	count_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	row.add_child(count_label)
 	return row
+
+
+# Composition line without a quality dot: "Gorilla Parts   4 / 5". Pass an
+# empty value for a bare label ("Matching Arms").
+func _make_count_row(label_text: String, value_text: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 7)
+
+	var name_label := Label.new()
+	name_label.text = label_text
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+	row.add_child(name_label)
+
+	if value_text != "":
+		var value_label := Label.new()
+		value_label.text = value_text
+		value_label.add_theme_font_size_override("font_size", 13)
+		value_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+		row.add_child(value_label)
+	return row
+
+
+# One active synergy: a headline ("Gorilla Parts - 2-piece") plus one indented
+# line per real effect ("Damage +6%"). The strings come from
+# SynergyRulesService, so the wording of an effect lives with the rule that
+# grants it and every panel spells it identically.
+func _make_synergy_rows(entry_value: Variant) -> Control:
+	var entry: Dictionary = entry_value
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", 1)
+
+	var headline := Label.new()
+	headline.text = SynergyRulesService.headline_for(entry)
+	headline.add_theme_font_size_override("font_size", 13)
+	headline.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+	block.add_child(headline)
+
+	for effect_value in entry.get("bonuses", []):
+		var effect: Dictionary = effect_value
+		var effect_label := Label.new()
+		effect_label.text = "   " + str(effect.get("text", ""))
+		effect_label.add_theme_font_size_override("font_size", 12)
+		# A penalty and a bonus must be distinguishable at a glance; the sign in
+		# the text already carries it, colour only reinforces it.
+		var is_penalty := float(effect.get("value", 0.0)) < 0.0
+		effect_label.add_theme_color_override(
+			"font_color",
+			Color(0.62, 0.20, 0.16, 1.0) if is_penalty else Color(0.10, 0.45, 0.25, 1.0)
+		)
+		block.add_child(effect_label)
+	return block
 
 
 func _make_dim_row(text: String) -> Control:

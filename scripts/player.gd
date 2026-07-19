@@ -814,10 +814,15 @@ func _try_stealth_finish() -> void:
 	noise_timer = maxf(noise_timer, 0.35)
 	_face_backstab_target(stealth_target)
 	if animator != null:
-		# Forces the finisher pose (torso twist + lunge + head dip) so a
-		# backstab always looks distinct from a normal swing, even with
-		# only one arm equipped -- see trigger_stealth_finish_attack().
-		animator.trigger_stealth_finish_attack()
+		# A LETHAL finish (target under its execution threshold) plays the
+		# arm-tear club smash; a plain ambush that only deals damage keeps
+		# the quicker finisher pose. The enemy owns the threshold --
+		# is_stealth_finish_lethal() -- so prompt text, damage branch and
+		# animation always agree on which kind this is.
+		var lethal_finish := true
+		if stealth_target.has_method("is_stealth_finish_lethal"):
+			lethal_finish = bool(stealth_target.call("is_stealth_finish_lethal"))
+		animator.trigger_stealth_finish_attack(lethal_finish)
 	_flash_player_attack()
 	var finished := bool(stealth_target.call("try_stealth_finish", self, attack_damage, global_position))
 	if not finished:
@@ -1494,6 +1499,10 @@ func _recalculate_stats() -> void:
 
 func _update_stealth_finish_prompt() -> void:
 	stealth_target = _find_stealth_target()
+	# The rig telegraphs availability: same condition as the prompt itself,
+	# refreshed every frame from one place so stance and text cannot disagree.
+	if animator != null and animator.has_method("set_stealth_ready"):
+		animator.set_stealth_ready(stealth_target != null and not is_dead and not _is_backstab_executing())
 	if stealth_target == null:
 		_set_stealth_prompt("")
 		return

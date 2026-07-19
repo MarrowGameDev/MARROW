@@ -189,7 +189,11 @@ def verify_backstab_execution_contract(player_path: Path, enemy_path: Path) -> l
         "func _on_backstab_animator_impact() -> void:",
         "attack_impact_reached.connect(_on_backstab_animator_impact)",
         # Distinct finisher pose, not the plain swing overlay.
-        "animator.trigger_stealth_finish_attack()",
+        # The trigger now carries whether the finish will EXECUTE (instant kill)
+    # or only deal ambush damage, so the animator can pick the arm-tear club
+    # versus the quick finisher. Same contract: the player still triggers the
+    # stealth-finish animation from this one place.
+    "animator.trigger_stealth_finish_attack(lethal_finish)",
     ]
     enemy_required = [
         "stealth_execution_player",

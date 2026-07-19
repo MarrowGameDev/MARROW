@@ -169,6 +169,20 @@ const COMBO_STEP_ARM_SWORD := 4
 # not leave the arm off forever.
 @export var arm_sword_hold_timeout := 1.6
 
+# Stealth finish: the player tears their LEFT arm off and clubs the target's
+# head with it. Same pose-only rule as the arm sword above -- the slot stays
+# equipped, stats and the paper doll never notice. Needs both arms (one to
+# swing, one to BE the club); one-armed players keep the old finisher pose.
+@export var backstab_club_raise := 3.0         # radians up: ~172deg, arm nearly dead vertical
+@export var backstab_club_slam := 2.8          # radians back down: ends low, full follow-through
+# Slam easing exponent: higher = the arm drops harder at the start of the
+# swing and spends the rest in follow-through. 1 = linear, 3 = violent.
+@export var backstab_club_slam_sharpness := 3.0
+@export var backstab_club_torso_windup := 0.22 # lean back while raising
+@export var backstab_club_torso_slam := 0.70   # drive forward on the hit
+@export var backstab_club_pitch_raised := -3.05  # club continues the raised arm, pointing up
+@export var backstab_club_pitch_impact := -1.0   # club driven down-forward into the skull
+
 # Swings taken since the arm came off. 0 == the arm is on.
 var _arm_sword_swings := 0
 # 0..1 blend of "in the hand". Its own state, NOT the per-attack strength: strength
@@ -235,6 +249,7 @@ var _attack_impact_signaled := false
 # regardless of combo step / equipped-arm count. Set by
 # trigger_stealth_finish_attack(); cleared when that attack ends.
 var _is_stealth_finish_attack := false
+var _is_stealth_finish_lethal := true
 var _head_only_attack_contacted := true
 var _head_only_attack_landed := true
 var _head_only_base_world_offset := Vector3.ZERO
@@ -283,6 +298,20 @@ var _reattach_finish_head_start_position := Vector3.ZERO
 var _reattach_finish_head_start_rotation := Vector3.ZERO
 var _aim_requested := false
 var _aim_blend := 0.0
+
+# "Execution available" stance: while the stealth prompt is up, the player
+# coils -- right arm half-raised toward the tear, slight crouch, weight
+# forward -- telegraphing that pressing F right now kills. Pure overlay,
+# same pattern as the aim blend below; it suppresses itself while any attack
+# plays so it can never fight the club swing.
+@export var stealth_ready_arm_raise := 0.85
+@export var stealth_ready_crouch := 0.30      # torso pitch forward-down
+@export var stealth_ready_body_drop := 0.22   # metres the hips sink
+@export var stealth_ready_leg_bend := 0.55    # radians of knee flex
+@export var stealth_ready_head_dip := 0.18
+@export var stealth_ready_blend_speed := 9.0
+var _stealth_ready_requested := false
+var _stealth_ready_blend := 0.0
 var _lizard_wall_climb_blend := 0.0
 var _head_only_roll_angle := 0.0
 
@@ -369,6 +398,8 @@ func update_from_player(delta: float, velocity: Vector3, max_speed: float, facin
 	_apply_lizard_wall_climb_limb_pose()
 	_update_aim_overlay(delta)
 	_apply_aim_overlay()
+	_update_stealth_ready_overlay(delta)
+	_apply_stealth_ready_overlay()
 	_update_attack_overlay(delta)
 	_update_head_launch_attack_aim()
 	_head_only_attack_world_offset = Vector3.ZERO
@@ -809,9 +840,16 @@ func trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void
 # _apply_attack_overlay() so the finisher pose (torso twist + forward lunge +
 # head dip; see _apply_finisher_combo_pose below) always plays, regardless
 # of what is equipped.
-func trigger_stealth_finish_attack() -> void:
+func trigger_stealth_finish_attack(lethal: bool = true) -> void:
 	trigger_attack(3, false)
 	_is_stealth_finish_attack = true
+	# Only an EXECUTION earns the arm-tear club smash; a plain damage ambush
+	# keeps the quick finisher, so the dramatic animation stays a reliable
+	# signal that the target is about to die.
+	_is_stealth_finish_lethal = lethal
+	if lethal and _both_arms_equipped():
+		_arm_sword_swings = arm_sword_swing_count
+		_arm_sword_idle_timer = 0.0
 
 
 func _capture_torso_head_miss_body_hold_transform() -> void:
@@ -828,6 +866,54 @@ func _capture_torso_head_miss_body_hold_transform() -> void:
 
 func set_aiming(enabled: bool) -> void:
 	_aim_requested = enabled
+
+
+# Driven by the Player every prompt refresh: true while a stealth finish is
+# actually available, false the moment it is not.
+func set_stealth_ready(enabled: bool) -> void:
+	_stealth_ready_requested = enabled
+
+
+func _update_stealth_ready_overlay(delta: float) -> void:
+	# An attack in flight owns the arms; the ready stance melts away for it
+	# and comes back on its own afterwards if the prompt still holds.
+	var target: float = 1.0 if _stealth_ready_requested and _attack_timer <= 0.0 and _attack_blend <= 0.2 else 0.0
+	_stealth_ready_blend = lerp(_stealth_ready_blend, target, 1.0 - exp(-stealth_ready_blend_speed * delta))
+
+
+func _apply_stealth_ready_overlay() -> void:
+	if _stealth_ready_blend <= 0.001:
+		return
+	var blend := _stealth_ready_blend
+	var right_arm := rig.get_socket("right_arm")
+	if right_arm != null:
+		# Half-raised toward the coming tear: the pre-image of the club windup.
+		right_arm.rotation.x -= stealth_ready_arm_raise * blend
+		right_arm.rotation.z -= 0.15 * blend
+	var left_arm := rig.get_socket("left_arm")
+	if left_arm != null:
+		# The arm about to be ripped off pulls slightly across the body.
+		left_arm.rotation.x -= 0.20 * blend
+		left_arm.rotation.z += 0.18 * blend
+	# A real crouch, not just a raised arm: knees flex, the hips sink, torso
+	# folds forward and the head tracks low. Feet stay planted -- the foot
+	# placement pass runs after this and pins them to the ground, which is
+	# exactly what bent knees over planted feet should look like.
+	for leg_key in ["left_leg", "right_leg"]:
+		var thigh := rig.get_socket(leg_key)
+		if thigh != null:
+			thigh.rotation.x -= stealth_ready_leg_bend * blend
+		var shin := rig.get_socket(leg_key + "_lower")
+		if shin != null:
+			shin.rotation.x += stealth_ready_leg_bend * 1.6 * blend
+	var body := rig.get_socket("body")
+	if body != null:
+		body.rotation.x -= stealth_ready_crouch * blend
+		body.rotation.y += 0.10 * blend
+		body.position.y -= stealth_ready_body_drop * blend
+	var head := rig.get_socket("head")
+	if head != null:
+		head.rotation.x -= stealth_ready_head_dip * blend
 
 
 func confirm_head_only_attack_contact() -> void:
@@ -1589,7 +1675,10 @@ func _apply_attack_overlay() -> void:
 		return
 	var punch: float = _attack_pose_strength()
 	if _is_stealth_finish_attack:
-		_apply_finisher_combo_pose(punch)
+		if _is_stealth_finish_lethal and _both_arms_equipped():
+			_apply_backstab_club_pose(punch)
+		else:
+			_apply_finisher_combo_pose(punch)
 		return
 	match _combo_step_for_equipped_arms():
 		2:
@@ -2012,8 +2101,13 @@ func _update_arm_sword(delta: float) -> void:
 	# travels with the arm holding it.
 	var hand: Vector3 = _right_hand_rig_position()
 	left_arm.position = left_arm.position.lerp(hand, _arm_sword_hold)
+	var blade_pitch: float = arm_sword_blade_pitch
+	if _is_stealth_finish_attack and _attack_timer > 0.0:
+		# During the stealth smash the club tilts from held-high to buried in
+		# the target's head, on the same clock as the swing arc.
+		blade_pitch = lerpf(backstab_club_pitch_raised, backstab_club_pitch_impact, 1.0 - pow(1.0 - _backstab_slam_t(), maxf(1.0, backstab_club_slam_sharpness)))
 	left_arm.rotation = left_arm.rotation.lerp(
-		Vector3(arm_sword_blade_pitch, 0.0, 0.0), _arm_sword_hold)
+		Vector3(blade_pitch, 0.0, 0.0), _arm_sword_hold)
 
 
 func _both_arms_equipped() -> bool:
@@ -2031,6 +2125,58 @@ func _right_hand_rig_position() -> Vector3:
 	if arm == null:
 		return Vector3.ZERO
 	return rig.to_local(arm.global_transform * Vector3(0.0, -0.58, 0.0))
+
+
+# The stealth-finish smash: wind the RIGHT arm up over the head, then carve it
+# down onto the target's skull, with the torn-off left arm riding in the hand
+# as the club (_update_arm_sword glues it there while the attack runs). The
+# windup/slam split follows _attack_phase against attack_windup_portion, which
+# is the same boundary attack_impact_reached fires on -- so the damage the
+# player syncs to that signal lands exactly when the club visually connects.
+func _apply_backstab_club_pose(strength: float) -> void:
+	var phase: float = _attack_phase()
+	var windup_end: float = clampf(attack_windup_portion, 0.05, 0.70)
+	var windup_t: float = clampf(phase / windup_end, 0.0, 1.0)
+	var slam_t: float = clampf((phase - windup_end) / maxf(0.001, 1.0 - windup_end), 0.0, 1.0)
+	# Fast in, soft out: the hit itself is instant, the follow-through is not.
+	var slam: float = 1.0 - pow(1.0 - slam_t, maxf(1.0, backstab_club_slam_sharpness))
+	var arm_strength: float = _attack_strength_lagged(attack_overlap_arm)
+	var elbow_strength: float = _attack_strength_lagged(attack_overlap_arm + attack_overlap_elbow)
+
+	var right_arm := rig.get_socket("right_arm")
+	if right_arm != null:
+		# NEGATIVE x swings the arm forward/up in this rig (every other pose in
+		# this file hits with -=). Windup drives x to -raise: the arm sweeps UP
+		# through the front until it stands nearly dead vertical. The slam then
+		# adds rotation back, carving DOWN through the head line and following
+		# through low. Deliberately NOT scaled by the attack-strength envelope:
+		# the arc already grows from zero via windup_t, and scaling by strength
+		# capped the raise far short of vertical while the envelope ramped.
+		right_arm.rotation.x += -backstab_club_raise * windup_t + backstab_club_slam * slam
+	# The elbow stays EXTENDED on the way up (a small counter-bend so the whole
+	# arm reads as one vertical line at the top), then whips forward on the
+	# slam for the crack of the hit.
+	var elbow: Node3D = rig.get_socket("right_arm_lower")
+	if elbow != null:
+		elbow.rotation.x -= 0.35 * windup_t * (1.0 - slam)
+	_whip_elbow("right_arm_lower", elbow_strength * slam)
+
+	var body := rig.get_socket("body")
+	if body != null:
+		body.rotation.x += (backstab_club_torso_windup * windup_t - backstab_club_torso_slam * slam) * strength
+		body.rotation.y += 0.18 * slam * strength
+	var head := rig.get_socket("head")
+	if head != null:
+		head.rotation.x -= 0.20 * slam * strength
+
+
+# 0..1 progress of the club's downswing, shared with _update_arm_sword so the
+# held arm's pitch animates with the same clock as the swing that carries it.
+func _backstab_slam_t() -> float:
+	if not _is_stealth_finish_attack or _attack_timer <= 0.0:
+		return 1.0
+	var windup_end: float = clampf(attack_windup_portion, 0.05, 0.70)
+	return clampf((_attack_phase() - windup_end) / maxf(0.001, 1.0 - windup_end), 0.0, 1.0)
 
 
 func _apply_finisher_combo_pose(strength: float) -> void:

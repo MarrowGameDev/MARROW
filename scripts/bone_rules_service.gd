@@ -447,6 +447,18 @@ static func equipment_synergy_summary(equipment_state: Dictionary) -> Dictionary
 	}
 
 
+# Facade over SynergyRulesService, mirroring how this service already re-exports
+# EquipmentRulesService and DropPickupRulesService. Gameplay and UI read set
+# bonuses through here so there is one documented door into the rules, and so
+# the stat pipeline and the panels can never consult different evaluators.
+static func synergy_evaluation_for(equipment_state: Dictionary) -> Dictionary:
+	return SynergyRulesService.evaluate(equipment_state)
+
+
+static func active_synergies_for(equipment_state: Dictionary) -> Array:
+	return SynergyRulesService.evaluate(equipment_state)["active"]
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
@@ -537,6 +549,17 @@ static func aggregate_player_bonuses_exact(equipment_state: Dictionary) -> Dicti
 		total["attack_range"] = float(total["attack_range"]) + float(bonus["attack_range"])
 		total["attack_damage"] = float(total["attack_damage"]) + float(bonus["attack_damage"])
 		total["max_health"] = float(total["max_health"]) + float(bonus["max_health"])
+
+	# Set/synergy flat bonuses. Added AFTER the per-piece loop and deliberately
+	# NOT multiplied by any quality multiplier: a set bonus is a property of the
+	# combination, not of one piece, so there is no single piece whose quality
+	# could scale it. Still exact floats -- the one rounding stays at the end of
+	# player_stats_with_equipment.
+	var synergy_bonus: Dictionary = SynergyRulesService.evaluate(equipment_state)["bonus"]
+	total["move_speed"] = float(total["move_speed"]) + float(synergy_bonus["move_speed"])
+	total["attack_range"] = float(total["attack_range"]) + float(synergy_bonus["attack_range"])
+	total["attack_damage"] = float(total["attack_damage"]) + float(synergy_bonus["attack_damage"])
+	total["max_health"] = float(total["max_health"]) + float(synergy_bonus["max_health"])
 	return total
 
 
@@ -568,10 +591,30 @@ static func aggregate_player_stat_modifiers(equipment_state: Dictionary) -> Dict
 		total["equipment_weight"] = float(total["equipment_weight"]) + equipment_weight_for(bone_id) * weight_multiplier
 		total["inventory_weight"] = float(total["inventory_weight"]) + inventory_weight_for(bone_id) * weight_multiplier
 
+	# Set/synergy percentages are summed in BEFORE the clamps below, so
+	# PLAYER_STAT_PERCENT_LIMIT stays the single global ceiling and no synergy
+	# can escape it. Adding them after the clamp would let a set bonus exceed a
+	# limit that every other source respects.
+	var synergy_modifiers: Dictionary = SynergyRulesService.evaluate(equipment_state)["modifiers"]
+	total["damage_percent"] = float(total["damage_percent"]) + float(synergy_modifiers["damage_percent"])
+	total["speed_percent"] = float(total["speed_percent"]) + float(synergy_modifiers["speed_percent"])
+	total["health_percent"] = float(total["health_percent"]) + float(synergy_modifiers["health_percent"])
+	total["weight_percent"] = float(total["weight_percent"]) + float(synergy_modifiers["weight_percent"])
+
 	total["damage_percent"] = clampf(float(total["damage_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
 	total["speed_percent"] = clampf(float(total["speed_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
 	total["health_percent"] = clampf(float(total["health_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
 	total["weight_percent"] = clampf(float(total["weight_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+
+	# A synergy weight percentage scales the ASSEMBLED load, not one piece: the
+	# per-piece quality_weight_percent was already applied inside the loop
+	# above, so reusing the summed total here would count it twice. Only the
+	# synergy's own share multiplies the totals, and it feeds the load penalty
+	# like any other weight -- otherwise a "+5% Weight" penalty would print in
+	# the UI while changing nothing.
+	var synergy_weight_factor := maxf(0.0, 1.0 + float(synergy_modifiers["weight_percent"]))
+	total["equipment_weight"] = float(total["equipment_weight"]) * synergy_weight_factor
+	total["inventory_weight"] = float(total["inventory_weight"]) * synergy_weight_factor
 
 	var load_over_free := maxf(0.0, float(total["equipment_weight"]) - EQUIPMENT_FREE_WEIGHT)
 	total["load_speed_penalty"] = clampf(
