@@ -651,12 +651,12 @@
 
 ### Constants
 - `PLAYER_BONUS_DEFAULTS`
-- `DURABILITY_CRACKED_THRESHOLD`
 - `PLAYER_STAT_MODIFIER_DEFAULTS`
 - `PLAYER_STAT_PERCENT_LIMIT`
 - `EQUIPMENT_FREE_WEIGHT`
 - `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT`
 - `EQUIPMENT_LOAD_SPEED_PENALTY_MAX`
+- `DURABILITY_CRACKED_THRESHOLD`
 - `UNKNOWN_COLOR`
 
 ### Key Variables
@@ -2291,6 +2291,7 @@
 - `_refresh_inventory_mode() -> void`
 - `_queue_inventory_responsive_layout() -> void`
 - `_apply_inventory_responsive_layout() -> void`
+- `_apply_builds_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void`
 - `_apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void`
 - `_apply_paper_doll_responsive_layout(doll_scale: float) -> void`
 - `_apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void`
@@ -3217,19 +3218,28 @@
 - `_stack_label`
 - `tile_size`
 - `requested_size`
-- `x_scale`
-- `y_scale`
+- `pad`
+- `min_side`
+- `inner_width`
+- `name_height`
+- `slot_height`
+- `art_top`
+- `art_height`
 - `frame`
 - `top_rule`
+- `art_centre`
+- `art_span`
 - `glow`
 - `core`
 - `slot_text`
+- `side`
 - `wrap`
 - `rect`
 - `style`
 
 ### Functions
 - `setup(id: String, player_ref: Node, quantity: int = 1) -> void`
+- `_place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
@@ -3273,12 +3283,17 @@
 - `_box`
 - `_label`
 - `_slot_label`
+- `_diamond_back`
 - `_slot_size`
 - `_frame`
-- `x_scale`
-- `y_scale`
-- `min_scale`
-- `diamond_back`
+- `pad`
+- `min_side`
+- `inner_width`
+- `top_height`
+- `bottom_height`
+- `art_top`
+- `art_height`
+- `side`
 - `bone_id`
 - `wrap`
 - `rect`
@@ -3289,6 +3304,8 @@
 - `equipped`
 
 ### Functions
+- `resize(target_size: Vector2) -> void`
+- `_place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`

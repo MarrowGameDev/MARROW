@@ -2708,6 +2708,10 @@ class PlayerInventoryUI:
         """GDScript function: _apply_inventory_responsive_layout() -> void"""
         pass
 
+    def gd_func__apply_builds_responsive_layout(self):
+        """GDScript function: _apply_builds_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void"""
+        pass
+
     def gd_func__apply_settings_responsive_layout(self):
         """GDScript function: _apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void"""
         pass
@@ -4108,6 +4112,10 @@ class BoneItemTile:
         """GDScript function: setup(id: String, player_ref: Node, quantity: int = 1) -> void"""
         pass
 
+    def gd_func__place_diamond(self):
+        """GDScript function: _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void"""
+        pass
+
     def gd_func__on_mouse_entered(self):
         """GDScript function: _on_mouse_entered() -> void"""
         pass
@@ -4162,6 +4170,14 @@ class BoneSlotWidget:
     godot_class_name = 'BoneSlotWidget'
     godot_extends = 'Control'
     gameplay_system = 'Inventory, equipment, and bones'
+
+    def gd_func_resize(self):
+        """GDScript function: resize(target_size: Vector2) -> void"""
+        pass
+
+    def gd_func__place_diamond(self):
+        """GDScript function: _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void"""
+        pass
 
     def gd_func__on_mouse_entered(self):
         """GDScript function: _on_mouse_entered() -> void"""
