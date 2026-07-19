@@ -2684,6 +2684,10 @@ class PlayerInventoryUI:
         """GDScript function: _build_inventory_tabs(parent: VBoxContainer) -> void"""
         pass
 
+    def gd_func__on_inventory_filter_selected(self):
+        """GDScript function: _on_inventory_filter_selected(index: int) -> void"""
+        pass
+
     def gd_func__add_inventory_tab(self):
         """GDScript function: _add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void"""
         pass
@@ -3916,6 +3920,14 @@ class TestingEnvironment:
 
     def gd_func__update_status(self):
         """GDScript function: _update_status() -> void"""
+        pass
+
+    def gd_func__cycle_overlay_mode(self):
+        """GDScript function: _cycle_overlay_mode() -> void"""
+        pass
+
+    def gd_func__apply_overlay_mode(self):
+        """GDScript function: _apply_overlay_mode() -> void"""
         pass
 
     def gd_func__cycle_validation_guide(self):
