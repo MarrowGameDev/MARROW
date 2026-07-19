@@ -1317,6 +1317,7 @@
 - `CANONICAL_BODY_SLOTS`
 - `LEGACY_SLOT_ALIASES`
 - `SLOT_DISPLAY`
+- `INVENTORY_FILTER_GROUPS`
 - `SLOT_TO_SOCKETS`
 - `LIMB_TO_SLOT`
 - `LIMB_DISPLAY`
@@ -1331,6 +1332,7 @@
 - `normalized`
 - `clean_slot`
 - `index`
+- `compatible`
 - `normalized_filter`
 - `a_slot_index`
 - `b_slot_index`
@@ -2217,6 +2219,7 @@
 - `CONTROL_SETTINGS_PATH`
 - `INVENTORY_PREVIEW_BASE_SIZE`
 - `BUILD_PREVIEW_BASE_SIZE`
+- `INVENTORY_FILTER_OPTIONS`
 - `PAPER_DOLL_BASE_SIZE`
 - `PAPER_DOLL_SLOT_SIZE`
 - `PAPER_DOLL_FRAME_POSITION`
@@ -2245,6 +2248,8 @@
 - `inventory_header`
 - `inventory_title_label`
 - `inventory_tabs_container`
+- `inventory_filter_dropdown`
+- `inventory_filter_label`
 - `inventory_body`
 - `inventory_left_panel`
 - `inventory_grid_panel`
@@ -2267,8 +2272,6 @@
 - `settings_status_label`
 - `settings_reset_button`
 - `builds_panel`
-- `build_preview_rigs`
-- `build_preset_status_label`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2293,6 +2296,7 @@
 - `_build_right_inventory_panel() -> void`
 - `_build_inventory_blur_layer() -> ColorRect`
 - `_build_inventory_tabs(parent: VBoxContainer) -> void`
+- `_on_inventory_filter_selected(index: int) -> void`
 - `_add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void`
 - `_select_inventory_category(category: String) -> void`
 - `_refresh_inventory_tabs() -> void`
@@ -3001,6 +3005,7 @@
 - `PLAYER_SCENE`
 - `ENEMY_SCENE`
 - `VALIDATION_LOG_PATH`
+- `OVERLAY_PANEL_WIDTH`
 - `P0_VALIDATION_GUIDES`
 - `NORMAL_LIMB_BONES`
 - `EXTRA_TESTING_BONES`
@@ -3017,6 +3022,8 @@
 - `notes_editing`
 - `observed_notes`
 - `validation_log`
+- `overlay_mode`
+- `testing_panel`
 - `environment`
 - `env`
 - `sun`
@@ -3037,15 +3044,13 @@
 - `margin`
 - `content`
 - `alive_count`
+- `scene_tag`
+- `width`
 - `guide`
 - `text`
 - `steps`
 - `enemy_names`
 - `snapshot`
-- `entry`
-- `mode`
-- `file`
-- `count`
 
 ### Functions
 - `_ready() -> void`
@@ -3069,6 +3074,8 @@
 - `_on_enemy_defeated(_enemy: Node, _dropped_bone_id: String) -> void`
 - `_build_ui() -> void`
 - `_update_status() -> void`
+- `_cycle_overlay_mode() -> void`
+- `_apply_overlay_mode() -> void`
 - `_cycle_validation_guide(direction: int) -> void`
 - `_current_validation_guide_text() -> String`
 - `_begin_notes_editing() -> void`
