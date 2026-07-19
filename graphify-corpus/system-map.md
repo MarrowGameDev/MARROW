@@ -19,6 +19,8 @@
 - `scripts/bone_data_catalog.gd`
 - `scripts/bone_database.gd`
 - `scripts/bone_definition.gd`
+- `scripts/bone_instance_service.gd`
+- `scripts/bone_quality_service.gd`
 - `scripts/bone_rules_service.gd`
 - `scripts/bone_trial_gate.gd`
 - `scripts/equipment_rules_service.gd`

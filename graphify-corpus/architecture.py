@@ -483,6 +483,10 @@ class BoneDatabase:
         """Relationship: references class BoneDefinition."""
         return BoneDefinition
 
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -510,9 +514,59 @@ class BoneDefinition:
         """Relationship: references class BoneDatabase."""
         return BoneDatabase
 
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
+
+class BoneInstanceService:
+    """Godot script: scripts/bone_instance_service.gd
+    class_name: BoneInstanceService
+    extends: unknown
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/bone_instance_service.gd'
+    godot_class_name = 'BoneInstanceService'
+    godot_extends = ''
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def depends_on_BoneDatabase(self):
+        """Relationship: references class BoneDatabase."""
+        return BoneDatabase
+
+    def depends_on_BoneDefinition(self):
+        """Relationship: references class BoneDefinition."""
+        return BoneDefinition
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_EquipmentRulesService(self):
+        """Relationship: references class EquipmentRulesService."""
+        return EquipmentRulesService
+
+class BoneQualityService:
+    """Godot script: scripts/bone_quality_service.gd
+    class_name: BoneQualityService
+    extends: unknown
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/bone_quality_service.gd'
+    godot_class_name = 'BoneQualityService'
+    godot_extends = ''
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
 
 class BoneRulesService:
     """Godot script: scripts/bone_rules_service.gd
@@ -532,6 +586,14 @@ class BoneRulesService:
     def depends_on_BoneDefinition(self):
         """Relationship: references class BoneDefinition."""
         return BoneDefinition
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_DropPickupRulesService(self):
         """Relationship: references class DropPickupRulesService."""
@@ -1270,6 +1332,10 @@ class Enemy:
         """Relationship: references class BallisticsService."""
         return BallisticsService
 
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -1351,6 +1417,10 @@ class EquipmentRulesService:
     def depends_on_BoneDefinition(self):
         """Relationship: references class BoneDefinition."""
         return BoneDefinition
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
 
     def depends_on_DropPickupRulesService(self):
         """Relationship: references class DropPickupRulesService."""
@@ -2577,6 +2647,10 @@ class PlayerInventoryComponent:
         """Uses GameEvents.inventory_changed."""
         pass
 
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -3019,6 +3093,10 @@ class PlayerInventoryUI:
     def depends_on_InventoryEmptySlot(self):
         """Relationship: loads resource."""
         return InventoryEmptySlot
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
