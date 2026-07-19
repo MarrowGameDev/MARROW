@@ -6,7 +6,6 @@ const PLAYER_BONUS_DEFAULTS := {
 	"attack_damage": 0,
 	"max_health": 0,
 }
-const DURABILITY_CRACKED_THRESHOLD := 0.4
 const PLAYER_STAT_MODIFIER_DEFAULTS := {
 	"damage_percent": 0.0,
 	"speed_percent": 0.0,
@@ -20,10 +19,15 @@ const PLAYER_STAT_PERCENT_LIMIT := 0.75
 const EQUIPMENT_FREE_WEIGHT := 3.0
 const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06
 const EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30
+const DURABILITY_CRACKED_THRESHOLD := 0.4
 const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
 
-static func definition_for(bone_id: String) -> Dictionary:
+# Every lookup in this service goes through here, so passing an instance_id
+# ("bone#7") anywhere a bone_id was accepted resolves to that instance's type
+# without each caller having to know instances exist.
+static func definition_for(raw_id: String) -> Dictionary:
+	var bone_id := BoneInstanceService.bone_id_of(raw_id)
 	var definition: Dictionary = BoneDatabase.get_def(bone_id)
 	if not definition.is_empty():
 		return definition
@@ -36,6 +40,23 @@ static func slot_for(bone_id: String) -> String:
 
 static func slot_display_name(slot_id: String) -> String:
 	return EquipmentRulesService.slot_display_name(slot_id)
+
+
+# Card-sized version of display_name_with_slot: same name, abbreviated so it
+# fits a tile without being cut off. The full name always stays available via
+# display_name_with_slot for the details panel and tooltips -- the short form
+# is a display convenience and must never become the identity of a bone.
+static func short_display_name(bone_id: String) -> String:
+	var full := display_name_with_slot(bone_id)
+	if full.ends_with(" Bone"):
+		full = full.substr(0, full.length() - " Bone".length())
+	var replacements := {
+		"Left ": "L. ",
+		"Right ": "R. ",
+	}
+	for needle in replacements:
+		full = full.replace(str(needle), str(replacements[needle]))
+	return full
 
 
 static func display_name_with_slot(bone_id: String) -> String:
@@ -58,18 +79,20 @@ static func display_name_with_slot(bone_id: String) -> String:
 	return clean_name + " " + slot_label
 
 
-static func quality_for(bone_id: String) -> String:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		return str(definition.get("quality", BoneDefinition.QUALITY_COMMON))
-	return BoneDatabase.quality(bone_id)
+# Quality belongs to the individual piece, so these read the instance's rolled
+# quality (BoneInstanceService) and take the numbers from the one central table
+# (BoneQualityService). A legacy bone_id String resolves to its authored
+# quality through the compatibility path instead of being re-rolled.
+static func quality_for(raw_id: String) -> String:
+	return BoneInstanceService.quality_id_of(raw_id)
 
 
-static func quality_rank_for(bone_id: String) -> int:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		return int(definition.get("quality_rank", 1))
-	return BoneDatabase.quality_rank(bone_id)
+static func quality_display_name_for(raw_id: String) -> String:
+	return BoneQualityService.display_name_for(quality_for(raw_id))
+
+
+static func quality_rank_for(raw_id: String) -> int:
+	return BoneQualityService.rank_for(quality_for(raw_id))
 
 
 static func quality_score_for(bone_id: String) -> float:
@@ -79,11 +102,9 @@ static func quality_score_for(bone_id: String) -> float:
 	return BoneDatabase.quality_score(bone_id)
 
 
-static func quality_multiplier_for(bone_id: String) -> float:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		return float(definition.get("quality_multiplier", 1.0))
-	return BoneDatabase.quality_multiplier(bone_id)
+# THE quality multiplier used by the stat formula: effective = base * this.
+static func quality_multiplier_for(raw_id: String) -> float:
+	return BoneQualityService.multiplier_for(quality_for(raw_id))
 
 
 static func quality_damage_percent_for(bone_id: String) -> float:
@@ -111,13 +132,8 @@ static func quality_weight_percent_for(bone_id: String) -> float:
 	return float(definition.get("quality_weight_percent", 0.0))
 
 
-static func quality_color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		var color_value: Variant = definition.get("quality_color", fallback)
-		if color_value is Color:
-			return color_value
-	return BoneDatabase.quality_color(bone_id, fallback)
+static func quality_color_for(raw_id: String, _fallback: Color = UNKNOWN_COLOR) -> Color:
+	return BoneQualityService.color_for(quality_for(raw_id))
 
 
 static func rarity_for(bone_id: String) -> String:
@@ -500,10 +516,18 @@ static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
 	}
 
 
-static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
-	var total: Dictionary = PLAYER_BONUS_DEFAULTS.duplicate()
-	var attack_damage_total := 0.0
-	var max_health_total := 0.0
+# Exact, fully decimal totals. This is the internal calculation layer: nothing
+# here rounds, so downstream maths (percentage modifiers in particular) work on
+# the real numbers. Rounding the sum here and THEN applying a percentage would
+# compound two approximations -- e.g. a 5.5 bonus rounds to 6, and +10% turns
+# 7 into 7.7 -> 8, where the exact path gives 6.5 * 1.1 = 7.15 -> 7.
+static func aggregate_player_bonuses_exact(equipment_state: Dictionary) -> Dictionary:
+	var total: Dictionary = {
+		"move_speed": 0.0,
+		"attack_range": 0.0,
+		"attack_damage": 0.0,
+		"max_health": 0.0,
+	}
 	for slot_id in equipment_state:
 		var bone_id: String = str(equipment_state[slot_id])
 		if bone_id == "":
@@ -511,10 +535,21 @@ static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
 		var bonus: Dictionary = adjusted_player_bonus_for(bone_id)
 		total["move_speed"] = float(total["move_speed"]) + float(bonus["move_speed"])
 		total["attack_range"] = float(total["attack_range"]) + float(bonus["attack_range"])
-		attack_damage_total += float(bonus["attack_damage"])
-		max_health_total += float(bonus["max_health"])
-	total["attack_damage"] = roundi(attack_damage_total)
-	total["max_health"] = roundi(max_health_total)
+		total["attack_damage"] = float(total["attack_damage"]) + float(bonus["attack_damage"])
+		total["max_health"] = float(total["max_health"]) + float(bonus["max_health"])
+	return total
+
+
+# Presentation-layer view of the same totals: whole numbers for the stats that
+# are integers to the player. Callers that feed further maths should use
+# aggregate_player_bonuses_exact instead, so the rounding happens once, last.
+static func aggregate_player_bonuses(equipment_state: Dictionary) -> Dictionary:
+	var exact: Dictionary = aggregate_player_bonuses_exact(equipment_state)
+	var total: Dictionary = PLAYER_BONUS_DEFAULTS.duplicate()
+	total["move_speed"] = float(exact["move_speed"])
+	total["attack_range"] = float(exact["attack_range"])
+	total["attack_damage"] = roundi(float(exact["attack_damage"]))
+	total["max_health"] = roundi(float(exact["max_health"]))
 	return total
 
 
@@ -548,7 +583,9 @@ static func aggregate_player_stat_modifiers(equipment_state: Dictionary) -> Dict
 
 
 static func player_stats_with_equipment(base_move_speed: float, base_attack_range: float, base_attack_damage: int, base_max_health: int, equipment_state: Dictionary) -> Dictionary:
-	var bonus: Dictionary = aggregate_player_bonuses(equipment_state)
+	# Exact bonuses: the percentage modifiers below multiply the real totals,
+	# and the single rounding happens at the very end of each stat.
+	var bonus: Dictionary = aggregate_player_bonuses_exact(equipment_state)
 	var modifiers: Dictionary = aggregate_player_stat_modifiers(equipment_state)
 
 	var move_before_percent := base_move_speed + float(bonus["move_speed"])
@@ -556,8 +593,8 @@ static func player_stats_with_equipment(base_move_speed: float, base_attack_rang
 		0.1,
 		(1.0 + float(modifiers["speed_percent"])) * (1.0 - float(modifiers["load_speed_penalty"]))
 	)
-	var damage_before_percent := float(base_attack_damage + int(bonus["attack_damage"]))
-	var health_before_percent := float(base_max_health + int(bonus["max_health"]))
+	var damage_before_percent := float(base_attack_damage) + float(bonus["attack_damage"])
+	var health_before_percent := float(base_max_health) + float(bonus["max_health"])
 	return {
 		"move_speed": maxf(0.0, move_before_percent * move_multiplier),
 		"attack_range": base_attack_range + float(bonus["attack_range"]),

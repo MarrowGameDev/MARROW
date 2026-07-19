@@ -100,15 +100,16 @@ def calculate(case: Case) -> dict[str, float]:
     load_over_free = max(0.0, equipment_weight - FREE_WEIGHT)
     load_speed_penalty = clamp(load_over_free * PENALTY_PER_WEIGHT, 0.0, PENALTY_MAX)
 
-    # Round the summed float bonus once here (matching
-    # BoneRulesService.aggregate_player_bonuses), not per bone before summing.
-    damage_bonus = godot_roundi(damage_bonus_float)
-    health_bonus = godot_roundi(health_bonus_float)
-
+    # The summed bonus stays a float all the way through the percentage
+    # modifiers (matching BoneRulesService.aggregate_player_bonuses_exact and
+    # player_stats_with_equipment). Rounding here and then applying a
+    # percentage would compound two approximations: a 5.5 bonus would round to
+    # 6, and +10% would turn 7 into 7.7 -> 8, where the exact path gives
+    # 6.5 * 1.1 = 7.15 -> 7. One rounding, at the end of each stat.
     move_before_percent = case.base_move_speed + move_bonus
     move_multiplier = max(0.1, (1.0 + speed_percent) * (1.0 - load_speed_penalty))
-    damage_before_percent = float(case.base_attack_damage + damage_bonus)
-    health_before_percent = float(case.base_max_health + health_bonus)
+    damage_before_percent = float(case.base_attack_damage) + damage_bonus_float
+    health_before_percent = float(case.base_max_health) + health_bonus_float
 
     return {
         "move_speed": max(0.0, move_before_percent * move_multiplier),
@@ -167,8 +168,14 @@ CASES = [
         expected={
             "move_speed": 4.06125,
             "attack_range": 2.46,
-            "attack_damage": 3,
-            "max_health": 3,
+            # Single rounding, at the end. The bone's bonus is 2 * 1.15 = 2.3;
+            # keeping that decimal through the percentage gives
+            # (1 + 2.3) * 1.12 = 3.696 -> 4 for damage and
+            # (1 + 2.3) * 1.10 = 3.63  -> 4 for health.
+            # These were 3 and 3 while the sum was rounded to 2 BEFORE the
+            # percentage was applied, which dropped 0.3 of real bonus.
+            "attack_damage": 4,
+            "max_health": 4,
             "equipment_weight": 2.3,
             "inventory_weight": 2.53,
             "load_speed_penalty": 0.0,
@@ -300,6 +307,10 @@ def main() -> int:
         print("  [PASS] PlayerStatsComponent preserves formula outputs.")
 
     case_errors = check_cases()
+    # These were computed and then silently dropped, so a numeric mismatch
+    # showed up only as a count with no indication of which case failed.
+    for error in case_errors:
+        print(f"  [ERROR] {error}")
     errors = static_errors + case_errors
     print("----------------------------")
     if errors:

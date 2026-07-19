@@ -1501,7 +1501,9 @@ func _attach_pickup_to_detached_limb(body: RigidBody3D, pickup_bone_id: String) 
 	pickup_area.collision_layer = 0
 	pickup_area.collision_mask = 1
 	pickup_area.set_script(LIMB_BONE_PICKUP_SCRIPT)
-	pickup_area.set("bone_id", pickup_bone_id)
+	# Creation point for a dropped limb: roll its quality once, here.
+	var instance_id := BoneInstanceService.create_instance(pickup_bone_id)
+	pickup_area.set("bone_id", instance_id)
 
 	var pickup_shape := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()
@@ -1829,10 +1831,15 @@ func _drop_standard_bone_pickup() -> void:
 		# Drop the pickup at ground height under wherever the enemy died.
 		bone_node.global_position = Vector3(global_position.x, 0.05, global_position.z)
 
+	# This is where a new piece comes into existence, so this is where its
+	# quality is rolled -- exactly once. The pickup carries the instance_id
+	# from here on; collecting it later only moves that identity into the
+	# inventory and never re-rolls.
+	var instance_id := BoneInstanceService.create_instance(dropped_bone_id)
 	if bone.has_method("set_bone_id"):
-		bone.call("set_bone_id", dropped_bone_id)
+		bone.call("set_bone_id", instance_id)
 	limb_pickup_spawned = true
-	GameEvents.drop_spawned.emit(dropped_bone_id, bone, self)
+	GameEvents.drop_spawned.emit(instance_id, bone, self)
 
 
 func _force_limb_pickup_drop() -> bool:

@@ -433,6 +433,10 @@ class Bone:
         """Uses GameEvents.pickup_collected."""
         pass
 
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -483,6 +487,10 @@ class BoneDatabase:
         """Relationship: references class BoneDefinition."""
         return BoneDefinition
 
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -510,9 +518,63 @@ class BoneDefinition:
         """Relationship: references class BoneDatabase."""
         return BoneDatabase
 
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
+
+class BoneInstanceService:
+    """Godot script: scripts/bone_instance_service.gd
+    class_name: BoneInstanceService
+    extends: unknown
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/bone_instance_service.gd'
+    godot_class_name = 'BoneInstanceService'
+    godot_extends = ''
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def depends_on_BoneDatabase(self):
+        """Relationship: references class BoneDatabase."""
+        return BoneDatabase
+
+    def depends_on_BoneDefinition(self):
+        """Relationship: references class BoneDefinition."""
+        return BoneDefinition
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_EquipmentRulesService(self):
+        """Relationship: references class EquipmentRulesService."""
+        return EquipmentRulesService
+
+class BoneQualityService:
+    """Godot script: scripts/bone_quality_service.gd
+    class_name: BoneQualityService
+    extends: unknown
+    system: Inventory, equipment, and bones
+    """
+    source_file = 'scripts/bone_quality_service.gd'
+    godot_class_name = 'BoneQualityService'
+    godot_extends = ''
+    gameplay_system = 'Inventory, equipment, and bones'
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_ModularSkeletonRig(self):
+        """Relationship: references class ModularSkeletonRig."""
+        return ModularSkeletonRig
 
 class BoneRulesService:
     """Godot script: scripts/bone_rules_service.gd
@@ -532,6 +594,14 @@ class BoneRulesService:
     def depends_on_BoneDefinition(self):
         """Relationship: references class BoneDefinition."""
         return BoneDefinition
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_DropPickupRulesService(self):
         """Relationship: references class DropPickupRulesService."""
@@ -1270,6 +1340,10 @@ class Enemy:
         """Relationship: references class BallisticsService."""
         return BallisticsService
 
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -1351,6 +1425,10 @@ class EquipmentRulesService:
     def depends_on_BoneDefinition(self):
         """Relationship: references class BoneDefinition."""
         return BoneDefinition
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
 
     def depends_on_DropPickupRulesService(self):
         """Relationship: references class DropPickupRulesService."""
@@ -1981,6 +2059,26 @@ class Player:
         """GDScript function: get_equipment_build_summaries() -> Array"""
         pass
 
+    def gd_func_get_equipment_build_report(self):
+        """GDScript function: get_equipment_build_report(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_get_equipment_build_indices(self):
+        """GDScript function: get_equipment_build_indices() -> Array"""
+        pass
+
+    def gd_func_create_equipment_build(self):
+        """GDScript function: create_equipment_build() -> int"""
+        pass
+
+    def gd_func_delete_equipment_build(self):
+        """GDScript function: delete_equipment_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_rename_equipment_build(self):
+        """GDScript function: rename_equipment_build(index: int, new_name: String) -> Dictionary"""
+        pass
+
     def gd_func_take_player_damage(self):
         """GDScript function: take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void"""
         pass
@@ -2335,6 +2433,38 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: get_build_summaries() -> Array"""
         pass
 
+    def gd_func_matches_current_equipment(self):
+        """GDScript function: matches_current_equipment(snapshot: Dictionary) -> bool"""
+        pass
+
+    def gd_func_build_state_label(self):
+        """GDScript function: build_state_label(index: int) -> String"""
+        pass
+
+    def gd_func_get_build_report(self):
+        """GDScript function: get_build_report(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_build_display_name(self):
+        """GDScript function: build_display_name(index: int) -> String"""
+        pass
+
+    def gd_func__stats_for_state(self):
+        """GDScript function: _stats_for_state(state: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__player_base(self):
+        """GDScript function: _player_base(property: String, fallback: float) -> float"""
+        pass
+
+    def gd_func__quality_counts_for(self):
+        """GDScript function: _quality_counts_for(state: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__effects_for_state(self):
+        """GDScript function: _effects_for_state(state: Dictionary) -> Array"""
+        pass
+
     def gd_func__apply_validated_state(self):
         """GDScript function: _apply_validated_state(target_state: Dictionary) -> void"""
         pass
@@ -2351,6 +2481,22 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: _bone_counts(items: Array) -> Dictionary"""
         pass
 
+    def gd_func_resolve_build_snapshot(self):
+        """GDScript function: resolve_build_snapshot(raw_state: Dictionary, items: Variant = null) -> Dictionary"""
+        pass
+
+    def gd_func__with_current_head(self):
+        """GDScript function: _with_current_head(build_state: Dictionary, current_equipment: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__equipment_state_from_slots(self):
+        """GDScript function: _equipment_state_from_slots(slots: Dictionary) -> Dictionary"""
+        pass
+
+    def gd_func__resolve_build_to_instances(self):
+        """GDScript function: _resolve_build_to_instances(state: Dictionary) -> Dictionary"""
+        pass
+
     def gd_func__inventory_items(self):
         """GDScript function: _inventory_items() -> Array"""
         pass
@@ -2359,8 +2505,36 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: _load_builds() -> void"""
         pass
 
+    def gd_func__ensure_minimum_builds(self):
+        """GDScript function: _ensure_minimum_builds() -> void"""
+        pass
+
+    def gd_func__as_record(self):
+        """GDScript function: _as_record(raw: Dictionary, index: int) -> Dictionary"""
+        pass
+
     def gd_func__save_builds(self):
         """GDScript function: _save_builds() -> void"""
+        pass
+
+    def gd_func_build_indices(self):
+        """GDScript function: build_indices() -> Array"""
+        pass
+
+    def gd_func_create_build(self):
+        """GDScript function: create_build() -> int"""
+        pass
+
+    def gd_func_delete_build(self):
+        """GDScript function: delete_build(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_rename_build(self):
+        """GDScript function: rename_build(index: int, new_name: String) -> Dictionary"""
+        pass
+
+    def gd_func_build_slots(self):
+        """GDScript function: build_slots(index: int) -> Dictionary"""
         pass
 
     def gd_func__summary_for_state(self):
@@ -2374,6 +2548,14 @@ class PlayerEquipmentBuildsComponent:
     def gd_func__result(self):
         """GDScript function: _result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary"""
         pass
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -2577,6 +2759,10 @@ class PlayerInventoryComponent:
         """Uses GameEvents.inventory_changed."""
         pass
 
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -2656,8 +2842,36 @@ class PlayerInventoryUI:
         """GDScript function: get_equipped_bone_for_slot(slot: String) -> String"""
         pass
 
+    def gd_func_select_bone(self):
+        """GDScript function: select_bone(bone_id: String) -> void"""
+        pass
+
+    def gd_func__refresh_selection_visuals(self):
+        """GDScript function: _refresh_selection_visuals() -> void"""
+        pass
+
+    def gd_func_begin_bone_drag(self):
+        """GDScript function: begin_bone_drag(bone_id: String) -> void"""
+        pass
+
+    def gd_func_end_bone_drag(self):
+        """GDScript function: end_bone_drag() -> void"""
+        pass
+
+    def gd_func__slot_list_text(self):
+        """GDScript function: _slot_list_text(slots: Array[String]) -> String"""
+        pass
+
     def gd_func_show_bone_info(self):
         """GDScript function: show_bone_info(bone_id: String) -> void"""
+        pass
+
+    def gd_func__base_vs_effective_text(self):
+        """GDScript function: _base_vs_effective_text(bone_id: String) -> String"""
+        pass
+
+    def gd_func__format_number(self):
+        """GDScript function: _format_number(value: float) -> String"""
         pass
 
     def gd_func__bone_comparison_text(self):
@@ -2684,6 +2898,22 @@ class PlayerInventoryUI:
         """GDScript function: _build_inventory_tabs(parent: VBoxContainer) -> void"""
         pass
 
+    def gd_func__make_inventory_dropdown(self):
+        """GDScript function: _make_inventory_dropdown() -> OptionButton"""
+        pass
+
+    def gd_func__on_inventory_quality_selected(self):
+        """GDScript function: _on_inventory_quality_selected(index: int) -> void"""
+        pass
+
+    def gd_func__on_inventory_sort_selected(self):
+        """GDScript function: _on_inventory_sort_selected(index: int) -> void"""
+        pass
+
+    def gd_func__on_inventory_filter_selected(self):
+        """GDScript function: _on_inventory_filter_selected(index: int) -> void"""
+        pass
+
     def gd_func__add_inventory_tab(self):
         """GDScript function: _add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void"""
         pass
@@ -2708,6 +2938,10 @@ class PlayerInventoryUI:
         """GDScript function: _apply_inventory_responsive_layout() -> void"""
         pass
 
+    def gd_func__apply_builds_responsive_layout(self):
+        """GDScript function: _apply_builds_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void"""
+        pass
+
     def gd_func__apply_settings_responsive_layout(self):
         """GDScript function: _apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void"""
         pass
@@ -2728,12 +2962,56 @@ class PlayerInventoryUI:
         """GDScript function: _build_settings_panel() -> ScrollContainer"""
         pass
 
-    def gd_func__build_equipment_build_presets_panel(self):
-        """GDScript function: _build_equipment_build_presets_panel() -> Control"""
+    def gd_func__build_equipment_builds_tab(self):
+        """GDScript function: _build_equipment_builds_tab() -> ScrollContainer"""
         pass
 
-    def gd_func__build_equipment_build_row(self):
-        """GDScript function: _build_equipment_build_row(index: int) -> Control"""
+    def gd_func__build_builds_sidebar(self):
+        """GDScript function: _build_builds_sidebar() -> Control"""
+        pass
+
+    def gd_func__build_builds_detail_panel(self):
+        """GDScript function: _build_builds_detail_panel() -> Control"""
+        pass
+
+    def gd_func__make_build_slot_card(self):
+        """GDScript function: _make_build_slot_card(slot_id: String, title: String) -> Control"""
+        pass
+
+    def gd_func__build_detail_card(self):
+        """GDScript function: _build_detail_card(parent: HBoxContainer, heading_text: String) -> VBoxContainer"""
+        pass
+
+    def gd_func__build_equipment_table(self):
+        """GDScript function: _build_equipment_table() -> Control"""
+        pass
+
+    def gd_func__build_builds_action_row(self):
+        """GDScript function: _build_builds_action_row() -> Control"""
+        pass
+
+    def gd_func__style_badge(self):
+        """GDScript function: _style_badge(label: Label, text: String, base_color: Color) -> void"""
+        pass
+
+    def gd_func__build_build_preview(self):
+        """GDScript function: _build_build_preview(index: int) -> Control"""
+        pass
+
+    def gd_func__sync_all_build_previews(self):
+        """GDScript function: _sync_all_build_previews() -> void"""
+        pass
+
+    def gd_func__sync_build_preview(self):
+        """GDScript function: _sync_build_preview(index: int) -> void"""
+        pass
+
+    def gd_func__equip_bone_on_rig(self):
+        """GDScript function: _equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void"""
+        pass
+
+    def gd_func__raw_build_state(self):
+        """GDScript function: _raw_build_state(index: int) -> Dictionary"""
         pass
 
     def gd_func__make_build_preset_button(self):
@@ -2760,12 +3038,100 @@ class PlayerInventoryUI:
         """GDScript function: _on_build_preset_confirm_timeout(expected_key: String) -> void"""
         pass
 
+    def gd_func__confirm_button_for(self):
+        """GDScript function: _confirm_button_for(action: String) -> Button"""
+        pass
+
     def gd_func__disarm_build_preset_confirmation(self):
         """GDScript function: _disarm_build_preset_confirmation() -> void"""
         pass
 
-    def gd_func__refresh_build_preset_rows(self):
-        """GDScript function: _refresh_build_preset_rows() -> void"""
+    def gd_func__on_new_build_pressed(self):
+        """GDScript function: _on_new_build_pressed() -> void"""
+        pass
+
+    def gd_func__select_build(self):
+        """GDScript function: _select_build(index: int) -> void"""
+        pass
+
+    def gd_func__on_save_current_pressed(self):
+        """GDScript function: _on_save_current_pressed() -> void"""
+        pass
+
+    def gd_func__on_apply_pressed(self):
+        """GDScript function: _on_apply_pressed() -> void"""
+        pass
+
+    def gd_func__on_rename_pressed(self):
+        """GDScript function: _on_rename_pressed() -> void"""
+        pass
+
+    def gd_func__on_rename_submitted(self):
+        """GDScript function: _on_rename_submitted(new_name: String) -> void"""
+        pass
+
+    def gd_func__on_delete_pressed(self):
+        """GDScript function: _on_delete_pressed() -> void"""
+        pass
+
+    def gd_func__first_build_index(self):
+        """GDScript function: _first_build_index() -> int"""
+        pass
+
+    def gd_func__build_indices(self):
+        """GDScript function: _build_indices() -> Array"""
+        pass
+
+    def gd_func__build_name_for(self):
+        """GDScript function: _build_name_for(index: int) -> String"""
+        pass
+
+    def gd_func__build_report_for(self):
+        """GDScript function: _build_report_for(index: int) -> Dictionary"""
+        pass
+
+    def gd_func__refresh_builds_screen(self):
+        """GDScript function: _refresh_builds_screen() -> void"""
+        pass
+
+    def gd_func__make_build_sidebar_card(self):
+        """GDScript function: _make_build_sidebar_card(index: int) -> Control"""
+        pass
+
+    def gd_func__build_parts_available(self):
+        """GDScript function: _build_parts_available(state: String, slots: Dictionary, missing: int) -> int"""
+        pass
+
+    def gd_func__make_new_build_card(self):
+        """GDScript function: _make_new_build_card() -> Control"""
+        pass
+
+    def gd_func__build_state_color(self):
+        """GDScript function: _build_state_color(state: String) -> Color"""
+        pass
+
+    def gd_func__apply_build_report_to_detail(self):
+        """GDScript function: _apply_build_report_to_detail(report: Dictionary) -> void"""
+        pass
+
+    def gd_func__fill_slot_widgets(self):
+        """GDScript function: _fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void"""
+        pass
+
+    def gd_func__make_stat_row(self):
+        """GDScript function: _make_stat_row(stat_name: String, value: float, delta: float) -> Control"""
+        pass
+
+    def gd_func__make_composition_row(self):
+        """GDScript function: _make_composition_row(quality_id: String, count: int) -> Control"""
+        pass
+
+    def gd_func__make_dim_row(self):
+        """GDScript function: _make_dim_row(text: String) -> Control"""
+        pass
+
+    def gd_func__clear_children(self):
+        """GDScript function: _clear_children(node: Node) -> void"""
         pass
 
     def gd_func__set_build_preset_status(self):
@@ -2822,6 +3188,10 @@ class PlayerInventoryUI:
 
     def gd_func__build_paper_doll(self):
         """GDScript function: _build_paper_doll() -> Control"""
+        pass
+
+    def gd_func__paper_doll_slot_size(self):
+        """GDScript function: _paper_doll_slot_size(slot_id: String) -> Vector2"""
         pass
 
     def gd_func__place_slot(self):
@@ -2928,6 +3298,10 @@ class PlayerInventoryUI:
         """GDScript function: _bone_matches_inventory_category(bone_id: String) -> bool"""
         pass
 
+    def gd_func__bone_matches_quality_filter(self):
+        """GDScript function: _bone_matches_quality_filter(bone_id: String) -> bool"""
+        pass
+
     def gd_func__compare_inventory_items(self):
         """GDScript function: _compare_inventory_items(a: String, b: String) -> bool"""
         pass
@@ -2967,6 +3341,14 @@ class PlayerInventoryUI:
     def depends_on_InventoryEmptySlot(self):
         """Relationship: loads resource."""
         return InventoryEmptySlot
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -3118,6 +3500,10 @@ class ModularSkeletonRig:
         """GDScript function: _get_head_model_mesh() -> Mesh"""
         pass
 
+    def gd_func__apply_quality_visual(self):
+        """GDScript function: _apply_quality_visual(node: Node, bone_id: String) -> void"""
+        pass
+
     def gd_func_equip_bone(self):
         """GDScript function: equip_bone(bone_id: String, bone_def: Dictionary) -> void"""
         pass
@@ -3249,6 +3635,10 @@ class ModularSkeletonRig:
     def gd_func__positive_vector3(self):
         """GDScript function: _positive_vector3(value: Vector3, fallback: Vector3) -> Vector3"""
         pass
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -3894,6 +4284,14 @@ class TestingEnvironment:
         """GDScript function: _update_status() -> void"""
         pass
 
+    def gd_func__cycle_overlay_mode(self):
+        """GDScript function: _cycle_overlay_mode() -> void"""
+        pass
+
+    def gd_func__apply_overlay_mode(self):
+        """GDScript function: _apply_overlay_mode() -> void"""
+        pass
+
     def gd_func__cycle_validation_guide(self):
         """GDScript function: _cycle_validation_guide(direction: int) -> void"""
         pass
@@ -4088,6 +4486,14 @@ class BoneItemTile:
         """GDScript function: setup(id: String, player_ref: Node, quantity: int = 1) -> void"""
         pass
 
+    def gd_func__place_diamond(self):
+        """GDScript function: _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void"""
+        pass
+
+    def gd_func__gui_input(self):
+        """GDScript function: _gui_input(event: InputEvent) -> void"""
+        pass
+
     def gd_func__on_mouse_entered(self):
         """GDScript function: _on_mouse_entered() -> void"""
         pass
@@ -4098,6 +4504,14 @@ class BoneItemTile:
 
     def gd_func_refresh(self):
         """GDScript function: refresh() -> void"""
+        pass
+
+    def gd_func_set_selected(self):
+        """GDScript function: set_selected(value: bool) -> void"""
+        pass
+
+    def gd_func__repaint(self):
+        """GDScript function: _repaint() -> void"""
         pass
 
     def gd_func__get_drag_data(self):
@@ -4119,6 +4533,14 @@ class BoneItemTile:
     def gd_func__drop_data(self):
         """GDScript function: _drop_data(_at_position: Vector2, data: Variant) -> void"""
         pass
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -4143,6 +4565,14 @@ class BoneSlotWidget:
     godot_extends = 'Control'
     gameplay_system = 'Inventory, equipment, and bones'
 
+    def gd_func_resize(self):
+        """GDScript function: resize(target_size: Vector2) -> void"""
+        pass
+
+    def gd_func__place_diamond(self):
+        """GDScript function: _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void"""
+        pass
+
     def gd_func__on_mouse_entered(self):
         """GDScript function: _on_mouse_entered() -> void"""
         pass
@@ -4153,6 +4583,22 @@ class BoneSlotWidget:
 
     def gd_func_refresh(self):
         """GDScript function: refresh() -> void"""
+        pass
+
+    def gd_func__on_unequip_pressed(self):
+        """GDScript function: _on_unequip_pressed() -> void"""
+        pass
+
+    def gd_func_set_highlighted(self):
+        """GDScript function: set_highlighted(value: bool) -> void"""
+        pass
+
+    def gd_func_set_drag_state(self):
+        """GDScript function: set_drag_state(state: String) -> void"""
+        pass
+
+    def gd_func__repaint(self):
+        """GDScript function: _repaint() -> void"""
         pass
 
     def gd_func__get_drag_data(self):
@@ -4169,10 +4615,6 @@ class BoneSlotWidget:
 
     def gd_func__notification(self):
         """GDScript function: _notification(what: int) -> void"""
-        pass
-
-    def gd_func__set_frame_border(self):
-        """GDScript function: _set_frame_border(color: Color) -> void"""
         pass
 
     def gd_func__gui_input(self):
@@ -4194,6 +4636,10 @@ class BoneSlotWidget:
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
+
+    def depends_on_PlayerInventoryUI(self):
+        """Relationship: references class PlayerInventoryUI."""
+        return PlayerInventoryUI
 
 class InventoryEmptySlot:
     """Godot script: scripts/ui_inventory_empty_slot.gd

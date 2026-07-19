@@ -8,11 +8,15 @@ extends Resource
 # progress.
 
 const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
-const QUALITY_SCRAP := "chatarra"
-const QUALITY_FRAGILE := "fragil"
-const QUALITY_COMMON := "comun"
-const QUALITY_STRONG := "fuerte"
-const QUALITY_LEGENDARY := "legendario"
+# Canonical quality ids. The rules, multipliers and probabilities live in
+# BoneQualityService, which also maps the pre-rename Spanish ids
+# (chatarra/fragil/comun/fuerte/legendario) onto these by rank, so older
+# authored data keeps resolving to the same rung of the ladder.
+const QUALITY_SCRAP := BoneQualityService.QUALITY_FRAIL
+const QUALITY_FRAGILE := BoneQualityService.QUALITY_WORN
+const QUALITY_COMMON := BoneQualityService.QUALITY_NORMAL
+const QUALITY_STRONG := BoneQualityService.QUALITY_STRONG
+const QUALITY_LEGENDARY := BoneQualityService.QUALITY_PRISTINE
 const RARITY_COMMON := "comun"
 const RARITY_CORRUPT := "corrupto"
 const RARITY_CURSED := "maldito"

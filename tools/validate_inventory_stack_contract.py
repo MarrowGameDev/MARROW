@@ -115,7 +115,11 @@ def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
     required_tile_fragments = [
         "Inventory tiles represent carried copies.",
         "duplicate items can stay stackable",
-        "_label.text = BoneRulesService.display_name_with_slot(bone_id)",
+        # The card shows the abbreviated name so it cannot be cut off mid-word;
+        # the full display_name_with_slot has to stay reachable on the tile via
+        # the tooltip, which is what these two fragments together guarantee.
+        "_label.text = BoneRulesService.short_display_name(bone_id)",
+        "tooltip_text = BoneRulesService.display_name_with_slot(bone_id)",
     ]
     for fragment in required_tile_fragments:
         if fragment not in item_tile:

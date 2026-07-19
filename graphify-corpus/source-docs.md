@@ -326,12 +326,76 @@ canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 Calidad describe condicion o potencia de la pieza. No es rareza de loot.
 
-Ids canonicos:
-- `chatarra`
-- `fragil`
-- `comun`
-- `fuerte`
-- `legendario`
+La calidad pertenece a la PIEZA INDIVIDUAL, no al tipo de hueso. Se sortea una
+sola vez, cuando la pieza se crea (drop, recompensa, pieza nueva), y no se
+vuelve a sortear al recoger, equipar, abrir inventario, aplicar builds ni
+refrescar el preview.
+
+Ids canonicos, multiplicador y probabilidad (fuente de verdad:
+`scripts/bone_quality_service.gd`, tabla `QUALITY_TABLE`):
+
+| id | display | multiplicador | probabilidad | rank |
+| --- | --- | --- | --- | --- |
+| `frail` | Frail | 0.85 | 2.5 % | 0 |
+| `worn` | Worn | 0.925 | 12.5 % | 1 |
+| `normal` | Normal | 1.00 | 70 % | 2 |
+| `strong` | Strong | 1.075 | 12.5 % | 3 |
+| `pristine` | Pristine | 1.15 | 2.5 % | 4 |
+
+La columna de probabilidad suma exactamente 100. `tools/validate_bone_quality.py`
+lo verifica sin abrir Godot.
+
+Ids previos al rename (espanol) siguen aceptados como alias legacy y mapean por
+rank: `chatarra`->`frail`, `fragil`->`worn`, `comun`->`normal`,
+`fuerte`->`strong`, `legendario`->`pristine`. Cualquier valor desconocido o
+vacio normaliza a `normal`; nunca se sortea para datos legacy.
+
+Formula (en `BoneRulesService.adjusted_player_bonus_for`):
+
+    stat efectivo = stat base * multiplicador de calidad
+
+La calidad solo escala stats numericos reales (`move_speed`, `attack_range`,
+`attack_damage`, `max_health`). No toca slot, compatibilidad, ids, tags ni
+ningun otro valor categorico. Calidad, rareza, mutacion y durabilidad siguen
+siendo campos separados con vocabularios separados.
+
+## Identidad De Pieza (instancias)
+
+`scripts/bone_instance_service.gd` da identidad por pieza:
+
+- `bone_id` nombra un TIPO (`arm_bone`).
+- `instance_id` nombra una PIEZA concreta (`bone#7`) y es la fuente de verdad
+  de su calidad.
+- El instance_id no codifica nada: nunca `arm_bone_strong`. Identidad,
+  definicion y calidad quedan separadas.
+- El multiplicador no se guarda en la instancia; solo `quality_id`. El numero
+  sale de la tabla, asi que retunear la tabla retunea todas las piezas
+  existentes.
+- Ruta de compatibilidad explicita: un String que no es instancia se resuelve a
+  su calidad authored (o `normal` si no tiene) y jamas se sortea, para que los
+  Strings existentes no cambien de significado en silencio.
+
+La resolucion vive en un solo punto por capa: `BoneDatabase._type_id`,
+`BoneRulesService.definition_for` y
+`EquipmentRulesService.compatible_slots_for_bone` /
+`generated_limb_definition_for`. Por eso cualquier API que aceptaba un
+`bone_id` acepta ahora un `instance_id` sin cambios en el llamador.
+
+Los builds guardan el `instance_id` exacto por slot, pero REQUIEREN solo el
+tipo. `resolve_build_snapshot` resuelve en dos pasadas: primero la instancia
+exacta guardada si aun la llevas (por eso un build recien guardado coincide con
+el equipo actual sin deltas fantasma), y si esa pieza ya no esta, la MEJOR
+calidad disponible del mismo `bone_id` (`frail < worn < normal < strong <
+pristine`), marcando el slot como `substituted` -- la sustitucion se muestra,
+nunca es silenciosa. Exigir la instancia exacta dejaba todo build en "Missing
+parts" para siempre, porque el inventario no persiste entre sesiones. Si un
+tipo ocupa dos slots se toman dos piezas distintas. Solo cuenta como faltante
+un tipo del que no llevas ninguna copia; en ese caso el build no muestra stats,
+no puede aplicarse y jamas sustituye por otro tipo.
+
+Los stacks agrupan por `bone_id + quality_id + mutacion`
+(`BoneInstanceService.stack_key_for`), no solo por `bone_id`: apilar dos brazos
+de calidad distinta ocultaria que tienen stats efectivos distintos.
 
 Campos:
 - `quality`
@@ -3028,6 +3092,109 @@ render):
    el color verde/rojo del borde; soltar fuera de cualquier slot y
    confirmar que el borde vuelve a su color normal.
 
+- 2026-07-18 (correccion responsive): `_apply_paper_doll_responsive_layout`
+  escalaba cada `BoneSlotWidget` dos veces. `BoneSlotWidget.setup()` posiciona
+  sus hijos en offsets absolutos derivados del tamano 88x88 con el que se
+  construye y no se re-maqueta al cambiar de tamano, asi que `scale` es lo que
+  realmente redimensiona el slot. Al asignar ademas `size = 88 * doll_scale`,
+  el rect de *input* del control quedaba en `88 * doll_scale^2` mientras el
+  visual quedaba en `88 * doll_scale`. Como `doll_scale` esta clampeado a
+  0.55-1.75 y casi nunca vale exactamente 1.0, los blancos de drop de slots
+  vecinos se solapaban: a 1920x1080 y 2560x1080 los rects de brazo y pierna
+  se intersectaban, de modo que arrastrar un hueso podia equiparlo en el slot
+  equivocado. Ahora el rect del control queda en el tamano base (88x88) y solo
+  `scale` lo redimensiona.
+
+  Verificado con `tools/headless_inventory_check.gd` (Godot 4.7 headless), que
+  instancia el jugador real, recorre las 9 pestanas en 1280x720, 1366x768,
+  1920x1080, 2560x1080 y 1024x600, y afirma que el rect de input de cada slot
+  coincide con su visual y que ningun par de slots se solapa. El chequeo se
+  probo contra el codigo con el bug (falla, reportando los solapamientos
+  brazo/pierna) y contra el corregido (pasa).
+
+Pendiente de confirmacion visual humana: que el paper doll se vea centrado y
+sin recortes en cada resolucion (el chequeo headless valida geometria, no
+render).
+
+- 2026-07-18 (dimensiones y centrado): correcciones sobre lo reportado
+  visualmente (el paper doll no se veia centrado y los textos se pisaban).
+  Cuatro causas reales, todas verificadas por captura y no solo por lectura:
+
+  1. `BoneSlotWidget` y `BoneItemTile` maquetaban a offsets absolutos
+     derivados de un tamano de diseno fijo (82x80 y 96x86) y no se
+     re-maquetaban nunca. Ahora `BoneSlotWidget.resize()` re-posiciona todos
+     sus hijos para el tamano pedido, y el paper doll lo llama en cada pasada
+     responsive en lugar de usar `scale`. Esto elimina de raiz el doble
+     escalado corregido el 2026-07-18 anterior.
+  2. Los labels de nombre tenian `autowrap` pero altura fija. Godot no
+     recorta labels por defecto, asi que un nombre de dos lineas ("Enemy Left
+     Arm Bone") se dibujaba encima del caption del slot de abajo. Ahora las
+     bandas de texto se reservan por separado y los labels usan
+     `max_lines_visible` + `OVERRUN_TRIM_ELLIPSIS` + `clip_text`.
+  3. El doll vivia en un `MarginContainer` que lo estiraba a todo el panel
+     (medido: >1000 px de ancho contra una figura de ~500 px) mientras sus
+     hijos se posicionaban desde el origen del doll, dejando toda la holgura
+     a la derecha y abajo. Con `SIZE_SHRINK_CENTER` el contenedor lo
+     dimensiona a su minimo y lo centra por layout.
+  4. La pestana Builds no tenia layout responsive: previews de tamano fijo
+     que ademas absorbian la altura sobrante del card (custom_minimum_size es
+     solo un piso), empujando el resumen y los botones Save/Apply fuera del
+     panel a 1280x720. Ahora hay `_apply_builds_responsive_layout`, los
+     previews estan fijados con `SHRINK_CENTER`, el resumen esta limitado a 3
+     lineas con altura reservada, y los cards son mas anchos (hasta 340 px) y
+     quedan centrados verticalmente.
+
+  Ademas la grilla rellena `inventory_visible_rows` filas en vez de 4 fijas,
+  que era lo que dejaba una banda vacia bajo la ultima fila a 1080p.
+
+  Verificacion: `tools/headless_inventory_check.gd` (geometria: rect de input
+  == visual, sin solapes entre slots, bandas de texto disjuntas, doll centrado
+  dentro de su panel, en 1280x720 / 1366x768 / 1920x1080 / 2560x1080 /
+  1024x600) y `tools/screenshot_inventory.gd`, que renderiza la escena real y
+  guarda PNGs de Inventario y Builds a 1280x720 y 1920x1080 para inspeccion
+  visual. Este segundo tool existe porque la pasada anterior aprobo la
+  geometria mientras la pantalla seguia viendose mal: revisar solo numeros no
+  alcanzaba. Correr sin `--headless` (headless no tiene renderer).
+
+Pendiente: no se ejercito drag and drop real (equipar arrastrando) ni la
+navegacion con teclado; eso sigue requiriendo una sesion manual.
+
+- 2026-07-18 (centrado de extremidades): brazos y piernas subieron 48 unidades
+  de diseno (arms y 190 -> 142, legs y 286 -> 238) para que el bloque
+  brazos+piernas quede centrado con el frame del preview. El frame va de y 92 a
+  y 376 (centro 234); antes el bloque iba de 190 a 374 (centro 282), 48 abajo.
+  Ahora va de 142 a 326, centro 234 exacto. Cabeza y torso no se movieron.
+
+  De paso la geometria del paper doll pasa a constantes `PAPER_DOLL_*` con una
+  sola definicion. Antes las posiciones estaban escritas dos veces
+  (`_build_paper_doll` y la pasada responsive) y que esas dos copias se
+  desincronizaran es literalmente el bug que ya se documento arriba; ahora no
+  puede repetirse.
+
+  `tools/headless_inventory_check.gd` afirma el centrado: compara el centro
+  vertical del bloque brazos+piernas contra el centro del frame del preview en
+  las cinco resoluciones. Probado contra las posiciones viejas (falla en las 5,
+  desviacion de 30-61 px segun resolucion) y contra las nuevas (pasa).
+
+- 2026-07-18 (calidad en el ciclo de vida): la instancia conserva
+  `bone_id` + `quality_id` en inventario, equipar/desequipar, stacks, builds,
+  rollback y preview. `unequip_slot` solo borra el mapeo de slot, asi que la
+  pieza sigue en `bone_inventory` y vuelve siendo la misma instancia.
+  `PlayerStatsComponent.calculate` recibe el equipment state con instance_ids,
+  de modo que ya opera sobre stats efectivos.
+
+  Stack key = `bone_id | quality_id | mutacion | durabilidad`. La durabilidad
+  hoy es authored por tipo (no hay desgaste por pieza), pero entra en la clave
+  ahora para que agregar desgaste luego no pueda fusionar en silencio una
+  pieza intacta con una agrietada.
+
+  UI: filtro de calidad (All + las 5) y orden (Default / Quality: Lowest first
+  / Quality: Highest first), ambos combinables con el filtro corporal. Cada
+  tarjeta muestra la calidad como texto y un acento del color del tier. El
+  panel de detalles muestra nombre, slot, calidad, multiplicador,
+  `base -> efectivo` y la comparacion contra la pieza equipada, con efectivos
+  en ambos lados.
+
 ## docs/manual_gameplay_qa_checklist.md
 
 # Manual Gameplay QA Checklist
@@ -4608,7 +4775,7 @@ tocar `main` directamente.
 | 2026-07-15 | `test/inventory-stack-contract` | Tools / Inventario | Validar que el inventario oculte solo las copias equipadas y conserve duplicados visibles. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_stack_contract.py` OK. | Probar abrir inventario, recoger duplicados y equipar/desequipar en juego. |
 | 2026-07-15 | `feature/inventory-stack-count` | UI / Inventario | Mostrar cantidades `xN` agrupando duplicados visibles sin cambiar payload de drag and drop. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_stack_count.py` OK. | Confirmar layout responsive y comportamiento drag/drop en runtime. |
 | 2026-07-15 | `integration/marrow-validation-cascade` | Integracion | Juntar lotes de validacion en cascada y limitar Graphify Actions a `main` y `develop`. | Integrado en `main`; remoto de ramas de trabajo ya podado. | PR #3; `45be471` incluido en `origin/main`; Graphify limitado por workflow. | Monitorear checks de GitHub y ejecutar QA manual post-merge. |
-| 2026-07-15 | `chore/repo-stability-and-graphify` | Repo / CI / Docs | Definir politica de Graphify, line endings y fuente auditable del roadmap 1-165. | Listo para revision; validado estaticamente. | `.gitattributes`, `docs/repo_stability_and_graphify.md`, `docs/roadmap_1_165.md`; rama sincronizada con `origin/main`. | Abrir PR draft o entregar enlace manual; monitorear que Graphify solo regenere en `main`/`develop`. |
+| 2026-07-15 | `chore/repo-stability-and-graphify` | Repo / CI / Docs | Definir politica de Graphify, line endings y fuente auditable del roadmap 1-165. | Integrado en `develop`; validado estaticamente. | `.gitattributes`, `docs/repo_stability_and_graphify.md`, `docs/roadmap_1_165.md`; merge a `develop`. | Abrir PR `develop` hacia `main` solo despues de validar la cascada completa. |
 | 2026-07-16 | `chore/repo-stability-and-graphify` | Repo / CI | Cerrar el pendiente de `.gitignore` para el output anidado accidental de Graphify. | Integrado en `develop`. | `.gitignore` actualizado; verificado que 0 archivos requerian renormalizacion (`git ls-files --eol`). | Ninguno. |
 | 2026-07-16 | `test/p0-runtime-validation-suite` | Tools / QA | Convertir la guia P0 en un flujo de registro PASS/FAIL/observado/evidencia. | Integrado en `develop`. | Teclas O/P/F en `testing_environment.gd`; log en `user://p0_validation_log.txt`; verificado headless (Godot 4.7, escena real corre 60 frames sin error tras warmup de cache de clases). | Ejecucion manual interactiva de las teclas O/P/F (headless no simula input). |
 | 2026-07-16 | `feat/bone-stats-quality-and-weight` | Datos / Stats | Corregir orden de redondeo, exponer claves sin consumidor, documentar unidades. | Integrado en `develop`. | Fix de `aggregate_player_bonuses` (sumar floats, redondear una vez); `get_inventory_stats_snapshot` expone weight/quality; verificado headless con datos reales de hueso. | Ninguno. |

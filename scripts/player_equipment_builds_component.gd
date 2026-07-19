@@ -3,6 +3,7 @@ extends Node
 
 const BUILD_SETTINGS_PATH := "user://equipment_builds.cfg"
 const BUILD_SECTION := "builds"
+const INSTANCE_SECTION := "instances"
 const BUILD_SLOT_COUNT := 3
 
 const APPLY_ORDER := [
@@ -32,9 +33,11 @@ func save_current_build(index: int) -> Dictionary:
 		return _result(false, "Equipment is not ready.")
 
 	var state := _sanitize_build_state(equipment_component.get_equipment_state())
-	builds[index] = state
+	var record: Dictionary = builds.get(index, {"name": "Build " + str(index)})
+	record["slots"] = state
+	builds[index] = record
 	_save_builds()
-	return _result(true, "Saved build " + str(index) + ".", state)
+	return _result(true, "Saved " + build_display_name(index) + ".", state)
 
 
 func apply_build(index: int) -> Dictionary:
@@ -45,19 +48,25 @@ func apply_build(index: int) -> Dictionary:
 	if not builds.has(index):
 		return _result(false, "Build " + str(index) + " is empty.")
 
-	var validation := validate_build_state(builds[index], _inventory_items())
+	var validation := validate_build_state(build_slots(index), _inventory_items())
 	if not bool(validation.get("ok", false)):
 		return validation
 
 	var target_state: Dictionary = validation.get("state", {})
+	# Resolve to the exact saved pieces. An incomplete result means something is
+	# no longer carried, and a build must never apply partially.
+	var resolved_state := _resolve_build_to_instances(target_state)
+	if resolved_state.size() != target_state.size():
+		return _result(false, "Missing carried pieces for build " + str(index) + ".", target_state)
+
 	# Snapshot before mutating anything, so a failed apply can be rolled
 	# back to exactly what was equipped a moment ago.
 	var previous_state := equipment_component.get_equipment_state()
 
-	_apply_validated_state(target_state)
+	_apply_validated_state(resolved_state)
 
-	if _matches_equipment_state(target_state):
-		return _result(true, "Applied build " + str(index) + ".", target_state)
+	if _matches_equipment_state(resolved_state):
+		return _result(true, "Applied build " + str(index) + ".", resolved_state)
 
 	# Apply did not fully take (e.g. a late equip rejection not caught by
 	# pre-validation). Restore the pre-apply state instead of leaving the
@@ -81,12 +90,18 @@ func validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dict
 	if owner_player != null and owner_player.has_method("is_head_detached_from_torso") and bool(owner_player.call("is_head_detached_from_torso")):
 		return _result(false, "Return to your detached torso before applying builds.", state)
 
-	var required_counts := _bone_counts(state.values())
-	var inventory_counts := _bone_counts(inventory_items)
-
-	for bone_id in required_counts:
-		if int(required_counts[bone_id]) > int(inventory_counts.get(bone_id, 0)):
-			return _result(false, "Missing carried copies for " + BoneRulesService.display_name_with_slot(str(bone_id)) + ".", state)
+	# A build requires each saved piece's TYPE, not its exact instance or
+	# quality: resolve_build_snapshot prefers the exact saved piece and falls
+	# back to the best-quality carried copy of the same bone. Only a type with
+	# no carried copy at all counts as missing.
+	var availability := resolve_build_snapshot(state, inventory_items)
+	if int(availability["missing_count"]) > 0:
+		var missing: Array[String] = []
+		for slot_key in (availability["slots"] as Dictionary):
+			var entry: Dictionary = (availability["slots"] as Dictionary)[slot_key]
+			if not bool(entry.get("found", false)):
+				missing.append(BoneRulesService.display_name_with_slot(str(entry.get("instance_id", ""))))
+		return _result(false, "Missing %d piece(s): %s" % [missing.size(), ", ".join(missing)], state)
 
 	for slot in state:
 		var slot_id := str(slot)
@@ -111,14 +126,195 @@ func validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dict
 
 func get_build_summaries() -> Array:
 	var summaries: Array = []
-	for index in range(1, BUILD_SLOT_COUNT + 1):
-		var state: Dictionary = builds.get(index, {})
+	for index in build_indices():
+		var state: Dictionary = build_slots(index)
 		summaries.append({
 			"index": index,
 			"is_empty": state.is_empty(),
 			"summary": _summary_for_state(state),
 		})
 	return summaries
+
+
+# Floats that differ by less than this are the same number. Centralised so the
+# panel cannot invent a "+0.00" delta out of accumulated decimal error.
+const STAT_EPSILON := 0.005
+
+const STATE_EMPTY := "Empty"
+const STATE_SAVED := "Saved"
+const STATE_EQUIPPED := "Currently Equipped"
+const STATE_MISSING := "Missing parts"
+
+
+# A build is Currently Equipped only when every slot it names holds the exact
+# same INSTANCE that is worn right now, and the worn set has nothing extra.
+# Comparing by bone_id would call a Frail arm and a Pristine arm the same
+# loadout even though their effective stats differ.
+func matches_current_equipment(snapshot: Dictionary) -> bool:
+	if equipment_component == null or bool(snapshot.get("is_empty", true)):
+		return false
+	if int(snapshot.get("missing_count", 0)) > 0:
+		return false
+
+	var current := equipment_component.get_equipment_state()
+	var build_state: Dictionary = snapshot.get("equipment_state", {})
+	for slot_id in build_state:
+		if str(current.get(slot_id, "")) != str(build_state[slot_id]):
+			return false
+	# Anything worn beyond what the build names means the build is not what is
+	# currently on the player.
+	for slot_id in current:
+		var worn := str(current[slot_id])
+		if worn == "" or str(slot_id) == EquipmentRulesService.SLOT_HEAD:
+			continue
+		if not build_state.has(slot_id):
+			return false
+	return true
+
+
+func build_state_label(index: int) -> String:
+	if not builds.has(index):
+		return STATE_EMPTY
+	var snapshot := resolve_build_snapshot(build_slots(index))
+	if bool(snapshot["is_empty"]):
+		return STATE_EMPTY
+	if int(snapshot["missing_count"]) > 0:
+		return STATE_MISSING
+	if matches_current_equipment(snapshot):
+		return STATE_EQUIPPED
+	return STATE_SAVED
+
+
+func get_build_report(index: int) -> Dictionary:
+	var report := {
+		"ok": false,
+		"name": build_display_name(index),
+		"state": STATE_EMPTY,
+		"slots": {},
+		"stats": {},
+		"quality_counts": {},
+		"effects": [],
+		"comparison": {},
+		"missing_count": 0,
+		"matches_current": false,
+		"message": "Empty",
+	}
+	if not _valid_index(index) or not builds.has(index) or equipment_component == null:
+		return report
+
+	# One snapshot, consumed by every field below: the piece table, the stats,
+	# the composition, the effects and the match state all describe the SAME
+	# resolved pieces.
+	var snapshot := resolve_build_snapshot(build_slots(index))
+	report["slots"] = snapshot["slots"]
+	report["missing_count"] = int(snapshot["missing_count"])
+	if bool(snapshot["is_empty"]):
+		return report
+
+	# Composition describes the SAVED build: a piece that is temporarily
+	# missing still counts here (availability is reported separately), so the
+	# breakdown does not shrink just because an instance is mislaid.
+	var saved_counts: Dictionary = {}
+	for slot_key in (snapshot["slots"] as Dictionary):
+		var slot_quality := str(((snapshot["slots"] as Dictionary)[slot_key] as Dictionary).get("quality_id", ""))
+		saved_counts[slot_quality] = int(saved_counts.get(slot_quality, 0)) + 1
+	report["quality_counts"] = saved_counts
+
+	if int(snapshot["missing_count"]) > 0:
+		report["state"] = STATE_MISSING
+		report["message"] = "%d piece(s) no longer carried." % int(snapshot["missing_count"])
+		return report
+
+	var build_state: Dictionary = snapshot["equipment_state"]
+	var matches := matches_current_equipment(snapshot)
+	report["matches_current"] = matches
+	report["state"] = STATE_EQUIPPED if matches else STATE_SAVED
+	report["message"] = "Matches current equipment" if matches else ""
+
+	# Both sides go through the same central stat function, so effective is
+	# always compared against effective -- and both sides must describe the
+	# same body. A build never stores the head (it is the fixed core that
+	# builds cannot replace), but the worn state always has one, so comparing
+	# them raw reported the head's weight as a permanent phantom delta on a
+	# build that was otherwise identical to the current gear. Applying a build
+	# leaves the head in place, so the build's stats include it too.
+	var current_equipment := equipment_component.get_equipment_state()
+	var build_stats := _stats_for_state(_with_current_head(build_state, current_equipment))
+	var current_stats := _stats_for_state(current_equipment)
+	var comparison: Dictionary = {}
+	for key in build_stats:
+		var delta: float = float(build_stats[key]) - float(current_stats.get(key, 0.0))
+		# Anything inside the tolerance is not a difference. A build that is
+		# currently equipped must never report one.
+		comparison[key] = 0.0 if absf(delta) < STAT_EPSILON else delta
+
+	report["ok"] = true
+	report["stats"] = build_stats
+	report["current_stats"] = current_stats
+	report["comparison"] = comparison
+	report["effects"] = _effects_for_state(build_state)
+	return report
+
+
+# Builds carry no user-entered name: there is no text-entry control anywhere in
+# this panel, and _sanitize_build_state would drop a non-slot key anyway. This
+# is the single place a rename would hook into once that control exists.
+func build_display_name(index: int) -> String:
+	var record: Dictionary = builds.get(index, {})
+	return str(record.get("name", "Build " + str(index)))
+
+
+func _stats_for_state(state: Dictionary) -> Dictionary:
+	var stats: Dictionary = BoneRulesService.player_stats_with_equipment(
+		_player_base("base_move_speed", 0.0),
+		_player_base("base_attack_range", 0.0),
+		int(_player_base("base_attack_damage", 0.0)),
+		int(_player_base("max_health", 1.0)),
+		state
+	)
+	return {
+		"health": float(stats.get("max_health", 0)),
+		"damage": float(stats.get("attack_damage", 0)),
+		"speed": float(stats.get("move_speed", 0.0)),
+		"reach": float(stats.get("attack_range", 0.0)),
+		"weight": float(stats.get("equipment_weight", 0.0)),
+	}
+
+
+func _player_base(property: String, fallback: float) -> float:
+	if owner_player == null:
+		return fallback
+	var value: Variant = owner_player.get(property)
+	if value == null:
+		return fallback
+	return float(value)
+
+
+func _quality_counts_for(state: Dictionary) -> Dictionary:
+	var counts: Dictionary = {}
+	for slot_id in state:
+		var piece := str(state[slot_id])
+		if piece == "":
+			continue
+		var quality_id := BoneInstanceService.quality_id_of(piece)
+		counts[quality_id] = int(counts.get(quality_id, 0)) + 1
+	return counts
+
+
+# Reads the EXISTING synergy summary rather than inventing a second set system.
+# These are groupings the build would activate; they are descriptive only --
+# no automatic stat bonus is wired to them yet (see docs/equipment_flow.md).
+func _effects_for_state(state: Dictionary) -> Array:
+	var summary: Dictionary = BoneRulesService.equipment_synergy_summary(state)
+	var effects: Array = []
+	var set_names: Dictionary = summary.get("set_names", {})
+	var set_counts: Dictionary = summary.get("set_counts", {})
+	for set_id in summary.get("active_set_ids", []):
+		var label := str(set_names.get(set_id, set_id))
+		effects.append("%s %d-piece" % [label, int(set_counts.get(set_id, 0))])
+	for synergy_id in summary.get("active_synergy_ids", []):
+		effects.append(str(synergy_id).capitalize())
+	return effects
 
 
 func _apply_validated_state(target_state: Dictionary) -> void:
@@ -157,18 +353,156 @@ func _sanitize_build_state(raw_state: Dictionary) -> Dictionary:
 			continue
 		if slot_id == EquipmentRulesService.SLOT_HEAD:
 			continue
+		# Builds remember the EXACT piece per slot (its instance_id), not just
+		# its type. Storing only the type made a freshly saved build fail to
+		# match the gear it was saved from: re-resolving picked the best-quality
+		# copy rather than the worn one, so the panel showed phantom deltas like
+		# "Speed +0.32" against equipment that had not changed. Identity is also
+		# what lets a missing piece be reported instead of silently swapped for
+		# a different-quality copy of the same bone.
 		state[slot_id] = bone_id
 	return state
 
 
+# Counted by TYPE, so any carried copy satisfies a build's requirement
+# regardless of its quality.
 func _bone_counts(items: Array) -> Dictionary:
 	var counts: Dictionary = {}
 	for item in items:
-		var bone_id := str(item)
+		var bone_id := BoneInstanceService.bone_id_of(str(item))
 		if bone_id == "":
 			continue
 		counts[bone_id] = int(counts.get(bone_id, 0)) + 1
 	return counts
+
+
+# THE single resolution point for a build. Everything that describes a build --
+# the piece table, the stats, the composition, the effects, the preview and the
+# match state -- must consume this, so no two widgets can disagree about what
+# the build contains.
+#
+# Resolution is by EXACT instance: the piece a build was saved with is the
+# piece it refers to. A piece that is no longer carried is reported missing
+# rather than swapped for another copy of the same bone, because a different
+# copy can carry a different quality and therefore different effective stats.
+#
+# Returns per slot:
+#   {"instance_id", "bone_id", "quality_id", "found": bool}
+func resolve_build_snapshot(raw_state: Dictionary, items: Variant = null) -> Dictionary:
+	var state := _sanitize_build_state(raw_state)
+	var source: Array = items if items is Array else _inventory_items()
+	var carried: Dictionary = {}
+	for item in source:
+		carried[str(item)] = true
+
+	# Pass 1: exact saved instances that are still carried keep their claim,
+	# so a freshly saved build always resolves to the very pieces it was
+	# saved from (no phantom deltas).
+	var claimed: Dictionary = {}
+	var exact: Dictionary = {}
+	for slot_id in APPLY_ORDER:
+		var piece := str(state.get(slot_id, ""))
+		if piece != "" and carried.has(piece) and not claimed.has(piece):
+			exact[slot_id] = piece
+			claimed[piece] = true
+
+	# Pass 2: a slot whose exact piece is gone takes the best-quality carried
+	# copy of the SAME TYPE instead (frail < worn < normal < strong <
+	# pristine). Only the piece TYPE is a build's requirement -- quality is
+	# not -- because the inventory does not persist across sessions, so
+	# demanding the exact instance left every build permanently unappliable.
+	# The substitution is surfaced per slot ("substituted"), never silent.
+	var slots: Dictionary = {}
+	var missing := 0
+	for slot_id in APPLY_ORDER:
+		var piece := str(state.get(slot_id, ""))
+		if piece == "":
+			continue
+		if exact.has(slot_id):
+			slots[slot_id] = {
+				"instance_id": piece,
+				"saved_instance_id": piece,
+				"bone_id": BoneInstanceService.bone_id_of(piece),
+				"quality_id": BoneInstanceService.quality_id_of(piece),
+				"found": true,
+				"substituted": false,
+			}
+			continue
+
+		var wanted_type := BoneInstanceService.bone_id_of(piece)
+		var substitute := ""
+		var best_rank := -1
+		if wanted_type != "":
+			for item in source:
+				var candidate := str(item)
+				if claimed.has(candidate):
+					continue
+				if BoneInstanceService.bone_id_of(candidate) != wanted_type:
+					continue
+				var rank := BoneQualityService.rank_for(BoneInstanceService.quality_id_of(candidate))
+				if rank > best_rank:
+					best_rank = rank
+					substitute = candidate
+
+		if substitute == "":
+			missing += 1
+			slots[slot_id] = {
+				"instance_id": piece,
+				"saved_instance_id": piece,
+				"bone_id": wanted_type,
+				"quality_id": BoneInstanceService.quality_id_of(piece),
+				"found": false,
+				"substituted": false,
+			}
+		else:
+			claimed[substitute] = true
+			slots[slot_id] = {
+				"instance_id": substitute,
+				"saved_instance_id": piece,
+				"bone_id": wanted_type,
+				"quality_id": BoneInstanceService.quality_id_of(substitute),
+				"found": true,
+				"substituted": true,
+			}
+
+	return {
+		"slots": slots,
+		"missing_count": missing,
+		"is_empty": slots.is_empty(),
+		# Only the pieces that actually resolved, in the shape the stat and
+		# synergy services expect (slot -> instance id).
+		"equipment_state": _equipment_state_from_slots(slots),
+	}
+
+
+# The head is the fixed core: builds never store it and applying one never
+# changes it, so any stat comparison has to credit both sides with the head
+# that is actually worn.
+func _with_current_head(build_state: Dictionary, current_equipment: Dictionary) -> Dictionary:
+	var combined := build_state.duplicate()
+	var head := str(current_equipment.get(EquipmentRulesService.SLOT_HEAD, ""))
+	if head != "":
+		combined[EquipmentRulesService.SLOT_HEAD] = head
+	return combined
+
+
+func _equipment_state_from_slots(slots: Dictionary) -> Dictionary:
+	var state: Dictionary = {}
+	for slot_id in slots:
+		var entry: Dictionary = slots[slot_id]
+		if bool(entry.get("found", false)):
+			state[slot_id] = str(entry["instance_id"])
+	return state
+
+
+# Kept as the apply path's view of the same snapshot: the exact pieces to equip,
+# or an incomplete dictionary when something is missing (which apply_build
+# treats as a refusal rather than a partial application).
+func _resolve_build_to_instances(state: Dictionary) -> Dictionary:
+	var snapshot := resolve_build_snapshot(state)
+	if int(snapshot["missing_count"]) > 0:
+		return {}
+	return snapshot["equipment_state"]
 
 
 func _inventory_items() -> Array:
@@ -177,22 +511,110 @@ func _inventory_items() -> Array:
 	return []
 
 
+# A build record is {"name": String, "slots": {slot_id: instance_id}}. Files
+# written before names existed hold a bare slot dictionary, so they are read
+# through _as_record() and given a default name instead of being discarded.
 func _load_builds() -> void:
 	builds.clear()
 	var config := ConfigFile.new()
 	if config.load(BUILD_SETTINGS_PATH) != OK:
+		_ensure_minimum_builds()
 		return
-	for index in range(1, BUILD_SLOT_COUNT + 1):
-		var value: Variant = config.get_value(BUILD_SECTION, str(index), {})
+	# Restore the instance registry FIRST. Builds reference pieces by
+	# instance_id, and those ids are minted per session: without restoring the
+	# registry, a build saved in an earlier run would resolve its ids against
+	# whatever pieces happen to hold those ids now -- silently pointing at the
+	# wrong bone, which is exactly what instance-exact builds exist to prevent.
+	if config.has_section_key(INSTANCE_SECTION, "registry"):
+		var registry: Variant = config.get_value(INSTANCE_SECTION, "registry", {})
+		if typeof(registry) == TYPE_DICTIONARY:
+			BoneInstanceService.restore(registry as Dictionary)
+
+	for key in config.get_section_keys(BUILD_SECTION):
+		var index := int(str(key))
+		if index <= 0:
+			continue
+		var value: Variant = config.get_value(BUILD_SECTION, str(key), {})
 		if typeof(value) == TYPE_DICTIONARY:
-			builds[index] = _sanitize_build_state(value as Dictionary)
+			builds[index] = _as_record(value as Dictionary, index)
+	_ensure_minimum_builds()
+
+
+# The panel always shows at least the original three slots, so an empty save
+# file still offers somewhere to store a build.
+func _ensure_minimum_builds() -> void:
+	for index in range(1, BUILD_SLOT_COUNT + 1):
+		if not builds.has(index):
+			builds[index] = {"name": "Build " + str(index), "slots": {}}
+
+
+func _as_record(raw: Dictionary, index: int) -> Dictionary:
+	if raw.has("slots"):
+		return {
+			"name": str(raw.get("name", "Build " + str(index))),
+			"slots": _sanitize_build_state(raw.get("slots", {})),
+		}
+	# Legacy shape: the dictionary IS the slot map.
+	return {
+		"name": "Build " + str(index),
+		"slots": _sanitize_build_state(raw),
+	}
 
 
 func _save_builds() -> void:
 	var config := ConfigFile.new()
-	for index in range(1, BUILD_SLOT_COUNT + 1):
-		config.set_value(BUILD_SECTION, str(index), builds.get(index, {}))
+	for index in builds:
+		config.set_value(BUILD_SECTION, str(index), builds[index])
+	# Saved alongside the builds so the ids they reference still mean the same
+	# pieces next session.
+	config.set_value(INSTANCE_SECTION, "registry", BoneInstanceService.serialize())
 	config.save(BUILD_SETTINGS_PATH)
+
+
+# --- build management -----------------------------------------------------
+
+func build_indices() -> Array:
+	var indices: Array = builds.keys()
+	indices.sort()
+	return indices
+
+
+func create_build() -> int:
+	var next_index := 1
+	for index in builds:
+		next_index = maxi(next_index, int(index) + 1)
+	builds[next_index] = {"name": "Build " + str(next_index), "slots": {}}
+	_save_builds()
+	return next_index
+
+
+func delete_build(index: int) -> Dictionary:
+	if not builds.has(index):
+		return _result(false, "Unknown build slot.")
+	builds.erase(index)
+	# Deleting a build never touches worn equipment.
+	_ensure_minimum_builds()
+	_save_builds()
+	return _result(true, "Deleted build.")
+
+
+func rename_build(index: int, new_name: String) -> Dictionary:
+	if not builds.has(index):
+		return _result(false, "Unknown build slot.")
+	var clean := new_name.strip_edges()
+	if clean == "":
+		return _result(false, "Name cannot be empty.")
+	# Only the label changes; slots are left exactly as they were.
+	var record: Dictionary = builds[index]
+	record["name"] = clean
+	builds[index] = record
+	_save_builds()
+	return _result(true, "Renamed to " + clean + ".")
+
+
+func build_slots(index: int) -> Dictionary:
+	var record: Dictionary = builds.get(index, {})
+	return record.get("slots", {})
 
 
 func _summary_for_state(state: Dictionary) -> String:
@@ -213,7 +635,7 @@ func _summary_for_state(state: Dictionary) -> String:
 
 
 func _valid_index(index: int) -> bool:
-	return index >= 1 and index <= BUILD_SLOT_COUNT
+	return builds.has(index)
 
 
 func _result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary:

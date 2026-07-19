@@ -40,6 +40,15 @@ const SLOT_DISPLAY := {
 	"left_leg": "Left Leg",
 	"right_leg": "Right Leg",
 }
+# Grouped filters for the inventory dropdown, which offers Arms and Legs rather
+# than one entry per side. These belong to the FILTER vocabulary only and are
+# never equipment slot ids -- hence the prefix. A bare "legs" key would be
+# actively wrong here: LEGACY_SLOT_ALIASES already maps "legs" to right_leg, so
+# normalize_slot_id would quietly turn a both-legs filter into a right-leg one.
+const INVENTORY_FILTER_GROUPS := {
+	"group_arms": [SLOT_LEFT_ARM, SLOT_RIGHT_ARM],
+	"group_legs": [SLOT_LEFT_LEG, SLOT_RIGHT_LEG],
+}
 
 # Which SOCKETS a slot paints. The *_lower keys are the split forearms/shins, and
 # listing them here is the whole equipment change: equip_bone already loops these
@@ -108,9 +117,12 @@ static func compatible_slots_for_bone(bone_id: String) -> Array[String]:
 	# type Array to a variable of type Array[String]" for every caller
 	# outside this file that assigned the return value to a typed local.
 	var result: Array[String] = []
-	var definition: Dictionary = BoneDatabase.get_def(bone_id)
+	# Resolving here covers slot_for_bone, can_equip_bone_in_slot and
+	# inventory_filter_matches_bone, which all funnel through this function.
+	var resolved_id := BoneInstanceService.bone_id_of(bone_id)
+	var definition: Dictionary = BoneDatabase.get_def(resolved_id)
 	if definition.is_empty():
-		definition = generated_limb_definition_for(bone_id)
+		definition = generated_limb_definition_for(resolved_id)
 	if definition.is_empty():
 		return result
 
@@ -156,6 +168,14 @@ static func slot_sort_index(slot_id: String) -> int:
 
 
 static func inventory_filter_matches_bone(filter_slot: String, bone_id: String) -> bool:
+	# Group filters are checked before normalising: normalize_slot_id does not
+	# know these keys and would return "" for them, matching every bone.
+	if INVENTORY_FILTER_GROUPS.has(filter_slot):
+		var compatible: Array[String] = compatible_slots_for_bone(bone_id)
+		for grouped_slot in INVENTORY_FILTER_GROUPS[filter_slot]:
+			if compatible.has(grouped_slot):
+				return true
+		return false
 	var normalized_filter := normalize_slot_id(filter_slot)
 	if normalized_filter == "":
 		return true
@@ -209,8 +229,9 @@ static func pickup_bone_id_for_limb(limb_key: String, source_profile: String = "
 	return clean_source + "_" + limb_key + "_bone"
 
 
-static func generated_limb_definition_for(bone_id: String) -> Dictionary:
-	var parsed: Dictionary = _parse_generated_limb_bone_id(bone_id)
+static func generated_limb_definition_for(raw_id: String) -> Dictionary:
+	# Accepts an instance_id as well as a bone_id; see BoneInstanceService.
+	var parsed: Dictionary = _parse_generated_limb_bone_id(BoneInstanceService.bone_id_of(raw_id))
 	if parsed.is_empty():
 		return {}
 

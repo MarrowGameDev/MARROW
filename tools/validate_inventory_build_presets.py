@@ -106,10 +106,12 @@ def check_static_contract() -> list[str]:
             errors.append(f"missing player build API fragment: {fragment}")
 
     required_ui_fragments = [
-        "Equipment Builds",
+        # Screen title changed with the sidebar/detail redesign.
+        "Saved Builds",
         "func _save_equipment_build(index: int) -> void:",
         "func _apply_equipment_build(index: int) -> void:",
-        "func _refresh_build_preset_rows() -> void:",
+        # Renamed when the three-card view became a sidebar + detail panel.
+        "func _refresh_builds_screen() -> void:",
         'player.call("save_equipment_build", index)',
         'player.call("apply_equipment_build", index)',
     ]

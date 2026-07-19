@@ -637,6 +637,95 @@
 ### Node Path Lookups
 - none
 
+## BoneInstanceService
+
+- Source file: `scripts/bone_instance_service.gd`
+- Extends: `unknown`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `INSTANCE_PREFIX`
+
+### Key Variables
+- `resolved_quality`
+- `instance_id`
+- `record`
+- `bone_id`
+- `generated`
+- `data`
+- `raw`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## BoneQualityService
+
+- Source file: `scripts/bone_quality_service.gd`
+- Extends: `unknown`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `QUALITY_FRAIL`
+- `QUALITY_WORN`
+- `QUALITY_NORMAL`
+- `QUALITY_STRONG`
+- `QUALITY_PRISTINE`
+- `QUALITY_TABLE`
+- `QUALITY_ORDER`
+- `LEGACY_QUALITY_ALIASES`
+- `QUALITY_VISUALS`
+
+### Key Variables
+- `roll`
+- `cumulative`
+- `total`
+- `profile`
+- `tint`
+- `base_color`
+- `tinted`
+- `saturation`
+- `luminance`
+- `emission_energy`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## BoneRulesService
 
 - Source file: `scripts/bone_rules_service.gd`
@@ -651,16 +740,19 @@
 
 ### Constants
 - `PLAYER_BONUS_DEFAULTS`
-- `DURABILITY_CRACKED_THRESHOLD`
 - `PLAYER_STAT_MODIFIER_DEFAULTS`
 - `PLAYER_STAT_PERCENT_LIMIT`
 - `EQUIPMENT_FREE_WEIGHT`
 - `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT`
 - `EQUIPMENT_LOAD_SPEED_PENALTY_MAX`
+- `DURABILITY_CRACKED_THRESHOLD`
 - `UNKNOWN_COLOR`
 
 ### Key Variables
+- `bone_id`
 - `definition`
+- `full`
+- `replacements`
 - `base_name`
 - `slot_label`
 - `clean_name`
@@ -681,7 +773,6 @@
 - `mutation_counts`
 - `total_synergy_score`
 - `total_mutation_intensity`
-- `bone_id`
 - `set_id`
 - `pieces`
 - `piece_key`
@@ -696,10 +787,8 @@
 - `health_bonus`
 - `multiplier`
 - `total`
-- `attack_damage_total`
-- `max_health_total`
+- `exact`
 - `weight_multiplier`
-- `load_over_free`
 
 ### Functions
 - none
@@ -1317,6 +1406,7 @@
 - `CANONICAL_BODY_SLOTS`
 - `LEGACY_SLOT_ALIASES`
 - `SLOT_DISPLAY`
+- `INVENTORY_FILTER_GROUPS`
 - `SLOT_TO_SOCKETS`
 - `LIMB_TO_SLOT`
 - `LIMB_DISPLAY`
@@ -1326,11 +1416,13 @@
 ### Key Variables
 - `slots`
 - `result`
+- `resolved_id`
 - `definition`
 - `raw_slot`
 - `normalized`
 - `clean_slot`
 - `index`
+- `compatible`
 - `normalized_filter`
 - `a_slot_index`
 - `b_slot_index`
@@ -1847,6 +1939,11 @@
 - `save_equipment_build(index: int) -> Dictionary`
 - `apply_equipment_build(index: int) -> Dictionary`
 - `get_equipment_build_summaries() -> Array`
+- `get_equipment_build_report(index: int) -> Dictionary`
+- `get_equipment_build_indices() -> Array`
+- `create_equipment_build() -> int`
+- `delete_equipment_build(index: int) -> Dictionary`
+- `rename_equipment_build(index: int, new_name: String) -> Dictionary`
 - `take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `take_player_body_part_damage(body_part: String, amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `has_body_part_hitboxes() -> bool`
@@ -2022,31 +2119,56 @@
 ### Constants
 - `BUILD_SETTINGS_PATH`
 - `BUILD_SECTION`
+- `INSTANCE_SECTION`
 - `BUILD_SLOT_COUNT`
 - `APPLY_ORDER`
+- `STAT_EPSILON`
+- `STATE_EMPTY`
+- `STATE_SAVED`
+- `STATE_EQUIPPED`
+- `STATE_MISSING`
 
 ### Key Variables
 - `owner_player`
 - `equipment_component`
 - `builds`
 - `state`
+- `record`
 - `validation`
 - `target_state`
+- `resolved_state`
 - `previous_state`
-- `required_counts`
-- `inventory_counts`
+- `availability`
+- `missing`
+- `entry`
 - `slot_id`
 - `bone_id`
 - `has_limb`
 - `summaries`
-- `current_state`
-- `expected`
-- `actual`
-- `counts`
-- `config`
+- `current`
+- `build_state`
+- `worn`
+- `snapshot`
+- `report`
+- `saved_counts`
+- `slot_quality`
+- `matches`
+- `current_equipment`
+- `build_stats`
+- `current_stats`
+- `comparison`
+- `delta`
+- `stats`
 - `value`
-- `parts`
-- `text`
+- `counts`
+- `piece`
+- `quality_id`
+- `summary`
+- `effects`
+- `set_names`
+- `set_counts`
+- `label`
+- `current_state`
 
 ### Functions
 - `setup(player: Node, equipment: PlayerEquipmentComponent) -> void`
@@ -2054,13 +2176,32 @@
 - `apply_build(index: int) -> Dictionary`
 - `validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dictionary`
 - `get_build_summaries() -> Array`
+- `matches_current_equipment(snapshot: Dictionary) -> bool`
+- `build_state_label(index: int) -> String`
+- `get_build_report(index: int) -> Dictionary`
+- `build_display_name(index: int) -> String`
+- `_stats_for_state(state: Dictionary) -> Dictionary`
+- `_player_base(property: String, fallback: float) -> float`
+- `_quality_counts_for(state: Dictionary) -> Dictionary`
+- `_effects_for_state(state: Dictionary) -> Array`
 - `_apply_validated_state(target_state: Dictionary) -> void`
 - `_matches_equipment_state(target_state: Dictionary) -> bool`
 - `_sanitize_build_state(raw_state: Dictionary) -> Dictionary`
 - `_bone_counts(items: Array) -> Dictionary`
+- `resolve_build_snapshot(raw_state: Dictionary, items: Variant = null) -> Dictionary`
+- `_with_current_head(build_state: Dictionary, current_equipment: Dictionary) -> Dictionary`
+- `_equipment_state_from_slots(slots: Dictionary) -> Dictionary`
+- `_resolve_build_to_instances(state: Dictionary) -> Dictionary`
 - `_inventory_items() -> Array`
 - `_load_builds() -> void`
+- `_ensure_minimum_builds() -> void`
+- `_as_record(raw: Dictionary, index: int) -> Dictionary`
 - `_save_builds() -> void`
+- `build_indices() -> Array`
+- `create_build() -> int`
+- `delete_build(index: int) -> Dictionary`
+- `rename_build(index: int, new_name: String) -> Dictionary`
+- `build_slots(index: int) -> Dictionary`
 - `_summary_for_state(state: Dictionary) -> String`
 - `_valid_index(index: int) -> bool`
 - `_result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary`
@@ -2176,6 +2317,7 @@
 - `equipment_component`
 - `bone_inventory`
 - `equip_cursor`
+- `instance_id`
 - `bone_id`
 
 ### Functions
@@ -2216,6 +2358,22 @@
 - `INVENTORY_EMPTY_SLOT_SCRIPT`
 - `CONTROL_SETTINGS_PATH`
 - `INVENTORY_PREVIEW_BASE_SIZE`
+- `BUILD_PREVIEW_BASE_SIZE`
+- `INVENTORY_FILTER_OPTIONS`
+- `BUILD_REPORT_MAX_LINES`
+- `BUILD_DETAIL_PREVIEW_KEY`
+- `BUILD_TABLE_SLOTS`
+- `INVENTORY_SORT_OPTIONS`
+- `PAPER_DOLL_BASE_SIZE`
+- `PAPER_DOLL_SLOT_SIZE`
+- `PAPER_DOLL_FRAME_POSITION`
+- `PAPER_DOLL_FRAME_SIZE`
+- `PAPER_DOLL_PREVIEW_POSITION`
+- `PAPER_DOLL_RING_POSITION`
+- `PAPER_DOLL_RING_SIZE`
+- `PAPER_DOLL_SLOT_POSITIONS`
+- `PAPER_DOLL_WIDE_SLOT_SIZE`
+- `PAPER_DOLL_WIDE_SLOTS`
 - `CONTROL_BINDINGS`
 - `BUILD_PRESET_CONFIRM_WINDOW`
 
@@ -2227,6 +2385,8 @@
 - `hover_info_label`
 - `inventory_status_label`
 - `inventory_category`
+- `selected_bone_id`
+- `dragging_bone_id`
 - `inventory_tab_buttons`
 - `inventory_safe_area`
 - `inventory_panel`
@@ -2236,6 +2396,14 @@
 - `inventory_header`
 - `inventory_title_label`
 - `inventory_tabs_container`
+- `inventory_filter_dropdown`
+- `inventory_filter_label`
+- `inventory_quality_dropdown`
+- `inventory_quality_label`
+- `inventory_sort_dropdown`
+- `inventory_sort_label_control`
+- `inventory_quality_filter`
+- `inventory_sort_mode`
 - `inventory_body`
 - `inventory_left_panel`
 - `inventory_grid_panel`
@@ -2250,16 +2418,6 @@
 - `inventory_details_panel`
 - `inventory_paper_doll`
 - `inventory_footer`
-- `settings_panel`
-- `settings_box_panel`
-- `settings_box_margin`
-- `settings_controls_list`
-- `settings_title_label`
-- `settings_status_label`
-- `settings_reset_button`
-- `build_preset_status_label`
-- `build_preset_summary_labels`
-- `build_preset_apply_buttons`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2277,34 +2435,79 @@
 - `equip_bone_in_slot(bone_id: String, slot: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `get_equipped_bone_for_slot(slot: String) -> String`
+- `select_bone(bone_id: String) -> void`
+- `_refresh_selection_visuals() -> void`
+- `begin_bone_drag(bone_id: String) -> void`
+- `end_bone_drag() -> void`
+- `_slot_list_text(slots: Array[String]) -> String`
 - `show_bone_info(bone_id: String) -> void`
+- `_base_vs_effective_text(bone_id: String) -> String`
+- `_format_number(value: float) -> String`
 - `_bone_comparison_text(bone_id: String) -> String`
 - `clear_bone_info() -> void`
 - `_build_inventory_ui() -> void`
 - `_build_right_inventory_panel() -> void`
 - `_build_inventory_blur_layer() -> ColorRect`
 - `_build_inventory_tabs(parent: VBoxContainer) -> void`
+- `_make_inventory_dropdown() -> OptionButton`
+- `_on_inventory_quality_selected(index: int) -> void`
+- `_on_inventory_sort_selected(index: int) -> void`
+- `_on_inventory_filter_selected(index: int) -> void`
 - `_add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void`
 - `_select_inventory_category(category: String) -> void`
 - `_refresh_inventory_tabs() -> void`
 - `_refresh_inventory_mode() -> void`
 - `_queue_inventory_responsive_layout() -> void`
 - `_apply_inventory_responsive_layout() -> void`
+- `_apply_builds_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void`
 - `_apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void`
 - `_apply_paper_doll_responsive_layout(doll_scale: float) -> void`
 - `_apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void`
 - `_set_margin(container: MarginContainer, left: int, top: int, right: int, bottom: int) -> void`
 - `_build_settings_panel() -> ScrollContainer`
-- `_build_equipment_build_presets_panel() -> Control`
-- `_build_equipment_build_row(index: int) -> Control`
+- `_build_equipment_builds_tab() -> ScrollContainer`
+- `_build_builds_sidebar() -> Control`
+- `_build_builds_detail_panel() -> Control`
+- `_make_build_slot_card(slot_id: String, title: String) -> Control`
+- `_build_detail_card(parent: HBoxContainer, heading_text: String) -> VBoxContainer`
+- `_build_equipment_table() -> Control`
+- `_build_builds_action_row() -> Control`
+- `_style_badge(label: Label, text: String, base_color: Color) -> void`
+- `_build_build_preview(index: int) -> Control`
+- `_sync_all_build_previews() -> void`
+- `_sync_build_preview(index: int) -> void`
+- `_equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void`
+- `_raw_build_state(index: int) -> Dictionary`
 - `_make_build_preset_button(text: String) -> Button`
 - `_save_equipment_build(index: int) -> void`
 - `_apply_equipment_build(index: int) -> void`
 - `_build_slot_is_empty(index: int) -> bool`
 - `_consume_or_arm_confirmation(action: String, index: int, button_text: String) -> bool`
 - `_on_build_preset_confirm_timeout(expected_key: String) -> void`
+- `_confirm_button_for(action: String) -> Button`
 - `_disarm_build_preset_confirmation() -> void`
-- `_refresh_build_preset_rows() -> void`
+- `_on_new_build_pressed() -> void`
+- `_select_build(index: int) -> void`
+- `_on_save_current_pressed() -> void`
+- `_on_apply_pressed() -> void`
+- `_on_rename_pressed() -> void`
+- `_on_rename_submitted(new_name: String) -> void`
+- `_on_delete_pressed() -> void`
+- `_first_build_index() -> int`
+- `_build_indices() -> Array`
+- `_build_name_for(index: int) -> String`
+- `_build_report_for(index: int) -> Dictionary`
+- `_refresh_builds_screen() -> void`
+- `_make_build_sidebar_card(index: int) -> Control`
+- `_build_parts_available(state: String, slots: Dictionary, missing: int) -> int`
+- `_make_new_build_card() -> Control`
+- `_build_state_color(state: String) -> Color`
+- `_apply_build_report_to_detail(report: Dictionary) -> void`
+- `_fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void`
+- `_make_stat_row(stat_name: String, value: float, delta: float) -> Control`
+- `_make_composition_row(quality_id: String, count: int) -> Control`
+- `_make_dim_row(text: String) -> Control`
+- `_clear_children(node: Node) -> void`
 - `_set_build_preset_status(text: String) -> void`
 - `_build_control_binding_row(action: String, label_text: String) -> Control`
 - `_add_footer_hint(parent: HBoxContainer, key_text: String, action_text: String) -> void`
@@ -2319,6 +2522,7 @@
 - `_preview_equipment_snapshot() -> Dictionary`
 - `_preview_snapshot_matches(next_snapshot: Dictionary) -> bool`
 - `_build_paper_doll() -> Control`
+- `_paper_doll_slot_size(slot_id: String) -> Vector2`
 - `_place_slot(doll: Control, slot: String, short_name: String, pos: Vector2, slot_size: Vector2) -> void`
 - `_begin_rebinding(action: String, button: Button) -> void`
 - `_cancel_rebinding() -> void`
@@ -2345,6 +2549,7 @@
 - `_set_default_control_mouse(action: String, button_index: int) -> void`
 - `rebuild_item_tiles() -> void`
 - `_bone_matches_inventory_category(bone_id: String) -> bool`
+- `_bone_matches_quality_filter(bone_id: String) -> bool`
 - `_compare_inventory_items(a: String, b: String) -> bool`
 - `update_inventory_ui() -> void`
 - `_bone_inventory() -> Array`
@@ -2512,6 +2717,7 @@
 - `has_equipped_slot(slot_id: String) -> bool`
 - `_make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D`
 - `_get_head_model_mesh() -> Mesh`
+- `_apply_quality_visual(node: Node, bone_id: String) -> void`
 - `equip_bone(bone_id: String, bone_def: Dictionary) -> void`
 - `unequip_slot(slot_id: String) -> void`
 - `get_equipped_bone_defs() -> Array`
@@ -2986,6 +3192,7 @@
 - `PLAYER_SCENE`
 - `ENEMY_SCENE`
 - `VALIDATION_LOG_PATH`
+- `OVERLAY_PANEL_WIDTH`
 - `P0_VALIDATION_GUIDES`
 - `NORMAL_LIMB_BONES`
 - `EXTRA_TESTING_BONES`
@@ -3002,6 +3209,8 @@
 - `notes_editing`
 - `observed_notes`
 - `validation_log`
+- `overlay_mode`
+- `testing_panel`
 - `environment`
 - `env`
 - `sun`
@@ -3022,15 +3231,13 @@
 - `margin`
 - `content`
 - `alive_count`
+- `scene_tag`
+- `width`
 - `guide`
 - `text`
 - `steps`
 - `enemy_names`
 - `snapshot`
-- `entry`
-- `mode`
-- `file`
-- `count`
 
 ### Functions
 - `_ready() -> void`
@@ -3054,6 +3261,8 @@
 - `_on_enemy_defeated(_enemy: Node, _dropped_bone_id: String) -> void`
 - `_build_ui() -> void`
 - `_update_status() -> void`
+- `_cycle_overlay_mode() -> void`
+- `_apply_overlay_mode() -> void`
 - `_cycle_validation_guide(direction: int) -> void`
 - `_current_validation_guide_text() -> String`
 - `_begin_notes_editing() -> void`
@@ -3209,24 +3418,50 @@
 - `_label`
 - `_slot_label`
 - `_stack_label`
+- `_stack_badge`
+- `_frame`
+- `_selected`
 - `tile_size`
 - `requested_size`
-- `x_scale`
-- `y_scale`
+- `pad`
+- `min_side`
+- `inner_width`
+- `name_height`
+- `slot_height`
+- `art_top`
+- `art_height`
 - `frame`
 - `top_rule`
+- `quality_id`
+- `pip_count`
+- `pip_size`
+- `pip_gap`
+- `pip_total`
+- `pip_y`
+- `pip`
+- `art_centre`
+- `art_span`
 - `glow`
 - `core`
+- `badge_size`
+- `caption_width`
 - `slot_text`
-- `wrap`
-- `rect`
+- `side`
+- `background`
+- `quality_border`
+- `border`
+- `width`
 - `style`
 
 ### Functions
 - `setup(id: String, player_ref: Node, quantity: int = 1) -> void`
+- `_place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void`
+- `_gui_input(event: InputEvent) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
+- `set_selected(value: bool) -> void`
+- `_repaint() -> void`
 - `_get_drag_data(_at_position: Vector2) -> Variant`
 - `_make_preview() -> Control`
 - `_make_tile_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat`
@@ -3267,30 +3502,47 @@
 - `_box`
 - `_label`
 - `_slot_label`
+- `_diamond_back`
 - `_slot_size`
 - `_frame`
-- `x_scale`
-- `y_scale`
-- `min_scale`
-- `diamond_back`
+- `_unequip_button`
+- `_highlighted`
+- `_drag_state`
+- `pad`
+- `min_side`
+- `inner_width`
+- `top_height`
+- `bottom_height`
+- `art_top`
+- `art_height`
+- `button_side`
+- `side`
 - `bone_id`
+- `border`
+- `background`
+- `width`
+- `alpha`
+- `style`
 - `wrap`
 - `rect`
 - `preview_size`
-- `valid`
-- `style`
 - `equipped_value`
 - `equipped`
 
 ### Functions
+- `resize(target_size: Vector2) -> void`
+- `_place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
+- `_on_unequip_pressed() -> void`
+- `set_highlighted(value: bool) -> void`
+- `set_drag_state(state: String) -> void`
+- `_repaint() -> void`
 - `_get_drag_data(_at_position: Vector2) -> Variant`
 - `_can_drop_data(_at_position: Vector2, data: Variant) -> bool`
 - `_drop_data(_at_position: Vector2, data: Variant) -> void`
 - `_notification(what: int) -> void`
-- `_set_frame_border(color: Color) -> void`
 - `_gui_input(event: InputEvent) -> void`
 - `_make_slot_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat`
 - `_equipped_bone_id() -> String`
@@ -3326,8 +3578,6 @@
 - `inventory_owner`
 - `slot_size`
 - `frame`
-- `diamond`
-- `diamond_inner`
 - `drop`
 - `style`
 

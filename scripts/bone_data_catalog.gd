@@ -21,7 +21,7 @@ const DEFINITIONS := {
 	"head_bone": {
 		"identity": {
 			"display_name": "Core Head",
-			"quality": "comun",
+			"quality": "normal",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -66,7 +66,7 @@ const DEFINITIONS := {
 	"torso_bone": {
 		"identity": {
 			"display_name": "Torso Bone",
-			"quality": "comun",
+			"quality": "normal",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -118,7 +118,7 @@ const DEFINITIONS := {
 	"arm_bone": {
 		"identity": {
 			"display_name": "Arm Bone",
-			"quality": "comun",
+			"quality": "normal",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -178,7 +178,7 @@ const DEFINITIONS := {
 	"leg_bone": {
 		"identity": {
 			"display_name": "Leg Bone",
-			"quality": "comun",
+			"quality": "normal",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -238,7 +238,7 @@ const DEFINITIONS := {
 	"heavy_bone": {
 		"identity": {
 			"display_name": "Heavy Bone",
-			"quality": "fuerte",
+			"quality": "strong",
 			"quality_rank": 3,
 			"quality_score": 1.3,
 			"quality_multiplier": 1.15,
@@ -303,7 +303,7 @@ const DEFINITIONS := {
 	"dummy_bone": {
 		"identity": {
 			"display_name": "Training Bone",
-			"quality": "chatarra",
+			"quality": "frail",
 			"quality_rank": 0,
 			"quality_score": 0.75,
 			"quality_multiplier": 0.9,
@@ -356,7 +356,7 @@ const DEFINITIONS := {
 	"rib_bone": {
 		"identity": {
 			"display_name": "Rib Bone",
-			"quality": "fuerte",
+			"quality": "strong",
 			"quality_rank": 3,
 			"quality_score": 1.3,
 			"quality_multiplier": 1.12,
