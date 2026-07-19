@@ -59,12 +59,64 @@ canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 Calidad describe condicion o potencia de la pieza. No es rareza de loot.
 
-Ids canonicos:
-- `chatarra`
-- `fragil`
-- `comun`
-- `fuerte`
-- `legendario`
+La calidad pertenece a la PIEZA INDIVIDUAL, no al tipo de hueso. Se sortea una
+sola vez, cuando la pieza se crea (drop, recompensa, pieza nueva), y no se
+vuelve a sortear al recoger, equipar, abrir inventario, aplicar builds ni
+refrescar el preview.
+
+Ids canonicos, multiplicador y probabilidad (fuente de verdad:
+`scripts/bone_quality_service.gd`, tabla `QUALITY_TABLE`):
+
+| id | display | multiplicador | probabilidad | rank |
+| --- | --- | --- | --- | --- |
+| `frail` | Frail | 0.85 | 2.5 % | 0 |
+| `worn` | Worn | 0.925 | 12.5 % | 1 |
+| `normal` | Normal | 1.00 | 70 % | 2 |
+| `strong` | Strong | 1.075 | 12.5 % | 3 |
+| `pristine` | Pristine | 1.15 | 2.5 % | 4 |
+
+La columna de probabilidad suma exactamente 100. `tools/validate_bone_quality.py`
+lo verifica sin abrir Godot.
+
+Ids previos al rename (espanol) siguen aceptados como alias legacy y mapean por
+rank: `chatarra`->`frail`, `fragil`->`worn`, `comun`->`normal`,
+`fuerte`->`strong`, `legendario`->`pristine`. Cualquier valor desconocido o
+vacio normaliza a `normal`; nunca se sortea para datos legacy.
+
+Formula (en `BoneRulesService.adjusted_player_bonus_for`):
+
+    stat efectivo = stat base * multiplicador de calidad
+
+La calidad solo escala stats numericos reales (`move_speed`, `attack_range`,
+`attack_damage`, `max_health`). No toca slot, compatibilidad, ids, tags ni
+ningun otro valor categorico. Calidad, rareza, mutacion y durabilidad siguen
+siendo campos separados con vocabularios separados.
+
+## Identidad De Pieza (instancias)
+
+`scripts/bone_instance_service.gd` da identidad por pieza:
+
+- `bone_id` nombra un TIPO (`arm_bone`).
+- `instance_id` nombra una PIEZA concreta (`bone#7`) y es la fuente de verdad
+  de su calidad.
+- El instance_id no codifica nada: nunca `arm_bone_strong`. Identidad,
+  definicion y calidad quedan separadas.
+- El multiplicador no se guarda en la instancia; solo `quality_id`. El numero
+  sale de la tabla, asi que retunear la tabla retunea todas las piezas
+  existentes.
+- Ruta de compatibilidad explicita: un String que no es instancia se resuelve a
+  su calidad authored (o `normal` si no tiene) y jamas se sortea, para que los
+  Strings existentes no cambien de significado en silencio.
+
+La resolucion vive en un solo punto por capa: `BoneDatabase._type_id`,
+`BoneRulesService.definition_for` y
+`EquipmentRulesService.compatible_slots_for_bone` /
+`generated_limb_definition_for`. Por eso cualquier API que aceptaba un
+`bone_id` acepta ahora un `instance_id` sin cambios en el llamador.
+
+Los stacks agrupan por `bone_id + quality_id + mutacion`
+(`BoneInstanceService.stack_key_for`), no solo por `bone_id`: apilar dos brazos
+de calidad distinta ocultaria que tienen stats efectivos distintos.
 
 Campos:
 - `quality`

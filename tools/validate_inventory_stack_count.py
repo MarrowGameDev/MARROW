@@ -105,12 +105,18 @@ def inventory_sort_key(bone_id: str) -> tuple[int, str]:
 def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
     errors: list[str] = []
     required_inventory_fragments = [
-        "var visible_counts: Dictionary = {}",
+        # Stacks are keyed by BoneInstanceService.stack_key_for (type +
+        # quality + mutation), not by bone_id: a Frail and a Pristine arm are
+        # the same type but must not pile into one tile, because they roll
+        # different effective stats. Each group keeps a representative
+        # instance_id so a unit dragged out of a stack is a real piece.
+        "var counts_by_key: Dictionary = {}",
+        "var representative_by_key: Dictionary = {}",
         "var visible_order: Array[String] = []",
-        "visible_order.append(id)",
+        "var key := BoneInstanceService.stack_key_for(id)",
         'visible_order.sort_custom(Callable(self, "_compare_inventory_items"))',
-        "visible_counts[id] = int(visible_counts[id]) + 1",
-        "tile.setup(id, self, int(visible_counts.get(id, 1)))",
+        "counts_by_key[key] = int(counts_by_key[key]) + 1",
+        "tile.setup(id, self, int(counts_by_id.get(id, 1)))",
     ]
     for fragment in required_inventory_fragments:
         if fragment not in inventory_ui:

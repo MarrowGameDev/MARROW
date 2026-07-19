@@ -13,11 +13,21 @@ func setup(player: Node, equipment: PlayerEquipmentComponent = null) -> void:
 	name = "PlayerInventoryComponent"
 
 
+# Accepts either an instance_id (a piece that already exists in the world --
+# the normal path from a drop) or a plain bone_id. A plain bone_id means the
+# piece is being brought into existence right here (a reward, a granted
+# starter piece, test seeding), so it gets an instance and one quality roll.
+# Collecting an existing piece never re-rolls: its instance_id passes through
+# untouched.
 func collect_bone(bone_id: String) -> void:
-	bone_inventory.append(bone_id)
+	var instance_id := bone_id
+	if not BoneInstanceService.is_instance_id(bone_id):
+		instance_id = BoneInstanceService.create_instance(bone_id)
+	bone_inventory.append(instance_id)
 	_notify_inventory_changed()
-	GameEvents.bone_collected.emit(bone_id, owner_player)
-	print("Collected bone: ", BoneRulesService.display_name_with_slot(bone_id))
+	GameEvents.bone_collected.emit(instance_id, owner_player)
+	print("Collected bone: ", BoneRulesService.display_name_with_slot(instance_id),
+		" [", BoneRulesService.quality_display_name_for(instance_id), "]")
 
 
 func equip_next_bone() -> void:

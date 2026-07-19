@@ -18,9 +18,17 @@ static func _static_init() -> void:
 	reload_from_catalog()
 
 
+# Accepts a bone_id OR an instance_id. Every lookup below funnels through
+# here, so one resolution point makes the whole compatibility API
+# instance-aware instead of 60-odd call sites each needing to know.
+# A plain bone_id is returned untouched, so legacy Strings keep their meaning.
+static func _type_id(id: String) -> String:
+	return BoneInstanceService.bone_id_of(id)
+
+
 # True if the given id is a defined bone type.
 static func has_bone(id: String) -> bool:
-	return _bones().has(id)
+	return _bones().has(_type_id(id))
 
 
 # Every defined bone id, e.g. for iterating in tools or tests.
@@ -34,17 +42,17 @@ static func definitions() -> Dictionary:
 
 # The full definition dictionary for an id, or an empty one if unknown.
 static func get_def(id: String) -> Dictionary:
-	if _bones().has(id):
-		return _bones()[id]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]
 	return {}
 
 
 static func get_clean_def(id: String) -> Dictionary:
-	return BoneDataCatalog.clean_definition_for(id)
+	return BoneDataCatalog.clean_definition_for(_type_id(id))
 
 
 static func get_resource(id: String) -> BoneDefinition:
-	return BoneDataCatalog.resource_for(id)
+	return BoneDataCatalog.resource_for(_type_id(id))
 
 
 static func reload_from_catalog() -> void:
@@ -56,8 +64,8 @@ static func reset_cache() -> void:
 
 
 static func display_name(id: String) -> String:
-	if _bones().has(id):
-		return _bones()[id]["display_name"]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]["display_name"]
 	return "Unknown Bone"
 
 
@@ -97,150 +105,150 @@ static func slot_display_name(slot_id: String) -> String:
 # The bone's color. Callers that want a different miss color (e.g. an enemy's
 # natural red) can pass their own fallback for ids that are not defined.
 static func color(id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
-	if _bones().has(id):
-		return _bones()[id]["color"]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]["color"]
 	return fallback
 
 
 static func slot(id: String) -> String:
-	if _bones().has(id):
-		return _bones()[id]["slot"]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]["slot"]
 	return ""
 
 
 static func move_speed_bonus(id: String) -> float:
-	if _bones().has(id):
-		return _bones()[id]["move_speed_bonus"]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]["move_speed_bonus"]
 	return 0.0
 
 
 static func attack_range_bonus(id: String) -> float:
-	if _bones().has(id):
-		return _bones()[id]["attack_range_bonus"]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]["attack_range_bonus"]
 	return 0.0
 
 
 static func attack_damage_bonus(id: String) -> int:
-	if _bones().has(id):
-		return _bones()[id]["attack_damage_bonus"]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]["attack_damage_bonus"]
 	return 0
 
 
 static func max_health_bonus(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("max_health_bonus", 0))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("max_health_bonus", 0))
 	return 0
 
 
 static func quality(id: String) -> String:
-	if _bones().has(id):
-		return _bones()[id].get("quality", BoneDefinition.QUALITY_COMMON)
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)].get("quality", BoneDefinition.QUALITY_COMMON)
 	return "Unknown"
 
 
 static func quality_rank(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("quality_rank", 0))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("quality_rank", 0))
 	return 0
 
 
 static func quality_score(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("quality_score", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("quality_score", 0.0))
 	return 0.0
 
 
 static func quality_multiplier(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("quality_multiplier", 1.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("quality_multiplier", 1.0))
 	return 1.0
 
 
 static func quality_damage_percent(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("quality_damage_percent", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("quality_damage_percent", 0.0))
 	return 0.0
 
 
 static func quality_speed_percent(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("quality_speed_percent", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("quality_speed_percent", 0.0))
 	return 0.0
 
 
 static func quality_health_percent(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("quality_health_percent", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("quality_health_percent", 0.0))
 	return 0.0
 
 
 static func quality_drop_percent(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("quality_drop_percent", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("quality_drop_percent", 0.0))
 	return 0.0
 
 
 static func quality_weight_percent(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("quality_weight_percent", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("quality_weight_percent", 0.0))
 	return 0.0
 
 
 static func quality_color(id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
-	if _bones().has(id):
-		var color_value: Variant = _bones()[id].get("quality_color", fallback)
+	if _bones().has(_type_id(id)):
+		var color_value: Variant = _bones()[_type_id(id)].get("quality_color", fallback)
 		if color_value is Color:
 			return color_value
 	return fallback
 
 
 static func rarity(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("rarity", BoneDefinition.RARITY_COMMON))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("rarity", BoneDefinition.RARITY_COMMON))
 	return "Unknown"
 
 
 static func rarity_rank(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("rarity_rank", 0))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("rarity_rank", 0))
 	return 0
 
 
 static func rarity_color(id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
-	if _bones().has(id):
-		var color_value: Variant = _bones()[id].get("rarity_color", fallback)
+	if _bones().has(_type_id(id)):
+		var color_value: Variant = _bones()[_type_id(id)].get("rarity_color", fallback)
 		if color_value is Color:
 			return color_value
 	return fallback
 
 
 static func rarity_drop_weight(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("rarity_drop_weight", 1.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("rarity_drop_weight", 1.0))
 	return 0.0
 
 
 static func durability_max(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("durability_max", 100))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("durability_max", 100))
 	return 0
 
 
 static func durability_start(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("durability_start", durability_max(id)))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("durability_start", durability_max(id)))
 	return 0
 
 
 static func durability_repair_cost(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("durability_repair_cost", 1))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("durability_repair_cost", 1))
 	return 0
 
 
 static func durability_tags(id: String) -> Array:
-	if _bones().has(id):
-		var value: Variant = _bones()[id].get("durability_tags", [])
+	if _bones().has(_type_id(id)):
+		var value: Variant = _bones()[_type_id(id)].get("durability_tags", [])
 		if value is Array:
 			var tags: Array = value
 			return tags.duplicate()
@@ -248,32 +256,32 @@ static func durability_tags(id: String) -> Array:
 
 
 static func mutation_id(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("mutation_id", ""))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("mutation_id", ""))
 	return ""
 
 
 static func mutation_family(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("mutation_family", ""))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("mutation_family", ""))
 	return ""
 
 
 static func mutation_stage(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("mutation_stage", 0))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("mutation_stage", 0))
 	return 0
 
 
 static func mutation_intensity(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("mutation_intensity", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("mutation_intensity", 0.0))
 	return 0.0
 
 
 static func mutation_tags(id: String) -> Array:
-	if _bones().has(id):
-		var value: Variant = _bones()[id].get("mutation_tags", [])
+	if _bones().has(_type_id(id)):
+		var value: Variant = _bones()[_type_id(id)].get("mutation_tags", [])
 		if value is Array:
 			var tags: Array = value
 			return tags.duplicate()
@@ -281,14 +289,14 @@ static func mutation_tags(id: String) -> Array:
 
 
 static func attack_type(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("attack_type", "melee"))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("attack_type", "melee"))
 	return ""
 
 
 static func attack_tags(id: String) -> Array:
-	if _bones().has(id):
-		var value: Variant = _bones()[id].get("attack_tags", [])
+	if _bones().has(_type_id(id)):
+		var value: Variant = _bones()[_type_id(id)].get("attack_tags", [])
 		if value is Array:
 			var tags: Array = value
 			return tags.duplicate()
@@ -296,26 +304,26 @@ static func attack_tags(id: String) -> Array:
 
 
 static func combo_family(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("combo_family", ""))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("combo_family", ""))
 	return ""
 
 
 static func combo_step(id: String) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get("combo_step", 0))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get("combo_step", 0))
 	return 0
 
 
 static func combo_window(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("combo_window", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("combo_window", 0.0))
 	return 0.0
 
 
 static func combo_tags(id: String) -> Array:
-	if _bones().has(id):
-		var value: Variant = _bones()[id].get("combo_tags", [])
+	if _bones().has(_type_id(id)):
+		var value: Variant = _bones()[_type_id(id)].get("combo_tags", [])
 		if value is Array:
 			var tags: Array = value
 			return tags.duplicate()
@@ -323,62 +331,62 @@ static func combo_tags(id: String) -> Array:
 
 
 static func combo_finisher(id: String) -> bool:
-	if _bones().has(id):
-		return bool(_bones()[id].get("combo_finisher", false))
+	if _bones().has(_type_id(id)):
+		return bool(_bones()[_type_id(id)].get("combo_finisher", false))
 	return false
 
 
 static func weight(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("weight", 1.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("weight", 1.0))
 	return 1.0
 
 
 static func weight_class(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("weight_class", "light"))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("weight_class", "light"))
 	return ""
 
 
 static func physical_weight(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("physical_weight", weight(id)))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("physical_weight", weight(id)))
 	return 0.0
 
 
 static func equipment_weight(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("equipment_weight", weight(id)))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("equipment_weight", weight(id)))
 	return 0.0
 
 
 static func inventory_weight(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("inventory_weight", weight(id)))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("inventory_weight", weight(id)))
 	return 0.0
 
 
 static func set_id(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("set_id", ""))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("set_id", ""))
 	return ""
 
 
 static func set_name(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("set_name", ""))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("set_name", ""))
 	return ""
 
 
 static func set_piece_key(id: String) -> String:
-	if _bones().has(id):
-		return str(_bones()[id].get("set_piece_key", ""))
+	if _bones().has(_type_id(id)):
+		return str(_bones()[_type_id(id)].get("set_piece_key", ""))
 	return ""
 
 
 static func set_tags(id: String) -> Array:
-	if _bones().has(id):
-		var value: Variant = _bones()[id].get("set_tags", [])
+	if _bones().has(_type_id(id)):
+		var value: Variant = _bones()[_type_id(id)].get("set_tags", [])
 		if value is Array:
 			var tags: Array = value
 			return tags.duplicate()
@@ -386,8 +394,8 @@ static func set_tags(id: String) -> Array:
 
 
 static func synergy_ids(id: String) -> Array:
-	if _bones().has(id):
-		var value: Variant = _bones()[id].get("synergy_ids", [])
+	if _bones().has(_type_id(id)):
+		var value: Variant = _bones()[_type_id(id)].get("synergy_ids", [])
 		if value is Array:
 			var ids: Array = value
 			return ids.duplicate()
@@ -395,8 +403,8 @@ static func synergy_ids(id: String) -> Array:
 
 
 static func synergy_tags(id: String) -> Array:
-	if _bones().has(id):
-		var value: Variant = _bones()[id].get("synergy_tags", [])
+	if _bones().has(_type_id(id)):
+		var value: Variant = _bones()[_type_id(id)].get("synergy_tags", [])
 		if value is Array:
 			var tags: Array = value
 			return tags.duplicate()
@@ -404,26 +412,26 @@ static func synergy_tags(id: String) -> Array:
 
 
 static func synergy_score(id: String) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get("synergy_score", 0.0))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get("synergy_score", 0.0))
 	return 0.0
 
 
 static func enemy_float_bonus(id: String, key: String, fallback: float = 0.0) -> float:
-	if _bones().has(id):
-		return float(_bones()[id].get(key, fallback))
+	if _bones().has(_type_id(id)):
+		return float(_bones()[_type_id(id)].get(key, fallback))
 	return fallback
 
 
 static func enemy_int_bonus(id: String, key: String, fallback: int = 0) -> int:
-	if _bones().has(id):
-		return int(_bones()[id].get(key, fallback))
+	if _bones().has(_type_id(id)):
+		return int(_bones()[_type_id(id)].get(key, fallback))
 	return fallback
 
 
 static func description(id: String) -> String:
-	if _bones().has(id):
-		return _bones()[id]["description"]
+	if _bones().has(_type_id(id)):
+		return _bones()[_type_id(id)]["description"]
 	return ""
 
 

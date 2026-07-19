@@ -156,6 +156,28 @@ def parse_definition_constants(definition_path: Path) -> dict[str, set[str]]:
         "rarity": set(),
         "mutation_family": set(),
     }
+
+    # Quality ids moved to BoneQualityService, which owns the canonical
+    # vocabulary along with each tier's multiplier and probability.
+    # BoneDefinition's QUALITY_* constants now alias that service rather than
+    # declaring string literals, so harvesting only this file would find an
+    # empty set and reject every authored quality. Pre-rename Spanish ids stay
+    # accepted because BoneQualityService still normalises them.
+    quality_service = definition_path.with_name("bone_quality_service.gd")
+    if quality_service.exists():
+        quality_text = quality_service.read_text(encoding="utf-8")
+        for match in re.finditer(
+            r'const\s+QUALITY_[A-Z_]+\s*:=\s*"(?P<value>[^"]*)"', quality_text
+        ):
+            values["quality"].add(match.group("value"))
+        aliases = re.search(
+            r"const\s+LEGACY_QUALITY_ALIASES\s*:=\s*\{(?P<body>[^}]*)\}",
+            quality_text,
+            re.S,
+        )
+        if aliases:
+            for match in re.finditer(r'"(?P<value>[^"]+)"\s*:', aliases.group("body")):
+                values["quality"].add(match.group("value"))
     for match in re.finditer(
         r'const\s+(?P<name>[A-Z_]+)\s*:=\s*"(?P<value>[^"]*)"', text
     ):

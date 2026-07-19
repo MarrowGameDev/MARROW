@@ -81,12 +81,19 @@ func validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dict
 	if owner_player != null and owner_player.has_method("is_head_detached_from_torso") and bool(owner_player.call("is_head_detached_from_torso")):
 		return _result(false, "Return to your detached torso before applying builds.", state)
 
+	# A saved build stores the equipment state, which holds instance_ids, so
+	# these counts match on exact piece identity. That is what keeps a build
+	# from silently resolving to a different-quality copy of the same bone: if
+	# the exact piece is no longer carried the build refuses to apply and says
+	# so, instead of quietly equipping a Frail arm where a Pristine one was
+	# saved. Builds written before instances existed hold plain bone_ids and
+	# land here the same way -- reported as missing, never substituted.
 	var required_counts := _bone_counts(state.values())
 	var inventory_counts := _bone_counts(inventory_items)
 
 	for bone_id in required_counts:
 		if int(required_counts[bone_id]) > int(inventory_counts.get(bone_id, 0)):
-			return _result(false, "Missing carried copies for " + BoneRulesService.display_name_with_slot(str(bone_id)) + ".", state)
+			return _result(false, "Missing carried copies for " + BoneRulesService.quality_display_name_for(str(bone_id)) + " " + BoneRulesService.display_name_with_slot(str(bone_id)) + ".", state)
 
 	for slot in state:
 		var slot_id := str(slot)

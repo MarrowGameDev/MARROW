@@ -340,7 +340,7 @@ func show_bone_info(bone_id: String) -> void:
 	# where the dragged piece can land.
 	if dragging_bone_id != "":
 		return
-	var text := BoneRulesService.quality_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id)) + "]\n"
+	var text := BoneRulesService.quality_display_name_for(bone_id) + " " + BoneRulesService.display_name_with_slot(bone_id) + "  [slot: " + EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(bone_id)) + "]\n"
 	text += BoneRulesService.effect_text_for(bone_id)
 	text += BoneRulesService.description_for(bone_id)
 	text += _bone_comparison_text(bone_id)
@@ -2205,7 +2205,14 @@ func rebuild_item_tiles() -> void:
 
 	var equipped_counts := _equipped_bone_counts()
 	var skipped_equipped_counts: Dictionary = {}
-	var visible_counts: Dictionary = {}
+	# Pieces stack only when they are the same type AND quality AND mutation
+	# (BoneInstanceService.stack_key_for). Grouping by bone_id alone would put
+	# a Frail and a Pristine arm in one pile and hide that they roll different
+	# effective stats. Each group keeps a representative instance_id, so the
+	# unit the player drags out of a stack is a real piece with a real
+	# identity rather than an anonymous copy.
+	var counts_by_key: Dictionary = {}
+	var representative_by_key: Dictionary = {}
 	var visible_order: Array[String] = []
 	for bone_id in _bone_inventory():
 		var id := str(bone_id)
@@ -2216,16 +2223,22 @@ func rebuild_item_tiles() -> void:
 		if skipped_count < equipped_count:
 			skipped_equipped_counts[id] = skipped_count + 1
 			continue
-		if not visible_counts.has(id):
+		var key := BoneInstanceService.stack_key_for(id)
+		if not counts_by_key.has(key):
+			counts_by_key[key] = 0
+			representative_by_key[key] = id
 			visible_order.append(id)
-			visible_counts[id] = 0
-		visible_counts[id] = int(visible_counts[id]) + 1
+		counts_by_key[key] = int(counts_by_key[key]) + 1
+
+	var counts_by_id: Dictionary = {}
+	for key in representative_by_key:
+		counts_by_id[str(representative_by_key[key])] = int(counts_by_key[key])
 
 	var shown := 0
 	visible_order.sort_custom(Callable(self, "_compare_inventory_items"))
 	for id in visible_order:
 		var tile := BoneItemTile.new()
-		tile.setup(id, self, int(visible_counts.get(id, 1)))
+		tile.setup(id, self, int(counts_by_id.get(id, 1)))
 		items_grid.add_child(tile)
 		shown += 1
 

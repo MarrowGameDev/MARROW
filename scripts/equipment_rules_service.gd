@@ -117,9 +117,12 @@ static func compatible_slots_for_bone(bone_id: String) -> Array[String]:
 	# type Array to a variable of type Array[String]" for every caller
 	# outside this file that assigned the return value to a typed local.
 	var result: Array[String] = []
-	var definition: Dictionary = BoneDatabase.get_def(bone_id)
+	# Resolving here covers slot_for_bone, can_equip_bone_in_slot and
+	# inventory_filter_matches_bone, which all funnel through this function.
+	var resolved_id := BoneInstanceService.bone_id_of(bone_id)
+	var definition: Dictionary = BoneDatabase.get_def(resolved_id)
 	if definition.is_empty():
-		definition = generated_limb_definition_for(bone_id)
+		definition = generated_limb_definition_for(resolved_id)
 	if definition.is_empty():
 		return result
 
@@ -226,8 +229,9 @@ static func pickup_bone_id_for_limb(limb_key: String, source_profile: String = "
 	return clean_source + "_" + limb_key + "_bone"
 
 
-static func generated_limb_definition_for(bone_id: String) -> Dictionary:
-	var parsed: Dictionary = _parse_generated_limb_bone_id(bone_id)
+static func generated_limb_definition_for(raw_id: String) -> Dictionary:
+	# Accepts an instance_id as well as a bone_id; see BoneInstanceService.
+	var parsed: Dictionary = _parse_generated_limb_bone_id(BoneInstanceService.bone_id_of(raw_id))
 	if parsed.is_empty():
 		return {}
 

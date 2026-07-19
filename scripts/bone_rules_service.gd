@@ -23,7 +23,11 @@ const DURABILITY_CRACKED_THRESHOLD := 0.4
 const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
 
-static func definition_for(bone_id: String) -> Dictionary:
+# Every lookup in this service goes through here, so passing an instance_id
+# ("bone#7") anywhere a bone_id was accepted resolves to that instance's type
+# without each caller having to know instances exist.
+static func definition_for(raw_id: String) -> Dictionary:
+	var bone_id := BoneInstanceService.bone_id_of(raw_id)
 	var definition: Dictionary = BoneDatabase.get_def(bone_id)
 	if not definition.is_empty():
 		return definition
@@ -75,18 +79,20 @@ static func display_name_with_slot(bone_id: String) -> String:
 	return clean_name + " " + slot_label
 
 
-static func quality_for(bone_id: String) -> String:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		return str(definition.get("quality", BoneDefinition.QUALITY_COMMON))
-	return BoneDatabase.quality(bone_id)
+# Quality belongs to the individual piece, so these read the instance's rolled
+# quality (BoneInstanceService) and take the numbers from the one central table
+# (BoneQualityService). A legacy bone_id String resolves to its authored
+# quality through the compatibility path instead of being re-rolled.
+static func quality_for(raw_id: String) -> String:
+	return BoneInstanceService.quality_id_of(raw_id)
 
 
-static func quality_rank_for(bone_id: String) -> int:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		return int(definition.get("quality_rank", 1))
-	return BoneDatabase.quality_rank(bone_id)
+static func quality_display_name_for(raw_id: String) -> String:
+	return BoneQualityService.display_name_for(quality_for(raw_id))
+
+
+static func quality_rank_for(raw_id: String) -> int:
+	return BoneQualityService.rank_for(quality_for(raw_id))
 
 
 static func quality_score_for(bone_id: String) -> float:
@@ -96,11 +102,9 @@ static func quality_score_for(bone_id: String) -> float:
 	return BoneDatabase.quality_score(bone_id)
 
 
-static func quality_multiplier_for(bone_id: String) -> float:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		return float(definition.get("quality_multiplier", 1.0))
-	return BoneDatabase.quality_multiplier(bone_id)
+# THE quality multiplier used by the stat formula: effective = base * this.
+static func quality_multiplier_for(raw_id: String) -> float:
+	return BoneQualityService.multiplier_for(quality_for(raw_id))
 
 
 static func quality_damage_percent_for(bone_id: String) -> float:
@@ -128,13 +132,8 @@ static func quality_weight_percent_for(bone_id: String) -> float:
 	return float(definition.get("quality_weight_percent", 0.0))
 
 
-static func quality_color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
-	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
-	if not definition.is_empty():
-		var color_value: Variant = definition.get("quality_color", fallback)
-		if color_value is Color:
-			return color_value
-	return BoneDatabase.quality_color(bone_id, fallback)
+static func quality_color_for(raw_id: String, _fallback: Color = UNKNOWN_COLOR) -> Color:
+	return BoneQualityService.color_for(quality_for(raw_id))
 
 
 static func rarity_for(bone_id: String) -> String:
