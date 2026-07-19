@@ -637,6 +637,87 @@
 ### Node Path Lookups
 - none
 
+## BoneInstanceService
+
+- Source file: `scripts/bone_instance_service.gd`
+- Extends: `unknown`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `INSTANCE_PREFIX`
+
+### Key Variables
+- `resolved_quality`
+- `instance_id`
+- `record`
+- `bone_id`
+- `generated`
+- `data`
+- `raw`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## BoneQualityService
+
+- Source file: `scripts/bone_quality_service.gd`
+- Extends: `unknown`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `QUALITY_FRAIL`
+- `QUALITY_WORN`
+- `QUALITY_NORMAL`
+- `QUALITY_STRONG`
+- `QUALITY_PRISTINE`
+- `QUALITY_TABLE`
+- `QUALITY_ORDER`
+- `LEGACY_QUALITY_ALIASES`
+
+### Key Variables
+- `roll`
+- `cumulative`
+- `total`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## BoneRulesService
 
 - Source file: `scripts/bone_rules_service.gd`
@@ -660,6 +741,7 @@
 - `UNKNOWN_COLOR`
 
 ### Key Variables
+- `bone_id`
 - `definition`
 - `full`
 - `replacements`
@@ -683,7 +765,6 @@
 - `mutation_counts`
 - `total_synergy_score`
 - `total_mutation_intensity`
-- `bone_id`
 - `set_id`
 - `pieces`
 - `piece_key`
@@ -1327,6 +1408,7 @@
 ### Key Variables
 - `slots`
 - `result`
+- `resolved_id`
 - `definition`
 - `raw_slot`
 - `normalized`
@@ -2178,6 +2260,7 @@
 - `equipment_component`
 - `bone_inventory`
 - `equip_cursor`
+- `instance_id`
 - `bone_id`
 
 ### Functions
