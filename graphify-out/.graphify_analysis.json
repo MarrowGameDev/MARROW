@@ -398,20 +398,20 @@
       "architecture_rationale_2652"
     ],
     "13": [
-      "architecture_rationale_4748",
       "architecture_rationale_4799",
+      "architecture_rationale_4808",
       "architecture_rationale_4817",
       "architecture_rationale_4834",
       "architecture_rationale_4867",
-      "architecture_scenebonetrialgate",
-      "architecture_scenebonetrialgate_contains_bonetrialgate",
       "architecture_sceneexitportal",
       "architecture_sceneexitportal_contains_exitportal",
+      "architecture_sceneguidewisp",
+      "architecture_sceneguidewisp_contains_guidewisp",
       "architecture_scenemain",
       "architecture_scenemain_contains_arenagoalmanager",
-      "architecture_scenemain_contains_scenebonetrialgate",
       "architecture_scenemain_contains_sceneenemy",
       "architecture_scenemain_contains_sceneexitportal",
+      "architecture_scenemain_contains_sceneguidewisp",
       "architecture_scenemain_contains_sceneopenworldstage",
       "architecture_scenemain_contains_sceneplayer",
       "architecture_scenemain_contains_tutorialislandbuilder",
@@ -1062,10 +1062,10 @@
       "architecture_rationale_3878"
     ],
     "79": [
-      "architecture_rationale_4808",
-      "architecture_sceneguidewisp",
-      "architecture_sceneguidewisp_contains_guidewisp",
-      "architecture_scenemain_contains_sceneguidewisp"
+      "architecture_rationale_4748",
+      "architecture_scenebonetrialgate",
+      "architecture_scenebonetrialgate_contains_bonetrialgate",
+      "architecture_scenemain_contains_scenebonetrialgate"
     ],
     "80": [
       "architecture_arenagoalmanager_gd_func_action_binding_text",

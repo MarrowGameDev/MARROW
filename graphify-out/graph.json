@@ -11120,7 +11120,7 @@
       "source_location": "L4756",
       "_origin": "ast",
       "id": "architecture_scenebonetrialgate",
-      "community": 13,
+      "community": 79,
       "norm_label": "scenebonetrialgate"
     },
     {
@@ -11130,7 +11130,7 @@
       "source_location": "L4761",
       "_origin": "ast",
       "id": "architecture_scenebonetrialgate_contains_bonetrialgate",
-      "community": 13,
+      "community": 79,
       "norm_label": ".contains_bonetrialgate()"
     },
     {
@@ -11230,7 +11230,7 @@
       "source_location": "L4807",
       "_origin": "ast",
       "id": "architecture_sceneguidewisp",
-      "community": 79,
+      "community": 13,
       "norm_label": "sceneguidewisp"
     },
     {
@@ -11240,7 +11240,7 @@
       "source_location": "L4812",
       "_origin": "ast",
       "id": "architecture_sceneguidewisp_contains_guidewisp",
-      "community": 79,
+      "community": 13,
       "norm_label": ".contains_guidewisp()"
     },
     {
@@ -11310,7 +11310,7 @@
       "source_location": "L4841",
       "_origin": "ast",
       "id": "architecture_scenemain_contains_scenebonetrialgate",
-      "community": 13,
+      "community": 79,
       "norm_label": ".contains_scenebonetrialgate()"
     },
     {
@@ -11340,7 +11340,7 @@
       "source_location": "L4853",
       "_origin": "ast",
       "id": "architecture_scenemain_contains_sceneguidewisp",
-      "community": 79,
+      "community": 13,
       "norm_label": ".contains_sceneguidewisp()"
     },
     {
@@ -18950,7 +18950,7 @@
       "source_location": "L4748",
       "_origin": "ast",
       "id": "architecture_rationale_4748",
-      "community": 13,
+      "community": 79,
       "norm_label": "godot scene: scenes/bone.tscn"
     },
     {
@@ -19000,7 +19000,7 @@
       "source_location": "L4808",
       "_origin": "ast",
       "id": "architecture_rationale_4808",
-      "community": 79,
+      "community": 13,
       "norm_label": "godot scene: scenes/guide_wisp.tscn"
     },
     {
@@ -46014,5 +46014,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "aa02e5bd7fc4ed4332fd0289d1277af832b9aefd"
+  "built_at_commit": "e79130df23c045db03a889a600818e9fd1348244"
 }
