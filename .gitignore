@@ -38,3 +38,6 @@ Desktop.ini
 *.swp
 *.bak
 *~
+
+# Local UI screenshots produced by tools/screenshot_inventory.gd
+.screenshots/

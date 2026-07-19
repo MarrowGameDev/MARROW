@@ -23,11 +23,22 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 		var requested_size: Variant = player.call("get_inventory_tile_size")
 		if typeof(requested_size) == TYPE_VECTOR2:
 			tile_size = requested_size
-	var x_scale := tile_size.x / 96.0
-	var y_scale := tile_size.y / 86.0
+	tile_size = Vector2(maxf(32.0, tile_size.x), maxf(32.0, tile_size.y))
 	custom_minimum_size = tile_size
+	size = tile_size
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# Bands are measured from the tile's real size instead of scaling a fixed
+	# 96x86 design, so the name and the slot caption keep their own room at
+	# every resolution rather than drawing over each other.
+	var pad: float = maxf(3.0, tile_size.y * 0.05)
+	var min_side: float = minf(tile_size.x, tile_size.y)
+	var inner_width: float = maxf(8.0, tile_size.x - (pad * 2.0))
+	var name_height: float = maxf(16.0, tile_size.y * 0.26)
+	var slot_height: float = maxf(10.0, tile_size.y * 0.15)
+	var art_top: float = pad + maxf(2.0, tile_size.y * 0.06)
+	var art_height: float = maxf(8.0, tile_size.y - name_height - slot_height - art_top - pad)
 
 	var frame := PanelContainer.new()
 	frame.position = Vector2(0, 0)
@@ -38,32 +49,33 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 
 	var top_rule := ColorRect.new()
 	top_rule.color = Color(0.87, 0.63, 0.19, 0.36)
-	top_rule.position = Vector2(12.0 * x_scale, 10.0 * y_scale)
-	top_rule.size = Vector2(72.0 * x_scale, 1)
+	top_rule.position = Vector2(pad + inner_width * 0.10, pad + maxf(1.0, tile_size.y * 0.03))
+	top_rule.size = Vector2(inner_width * 0.80, 1)
 	top_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_rule)
+
+	var art_centre := Vector2(tile_size.x * 0.5, art_top + art_height * 0.5)
+	var art_span: float = minf(inner_width, art_height)
 
 	# The colored square (matches the bone's color).
 	var glow := ColorRect.new()
 	glow.color = BoneRulesService.color_for(id).lightened(0.18)
-	glow.position = Vector2(31.0 * x_scale, 17.0 * y_scale)
-	glow.size = Vector2(34.0 * x_scale, 34.0 * y_scale)
 	glow.rotation = PI / 4.0
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(glow)
+	_place_diamond(glow, art_centre, art_span * 0.92)
 
 	var core := ColorRect.new()
 	core.color = BoneRulesService.color_for(id)
-	core.position = Vector2(35.0 * x_scale, 21.0 * y_scale)
-	core.size = Vector2(26.0 * x_scale, 26.0 * y_scale)
 	core.rotation = PI / 4.0
 	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(core)
+	_place_diamond(core, art_centre, art_span * 0.70)
 
 	_stack_label = Label.new()
-	_stack_label.position = Vector2(57.0 * x_scale, 17.0 * y_scale)
-	_stack_label.size = Vector2(30.0 * x_scale, 16.0 * y_scale)
-	_stack_label.add_theme_font_size_override("font_size", maxi(9, int(10.0 * minf(x_scale, y_scale))))
+	_stack_label.size = Vector2(maxf(16.0, inner_width * 0.30), maxf(12.0, art_height * 0.34))
+	_stack_label.position = Vector2(tile_size.x - pad - _stack_label.size.x, art_top)
+	_stack_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.13), 9, 15))
 	_stack_label.add_theme_color_override("font_color", Color(0.96, 0.91, 0.72, 1.0))
 	_stack_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_stack_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -72,25 +84,35 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 
 	# The bone name under it.
 	_label = Label.new()
-	_label.position = Vector2(5.0 * x_scale, 50.0 * y_scale)
-	_label.size = Vector2(86.0 * x_scale, 22.0 * y_scale)
-	_label.add_theme_font_size_override("font_size", maxi(10, int(10.0 * minf(x_scale, y_scale))))
+	_label.position = Vector2(pad, tile_size.y - slot_height - name_height - pad * 0.5)
+	_label.size = Vector2(inner_width, name_height)
+	_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.125), 9, 15))
 	_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# A name like "Enemy Left Arm Bone" wraps to more lines than the band is
+	# tall; labels do not clip by default, so without this cap the overflow
+	# drew straight over the slot caption below.
+	_label.max_lines_visible = 2
+	_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_label.clip_text = true
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_label)
 
 	_slot_label = Label.new()
-	_slot_label.position = Vector2(5.0 * x_scale, 72.0 * y_scale)
-	_slot_label.size = Vector2(86.0 * x_scale, 12.0 * y_scale)
+	_slot_label.position = Vector2(pad, tile_size.y - slot_height - pad * 0.5)
+	_slot_label.size = Vector2(inner_width, slot_height)
 	var slot_text := EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(id))
 	if slot_text == "":
 		slot_text = "Piece"
 	_slot_label.text = slot_text
-	_slot_label.add_theme_font_size_override("font_size", maxi(8, int(8.0 * minf(x_scale, y_scale))))
+	_slot_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.10), 8, 13))
 	_slot_label.add_theme_color_override("font_color", Color(0.44, 0.32, 0.12, 0.95))
 	_slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_slot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_slot_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_slot_label.clip_text = true
 	_slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_slot_label)
 	refresh()
@@ -98,6 +120,15 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	# Hovering shows this bone's stats in the inventory's info area.
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+
+
+# A ColorRect rotated 45 degrees turns about its own origin, so its visual
+# centre lands at position + (0, side * sqrt(2) / 2). Solve for the position
+# that puts that centre exactly where we want it.
+func _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void:
+	var side: float = maxf(2.0, bounding_side / sqrt(2.0))
+	rect.size = Vector2(side, side)
+	rect.position = centre - Vector2(0.0, side * sqrt(2.0) * 0.5)
 
 
 func _on_mouse_entered() -> void:

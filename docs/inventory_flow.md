@@ -397,3 +397,46 @@ render):
 Pendiente de confirmacion visual humana: que el paper doll se vea centrado y
 sin recortes en cada resolucion (el chequeo headless valida geometria, no
 render).
+
+- 2026-07-18 (dimensiones y centrado): correcciones sobre lo reportado
+  visualmente (el paper doll no se veia centrado y los textos se pisaban).
+  Cuatro causas reales, todas verificadas por captura y no solo por lectura:
+
+  1. `BoneSlotWidget` y `BoneItemTile` maquetaban a offsets absolutos
+     derivados de un tamano de diseno fijo (82x80 y 96x86) y no se
+     re-maquetaban nunca. Ahora `BoneSlotWidget.resize()` re-posiciona todos
+     sus hijos para el tamano pedido, y el paper doll lo llama en cada pasada
+     responsive en lugar de usar `scale`. Esto elimina de raiz el doble
+     escalado corregido el 2026-07-18 anterior.
+  2. Los labels de nombre tenian `autowrap` pero altura fija. Godot no
+     recorta labels por defecto, asi que un nombre de dos lineas ("Enemy Left
+     Arm Bone") se dibujaba encima del caption del slot de abajo. Ahora las
+     bandas de texto se reservan por separado y los labels usan
+     `max_lines_visible` + `OVERRUN_TRIM_ELLIPSIS` + `clip_text`.
+  3. El doll vivia en un `MarginContainer` que lo estiraba a todo el panel
+     (medido: >1000 px de ancho contra una figura de ~500 px) mientras sus
+     hijos se posicionaban desde el origen del doll, dejando toda la holgura
+     a la derecha y abajo. Con `SIZE_SHRINK_CENTER` el contenedor lo
+     dimensiona a su minimo y lo centra por layout.
+  4. La pestana Builds no tenia layout responsive: previews de tamano fijo
+     que ademas absorbian la altura sobrante del card (custom_minimum_size es
+     solo un piso), empujando el resumen y los botones Save/Apply fuera del
+     panel a 1280x720. Ahora hay `_apply_builds_responsive_layout`, los
+     previews estan fijados con `SHRINK_CENTER`, el resumen esta limitado a 3
+     lineas con altura reservada, y los cards son mas anchos (hasta 340 px) y
+     quedan centrados verticalmente.
+
+  Ademas la grilla rellena `inventory_visible_rows` filas en vez de 4 fijas,
+  que era lo que dejaba una banda vacia bajo la ultima fila a 1080p.
+
+  Verificacion: `tools/headless_inventory_check.gd` (geometria: rect de input
+  == visual, sin solapes entre slots, bandas de texto disjuntas, doll centrado
+  dentro de su panel, en 1280x720 / 1366x768 / 1920x1080 / 2560x1080 /
+  1024x600) y `tools/screenshot_inventory.gd`, que renderiza la escena real y
+  guarda PNGs de Inventario y Builds a 1280x720 y 1920x1080 para inspeccion
+  visual. Este segundo tool existe porque la pasada anterior aprobo la
+  geometria mientras la pantalla seguia viendose mal: revisar solo numeros no
+  alcanzaba. Correr sin `--headless` (headless no tiene renderer).
+
+Pendiente: no se ejercito drag and drop real (equipar arrastrando) ni la
+navegacion con teclado; eso sigue requiriendo una sesion manual.

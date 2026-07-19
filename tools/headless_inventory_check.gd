@@ -107,6 +107,41 @@ func _check_slot_rects(ui: Node, res: Vector2i) -> Array[String]:
 			var b: Rect2 = rects[keys[j]]
 			if a.intersects(b):
 				problems.append("%s and %s overlap @ %dx%d (%s vs %s)" % [keys[i], keys[j], res.x, res.y, str(a), str(b)])
+
+	# Labels do not clip by default, so a name band that runs past its own rect
+	# draws over the caption underneath it. Assert the bands stay disjoint.
+	for slot in widgets.keys():
+		var w: Control = widgets[slot] as Control
+		if w == null:
+			continue
+		var bands: Array = []
+		for child in w.get_children():
+			var lbl := child as Label
+			if lbl != null:
+				bands.append({"rect": Rect2(lbl.position, lbl.size), "text": lbl.text})
+		for i in range(bands.size()):
+			for j in range(i + 1, bands.size()):
+				if (bands[i]["rect"] as Rect2).intersects(bands[j]["rect"] as Rect2):
+					problems.append("%s @ %dx%d: text bands overlap ('%s' vs '%s')" % [str(slot), res.x, res.y, str(bands[i]["text"]), str(bands[j]["text"])])
+
+	# The figure must be optically centred inside the preview panel it lives in,
+	# not pinned to a corner. Compare the doll's rect against its parent area in
+	# shared (global) coordinates so container margins are accounted for.
+	var doll: Control = ui.get("inventory_paper_doll")
+	var area: Control = ui.get("inventory_preview_area")
+	if doll != null and area != null and area.size.x > 0.0 and area.size.y > 0.0:
+		var left: float = doll.global_position.x - area.global_position.x
+		var right: float = (area.global_position.x + area.size.x) - (doll.global_position.x + doll.size.x)
+		var top: float = doll.global_position.y - area.global_position.y
+		var bottom: float = (area.global_position.y + area.size.y) - (doll.global_position.y + doll.size.y)
+		var tol_x: float = maxf(12.0, area.size.x * 0.06)
+		var tol_y: float = maxf(12.0, area.size.y * 0.06)
+		if absf(left - right) > tol_x:
+			problems.append("doll off-centre horizontally @ %dx%d (left %.1f vs right %.1f, area %.1f)" % [res.x, res.y, left, right, area.size.x])
+		if absf(top - bottom) > tol_y:
+			problems.append("doll off-centre vertically @ %dx%d (top %.1f vs bottom %.1f, area %.1f)" % [res.x, res.y, top, bottom, area.size.y])
+		if doll.size.x > area.size.x + 1.0 or doll.size.y > area.size.y + 1.0:
+			problems.append("doll %s exceeds preview area %s @ %dx%d" % [str(doll.size), str(area.size), res.x, res.y])
 	return problems
 
 

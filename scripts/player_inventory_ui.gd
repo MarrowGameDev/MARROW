@@ -69,6 +69,14 @@ var build_preset_status_label: Label = null
 var build_preset_summary_labels: Dictionary = {}
 var build_preset_apply_buttons: Dictionary = {}
 var build_preset_save_buttons: Dictionary = {}
+# Per-card nodes kept so the builds tab can be laid out responsively like the
+# rest of the inventory instead of staying at its authored size.
+var build_preset_cards: Dictionary = {}
+var build_preview_frames: Dictionary = {}
+var build_preset_title_labels: Dictionary = {}
+var builds_box_margin: MarginContainer = null
+var builds_cards_row: HBoxContainer = null
+var builds_title_label: Label = null
 # "save:2" / "apply:1" style key for whichever button is armed and waiting
 # for a second press to confirm; "" when nothing is armed.
 var build_preset_armed_action: String = ""
@@ -84,6 +92,10 @@ var inventory_preview_root: Node3D = null
 var slot_widgets: Dictionary = {}
 var items_grid: GridContainer = null
 var inventory_item_tile_size: Vector2 = Vector2(96, 86)
+# Rows the grid is currently sized for. rebuild_item_tiles() pads out to this
+# many rows so the reserved height is actually filled instead of leaving a
+# band of empty panel under the last row.
+var inventory_visible_rows: int = 4
 var inventory_empty_slot_size: Vector2 = Vector2(96, 86)
 
 
@@ -626,6 +638,7 @@ func _apply_inventory_responsive_layout() -> void:
 		visible_rows = 3
 	elif height > 860.0:
 		visible_rows = 5
+	inventory_visible_rows = visible_rows
 	var grid_columns := 6
 	if grid_content_width < 520:
 		grid_columns = 3
@@ -701,8 +714,76 @@ func _apply_inventory_responsive_layout() -> void:
 	_apply_paper_doll_responsive_layout(doll_scale)
 
 	_apply_settings_responsive_layout(content_width, body_height, compact, very_compact)
+	_apply_builds_responsive_layout(content_width, body_height, compact, very_compact)
 	rebuild_item_tiles()
 	_refresh_inventory_tabs()
+
+
+# The builds tab gets the full inventory width to itself (no side preview), so
+# its cards can be noticeably wider than the paper-doll slots. Everything here
+# is derived from the available content box rather than authored constants, so
+# the tab holds up at 1024x600 and at ultrawide alike.
+func _apply_builds_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void:
+	if builds_panel == null:
+		return
+
+	var slot_count: int = maxi(1, PlayerEquipmentBuildsComponent.BUILD_SLOT_COUNT)
+	var box_margin: int = 8 if very_compact else (11 if compact else 14)
+	var card_gap: int = 8 if very_compact else (13 if compact else 18)
+	var card_margin: int = 6 if very_compact else (8 if compact else 10)
+
+	var row_width: int = maxi(200, content_width - (box_margin * 2))
+	var gaps_width: int = card_gap * (slot_count - 1)
+	var card_width: float = floor(float(row_width - gaps_width) / float(slot_count))
+	card_width = clampf(card_width, 120.0, 340.0)
+
+	# Height budget: the tab title, status paragraph and divider, plus the
+	# card's own title, its 3-line summary and the button row, all have to fit
+	# around the preview. Measured against the rendered tab at 1280x720 and
+	# 1920x1080 -- under-budgeting here is what pushed the buttons off-panel.
+	var chrome_height: int = 210 if very_compact else (268 if compact else 292)
+	var preview_height_budget: float = float(content_height) - float(chrome_height)
+	var preview_width: float = maxf(70.0, card_width - float(card_margin * 2))
+	var aspect: float = BUILD_PREVIEW_BASE_SIZE.y / BUILD_PREVIEW_BASE_SIZE.x
+	var preview_height: float = preview_width * aspect
+	if preview_height_budget > 60.0 and preview_height > preview_height_budget:
+		preview_height = preview_height_budget
+		preview_width = preview_height / aspect
+	preview_height = maxf(90.0, preview_height)
+	preview_width = maxf(70.0, preview_width)
+
+	_set_margin(builds_box_margin, box_margin, box_margin, box_margin, box_margin)
+	if builds_cards_row != null:
+		builds_cards_row.add_theme_constant_override("separation", card_gap)
+	if builds_title_label != null:
+		builds_title_label.add_theme_font_size_override("font_size", 18 if very_compact else (21 if compact else 24))
+	if build_preset_status_label != null:
+		build_preset_status_label.add_theme_font_size_override("font_size", 11 if very_compact else (13 if compact else 15))
+		build_preset_status_label.custom_minimum_size = Vector2(float(row_width), 0.0)
+
+	for index in build_preset_cards:
+		var card := build_preset_cards[index] as Control
+		if card != null:
+			card.custom_minimum_size = Vector2(card_width, 0.0)
+		var frame := build_preview_frames.get(index) as Control
+		if frame != null:
+			frame.custom_minimum_size = Vector2(preview_width, preview_height)
+		var card_title := build_preset_title_labels.get(index) as Label
+		if card_title != null:
+			card_title.add_theme_font_size_override("font_size", 13 if very_compact else (15 if compact else 17))
+		var summary := build_preset_summary_labels.get(index) as Label
+		if summary != null:
+			var summary_font: int = 10 if very_compact else (12 if compact else 14)
+			summary.add_theme_font_size_override("font_size", summary_font)
+			# clip_text with a zero minimum height collapsed the label to
+			# nothing, so reserve the height its 3 capped lines actually need.
+			summary.custom_minimum_size = Vector2(preview_width, ceilf(float(summary_font) * 1.45 * 3.0))
+		for button_source in [build_preset_save_buttons, build_preset_apply_buttons]:
+			var button := (button_source as Dictionary).get(index) as Button
+			if button == null:
+				continue
+			button.custom_minimum_size = Vector2(maxf(52.0, (preview_width - 8.0) * 0.5), 26.0 if very_compact else 30.0)
+			button.add_theme_font_size_override("font_size", 11 if very_compact else (13 if compact else 15))
 
 
 func _apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void:
@@ -761,8 +842,18 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 	var scaled_doll_size := base_doll_size * doll_scale
 	inventory_paper_doll.scale = Vector2.ONE
 	inventory_paper_doll.custom_minimum_size = scaled_doll_size
-	inventory_paper_doll.size = scaled_doll_size
 	inventory_paper_doll.clip_contents = true
+
+	# The doll's children sit at absolute offsets from the doll's own origin,
+	# so the doll must be exactly as big as the figure for it to read as
+	# centred. By default the enclosing MarginContainer stretched it to the
+	# whole panel (measured over 1000px wide against a ~500px figure), which
+	# pinned the figure to the top-left and left every pixel of slack on the
+	# right and bottom. SHRINK_CENTER makes the container size the doll to its
+	# minimum and centre it, so the figure is centred by layout at any aspect
+	# ratio rather than by a hand-computed offset.
+	inventory_paper_doll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	inventory_paper_doll.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var center_frame := inventory_paper_doll.get_node_or_null("CenterFrame") as Control
 	if center_frame != null:
@@ -811,16 +902,13 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 			continue
 		var base_position: Vector2 = slot_positions[slot]
 		widget.position = base_position * doll_scale
-		# BoneSlotWidget.setup() lays its children out at absolute offsets
-		# derived from the 88x88 size it was built with and never re-lays-out
-		# on resize, so `scale` is what actually resizes the slot. Keep the
-		# control rect at the base size: scaling it here as well would make
-		# the *input* rect 88 * doll_scale^2 while the visuals stay at
-		# 88 * doll_scale, so neighbouring slots' drop targets would overlap
-		# and a drag would equip into the wrong slot at any doll_scale != 1.
-		widget.scale = Vector2(doll_scale, doll_scale)
-		widget.custom_minimum_size = Vector2(88.0, 88.0)
-		widget.size = Vector2(88.0, 88.0)
+		# BoneSlotWidget.resize() re-lays-out its children for the new size, so
+		# the slot is sized for real instead of being drawn through `scale`.
+		# That keeps the control's input rect identical to what is drawn: an
+		# earlier version set both `scale` and a scaled `size`, which left the
+		# input rect at 88 * doll_scale^2 against visuals at 88 * doll_scale
+		# and made neighbouring drop targets overlap.
+		widget.resize(Vector2(88.0, 88.0) * doll_scale)
 
 
 func _apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void:
@@ -943,6 +1031,7 @@ func _build_equipment_builds_tab() -> ScrollContainer:
 	scroll.add_child(box)
 
 	var margin := MarginContainer.new()
+	builds_box_margin = margin
 	margin.add_theme_constant_override("margin_left", 14)
 	margin.add_theme_constant_override("margin_top", 14)
 	margin.add_theme_constant_override("margin_right", 14)
@@ -956,6 +1045,7 @@ func _build_equipment_builds_tab() -> ScrollContainer:
 	margin.add_child(list)
 
 	var title := Label.new()
+	builds_title_label = title
 	title.text = "Equipment Builds"
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
@@ -974,9 +1064,13 @@ func _build_equipment_builds_tab() -> ScrollContainer:
 	list.add_child(divider)
 
 	var cards := HBoxContainer.new()
+	builds_cards_row = cards
 	cards.name = "BuildCards"
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
 	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Take the leftover height so the cards can sit centred in it rather than
+	# hugging the top of a tall panel.
+	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	cards.add_theme_constant_override("separation", 18)
 	list.add_child(cards)
 
@@ -997,6 +1091,8 @@ func _build_equipment_build_card(index: int) -> Control:
 	card.name = "EquipmentBuildCard_" + str(index)
 	card.process_mode = Node.PROCESS_MODE_ALWAYS
 	card.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 0.99, 0.95, 0.42), Color(0.87, 0.63, 0.19, 0.74), 1, 2))
+	card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	build_preset_cards[index] = card
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 10)
@@ -1014,8 +1110,16 @@ func _build_equipment_build_card(index: int) -> Control:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	list.add_child(title)
+	build_preset_title_labels[index] = title
 
 	var preview_frame := PanelContainer.new()
+	build_preview_frames[index] = preview_frame
+	# custom_minimum_size is only a floor: left to FILL, the preview absorbed
+	# all the card's spare height and pushed the summary and the Save/Apply
+	# buttons out of the panel. SHRINK_CENTER pins it to the size the
+	# responsive pass computes, leaving the rest of the card its own room.
+	preview_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	preview_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	preview_frame.custom_minimum_size = BUILD_PREVIEW_BASE_SIZE
 	preview_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
@@ -1026,6 +1130,11 @@ func _build_equipment_build_card(index: int) -> Control:
 	summary.text = "Empty"
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# A full six-slot build wraps to many lines; uncapped it grew the card
+	# until the buttons fell off the bottom of the panel.
+	summary.max_lines_visible = 3
+	summary.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	summary.clip_text = true
 	summary.custom_minimum_size = Vector2(BUILD_PREVIEW_BASE_SIZE.x, 0)
 	summary.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	list.add_child(summary)
@@ -1929,7 +2038,9 @@ func rebuild_item_tiles() -> void:
 		items_grid.add_child(tile)
 		shown += 1
 
-	var target_slots: int = maxi(12, items_grid.columns * 4)
+	# Pad to the same row count the layout reserved height for, so the grid
+	# panel is filled rather than leaving an empty band under the last row.
+	var target_slots: int = maxi(12, items_grid.columns * maxi(1, inventory_visible_rows))
 	for i in range(shown, target_slots):
 		items_grid.add_child(_make_empty_inventory_slot())
 
