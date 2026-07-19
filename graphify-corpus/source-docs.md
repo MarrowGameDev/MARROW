@@ -3095,6 +3095,23 @@ render).
 Pendiente: no se ejercito drag and drop real (equipar arrastrando) ni la
 navegacion con teclado; eso sigue requiriendo una sesion manual.
 
+- 2026-07-18 (centrado de extremidades): brazos y piernas subieron 48 unidades
+  de diseno (arms y 190 -> 142, legs y 286 -> 238) para que el bloque
+  brazos+piernas quede centrado con el frame del preview. El frame va de y 92 a
+  y 376 (centro 234); antes el bloque iba de 190 a 374 (centro 282), 48 abajo.
+  Ahora va de 142 a 326, centro 234 exacto. Cabeza y torso no se movieron.
+
+  De paso la geometria del paper doll pasa a constantes `PAPER_DOLL_*` con una
+  sola definicion. Antes las posiciones estaban escritas dos veces
+  (`_build_paper_doll` y la pasada responsive) y que esas dos copias se
+  desincronizaran es literalmente el bug que ya se documento arriba; ahora no
+  puede repetirse.
+
+  `tools/headless_inventory_check.gd` afirma el centrado: compara el centro
+  vertical del bloque brazos+piernas contra el centro del frame del preview en
+  las cinco resoluciones. Probado contra las posiciones viejas (falla en las 5,
+  desviacion de 30-61 px segun resolucion) y contra las nuevas (pasa).
+
 ## docs/manual_gameplay_qa_checklist.md
 
 # Manual Gameplay QA Checklist
