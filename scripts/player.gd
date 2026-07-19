@@ -1316,6 +1316,36 @@ func get_equipment_build_summaries() -> Array:
 	return equipment_builds_component.get_build_summaries()
 
 
+func get_equipment_build_report(index: int) -> Dictionary:
+	if equipment_builds_component == null:
+		return {}
+	return equipment_builds_component.get_build_report(index)
+
+
+func get_equipment_build_indices() -> Array:
+	if equipment_builds_component == null:
+		return []
+	return equipment_builds_component.build_indices()
+
+
+func create_equipment_build() -> int:
+	if equipment_builds_component == null:
+		return 1
+	return equipment_builds_component.create_build()
+
+
+func delete_equipment_build(index: int) -> Dictionary:
+	if equipment_builds_component == null:
+		return {"ok": false, "message": "Equipment builds are not ready."}
+	return equipment_builds_component.delete_build(index)
+
+
+func rename_equipment_build(index: int, new_name: String) -> Dictionary:
+	if equipment_builds_component == null:
+		return {"ok": false, "message": "Equipment builds are not ready."}
+	return equipment_builds_component.rename_build(index, new_name)
+
+
 # Enemies call this when they land a contact hit on the player.
 func take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void:
 	if is_dead or invuln_timer > 0.0:

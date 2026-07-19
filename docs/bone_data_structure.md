@@ -114,13 +114,17 @@ La resolucion vive en un solo punto por capa: `BoneDatabase._type_id`,
 `generated_limb_definition_for`. Por eso cualquier API que aceptaba un
 `bone_id` acepta ahora un `instance_id` sin cambios en el llamador.
 
-Los builds guardan el TIPO por slot, no una pieza concreta. Atarlos a un
-`instance_id` los volvia casi inservibles: perder o cambiar la pieza exacta que
-estaba puesta al guardar rompia el build. Al aplicar, `_resolve_build_to_instances`
-elige la MEJOR calidad disponible de ese tipo entre lo que llevas encima
-(`frail < worn < normal < strong < pristine`), y si un tipo ocupa dos slots toma
-dos piezas distintas, las dos mejores. Si no llevas ninguna copia del tipo, el
-build falla y lo dice; no sustituye por otro tipo.
+Los builds guardan el `instance_id` exacto por slot, pero REQUIEREN solo el
+tipo. `resolve_build_snapshot` resuelve en dos pasadas: primero la instancia
+exacta guardada si aun la llevas (por eso un build recien guardado coincide con
+el equipo actual sin deltas fantasma), y si esa pieza ya no esta, la MEJOR
+calidad disponible del mismo `bone_id` (`frail < worn < normal < strong <
+pristine`), marcando el slot como `substituted` -- la sustitucion se muestra,
+nunca es silenciosa. Exigir la instancia exacta dejaba todo build en "Missing
+parts" para siempre, porque el inventario no persiste entre sesiones. Si un
+tipo ocupa dos slots se toman dos piezas distintas. Solo cuenta como faltante
+un tipo del que no llevas ninguna copia; en ese caso el build no muestra stats,
+no puede aplicarse y jamas sustituye por otro tipo.
 
 Los stacks agrupan por `bone_id + quality_id + mutacion`
 (`BoneInstanceService.stack_key_for`), no solo por `bone_id`: apilar dos brazos

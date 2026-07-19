@@ -52,6 +52,25 @@ func _initialize() -> void:
 		for id in ["torso_bone", "head_bone", "arm_bone", "leg_bone"]:
 			player.call("collect_bone", str(id))
 
+	# Wear a couple of pieces and save them into build 1, so the Builds tab
+	# captures a Currently Equipped build (banner, zero deltas) rather than
+	# only missing/empty states.
+	var torso_piece := ""
+	var arm_piece := ""
+	for item in player.call("get_inventory_items"):
+		var candidate := str(item)
+		if torso_piece == "" and EquipmentRulesService.compatible_slots_for_bone(candidate).has("torso"):
+			torso_piece = candidate
+		elif arm_piece == "" and EquipmentRulesService.compatible_slots_for_bone(candidate).has("right_arm"):
+			arm_piece = candidate
+	if torso_piece != "":
+		player.call("equip_bone", torso_piece, "torso")
+	if arm_piece != "":
+		player.call("equip_bone", arm_piece, "right_arm")
+	await process_frame
+	if player.has_method("save_equipment_build"):
+		player.call("save_equipment_build", 1)
+
 	# Collapse the testing-scene guide panel so it does not sit on top of the
 	# inventory in these captures (H hotkey, exercised here directly).
 	if world.has_method("_cycle_overlay_mode"):

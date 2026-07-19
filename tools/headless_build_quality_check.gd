@@ -1,7 +1,9 @@
 extends SceneTree
 
-# Builds match by TYPE and equip the BEST available quality.
-# Ladder: frail < worn < normal < strong < pristine.
+# Builds reference EXACT pieces: a build re-equips the very instance it was
+# saved with, never a different-quality copy of the same bone. (The earlier
+# best-quality-wins rule was reversed because re-resolving to a better copy
+# made a freshly saved build disagree with the gear it came from.)
 
 
 func _initialize() -> void:
@@ -38,10 +40,10 @@ func _initialize() -> void:
 	var saved: Dictionary = builds.call("save_current_build", 1)
 	print("saved build: ", saved.get("state", {}))
 
-	# The build must remember the TYPE, not the individual piece.
+	# The build must remember the individual piece, not just its type.
 	var saved_state: Dictionary = saved.get("state", {})
-	if str(saved_state.get(arm_slot, "")) != "arm_bone":
-		failures.append("build stored %s for the arm slot, expected the type 'arm_bone'" % str(saved_state.get(arm_slot, "")))
+	if str(saved_state.get(arm_slot, "")) != worn_arm:
+		failures.append("build stored %s for the arm slot, expected the worn instance %s" % [str(saved_state.get(arm_slot, "")), worn_arm])
 
 	# Now carry better and worse copies of the same type.
 	var frail_arm := BoneInstanceService.create_instance("arm_bone", BoneQualityService.QUALITY_FRAIL)
@@ -66,33 +68,26 @@ func _initialize() -> void:
 	var equipped := str(player.call("get_equipped_bone_for_slot", arm_slot))
 	var equipped_quality := BoneInstanceService.quality_id_of(equipped)
 	print("equipped %s (%s)" % [equipped, equipped_quality])
-	if equipped_quality != BoneQualityService.QUALITY_PRISTINE:
-		failures.append("build equipped %s quality, expected pristine (the best carried)" % equipped_quality)
-	if equipped == worn_arm:
-		failures.append("build re-equipped the exact saved piece instead of the best one")
+	if equipped != worn_arm:
+		failures.append("build equipped %s, expected the exact saved piece %s" % [equipped, worn_arm])
+	if equipped_quality != BoneQualityService.QUALITY_WORN:
+		failures.append("build equipped %s quality, expected the saved piece's worn" % equipped_quality)
+	if equipped == pristine_arm:
+		failures.append("build silently upgraded to a different-quality copy")
 
-	# Two slots of the same type must take two DIFFERENT pieces.
+	# Two slots naming two different instances must resolve to those two.
 	var left := EquipmentRulesService.SLOT_LEFT_ARM
 	var right := EquipmentRulesService.SLOT_RIGHT_ARM
-	var two_arm_state := {left: "arm_bone", right: "arm_bone"}
+	var two_arm_state := {left: frail_arm, right: pristine_arm}
 	var resolved: Dictionary = builds.call("_resolve_build_to_instances", two_arm_state)
 	print("two-arm resolution: ", resolved)
 	if resolved.size() != 2:
 		failures.append("two arm slots resolved to %d pieces" % resolved.size())
-	elif str(resolved[left]) == str(resolved[right]):
-		failures.append("the same piece was assigned to both arm slots")
-	else:
-		var qualities := [
-			BoneQualityService.rank_for(BoneInstanceService.quality_id_of(str(resolved[left]))),
-			BoneQualityService.rank_for(BoneInstanceService.quality_id_of(str(resolved[right]))),
-		]
-		qualities.sort()
-		# Best two carried arms are pristine(4) and strong(3).
-		if qualities != [3, 4]:
-			failures.append("two arm slots did not take the two best copies, got ranks %s" % str(qualities))
+	elif str(resolved[left]) != frail_arm or str(resolved[right]) != pristine_arm:
+		failures.append("slots did not resolve to their own saved instances: %s" % str(resolved))
 
-	# A type that is not carried at all must still fail, not substitute.
-	var impossible := {left: "heavy_bone"}
+	# A piece that is not carried must fail, never be substituted.
+	var impossible := {left: "bone#999999"}
 	var validation: Dictionary = builds.call("validate_build_state", impossible, [])
 	if bool(validation.get("ok", true)):
 		failures.append("a build needing an uncarried type validated as applicable")

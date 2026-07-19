@@ -24,6 +24,20 @@ const INVENTORY_FILTER_OPTIONS: Array = [
 # Sort modes for the item grid. "default" keeps the existing body-slot /
 # rarity / quality / name ordering; the quality modes re-rank by the quality
 # ladder first and fall back to the default order inside a tier.
+# Rows the build report may occupy before it is clipped.
+const BUILD_REPORT_MAX_LINES := 16
+# The detail panel owns one preview rig, re-synced on selection, instead of one
+# rig per saved build.
+const BUILD_DETAIL_PREVIEW_KEY := 0
+const BUILD_TABLE_SLOTS: Array = [
+	EquipmentRulesService.SLOT_HEAD,
+	EquipmentRulesService.SLOT_TORSO,
+	EquipmentRulesService.SLOT_LEFT_ARM,
+	EquipmentRulesService.SLOT_RIGHT_ARM,
+	EquipmentRulesService.SLOT_LEFT_LEG,
+	EquipmentRulesService.SLOT_RIGHT_LEG,
+]
+
 const INVENTORY_SORT_OPTIONS: Array = [
 	{"mode": "default", "text": "Default"},
 	{"mode": "quality_asc", "text": "Quality: Lowest first"},
@@ -138,6 +152,35 @@ var build_preset_title_labels: Dictionary = {}
 var builds_box_margin: MarginContainer = null
 var builds_cards_row: HBoxContainer = null
 var builds_title_label: Label = null
+# Set by the responsive pass: a small panel gets a denser report (no blank
+# separator rows, effects inline) so the Save/Apply buttons keep their room.
+var builds_report_compact: bool = false
+var builds_sidebar_panel: PanelContainer = null
+var builds_sidebar_list: VBoxContainer = null
+var builds_detail_panel: PanelContainer = null
+var builds_detail_title: Label = null
+var builds_detail_preview_frame: PanelContainer = null
+var builds_stats_list: VBoxContainer = null
+var builds_composition_list: VBoxContainer = null
+var builds_effects_list: VBoxContainer = null
+var builds_match_banner: Label = null
+var builds_equipment_rows: Dictionary = {}
+var builds_save_button: Button = null
+var builds_apply_button: Button = null
+var builds_rename_button: Button = null
+var builds_delete_button: Button = null
+var builds_rename_edit: LineEdit = null
+var builds_new_button: Button = null
+var builds_selected_index: int = 1
+var builds_header_badge: Label = null
+var builds_banner_panel: PanelContainer = null
+var builds_slot_cards: Dictionary = {}
+var builds_lower_cards: Array = []
+var builds_detail_preview_container: Control = null
+var builds_equipment_table_panel: PanelContainer = null
+var builds_upper_row: HBoxContainer = null
+var builds_action_row: HBoxContainer = null
+var inventory_last_very_compact: bool = false
 # "save:2" / "apply:1" style key for whichever button is armed and waiting
 # for a second press to confirm; "" when nothing is armed.
 var build_preset_armed_action: String = ""
@@ -169,7 +212,7 @@ func setup(owner_player: Node) -> void:
 	GameEvents.bone_unequipped.connect(_on_bone_unequipped)
 	_load_control_settings()
 	_build_inventory_ui()
-	_refresh_build_preset_rows()
+	_refresh_builds_screen()
 	get_viewport().size_changed.connect(Callable(self, "_queue_inventory_responsive_layout"))
 	rebuild_item_tiles()
 	update_inventory_ui()
@@ -831,7 +874,7 @@ func _select_inventory_category(category: String) -> void:
 	if inventory_category == "settings":
 		_refresh_control_buttons()
 	elif inventory_category == "builds":
-		_refresh_build_preset_rows()
+		_refresh_builds_screen()
 	else:
 		rebuild_item_tiles()
 	update_inventory_ui()
@@ -871,6 +914,17 @@ func _refresh_inventory_mode() -> void:
 		settings_panel.visible = showing_settings
 	if builds_panel != null:
 		builds_panel.visible = showing_builds
+	# Builds is its own section: the inventory's filters do not apply to it,
+	# and the header switches so "Builds" is the dominant title instead of
+	# competing with "Inventory".
+	if inventory_title_label != null:
+		inventory_title_label.text = "Builds" if showing_builds else "Inventory"
+	for filter_control in [inventory_filter_label, inventory_filter_dropdown, inventory_quality_dropdown, inventory_sort_dropdown]:
+		if filter_control != null:
+			(filter_control as Control).visible = not showing_builds
+	for secondary_control in [inventory_quality_label, inventory_sort_label_control]:
+		if secondary_control != null:
+			(secondary_control as Control).visible = not showing_builds and not inventory_last_very_compact
 
 
 func _queue_inventory_responsive_layout() -> void:
@@ -994,6 +1048,7 @@ func _apply_inventory_responsive_layout() -> void:
 		button.add_theme_font_size_override("font_size", 14 if very_compact else (15 if compact else 18))
 
 	var tab_font_size: int = 14 if very_compact else (15 if compact else 18)
+	inventory_last_very_compact = very_compact
 	if inventory_filter_label != null:
 		inventory_filter_label.add_theme_font_size_override("font_size", tab_font_size)
 		inventory_filter_label.custom_minimum_size = Vector2(0, tab_height)
@@ -1010,7 +1065,7 @@ func _apply_inventory_responsive_layout() -> void:
 			continue
 		secondary_label.add_theme_font_size_override("font_size", tab_font_size)
 		secondary_label.custom_minimum_size = Vector2(0, tab_height)
-		secondary_label.visible = not very_compact
+		secondary_label.visible = not very_compact and inventory_category != "builds"
 	if inventory_tabs_container != null:
 		inventory_tabs_container.add_theme_constant_override("separation", int(clampf(float(tab_gap) * 0.5, 6.0, 18.0)))
 
@@ -1053,63 +1108,39 @@ func _apply_builds_responsive_layout(content_width: int, content_height: int, co
 	if builds_panel == null:
 		return
 
-	var slot_count: int = maxi(1, PlayerEquipmentBuildsComponent.BUILD_SLOT_COUNT)
+	builds_report_compact = compact or very_compact
 	var box_margin: int = 8 if very_compact else (11 if compact else 14)
-	var card_gap: int = 8 if very_compact else (13 if compact else 18)
-	var card_margin: int = 6 if very_compact else (8 if compact else 10)
-
-	var row_width: int = maxi(200, content_width - (box_margin * 2))
-	var gaps_width: int = card_gap * (slot_count - 1)
-	var card_width: float = floor(float(row_width - gaps_width) / float(slot_count))
-	card_width = clampf(card_width, 120.0, 340.0)
-
-	# Height budget: the tab title, status paragraph and divider, plus the
-	# card's own title, its 3-line summary and the button row, all have to fit
-	# around the preview. Measured against the rendered tab at 1280x720 and
-	# 1920x1080 -- under-budgeting here is what pushed the buttons off-panel.
-	var chrome_height: int = 210 if very_compact else (268 if compact else 292)
-	var preview_height_budget: float = float(content_height) - float(chrome_height)
-	var preview_width: float = maxf(70.0, card_width - float(card_margin * 2))
-	var aspect: float = BUILD_PREVIEW_BASE_SIZE.y / BUILD_PREVIEW_BASE_SIZE.x
-	var preview_height: float = preview_width * aspect
-	if preview_height_budget > 60.0 and preview_height > preview_height_budget:
-		preview_height = preview_height_budget
-		preview_width = preview_height / aspect
-	preview_height = maxf(90.0, preview_height)
-	preview_width = maxf(70.0, preview_width)
-
 	_set_margin(builds_box_margin, box_margin, box_margin, box_margin, box_margin)
-	if builds_cards_row != null:
-		builds_cards_row.add_theme_constant_override("separation", card_gap)
-	if builds_title_label != null:
-		builds_title_label.add_theme_font_size_override("font_size", 18 if very_compact else (21 if compact else 24))
-	if build_preset_status_label != null:
-		build_preset_status_label.add_theme_font_size_override("font_size", 11 if very_compact else (13 if compact else 15))
-		build_preset_status_label.custom_minimum_size = Vector2(float(row_width), 0.0)
 
-	for index in build_preset_cards:
-		var card := build_preset_cards[index] as Control
+	# Sidebar keeps roughly a quarter of the width; the detail panel owns the
+	# rest and is never squeezed to fit more cards -- the list scrolls.
+	if builds_sidebar_panel != null:
+		builds_sidebar_panel.custom_minimum_size = Vector2(clampf(float(content_width) * 0.25, 216.0, 320.0), 0.0)
+
+	# The preview is the visual anchor: it shrinks last and only so far.
+	if builds_detail_preview_container != null:
+		var preview_size := Vector2(250, 340)
+		if very_compact:
+			preview_size = Vector2(160, 215)
+		elif compact:
+			preview_size = Vector2(185, 250)
+		builds_detail_preview_container.custom_minimum_size = preview_size
+
+	var card_size := Vector2(150, 64)
+	if very_compact:
+		card_size = Vector2(112, 54)
+	elif compact:
+		card_size = Vector2(132, 58)
+	for slot_id in builds_slot_cards:
+		var card := (builds_slot_cards[slot_id] as Dictionary).get("card") as Control
 		if card != null:
-			card.custom_minimum_size = Vector2(card_width, 0.0)
-		var frame := build_preview_frames.get(index) as Control
-		if frame != null:
-			frame.custom_minimum_size = Vector2(preview_width, preview_height)
-		var card_title := build_preset_title_labels.get(index) as Label
-		if card_title != null:
-			card_title.add_theme_font_size_override("font_size", 13 if very_compact else (15 if compact else 17))
-		var summary := build_preset_summary_labels.get(index) as Label
-		if summary != null:
-			var summary_font: int = 10 if very_compact else (12 if compact else 14)
-			summary.add_theme_font_size_override("font_size", summary_font)
-			# clip_text with a zero minimum height collapsed the label to
-			# nothing, so reserve the height its 3 capped lines actually need.
-			summary.custom_minimum_size = Vector2(preview_width, ceilf(float(summary_font) * 1.45 * 3.0))
-		for button_source in [build_preset_save_buttons, build_preset_apply_buttons]:
-			var button := (button_source as Dictionary).get(index) as Button
-			if button == null:
-				continue
-			button.custom_minimum_size = Vector2(maxf(52.0, (preview_width - 8.0) * 0.5), 26.0 if very_compact else 30.0)
-			button.add_theme_font_size_override("font_size", 11 if very_compact else (13 if compact else 15))
+			card.custom_minimum_size = card_size
+
+	if builds_equipment_table_panel != null:
+		builds_equipment_table_panel.custom_minimum_size = Vector2(230.0 if very_compact else (280.0 if compact else 330.0), 0.0)
+
+	if build_preset_status_label != null:
+		build_preset_status_label.add_theme_font_size_override("font_size", 11 if very_compact else 12)
 
 
 func _apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void:
@@ -1328,6 +1359,11 @@ func _build_settings_panel() -> ScrollContainer:
 	return scroll
 
 
+# Builds screen: a sidebar listing every saved build, and a wide detail panel
+# describing the ONE selected build. Everything in the detail panel is derived
+# from a single resolved snapshot (PlayerEquipmentBuildsComponent.get_build_report)
+# so the piece table, slot cards, stats, composition, effects and preview can
+# never disagree about what the build contains.
 func _build_equipment_builds_tab() -> ScrollContainer:
 	var scroll := ScrollContainer.new()
 	scroll.name = "BuildsPanel"
@@ -1345,138 +1381,397 @@ func _build_equipment_builds_tab() -> ScrollContainer:
 
 	var margin := MarginContainer.new()
 	builds_box_margin = margin
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_bottom", 14)
+	_set_margin(margin, 14, 10, 14, 10)
 	box.add_child(margin)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 10)
-	margin.add_child(list)
+	# The screen's title is the main inventory header, which switches to
+	# "Builds" while this tab is active (_refresh_inventory_mode), so the page
+	# itself carries no second title competing with it.
+	var columns := HBoxContainer.new()
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", 14)
+	margin.add_child(columns)
 
-	var title := Label.new()
-	builds_title_label = title
-	title.text = "Equipment Builds"
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	list.add_child(title)
+	columns.add_child(_build_builds_sidebar())
+	columns.add_child(_build_builds_detail_panel())
 
-	build_preset_status_label = Label.new()
-	build_preset_status_label.text = "Save the current worn bones, then apply them later when the pieces are available. Each build previews here in its own isolated render -- it is not visible in the world while you play."
-	build_preset_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	build_preset_status_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	list.add_child(build_preset_status_label)
-
-	var divider := ColorRect.new()
-	divider.color = Color(0.87, 0.63, 0.19, 0.58)
-	divider.custom_minimum_size = Vector2(0, 1)
-	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	list.add_child(divider)
-
-	var cards := HBoxContainer.new()
-	builds_cards_row = cards
-	cards.name = "BuildCards"
-	cards.alignment = BoxContainer.ALIGNMENT_CENTER
-	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# Take the leftover height so the cards can sit centred in it rather than
-	# hugging the top of a tall panel.
-	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	cards.add_theme_constant_override("separation", 18)
-	list.add_child(cards)
-
-	for index in range(1, PlayerEquipmentBuildsComponent.BUILD_SLOT_COUNT + 1):
-		cards.add_child(_build_equipment_build_card(index))
-
-	# Rig sockets are only populated once each preview rig's _ready() has
-	# run (fires on tree entry, which just happened above via add_child);
-	# defer so equip_bone() below never races that, matching the same
-	# call_deferred("sync_preview") pattern _build_character_preview_panel
-	# already uses for the live-equipped preview.
-	call_deferred("_sync_all_build_previews")
+	call_deferred("_refresh_builds_screen")
 	return scroll
 
 
-func _build_equipment_build_card(index: int) -> Control:
-	var card := PanelContainer.new()
-	card.name = "EquipmentBuildCard_" + str(index)
-	card.process_mode = Node.PROCESS_MODE_ALWAYS
-	card.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 0.99, 0.95, 0.42), Color(0.87, 0.63, 0.19, 0.74), 1, 2))
-	card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	build_preset_cards[index] = card
+func _build_builds_sidebar() -> Control:
+	var panel := PanelContainer.new()
+	panel.name = "SavedBuildsSidebar"
+	# Fixed share of the width (sized by the responsive pass): the detail
+	# panel must never be squeezed to fit more build cards, so the list
+	# scrolls instead of growing.
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(250, 0)
+	panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.22), Color(0.87, 0.63, 0.19, 0.60), 1, 0))
+	builds_sidebar_panel = panel
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 10)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_bottom", 10)
-	card.add_child(margin)
+	_set_margin(margin, 10, 10, 10, 10)
+	panel.add_child(margin)
 
-	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 8)
-	margin.add_child(list)
+	var column := VBoxContainer.new()
+	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 8)
+	margin.add_child(column)
 
-	var title := Label.new()
-	title.text = "Build " + str(index)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	list.add_child(title)
-	build_preset_title_labels[index] = title
+	var heading := Label.new()
+	heading.text = "Saved Builds"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 17)
+	heading.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	column.add_child(heading)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+
+	builds_sidebar_list = VBoxContainer.new()
+	builds_sidebar_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	builds_sidebar_list.add_theme_constant_override("separation", 8)
+	scroll.add_child(builds_sidebar_list)
+	return panel
+
+
+func _build_builds_detail_panel() -> Control:
+	var panel := PanelContainer.new()
+	panel.name = "BuildDetailPanel"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.22), Color(0.87, 0.63, 0.19, 0.60), 1, 0))
+	builds_detail_panel = panel
+
+	var margin := MarginContainer.new()
+	_set_margin(margin, 14, 10, 14, 10)
+	panel.add_child(margin)
+
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 10)
+	margin.add_child(column)
+
+	# Header: build name plus one state badge. The bottom banner repeats the
+	# state deliberately (same phrase, never a synonym).
+	var header := HBoxContainer.new()
+	header.alignment = BoxContainer.ALIGNMENT_CENTER
+	header.add_theme_constant_override("separation", 10)
+	column.add_child(header)
+
+	builds_detail_title = Label.new()
+	builds_detail_title.text = "Build"
+	builds_detail_title.add_theme_font_size_override("font_size", 20)
+	builds_detail_title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	header.add_child(builds_detail_title)
+
+	builds_header_badge = Label.new()
+	builds_header_badge.add_theme_font_size_override("font_size", 12)
+	builds_header_badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(builds_header_badge)
+
+	# Upper zone, mirroring the reference: six slot cards hugging the preview
+	# (head above, torso below, arms/legs flanking) and the Equipment table on
+	# the right. The table is the primary read of the build's contents; the
+	# cards echo it spatially.
+	builds_upper_row = HBoxContainer.new()
+	builds_upper_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	builds_upper_row.add_theme_constant_override("separation", 10)
+	column.add_child(builds_upper_row)
+
+	var left_col := VBoxContainer.new()
+	left_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	left_col.add_theme_constant_override("separation", 24)
+	left_col.add_child(_make_build_slot_card(EquipmentRulesService.SLOT_LEFT_ARM, "L. Arm"))
+	left_col.add_child(_make_build_slot_card(EquipmentRulesService.SLOT_LEFT_LEG, "L. Leg"))
+	var lead_spacer := Control.new()
+	lead_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lead_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	builds_upper_row.add_child(lead_spacer)
+	builds_upper_row.add_child(left_col)
+
+	var centre_col := VBoxContainer.new()
+	centre_col.add_theme_constant_override("separation", 6)
+	var head_card := _make_build_slot_card(EquipmentRulesService.SLOT_HEAD, "Head")
+	head_card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	centre_col.add_child(head_card)
 
 	var preview_frame := PanelContainer.new()
-	build_preview_frames[index] = preview_frame
-	# custom_minimum_size is only a floor: left to FILL, the preview absorbed
-	# all the card's spare height and pushed the summary and the Save/Apply
-	# buttons out of the panel. SHRINK_CENTER pins it to the size the
-	# responsive pass computes, leaving the rest of the card its own room.
 	preview_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	preview_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	preview_frame.custom_minimum_size = BUILD_PREVIEW_BASE_SIZE
 	preview_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
-	preview_frame.add_child(_build_build_preview(index))
-	list.add_child(preview_frame)
+	builds_detail_preview_container = _build_build_preview(BUILD_DETAIL_PREVIEW_KEY)
+	# The preview is the visual anchor of the panel; the responsive pass
+	# scales this floor up on larger screens.
+	builds_detail_preview_container.custom_minimum_size = Vector2(250, 340)
+	preview_frame.add_child(builds_detail_preview_container)
+	builds_detail_preview_frame = preview_frame
+	centre_col.add_child(preview_frame)
 
-	var summary := Label.new()
-	summary.text = "Empty"
-	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	# A full six-slot build wraps to many lines; uncapped it grew the card
-	# until the buttons fell off the bottom of the panel.
-	summary.max_lines_visible = 3
-	summary.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	summary.clip_text = true
-	summary.custom_minimum_size = Vector2(BUILD_PREVIEW_BASE_SIZE.x, 0)
-	summary.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	list.add_child(summary)
-	build_preset_summary_labels[index] = summary
+	var torso_card := _make_build_slot_card(EquipmentRulesService.SLOT_TORSO, "Torso")
+	torso_card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	centre_col.add_child(torso_card)
+	builds_upper_row.add_child(centre_col)
 
-	var buttons := HBoxContainer.new()
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 8)
-	list.add_child(buttons)
+	var right_col := VBoxContainer.new()
+	right_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	right_col.add_theme_constant_override("separation", 24)
+	right_col.add_child(_make_build_slot_card(EquipmentRulesService.SLOT_RIGHT_ARM, "R. Arm"))
+	right_col.add_child(_make_build_slot_card(EquipmentRulesService.SLOT_RIGHT_LEG, "R. Leg"))
+	builds_upper_row.add_child(right_col)
 
-	var save_button := _make_build_preset_button("Save")
-	save_button.pressed.connect(Callable(self, "_save_equipment_build").bind(index))
-	buttons.add_child(save_button)
-	build_preset_save_buttons[index] = save_button
+	var upper_spacer := Control.new()
+	upper_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	upper_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	builds_upper_row.add_child(upper_spacer)
 
-	var apply_button := _make_build_preset_button("Apply")
-	apply_button.pressed.connect(Callable(self, "_apply_equipment_build").bind(index))
-	buttons.add_child(apply_button)
-	build_preset_apply_buttons[index] = apply_button
+	builds_upper_row.add_child(_build_equipment_table())
+
+	# Lower zone: three compact cards. SHRINK_BEGIN keeps them at content
+	# height instead of stretching into the dead space the old layout had.
+	var lower := HBoxContainer.new()
+	lower.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lower.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	lower.add_theme_constant_override("separation", 10)
+	column.add_child(lower)
+
+	builds_lower_cards.clear()
+	builds_stats_list = _build_detail_card(lower, "Stats")
+	builds_composition_list = _build_detail_card(lower, "Build Composition")
+	builds_effects_list = _build_detail_card(lower, "Active effects")
+
+	# One banner, one phrase, tinted by state.
+	builds_banner_panel = PanelContainer.new()
+	builds_banner_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_child(builds_banner_panel)
+	var banner_margin := MarginContainer.new()
+	_set_margin(banner_margin, 10, 5, 10, 5)
+	builds_banner_panel.add_child(banner_margin)
+	builds_match_banner = Label.new()
+	builds_match_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	builds_match_banner.add_theme_font_size_override("font_size", 14)
+	banner_margin.add_child(builds_match_banner)
+
+	# Actions sit directly under the banner, inside the panel they act on.
+	column.add_child(_build_builds_action_row())
+
+	build_preset_status_label = Label.new()
+	build_preset_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	build_preset_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	build_preset_status_label.add_theme_font_size_override("font_size", 12)
+	build_preset_status_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	column.add_child(build_preset_status_label)
+	return panel
+
+
+# One slot card hugging the preview: colour swatch, slot name, piece name and
+# a quality badge. Fed exclusively from the same report the table reads.
+func _make_build_slot_card(slot_id: String, title: String) -> Control:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(150, 64)
+	card.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.30), Color(0.87, 0.63, 0.19, 0.60), 1, 0))
+
+	var margin := MarginContainer.new()
+	_set_margin(margin, 7, 5, 7, 5)
+	card.add_child(margin)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 7)
+	margin.add_child(row)
+
+	var swatch := ColorRect.new()
+	swatch.custom_minimum_size = Vector2(22, 22)
+	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	swatch.color = Color(0.87, 0.63, 0.19, 0.14)
+	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(swatch)
+
+	var texts := VBoxContainer.new()
+	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	texts.add_theme_constant_override("separation", 0)
+	row.add_child(texts)
+
+	var slot_label := Label.new()
+	slot_label.text = title
+	slot_label.add_theme_font_size_override("font_size", 12)
+	slot_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	texts.add_child(slot_label)
+
+	var piece_label := Label.new()
+	piece_label.clip_text = true
+	piece_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	piece_label.add_theme_font_size_override("font_size", 12)
+	piece_label.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+	texts.add_child(piece_label)
+
+	var quality_label := Label.new()
+	quality_label.add_theme_font_size_override("font_size", 10)
+	quality_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	texts.add_child(quality_label)
+
+	builds_slot_cards[slot_id] = {
+		"card": card,
+		"swatch": swatch,
+		"piece": piece_label,
+		"quality": quality_label,
+	}
 	return card
 
 
-# Builds a small, fully isolated 3D preview (own SubViewport + World3D +
-# ModularSkeletonRig) for one build slot, mirroring the shape of
-# _build_character_preview_panel at a smaller size. This rig is never
-# added to the live world, never shares state with inventory_preview_rig
-# (the live-equipped-gear preview), and never touches the in-world player
-# rig -- so a build's preview can never be seen by anything outside this
-# card while the player is actually playing.
+func _build_detail_card(parent: HBoxContainer, heading_text: String) -> VBoxContainer:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	card.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.26), Color(0.87, 0.63, 0.19, 0.55), 1, 0))
+	parent.add_child(card)
+	builds_lower_cards.append(card)
+
+	var margin := MarginContainer.new()
+	_set_margin(margin, 12, 7, 12, 8)
+	card.add_child(margin)
+
+	var wrapper := VBoxContainer.new()
+	wrapper.add_theme_constant_override("separation", 4)
+	margin.add_child(wrapper)
+
+	var heading := Label.new()
+	heading.text = heading_text
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 15)
+	heading.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	wrapper.add_child(heading)
+
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 2)
+	wrapper.add_child(list)
+	return list
+
+
+func _build_equipment_table() -> Control:
+	var panel := PanelContainer.new()
+	panel.name = "EquipmentTable"
+	# Fixed-ish width on the right edge: letting it EXPAND was what pushed the
+	# quality column to the far side of a huge empty row.
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.custom_minimum_size = Vector2(330, 0)
+	panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.26), Color(0.87, 0.63, 0.19, 0.55), 1, 0))
+	builds_equipment_table_panel = panel
+
+	var margin := MarginContainer.new()
+	_set_margin(margin, 12, 8, 12, 8)
+	panel.add_child(margin)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	margin.add_child(column)
+
+	var heading := Label.new()
+	heading.text = "Equipment"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 16)
+	heading.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	column.add_child(heading)
+
+	builds_equipment_rows.clear()
+	for slot_id in BUILD_TABLE_SLOTS:
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 8)
+		column.add_child(row)
+
+		var slot_label := Label.new()
+		slot_label.text = EquipmentRulesService.slot_display_name(str(slot_id))
+		slot_label.custom_minimum_size = Vector2(62, 0)
+		slot_label.add_theme_font_size_override("font_size", 13)
+		slot_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+		row.add_child(slot_label)
+
+		var piece_label := Label.new()
+		piece_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		piece_label.clip_text = true
+		piece_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		piece_label.add_theme_font_size_override("font_size", 13)
+		piece_label.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+		row.add_child(piece_label)
+
+		var quality_badge := Label.new()
+		quality_badge.custom_minimum_size = Vector2(66, 0)
+		quality_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		quality_badge.add_theme_font_size_override("font_size", 11)
+		row.add_child(quality_badge)
+
+		builds_equipment_rows[str(slot_id)] = {
+			"row": row,
+			"piece": piece_label,
+			"quality": quality_badge,
+		}
+	return panel
+
+
+func _build_builds_action_row() -> Control:
+	builds_action_row = HBoxContainer.new()
+	builds_action_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	builds_action_row.add_theme_constant_override("separation", 10)
+
+	builds_save_button = _make_build_preset_button("Save Current")
+	builds_save_button.pressed.connect(_on_save_current_pressed)
+	builds_action_row.add_child(builds_save_button)
+
+	builds_apply_button = _make_build_preset_button("Apply")
+	builds_apply_button.pressed.connect(_on_apply_pressed)
+	builds_action_row.add_child(builds_apply_button)
+
+	builds_rename_button = _make_build_preset_button("Rename")
+	builds_rename_button.pressed.connect(_on_rename_pressed)
+	builds_action_row.add_child(builds_rename_button)
+
+	builds_delete_button = _make_build_preset_button("Delete")
+	builds_delete_button.add_theme_color_override("font_color", Color(0.62, 0.20, 0.16, 1.0))
+	builds_delete_button.pressed.connect(_on_delete_pressed)
+	builds_action_row.add_child(builds_delete_button)
+
+	# Rename needs text entry, which this panel had none of. Hidden until the
+	# player asks for it so the action row stays uncluttered.
+	builds_rename_edit = LineEdit.new()
+	builds_rename_edit.placeholder_text = "New name, then Enter"
+	builds_rename_edit.custom_minimum_size = Vector2(190, 0)
+	builds_rename_edit.process_mode = Node.PROCESS_MODE_ALWAYS
+	builds_rename_edit.visible = false
+	builds_rename_edit.text_submitted.connect(_on_rename_submitted)
+	builds_action_row.add_child(builds_rename_edit)
+	return builds_action_row
+
+
+# Small filled badge: coloured background, dark text of the same hue, so state
+# and quality never rely on colour alone -- the text is always there.
+func _style_badge(label: Label, text: String, base_color: Color) -> void:
+	if label == null:
+		return
+	label.text = text
+	label.visible = text != ""
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(base_color.r, base_color.g, base_color.b, 0.18)
+	style.border_color = Color(base_color.r, base_color.g, base_color.b, 0.55)
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.content_margin_left = 7
+	style.content_margin_right = 7
+	style.content_margin_top = 1
+	style.content_margin_bottom = 1
+	label.add_theme_stylebox_override("normal", style)
+	label.add_theme_color_override("font_color", base_color.darkened(0.35))
+
+
 func _build_build_preview(index: int) -> Control:
 	var container := SubViewportContainer.new()
 	container.name = "BuildPreview_" + str(index)
@@ -1534,8 +1829,8 @@ func _build_build_preview(index: int) -> Control:
 
 
 func _sync_all_build_previews() -> void:
-	for index in range(1, PlayerEquipmentBuildsComponent.BUILD_SLOT_COUNT + 1):
-		_sync_build_preview(index)
+	for index in build_preview_rigs.keys():
+		_sync_build_preview(int(index))
 
 
 # Renders whatever is currently SAVED in build `index` -- never the live
@@ -1558,7 +1853,10 @@ func _sync_build_preview(index: int) -> void:
 		head_bone_id = "head_bone"
 	_equip_bone_on_rig(rig, "head", head_bone_id)
 
-	var build_state := _raw_build_state(index)
+	# The detail preview mirrors whichever build is selected; each sidebar
+	# thumbnail renders its own build.
+	var state_index := builds_selected_index if index == BUILD_DETAIL_PREVIEW_KEY else index
+	var build_state := _raw_build_state(state_index)
 	for slot_id in build_state:
 		_equip_bone_on_rig(rig, str(slot_id), str(build_state[slot_id]))
 
@@ -1583,8 +1881,7 @@ func _raw_build_state(index: int) -> Dictionary:
 	var builds_component = player.get("equipment_builds_component")
 	if builds_component == null:
 		return {}
-	var builds: Dictionary = builds_component.get("builds")
-	return builds.get(index, {}) as Dictionary
+	return builds_component.call("build_slots", index) as Dictionary
 
 
 func _make_build_preset_button(text: String) -> Button:
@@ -1609,7 +1906,7 @@ func _save_equipment_build(index: int) -> void:
 		return
 	var result := player.call("save_equipment_build", index) as Dictionary
 	_set_build_preset_status(str(result.get("message", "")))
-	_refresh_build_preset_rows()
+	_refresh_builds_screen()
 
 
 func _apply_equipment_build(index: int) -> void:
@@ -1622,7 +1919,7 @@ func _apply_equipment_build(index: int) -> void:
 		return
 	var result := player.call("apply_equipment_build", index) as Dictionary
 	_set_build_preset_status(str(result.get("message", "")))
-	_refresh_build_preset_rows()
+	_refresh_builds_screen()
 	if bool(result.get("ok", false)):
 		notify_equipment_changed()
 
@@ -1653,11 +1950,12 @@ func _consume_or_arm_confirmation(action: String, index: int, button_text: Strin
 
 	_disarm_build_preset_confirmation()
 	build_preset_armed_action = key
-	var buttons: Dictionary = build_preset_apply_buttons if action == "apply" else build_preset_save_buttons
-	var button := buttons.get(index) as Button
+	var button := _confirm_button_for(action)
 	if button != null:
 		button.text = "Confirm?"
-	_set_build_preset_status(button_text + " build " + str(index) + " again to confirm.")
+	# The visible half of the two-press confirmation: the button changes AND
+	# the status line spells it out, so Delete is never a silent double-tap.
+	_set_build_preset_status("Press " + button_text + " again to confirm.")
 	build_preset_confirm_timer = get_tree().create_timer(BUILD_PRESET_CONFIRM_WINDOW)
 	build_preset_confirm_timer.timeout.connect(_on_build_preset_confirm_timeout.bind(key))
 	return false
@@ -1669,31 +1967,493 @@ func _on_build_preset_confirm_timeout(expected_key: String) -> void:
 		_set_build_preset_status("Confirmation timed out.")
 
 
+func _confirm_button_for(action: String) -> Button:
+	match action:
+		"apply":
+			return builds_apply_button
+		"save":
+			return builds_save_button
+		"delete":
+			return builds_delete_button
+	return null
+
+
 func _disarm_build_preset_confirmation() -> void:
 	build_preset_armed_action = ""
 	build_preset_confirm_timer = null
-	for index in build_preset_save_buttons:
-		var save_button := build_preset_save_buttons[index] as Button
-		if save_button != null:
-			save_button.text = "Save"
-	for index in build_preset_apply_buttons:
-		var apply_button := build_preset_apply_buttons[index] as Button
-		if apply_button != null:
-			apply_button.text = "Apply"
+	var defaults := {"save": "Save Current", "apply": "Apply", "delete": "Delete"}
+	for action in defaults:
+		var button := _confirm_button_for(str(action))
+		if button != null and is_instance_valid(button):
+			button.text = str(defaults[action])
 
 
-func _refresh_build_preset_rows() -> void:
-	if player == null or not player.has_method("get_equipment_build_summaries"):
+# --- builds screen state -------------------------------------------------
+
+func _on_new_build_pressed() -> void:
+	if player == null or not player.has_method("create_equipment_build"):
 		return
-	var summaries := player.call("get_equipment_build_summaries") as Array
-	for entry in summaries:
-		if typeof(entry) != TYPE_DICTIONARY:
-			continue
-		var index := int(entry.get("index", 0))
-		var label := build_preset_summary_labels.get(index) as Label
-		if label != null:
-			label.text = str(entry.get("summary", "Empty"))
-		_sync_build_preview(index)
+	builds_selected_index = int(player.call("create_equipment_build"))
+	_disarm_build_preset_confirmation()
+	_set_build_preset_status("Created " + _build_name_for(builds_selected_index) + ".")
+	_refresh_builds_screen()
+
+
+func _select_build(index: int) -> void:
+	if builds_selected_index == index:
+		return
+	builds_selected_index = index
+	# Selecting only changes what is being LOOKED at; it never equips.
+	_disarm_build_preset_confirmation()
+	_refresh_builds_screen()
+
+
+func _on_save_current_pressed() -> void:
+	if player == null or not player.has_method("save_equipment_build"):
+		return
+	if not _build_slot_is_empty(builds_selected_index):
+		if not _consume_or_arm_confirmation("save", builds_selected_index, "Save Current"):
+			return
+	var result := player.call("save_equipment_build", builds_selected_index) as Dictionary
+	_set_build_preset_status(str(result.get("message", "")))
+	_refresh_builds_screen()
+
+
+func _on_apply_pressed() -> void:
+	if player == null or not player.has_method("apply_equipment_build"):
+		return
+	if not _consume_or_arm_confirmation("apply", builds_selected_index, "Apply"):
+		return
+	var result := player.call("apply_equipment_build", builds_selected_index) as Dictionary
+	_set_build_preset_status(str(result.get("message", "")))
+	_refresh_builds_screen()
+	if bool(result.get("ok", false)):
+		notify_equipment_changed()
+
+
+func _on_rename_pressed() -> void:
+	if builds_rename_edit == null:
+		return
+	builds_rename_edit.visible = not builds_rename_edit.visible
+	if builds_rename_edit.visible:
+		builds_rename_edit.text = _build_name_for(builds_selected_index)
+		builds_rename_edit.grab_focus()
+		_set_build_preset_status("Type a new name and press Enter.")
+
+
+func _on_rename_submitted(new_name: String) -> void:
+	if player == null or not player.has_method("rename_equipment_build"):
+		return
+	var result := player.call("rename_equipment_build", builds_selected_index, new_name) as Dictionary
+	if builds_rename_edit != null:
+		builds_rename_edit.visible = false
+	# Renaming touches the label only: pieces and stats are untouched, so the
+	# refresh below re-reads the same snapshot it had before.
+	_set_build_preset_status(str(result.get("message", "")))
+	_refresh_builds_screen()
+
+
+func _on_delete_pressed() -> void:
+	if player == null or not player.has_method("delete_equipment_build"):
+		return
+	# Two-press confirmation with a visible prompt (set by
+	# _consume_or_arm_confirmation): "Press Delete again to confirm."
+	if not _consume_or_arm_confirmation("delete", builds_selected_index, "Delete"):
+		return
+	var result := player.call("delete_equipment_build", builds_selected_index) as Dictionary
+	builds_selected_index = _first_build_index()
+	_set_build_preset_status(str(result.get("message", "")))
+	_refresh_builds_screen()
+
+
+func _first_build_index() -> int:
+	var indices := _build_indices()
+	return int(indices[0]) if not indices.is_empty() else 1
+
+
+func _build_indices() -> Array:
+	if player == null or not player.has_method("get_equipment_build_indices"):
+		return []
+	return player.call("get_equipment_build_indices") as Array
+
+
+func _build_name_for(index: int) -> String:
+	var report := _build_report_for(index)
+	return str(report.get("name", "Build " + str(index)))
+
+
+func _build_report_for(index: int) -> Dictionary:
+	if player == null or not player.has_method("get_equipment_build_report"):
+		return {}
+	return player.call("get_equipment_build_report", index) as Dictionary
+
+
+# Rebuilds the whole screen from ONE report per build. Called after every
+# action, so the sidebar, slot cards, table, stats, composition, effects,
+# banner, preview and button states can never drift apart.
+func _refresh_builds_screen() -> void:
+	if builds_sidebar_list == null:
+		return
+	var indices := _build_indices()
+	if not indices.has(builds_selected_index) and not indices.is_empty():
+		builds_selected_index = int(indices[0])
+
+	for child in builds_sidebar_list.get_children():
+		child.queue_free()
+	for index in indices:
+		builds_sidebar_list.add_child(_make_build_sidebar_card(int(index)))
+	# New Build lives at the end of the list itself, not marooned at the
+	# bottom of the screen.
+	builds_sidebar_list.add_child(_make_new_build_card())
+
+	var report := _build_report_for(builds_selected_index)
+	_apply_build_report_to_detail(report)
+	call_deferred("_sync_all_build_previews")
+
+
+func _make_build_sidebar_card(index: int) -> Control:
+	var report := _build_report_for(index)
+	var selected: bool = index == builds_selected_index
+	var state := str(report.get("state", "Empty"))
+	var slots: Dictionary = report.get("slots", {})
+	var missing := int(report.get("missing_count", 0))
+
+	var card := Button.new()
+	card.focus_mode = Control.FOCUS_NONE
+	card.process_mode = Node.PROCESS_MODE_ALWAYS
+	card.custom_minimum_size = Vector2(0, 78)
+	card.pressed.connect(_select_build.bind(index))
+	# Selection is carried by border weight AND fill, never colour alone.
+	var background := Color(1.0, 0.94, 0.82, 0.90) if selected else Color(1.0, 1.0, 1.0, 0.16)
+	var border := Color(0.0, 0.60, 0.62, 1.0) if selected else Color(0.87, 0.63, 0.19, 0.55)
+	card.add_theme_stylebox_override("normal", _make_inventory_style(background, border, 3 if selected else 1, 0))
+	card.add_theme_stylebox_override("hover", _make_inventory_style(background.lightened(0.05), border, 3 if selected else 1, 0))
+	card.add_theme_stylebox_override("pressed", _make_inventory_style(background, border, 3, 0))
+
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_set_margin(margin, 8, 6, 8, 6)
+	card.add_child(margin)
+
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 9)
+	margin.add_child(row)
+
+	# A real render of the build, like the reference: one small isolated
+	# viewport per card. Cards are few, and each rebuild replaces the old rig.
+	var mini := _build_build_preview(index)
+	mini.custom_minimum_size = Vector2(54, 70)
+	row.add_child(mini)
+
+	var texts := VBoxContainer.new()
+	texts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	texts.add_theme_constant_override("separation", 1)
+	row.add_child(texts)
+
+	var name_label := Label.new()
+	name_label.text = str(report.get("name", "Build " + str(index)))
+	name_label.clip_text = true
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	name_label.add_theme_font_size_override("font_size", 15)
+	name_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texts.add_child(name_label)
+
+	var state_label := Label.new()
+	var state_text := state
+	if state == "Missing parts":
+		state_text = "Missing %d part%s" % [missing, "s" if missing != 1 else ""]
+	state_label.text = state_text
+	state_label.clip_text = true
+	state_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	state_label.add_theme_font_size_override("font_size", 11)
+	state_label.add_theme_color_override("font_color", _build_state_color(state))
+	state_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texts.add_child(state_label)
+
+	var count_label := Label.new()
+	count_label.text = "%d / 6 parts" % _build_parts_available(state, slots, missing)
+	count_label.add_theme_font_size_override("font_size", 10)
+	count_label.add_theme_color_override("font_color", Color(0.40, 0.40, 0.40, 1.0))
+	count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texts.add_child(count_label)
+
+	# The card clips long names/states, so the untruncated version is a hover
+	# away instead of lost.
+	card.tooltip_text = "%s\n%s" % [name_label.text, state_label.text]
+	return card
+
+
+# Out of the six body slots, how many this build can actually put on: the
+# fixed head plus every saved piece that is still carried. An empty build is
+# 0/6 -- it would change nothing when applied.
+func _build_parts_available(state: String, slots: Dictionary, missing: int) -> int:
+	if state == "Empty":
+		return 0
+	return 1 + maxi(0, slots.size() - missing)
+
+
+func _make_new_build_card() -> Control:
+	var card := Button.new()
+	card.text = "+   New Build"
+	card.focus_mode = Control.FOCUS_NONE
+	card.process_mode = Node.PROCESS_MODE_ALWAYS
+	card.custom_minimum_size = Vector2(0, 44)
+	card.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 0.85))
+	card.add_theme_stylebox_override("normal", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.06), Color(0.87, 0.63, 0.19, 0.45), 1, 0))
+	card.add_theme_stylebox_override("hover", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.28), Color(0.0, 0.78, 0.78, 0.75), 1, 0))
+	card.pressed.connect(_on_new_build_pressed)
+	return card
+
+
+func _build_state_color(state: String) -> Color:
+	match state:
+		"Currently Equipped":
+			return Color(0.10, 0.45, 0.25, 1.0)
+		"Missing parts":
+			return Color(0.62, 0.20, 0.16, 1.0)
+		"Empty":
+			return Color(0.42, 0.42, 0.42, 1.0)
+	return Color(0.16, 0.34, 0.52, 1.0)
+
+
+func _apply_build_report_to_detail(report: Dictionary) -> void:
+	if builds_detail_title == null:
+		return
+	var state := str(report.get("state", "Empty"))
+	var missing := int(report.get("missing_count", 0))
+	builds_detail_title.text = str(report.get("name", "Build"))
+	_style_badge(builds_header_badge, state, _build_state_color(state))
+
+	# --- slot cards and equipment table: same slots dict for both ---------
+	var slots: Dictionary = report.get("slots", {})
+	var head_id := ""
+	if player != null and player.has_method("get_equipped_bone_for_slot"):
+		head_id = str(player.call("get_equipped_bone_for_slot", EquipmentRulesService.SLOT_HEAD))
+	for slot_id in BUILD_TABLE_SLOTS:
+		_fill_slot_widgets(str(slot_id), slots.get(str(slot_id), {}), head_id)
+
+	# --- stats ------------------------------------------------------------
+	_clear_children(builds_stats_list)
+	var stats: Dictionary = report.get("stats", {})
+	var comparison: Dictionary = report.get("comparison", {})
+	if state == "Empty":
+		builds_stats_list.add_child(_make_dim_row("No stats"))
+	elif missing > 0:
+		# Stats are only computed from resolvable pieces; a build that cannot
+		# be applied is not presented as if its numbers were reliable.
+		builds_stats_list.add_child(_make_dim_row("Unavailable - missing parts"))
+	else:
+		for entry in [["health", "Health"], ["damage", "Damage"], ["speed", "Speed"], ["reach", "Reach"], ["weight", "Weight"]]:
+			var key := str(entry[0])
+			if not stats.has(key):
+				continue
+			builds_stats_list.add_child(_make_stat_row(str(entry[1]), float(stats[key]), float(comparison.get(key, 0.0))))
+
+	# --- composition ------------------------------------------------------
+	_clear_children(builds_composition_list)
+	var counts: Dictionary = report.get("quality_counts", {})
+	if state == "Empty" or counts.is_empty():
+		builds_composition_list.add_child(_make_dim_row("No parts saved"))
+	else:
+		var ordered: Array = BoneQualityService.QUALITY_ORDER.duplicate()
+		ordered.reverse()
+		for quality_id in ordered:
+			var count := int(counts.get(str(quality_id), 0))
+			# Zero-count tiers are omitted: listing all five every time buries
+			# the ones the build actually has.
+			if count <= 0:
+				continue
+			builds_composition_list.add_child(_make_composition_row(str(quality_id), count))
+		if missing > 0:
+			builds_composition_list.add_child(_make_dim_row("%d of these missing" % missing))
+
+	# --- effects ----------------------------------------------------------
+	_clear_children(builds_effects_list)
+	var effects: Array = report.get("effects", [])
+	if missing > 0:
+		builds_effects_list.add_child(_make_dim_row("Unavailable - missing parts"))
+	elif effects.is_empty():
+		builds_effects_list.add_child(_make_dim_row("No active effects"))
+	else:
+		for effect in effects:
+			var row := Label.new()
+			row.text = str(effect)
+			row.add_theme_font_size_override("font_size", 13)
+			row.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+			builds_effects_list.add_child(row)
+
+	# --- banner: one phrase, tinted by state ------------------------------
+	var banner_color := _build_state_color(state)
+	var banner_text := state
+	match state:
+		"Missing parts":
+			banner_text = "Missing %d part%s - build cannot be applied" % [missing, "s" if missing != 1 else ""]
+		"Empty":
+			banner_text = "Empty build - save current equipment into it"
+		"Saved":
+			banner_text = "Saved build - differs from current equipment"
+	builds_match_banner.text = banner_text
+	builds_match_banner.add_theme_color_override("font_color", banner_color.darkened(0.15))
+	if builds_banner_panel != null:
+		builds_banner_panel.add_theme_stylebox_override("panel", _make_inventory_style(
+			Color(banner_color.r, banner_color.g, banner_color.b, 0.12),
+			Color(banner_color.r, banner_color.g, banner_color.b, 0.45), 1, 0))
+		# The untruncated missing-piece names live on the banner.
+		var missing_names: Array[String] = []
+		for slot_id in slots:
+			var entry: Dictionary = slots[slot_id]
+			if not bool(entry.get("found", false)):
+				missing_names.append(BoneRulesService.display_name_with_slot(str(entry.get("instance_id", ""))))
+		var banner_tooltip := ""
+		if not missing_names.is_empty():
+			banner_tooltip = "Missing: " + ", ".join(missing_names)
+		builds_banner_panel.tooltip_text = banner_tooltip
+
+	# --- button availability ---------------------------------------------
+	if builds_apply_button != null:
+		# Empty: nothing to apply. Missing: must not apply partially.
+		# Currently equipped: applying would be a no-op, so it is disabled to
+		# say so rather than silently doing nothing.
+		builds_apply_button.disabled = state == "Empty" or missing > 0 or bool(report.get("matches_current", false))
+	if builds_delete_button != null:
+		builds_delete_button.disabled = _build_indices().size() <= 1
+	if builds_rename_button != null:
+		builds_rename_button.disabled = false
+
+
+func _fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void:
+	var table: Dictionary = builds_equipment_rows.get(slot_id, {})
+	var card: Dictionary = builds_slot_cards.get(slot_id, {})
+	var piece_labels: Array = []
+	if table.has("piece"):
+		piece_labels.append(table["piece"])
+	if card.has("piece"):
+		piece_labels.append(card["piece"])
+
+	var name_text := ""
+	var tooltip_note := ""
+	var name_color := Color(0.16, 0.20, 0.22, 1.0)
+	var badge_text := ""
+	var badge_color := Color(0.42, 0.42, 0.42, 1.0)
+	var swatch_color := Color(0.87, 0.63, 0.19, 0.14)
+
+	if slot_id == EquipmentRulesService.SLOT_HEAD and head_id != "":
+		# The head is the fixed core: never saved in a build, always worn, so
+		# both the card and the table show the head that applying would keep.
+		name_text = BoneRulesService.display_name_with_slot(head_id)
+		badge_text = BoneQualityService.display_name_for(BoneInstanceService.quality_id_of(head_id))
+		badge_color = BoneQualityService.color_for(BoneInstanceService.quality_id_of(head_id))
+		swatch_color = BoneRulesService.color_for(head_id)
+	elif entry.is_empty():
+		name_text = "-"
+		badge_text = "Empty"
+	else:
+		var instance_id := str(entry.get("instance_id", ""))
+		name_text = BoneRulesService.display_name_with_slot(instance_id)
+		swatch_color = BoneRulesService.color_for(instance_id)
+		if bool(entry.get("found", false)):
+			# The badge always shows the quality of the piece that will
+			# actually be equipped; when that is a substitute for a lost
+			# saved copy, the tooltip says so instead of staying silent.
+			var quality_id := str(entry.get("quality_id", ""))
+			badge_text = BoneQualityService.display_name_for(quality_id)
+			badge_color = BoneQualityService.color_for(quality_id)
+			if bool(entry.get("substituted", false)):
+				tooltip_note = "  (replaces the saved copy - different quality)"
+		else:
+			# Missing replaces the quality badge entirely so the two states
+			# can never be confused.
+			badge_text = "Missing"
+			badge_color = Color(0.82, 0.24, 0.20, 1.0)
+			name_color = Color(0.62, 0.20, 0.16, 1.0)
+			swatch_color.a = 0.35
+
+	for piece_label in piece_labels:
+		var label := piece_label as Label
+		label.text = name_text
+		label.tooltip_text = (name_text + tooltip_note) if name_text != "-" else ""
+		label.add_theme_color_override("font_color", name_color)
+	if table.has("quality"):
+		_style_badge(table["quality"] as Label, badge_text, badge_color)
+	if card.has("quality"):
+		_style_badge(card["quality"] as Label, badge_text, badge_color)
+	if card.has("swatch"):
+		(card["swatch"] as ColorRect).color = swatch_color
+
+
+func _make_stat_row(stat_name: String, value: float, delta: float) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+
+	var name_label := Label.new()
+	name_label.text = stat_name
+	name_label.custom_minimum_size = Vector2(64, 0)
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+	row.add_child(name_label)
+
+	var value_label := Label.new()
+	value_label.text = _format_number(value)
+	value_label.custom_minimum_size = Vector2(44, 0)
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value_label.add_theme_font_size_override("font_size", 13)
+	value_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	row.add_child(value_label)
+
+	# Zero deltas render nothing at all -- no "(+0)".
+	if absf(delta) > 0.0:
+		var delta_label := Label.new()
+		delta_label.text = "%s%s" % ["+" if delta > 0.0 else "", _format_number(delta)]
+		delta_label.add_theme_font_size_override("font_size", 12)
+		# Sign carries the meaning; colour only supports it.
+		delta_label.add_theme_color_override("font_color", Color(0.10, 0.45, 0.25, 1.0) if delta > 0.0 else Color(0.62, 0.20, 0.16, 1.0))
+		row.add_child(delta_label)
+	return row
+
+
+func _make_composition_row(quality_id: String, count: int) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 7)
+
+	var dot := ColorRect.new()
+	dot.custom_minimum_size = Vector2(10, 10)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.color = BoneQualityService.color_for(quality_id)
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(dot)
+
+	var name_label := Label.new()
+	name_label.text = BoneQualityService.display_name_for(quality_id)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+	row.add_child(name_label)
+
+	var count_label := Label.new()
+	count_label.text = str(count)
+	count_label.add_theme_font_size_override("font_size", 13)
+	count_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	row.add_child(count_label)
+	return row
+
+
+func _make_dim_row(text: String) -> Control:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.45, 0.45, 0.45, 1.0))
+	return label
+
+
+func _clear_children(node: Node) -> void:
+	if node == null:
+		return
+	for child in node.get_children():
+		child.queue_free()
 
 
 func _set_build_preset_status(text: String) -> void:
