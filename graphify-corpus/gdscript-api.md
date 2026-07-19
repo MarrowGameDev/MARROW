@@ -661,6 +661,8 @@
 
 ### Key Variables
 - `definition`
+- `full`
+- `replacements`
 - `base_name`
 - `slot_label`
 - `clean_name`
@@ -698,8 +700,6 @@
 - `total`
 - `attack_damage_total`
 - `max_health_total`
-- `weight_multiplier`
-- `load_over_free`
 
 ### Functions
 - none
@@ -2228,6 +2228,8 @@
 - `PAPER_DOLL_RING_POSITION`
 - `PAPER_DOLL_RING_SIZE`
 - `PAPER_DOLL_SLOT_POSITIONS`
+- `PAPER_DOLL_WIDE_SLOT_SIZE`
+- `PAPER_DOLL_WIDE_SLOTS`
 - `CONTROL_BINDINGS`
 - `BUILD_PRESET_CONFIRM_WINDOW`
 
@@ -2239,6 +2241,8 @@
 - `hover_info_label`
 - `inventory_status_label`
 - `inventory_category`
+- `selected_bone_id`
+- `dragging_bone_id`
 - `inventory_tab_buttons`
 - `inventory_safe_area`
 - `inventory_panel`
@@ -2270,8 +2274,6 @@
 - `settings_controls_list`
 - `settings_title_label`
 - `settings_status_label`
-- `settings_reset_button`
-- `builds_panel`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2289,6 +2291,11 @@
 - `equip_bone_in_slot(bone_id: String, slot: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `get_equipped_bone_for_slot(slot: String) -> String`
+- `select_bone(bone_id: String) -> void`
+- `_refresh_selection_visuals() -> void`
+- `begin_bone_drag(bone_id: String) -> void`
+- `end_bone_drag() -> void`
+- `_slot_list_text(slots: Array[String]) -> String`
 - `show_bone_info(bone_id: String) -> void`
 - `_bone_comparison_text(bone_id: String) -> String`
 - `clear_bone_info() -> void`
@@ -2338,6 +2345,7 @@
 - `_preview_equipment_snapshot() -> Dictionary`
 - `_preview_snapshot_matches(next_snapshot: Dictionary) -> bool`
 - `_build_paper_doll() -> Control`
+- `_paper_doll_slot_size(slot_id: String) -> Vector2`
 - `_place_slot(doll: Control, slot: String, short_name: String, pos: Vector2, slot_size: Vector2) -> void`
 - `_begin_rebinding(action: String, button: Button) -> void`
 - `_cancel_rebinding() -> void`
@@ -3231,6 +3239,9 @@
 - `_label`
 - `_slot_label`
 - `_stack_label`
+- `_stack_badge`
+- `_frame`
+- `_selected`
 - `tile_size`
 - `requested_size`
 - `pad`
@@ -3246,18 +3257,26 @@
 - `art_span`
 - `glow`
 - `core`
+- `badge_size`
+- `caption_width`
 - `slot_text`
 - `side`
+- `background`
+- `border`
+- `width`
+- `style`
 - `wrap`
 - `rect`
-- `style`
 
 ### Functions
 - `setup(id: String, player_ref: Node, quantity: int = 1) -> void`
 - `_place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void`
+- `_gui_input(event: InputEvent) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
+- `set_selected(value: bool) -> void`
+- `_repaint() -> void`
 - `_get_drag_data(_at_position: Vector2) -> Variant`
 - `_make_preview() -> Control`
 - `_make_tile_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat`
@@ -3301,6 +3320,9 @@
 - `_diamond_back`
 - `_slot_size`
 - `_frame`
+- `_unequip_button`
+- `_highlighted`
+- `_drag_state`
 - `pad`
 - `min_side`
 - `inner_width`
@@ -3308,13 +3330,17 @@
 - `bottom_height`
 - `art_top`
 - `art_height`
+- `button_side`
 - `side`
 - `bone_id`
+- `border`
+- `background`
+- `width`
+- `alpha`
+- `style`
 - `wrap`
 - `rect`
 - `preview_size`
-- `valid`
-- `style`
 - `equipped_value`
 - `equipped`
 
@@ -3324,11 +3350,14 @@
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
+- `_on_unequip_pressed() -> void`
+- `set_highlighted(value: bool) -> void`
+- `set_drag_state(state: String) -> void`
+- `_repaint() -> void`
 - `_get_drag_data(_at_position: Vector2) -> Variant`
 - `_can_drop_data(_at_position: Vector2, data: Variant) -> bool`
 - `_drop_data(_at_position: Vector2, data: Variant) -> void`
 - `_notification(what: int) -> void`
-- `_set_frame_border(color: Color) -> void`
 - `_gui_input(event: InputEvent) -> void`
 - `_make_slot_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat`
 - `_equipped_bone_id() -> String`
@@ -3364,8 +3393,6 @@
 - `inventory_owner`
 - `slot_size`
 - `frame`
-- `diamond`
-- `diamond_inner`
 - `drop`
 - `style`
 

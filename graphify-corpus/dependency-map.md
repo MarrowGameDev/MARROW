@@ -91,6 +91,7 @@
 - `scripts/ui_bone_item.gd` depends on `scripts/player_inventory_ui.gd` because it references class PlayerInventoryUI.
 - `scripts/ui_bone_slot.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/ui_bone_slot.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/ui_bone_slot.gd` depends on `scripts/player_inventory_ui.gd` because it references class PlayerInventoryUI.
 
 ## Scene Relationships
 

@@ -2656,6 +2656,26 @@ class PlayerInventoryUI:
         """GDScript function: get_equipped_bone_for_slot(slot: String) -> String"""
         pass
 
+    def gd_func_select_bone(self):
+        """GDScript function: select_bone(bone_id: String) -> void"""
+        pass
+
+    def gd_func__refresh_selection_visuals(self):
+        """GDScript function: _refresh_selection_visuals() -> void"""
+        pass
+
+    def gd_func_begin_bone_drag(self):
+        """GDScript function: begin_bone_drag(bone_id: String) -> void"""
+        pass
+
+    def gd_func_end_bone_drag(self):
+        """GDScript function: end_bone_drag() -> void"""
+        pass
+
+    def gd_func__slot_list_text(self):
+        """GDScript function: _slot_list_text(slots: Array[String]) -> String"""
+        pass
+
     def gd_func_show_bone_info(self):
         """GDScript function: show_bone_info(bone_id: String) -> void"""
         pass
@@ -2850,6 +2870,10 @@ class PlayerInventoryUI:
 
     def gd_func__build_paper_doll(self):
         """GDScript function: _build_paper_doll() -> Control"""
+        pass
+
+    def gd_func__paper_doll_slot_size(self):
+        """GDScript function: _paper_doll_slot_size(slot_id: String) -> Vector2"""
         pass
 
     def gd_func__place_slot(self):
@@ -4128,6 +4152,10 @@ class BoneItemTile:
         """GDScript function: _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void"""
         pass
 
+    def gd_func__gui_input(self):
+        """GDScript function: _gui_input(event: InputEvent) -> void"""
+        pass
+
     def gd_func__on_mouse_entered(self):
         """GDScript function: _on_mouse_entered() -> void"""
         pass
@@ -4138,6 +4166,14 @@ class BoneItemTile:
 
     def gd_func_refresh(self):
         """GDScript function: refresh() -> void"""
+        pass
+
+    def gd_func_set_selected(self):
+        """GDScript function: set_selected(value: bool) -> void"""
+        pass
+
+    def gd_func__repaint(self):
+        """GDScript function: _repaint() -> void"""
         pass
 
     def gd_func__get_drag_data(self):
@@ -4203,6 +4239,22 @@ class BoneSlotWidget:
         """GDScript function: refresh() -> void"""
         pass
 
+    def gd_func__on_unequip_pressed(self):
+        """GDScript function: _on_unequip_pressed() -> void"""
+        pass
+
+    def gd_func_set_highlighted(self):
+        """GDScript function: set_highlighted(value: bool) -> void"""
+        pass
+
+    def gd_func_set_drag_state(self):
+        """GDScript function: set_drag_state(state: String) -> void"""
+        pass
+
+    def gd_func__repaint(self):
+        """GDScript function: _repaint() -> void"""
+        pass
+
     def gd_func__get_drag_data(self):
         """GDScript function: _get_drag_data(_at_position: Vector2) -> Variant"""
         pass
@@ -4217,10 +4269,6 @@ class BoneSlotWidget:
 
     def gd_func__notification(self):
         """GDScript function: _notification(what: int) -> void"""
-        pass
-
-    def gd_func__set_frame_border(self):
-        """GDScript function: _set_frame_border(color: Color) -> void"""
         pass
 
     def gd_func__gui_input(self):
@@ -4242,6 +4290,10 @@ class BoneSlotWidget:
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
+
+    def depends_on_PlayerInventoryUI(self):
+        """Relationship: references class PlayerInventoryUI."""
+        return PlayerInventoryUI
 
 class InventoryEmptySlot:
     """Godot script: scripts/ui_inventory_empty_slot.gd
