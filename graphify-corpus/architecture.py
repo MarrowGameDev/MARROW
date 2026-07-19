@@ -433,6 +433,10 @@ class Bone:
         """Uses GameEvents.pickup_collected."""
         pass
 
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
@@ -567,6 +571,10 @@ class BoneQualityService:
     def depends_on_BoneInstanceService(self):
         """Relationship: references class BoneInstanceService."""
         return BoneInstanceService
+
+    def depends_on_ModularSkeletonRig(self):
+        """Relationship: references class ModularSkeletonRig."""
+        return ModularSkeletonRig
 
 class BoneRulesService:
     """Godot script: scripts/bone_rules_service.gd
@@ -3288,6 +3296,10 @@ class ModularSkeletonRig:
         """GDScript function: _get_head_model_mesh() -> Mesh"""
         pass
 
+    def gd_func__apply_quality_visual(self):
+        """GDScript function: _apply_quality_visual(node: Node, bone_id: String) -> void"""
+        pass
+
     def gd_func_equip_bone(self):
         """GDScript function: equip_bone(bone_id: String, bone_def: Dictionary) -> void"""
         pass
@@ -3419,6 +3431,10 @@ class ModularSkeletonRig:
     def gd_func__positive_vector3(self):
         """GDScript function: _positive_vector3(value: Vector3, fallback: Vector3) -> Vector3"""
         pass
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""

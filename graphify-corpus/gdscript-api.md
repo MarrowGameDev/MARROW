@@ -697,11 +697,19 @@
 - `QUALITY_TABLE`
 - `QUALITY_ORDER`
 - `LEGACY_QUALITY_ALIASES`
+- `QUALITY_VISUALS`
 
 ### Key Variables
 - `roll`
 - `cumulative`
 - `total`
+- `profile`
+- `tint`
+- `base_color`
+- `tinted`
+- `saturation`
+- `luminance`
+- `emission_energy`
 
 ### Functions
 - none
@@ -2639,6 +2647,7 @@
 - `has_equipped_slot(slot_id: String) -> bool`
 - `_make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D`
 - `_get_head_model_mesh() -> Mesh`
+- `_apply_quality_visual(node: Node, bone_id: String) -> void`
 - `equip_bone(bone_id: String, bone_def: Dictionary) -> void`
 - `unequip_slot(slot_id: String) -> void`
 - `get_equipped_bone_defs() -> Array`
@@ -3353,6 +3362,13 @@
 - `art_height`
 - `frame`
 - `top_rule`
+- `quality_id`
+- `pip_count`
+- `pip_size`
+- `pip_gap`
+- `pip_total`
+- `pip_y`
+- `pip`
 - `art_centre`
 - `art_span`
 - `glow`
@@ -3362,11 +3378,10 @@
 - `slot_text`
 - `side`
 - `background`
+- `quality_border`
 - `border`
 - `width`
 - `style`
-- `wrap`
-- `rect`
 
 ### Functions
 - `setup(id: String, player_ref: Node, quantity: int = 1) -> void`
