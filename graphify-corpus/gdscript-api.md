@@ -779,8 +779,8 @@
 - `health_bonus`
 - `multiplier`
 - `total`
-- `attack_damage_total`
-- `max_health_total`
+- `exact`
+- `weight_multiplier`
 
 ### Functions
 - none
@@ -2116,6 +2116,7 @@
 - `state`
 - `validation`
 - `target_state`
+- `resolved_state`
 - `previous_state`
 - `required_counts`
 - `inventory_counts`
@@ -2127,6 +2128,14 @@
 - `expected`
 - `actual`
 - `counts`
+- `carried`
+- `claimed`
+- `resolved`
+- `wanted_type`
+- `best_id`
+- `best_rank`
+- `candidate`
+- `rank`
 - `config`
 - `value`
 - `parts`
@@ -2142,6 +2151,7 @@
 - `_matches_equipment_state(target_state: Dictionary) -> bool`
 - `_sanitize_build_state(raw_state: Dictionary) -> Dictionary`
 - `_bone_counts(items: Array) -> Dictionary`
+- `_resolve_build_to_instances(type_state: Dictionary) -> Dictionary`
 - `_inventory_items() -> Array`
 - `_load_builds() -> void`
 - `_save_builds() -> void`
@@ -2303,6 +2313,7 @@
 - `INVENTORY_PREVIEW_BASE_SIZE`
 - `BUILD_PREVIEW_BASE_SIZE`
 - `INVENTORY_FILTER_OPTIONS`
+- `INVENTORY_SORT_OPTIONS`
 - `PAPER_DOLL_BASE_SIZE`
 - `PAPER_DOLL_SLOT_SIZE`
 - `PAPER_DOLL_FRAME_POSITION`
@@ -2337,6 +2348,12 @@
 - `inventory_tabs_container`
 - `inventory_filter_dropdown`
 - `inventory_filter_label`
+- `inventory_quality_dropdown`
+- `inventory_quality_label`
+- `inventory_sort_dropdown`
+- `inventory_sort_label_control`
+- `inventory_quality_filter`
+- `inventory_sort_mode`
 - `inventory_body`
 - `inventory_left_panel`
 - `inventory_grid_panel`
@@ -2351,12 +2368,6 @@
 - `inventory_details_panel`
 - `inventory_paper_doll`
 - `inventory_footer`
-- `settings_panel`
-- `settings_box_panel`
-- `settings_box_margin`
-- `settings_controls_list`
-- `settings_title_label`
-- `settings_status_label`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2380,12 +2391,17 @@
 - `end_bone_drag() -> void`
 - `_slot_list_text(slots: Array[String]) -> String`
 - `show_bone_info(bone_id: String) -> void`
+- `_base_vs_effective_text(bone_id: String) -> String`
+- `_format_number(value: float) -> String`
 - `_bone_comparison_text(bone_id: String) -> String`
 - `clear_bone_info() -> void`
 - `_build_inventory_ui() -> void`
 - `_build_right_inventory_panel() -> void`
 - `_build_inventory_blur_layer() -> ColorRect`
 - `_build_inventory_tabs(parent: VBoxContainer) -> void`
+- `_make_inventory_dropdown() -> OptionButton`
+- `_on_inventory_quality_selected(index: int) -> void`
+- `_on_inventory_sort_selected(index: int) -> void`
 - `_on_inventory_filter_selected(index: int) -> void`
 - `_add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void`
 - `_select_inventory_category(category: String) -> void`
@@ -2455,6 +2471,7 @@
 - `_set_default_control_mouse(action: String, button_index: int) -> void`
 - `rebuild_item_tiles() -> void`
 - `_bone_matches_inventory_category(bone_id: String) -> bool`
+- `_bone_matches_quality_filter(bone_id: String) -> bool`
 - `_compare_inventory_items(a: String, b: String) -> bool`
 - `update_inventory_ui() -> void`
 - `_bone_inventory() -> Array`
