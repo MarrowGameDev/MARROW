@@ -787,8 +787,8 @@
 - `health_bonus`
 - `multiplier`
 - `total`
+- `synergy_bonus`
 - `exact`
-- `weight_multiplier`
 
 ### Functions
 - none
@@ -1211,6 +1211,7 @@
 - `_get_held_rock_world_position() -> Vector3`
 - `_get_rock_throw_socket() -> Node3D`
 - `can_be_stealth_finished_by(player: Node3D) -> bool`
+- `is_stealth_finish_lethal() -> bool`
 - `get_stealth_prompt_text() -> String`
 - `get_drop_display_name() -> String`
 - `_is_player_behind(player: Node3D) -> bool`
@@ -2152,23 +2153,23 @@
 - `report`
 - `saved_counts`
 - `slot_quality`
-- `matches`
 - `current_equipment`
+- `matches`
 - `build_stats`
 - `current_stats`
 - `comparison`
 - `delta`
 - `stats`
-- `value`
+- `stats_component`
+- `stored`
 - `counts`
 - `piece`
 - `quality_id`
-- `summary`
-- `effects`
-- `set_names`
-- `set_counts`
-- `label`
+- `pairs`
+- `matched`
 - `current_state`
+- `expected`
+- `actual`
 
 ### Functions
 - `setup(player: Node, equipment: PlayerEquipmentComponent) -> void`
@@ -2181,9 +2182,10 @@
 - `get_build_report(index: int) -> Dictionary`
 - `build_display_name(index: int) -> String`
 - `_stats_for_state(state: Dictionary) -> Dictionary`
-- `_player_base(property: String, fallback: float) -> float`
+- `_true_base(property: String, fallback: float) -> float`
 - `_quality_counts_for(state: Dictionary) -> Dictionary`
 - `_effects_for_state(state: Dictionary) -> Array`
+- `_composition_for_state(state: Dictionary) -> Dictionary`
 - `_apply_validated_state(target_state: Dictionary) -> void`
 - `_matches_equipment_state(target_state: Dictionary) -> bool`
 - `_sanitize_build_state(raw_state: Dictionary) -> Dictionary`
@@ -2444,6 +2446,7 @@
 - `_base_vs_effective_text(bone_id: String) -> String`
 - `_format_number(value: float) -> String`
 - `_bone_comparison_text(bone_id: String) -> String`
+- `_synergy_preview_text(bone_id: String, slot: String) -> String`
 - `clear_bone_info() -> void`
 - `_build_inventory_ui() -> void`
 - `_build_right_inventory_panel() -> void`
@@ -2490,7 +2493,9 @@
 - `_select_build(index: int) -> void`
 - `_on_save_current_pressed() -> void`
 - `_on_apply_pressed() -> void`
-- `_on_rename_pressed() -> void`
+- `_on_build_title_gui_input(event: InputEvent) -> void`
+- `_begin_title_rename() -> void`
+- `_cancel_title_rename() -> void`
 - `_on_rename_submitted(new_name: String) -> void`
 - `_on_delete_pressed() -> void`
 - `_first_build_index() -> int`
@@ -2506,6 +2511,8 @@
 - `_fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void`
 - `_make_stat_row(stat_name: String, value: float, delta: float) -> Control`
 - `_make_composition_row(quality_id: String, count: int) -> Control`
+- `_make_count_row(label_text: String, value_text: String) -> Control`
+- `_make_synergy_rows(entry_value: Variant) -> Control`
 - `_make_dim_row(text: String) -> Control`
 - `_clear_children(node: Node) -> void`
 - `_set_build_preset_status(text: String) -> void`
@@ -2911,6 +2918,13 @@
 - `arm_sword_swing_count`
 - `arm_sword_hold_speed`
 - `arm_sword_hold_timeout`
+- `backstab_club_raise`
+- `backstab_club_slam`
+- `backstab_club_slam_sharpness`
+- `backstab_club_torso_windup`
+- `backstab_club_torso_slam`
+- `backstab_club_pitch_raised`
+- `backstab_club_pitch_impact`
 - `combo_left_arm_forward`
 - `combo_finisher_arm_forward`
 - `combo_finisher_torso_twist`
@@ -2934,6 +2948,12 @@
 - `foot_lift`
 - `foot_smoothing`
 - `foot_align_to_normal`
+- `stealth_ready_arm_raise`
+- `stealth_ready_crouch`
+- `stealth_ready_body_drop`
+- `stealth_ready_leg_bend`
+- `stealth_ready_head_dip`
+- `stealth_ready_blend_speed`
 
 ### Constants
 - `COMBO_STEP_ARM_SWORD`
@@ -2955,6 +2975,7 @@
 - `_attack_combo_step`
 - `_attack_impact_signaled`
 - `_is_stealth_finish_attack`
+- `_is_stealth_finish_lethal`
 - `_head_only_attack_contacted`
 - `_head_only_attack_landed`
 - `_head_only_base_world_offset`
@@ -2981,7 +3002,6 @@
 - `_torso_head_miss_fall_timer`
 - `_torso_head_miss_fall_start_position`
 - `_torso_head_miss_fall_start_rotation`
-- `_torso_head_miss_fall_start_scale`
 
 ### Functions
 - `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
@@ -3009,9 +3029,12 @@
 - `_head_launch_aim_or(fallback: Vector3) -> Vector3`
 - `_update_head_launch_attack_aim() -> void`
 - `trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void`
-- `trigger_stealth_finish_attack() -> void`
+- `trigger_stealth_finish_attack(lethal: bool = true) -> void`
 - `_capture_torso_head_miss_body_hold_transform() -> void`
 - `set_aiming(enabled: bool) -> void`
+- `set_stealth_ready(enabled: bool) -> void`
+- `_update_stealth_ready_overlay(delta: float) -> void`
+- `_apply_stealth_ready_overlay() -> void`
 - `confirm_head_only_attack_contact() -> void`
 - `get_head_only_attack_forward_offset() -> float`
 - `get_head_only_attack_world_offset() -> Vector3`
@@ -3092,6 +3115,8 @@
 - `_update_arm_sword(delta: float) -> void`
 - `_both_arms_equipped() -> bool`
 - `_right_hand_rig_position() -> Vector3`
+- `_apply_backstab_club_pose(strength: float) -> void`
+- `_backstab_slam_t() -> float`
 - `_apply_finisher_combo_pose(strength: float) -> void`
 - `_animate_feet(delta: float) -> void`
 - `_place_foot(space: PhysicsDirectSpaceState3D, key: String, delta: float) -> void`
@@ -3172,6 +3197,92 @@
 ### Node Path Lookups
 - none
 
+## SynergyRulesService
+
+- Source file: `scripts/synergy_rules_service.gd`
+- Extends: `unknown`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `BONUS_DEFAULTS`
+- `MODIFIER_DEFAULTS`
+- `CATEGORY_FAMILY`
+- `CATEGORY_SYMMETRY`
+- `CATEGORY_QUALITY`
+- `PAIR_ARMS`
+- `PAIR_LEGS`
+- `TIER_NONE`
+- `STAT_DISPLAY`
+- `EXCLUDED_SET_IDS`
+- `MAX_EQUIPPABLE_PIECES`
+- `HIGH_QUALITY_MIN_RANK`
+- `FAMILY_RULES`
+- `SYMMETRY_RULES`
+- `QUALITY_RULES`
+
+### Key Variables
+- `result`
+- `counts`
+- `clean_set_id`
+- `pairs`
+- `clean_pair_key`
+- `symmetry_rule`
+- `rank_counts`
+- `quality_rule`
+- `matching`
+- `summary`
+- `raw`
+- `composition`
+- `count`
+- `piece`
+- `rank`
+- `total`
+- `tiers`
+- `cumulative`
+- `label`
+- `best`
+- `best_pieces`
+- `tier`
+- `needed`
+- `effects`
+- `bonus`
+- `payload_bonus`
+- `flat_value`
+- `modifiers`
+- `payload_modifiers`
+- `percent_value`
+- `active`
+- `percent`
+- `parts`
+- `effect`
+- `current_active`
+- `candidate_active`
+- `current_keys`
+- `candidate_keys`
+- `activated`
+- `broken`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## testing_environment
 
 - Source file: `scripts/testing_environment.gd`
@@ -3232,12 +3343,12 @@
 - `content`
 - `alive_count`
 - `scene_tag`
-- `width`
-- `guide`
-- `text`
-- `steps`
-- `enemy_names`
-- `snapshot`
+- `stats_component`
+- `state`
+- `base_speed`
+- `base_reach`
+- `base_damage`
+- `base_health`
 
 ### Functions
 - `_ready() -> void`
@@ -3261,6 +3372,7 @@
 - `_on_enemy_defeated(_enemy: Node, _dropped_bone_id: String) -> void`
 - `_build_ui() -> void`
 - `_update_status() -> void`
+- `_print_stat_breakdown() -> void`
 - `_cycle_overlay_mode() -> void`
 - `_apply_overlay_mode() -> void`
 - `_cycle_validation_guide(direction: int) -> void`

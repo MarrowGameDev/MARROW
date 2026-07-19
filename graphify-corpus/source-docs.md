@@ -2410,8 +2410,49 @@ calibrados por prueba y error, igual que el resto del balance del proyecto.
   `adjusted_player_bonus_for`).
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
-  combinaciones de piezas. `equipment_synergy_summary` puede detectar sets e
-  ids repetidos en el equipo, pero no aplica bonuses automaticamente todavia.
+  combinaciones de piezas. `equipment_synergy_summary` cuenta sets e ids
+  repetidos; `SynergyRulesService.evaluate` convierte esos conteos en bonuses
+  reales y ya esta cableado a los stats (ver seccion siguiente).
+
+## Sets y sinergias
+
+`scripts/synergy_rules_service.gd` es la unica fuente de reglas. Recibe el
+estado de equipo (`{slot_id: instance_id}`) y devuelve `bonus` (planos),
+`modifiers` (porcentajes) y `active` (lista lista para UI).
+
+- **Familia** = `set_id`. Es el unico campo presente tanto en huesos autorados
+  como en limbs generados. `core_body`, `training_bones`, `power_bones` e
+  `hybrid_bones` estan excluidos (`EXCLUDED_SET_IDS`) por ser degenerados o no
+  alcanzar 2 piezas.
+- Escalones de 2 y 4 piezas, **excluyentes**: cuatro piezas otorgan solo el
+  escalon de 4. Una regla que quiera acumular declara `"cumulative": true`.
+- No existe escalon de 6: la cabeza esta fijada a `head_bone`, asi que solo hay
+  cinco slots equipables (`MAX_EQUIPPABLE_PIECES`).
+- Pares simetricos (`Matching Arms`, `Matching Legs`) se detectan por mismo
+  `bone_id` en los dos lados; la calidad no interviene.
+- `High-Quality Assembly` cuenta piezas con rank >= 3 (`Strong`, `Pristine`)
+  usando el rank canonico de `BoneQualityService`, nunca `quality_multiplier`.
+  La cabeza fija cuenta solo si su propia calidad rodada califica.
+
+Integracion: exactamente dos puntos, ambos en `BoneRulesService`.
+
+- `aggregate_player_bonuses_exact` suma `bonus` despues del bucle por pieza y
+  sin multiplicador de calidad (un bonus de set no pertenece a ninguna pieza).
+- `aggregate_player_stat_modifiers` suma `modifiers` **antes** de los `clampf`,
+  de modo que `PLAYER_STAT_PERCENT_LIMIT` (+/-0.75) sigue siendo el unico techo.
+  El `weight_percent` de sinergia escala el peso ya ensamblado y por lo tanto
+  alimenta la penalizacion de carga.
+
+El sistema es **sin estado**: `evaluate` es una funcion pura del equipo actual.
+No hay efectos guardados ni eventos que apliquen bonuses por separado, asi que
+desequipar una pieza elimina su efecto en el siguiente recalculo y recalcular N
+veces no duplica nada. No agregar cache ni señales a este servicio.
+
+Consumidores: `PlayerStatsComponent` (via `player_stats_with_equipment`),
+`PlayerEquipmentBuildsComponent.get_build_report` (`effects`,
+`current_effects`, `composition`, `effects_partial`) y `player_inventory_ui.gd`
+(Active Effects, Build Composition, y el preview "Would activate / Would break"
+del panel de comparacion). La UI nunca evalua condiciones por su cuenta.
 - Build presets no son una segunda fuente de estado. Solo persisten una
   intencion de equipamiento y deben revalidarse contra inventario y reglas
   actuales cada vez que se aplican.

@@ -53,6 +53,7 @@
 - `scripts/game_events.gd`
 - `scripts/main_menu.gd`
 - `scripts/player_stats_component.gd`
+- `scripts/synergy_rules_service.gd`
 - `scripts/testing_environment.gd`
 
 ## UI and guidance
