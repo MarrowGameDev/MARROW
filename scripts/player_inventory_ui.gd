@@ -5,6 +5,30 @@ const INVENTORY_EMPTY_SLOT_SCRIPT: Script = preload("res://scripts/ui_inventory_
 const CONTROL_SETTINGS_PATH := "user://control_settings.cfg"
 const INVENTORY_PREVIEW_BASE_SIZE := Vector2i(210, 276)
 const BUILD_PREVIEW_BASE_SIZE := Vector2(120.0, 158.0)
+
+# Paper-doll geometry, in unscaled design units. Single source of truth: these
+# were previously written out in both _build_paper_doll() and the responsive
+# pass, and the two copies drifting apart is exactly what desynced the slots
+# before. Every consumer scales these by doll_scale.
+const PAPER_DOLL_BASE_SIZE := Vector2(406.0, 470.0)
+const PAPER_DOLL_SLOT_SIZE := Vector2(88.0, 88.0)
+const PAPER_DOLL_FRAME_POSITION := Vector2(94.0, 92.0)
+const PAPER_DOLL_FRAME_SIZE := Vector2(218.0, 284.0)
+const PAPER_DOLL_PREVIEW_POSITION := Vector2(98.0, 96.0)
+const PAPER_DOLL_RING_POSITION := Vector2(171.0, 177.0)
+const PAPER_DOLL_RING_SIZE := Vector2(64.0, 64.0)
+# Arms and legs are centred on the preview frame: the frame spans y 92..376,
+# so its centre is y 234, and the arm+leg block (arms at y 142 through legs
+# ending at y 326) is centred on that same 234. Head and torso stay anchored
+# above and below the frame.
+const PAPER_DOLL_SLOT_POSITIONS := {
+	"head": Vector2(159.0, 0.0),
+	"left_arm": Vector2(0.0, 142.0),
+	"right_arm": Vector2(318.0, 142.0),
+	"left_leg": Vector2(0.0, 238.0),
+	"right_leg": Vector2(318.0, 238.0),
+	"torso": Vector2(159.0, 382.0),
+}
 const CONTROL_BINDINGS: Array = [
 	{"action": "move_forward", "label": "Move Forward"},
 	{"action": "move_back", "label": "Move Back"},
@@ -835,11 +859,11 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 	if inventory_paper_doll == null:
 		return
 
-	# Anatomical layout: head above the preview, torso below it, arms
-	# flanking its sides, legs below the arms. Base size/positions must
-	# match _build_paper_doll() exactly (see docstring there).
-	var base_doll_size := Vector2(406.0, 470.0)
-	var scaled_doll_size := base_doll_size * doll_scale
+	# Anatomical layout: head above the preview, torso below it, arms flanking
+	# its sides and legs below the arms, with the arm+leg block centred on the
+	# preview frame. All geometry comes from the PAPER_DOLL_* constants so this
+	# pass and _build_paper_doll() can no longer disagree.
+	var scaled_doll_size := PAPER_DOLL_BASE_SIZE * doll_scale
 	inventory_paper_doll.scale = Vector2.ONE
 	inventory_paper_doll.custom_minimum_size = scaled_doll_size
 	inventory_paper_doll.clip_contents = true
@@ -857,16 +881,16 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 
 	var center_frame := inventory_paper_doll.get_node_or_null("CenterFrame") as Control
 	if center_frame != null:
-		center_frame.position = Vector2(94.0, 92.0) * doll_scale
-		center_frame.size = Vector2(218.0, 284.0) * doll_scale
+		center_frame.position = PAPER_DOLL_FRAME_POSITION * doll_scale
+		center_frame.size = PAPER_DOLL_FRAME_SIZE * doll_scale
 
 	var ring := inventory_paper_doll.get_node_or_null("CenterRing") as ColorRect
 	if ring != null:
-		ring.position = Vector2(171.0, 177.0) * doll_scale
-		ring.size = Vector2(64.0, 64.0) * doll_scale
+		ring.position = PAPER_DOLL_RING_POSITION * doll_scale
+		ring.size = PAPER_DOLL_RING_SIZE * doll_scale
 
 	if inventory_preview_container != null:
-		inventory_preview_container.position = Vector2(98.0, 96.0) * doll_scale
+		inventory_preview_container.position = PAPER_DOLL_PREVIEW_POSITION * doll_scale
 		var preview_size := _inventory_preview_base_size() * doll_scale
 		inventory_preview_container.custom_minimum_size = preview_size
 		# inventory_preview_container.stretch is true (see
@@ -877,25 +901,12 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 		# twice already.
 		inventory_preview_container.size = preview_size
 
-	# Keys and base positions must match slot_widgets' real keys (the six
-	# canonical body slots) and _build_paper_doll()'s base positions
-	# exactly. The previous version used "body"/"legs" keys that do not
-	# exist in slot_widgets (keyed "head"/"torso"/"left_arm"/"right_arm"/
-	# "left_leg"/"right_leg"), so those four widgets were silently never
-	# rescaled or repositioned here and stayed frozen at their
-	# _build_paper_doll base position while the doll container itself
-	# scaled around them. left_arm/right_arm WERE handled, but at a
-	# different y than their _build_paper_doll base position, so they
-	# jumped and overlapped the head slot at doll_scale == 1.0 too. This
-	# combination produced the crowded/overlapping layout.
-	var slot_positions := {
-		"head": Vector2(159.0, 0.0),
-		"left_arm": Vector2(0.0, 190.0),
-		"right_arm": Vector2(318.0, 190.0),
-		"left_leg": Vector2(0.0, 286.0),
-		"right_leg": Vector2(318.0, 286.0),
-		"torso": Vector2(159.0, 382.0),
-	}
+	# Keyed by slot_widgets' real keys (the six canonical body slots). An older
+	# version kept its own copy of this table using "body"/"legs" keys that do
+	# not exist in slot_widgets, so four widgets were silently never moved and
+	# stayed frozen while the doll scaled around them. Sharing one constant
+	# with _build_paper_doll() removes that whole class of drift.
+	var slot_positions := PAPER_DOLL_SLOT_POSITIONS
 	for slot in slot_positions:
 		var widget := slot_widgets.get(slot) as Control
 		if widget == null:
@@ -908,7 +919,7 @@ func _apply_paper_doll_responsive_layout(doll_scale: float) -> void:
 		# earlier version set both `scale` and a scaled `size`, which left the
 		# input rect at 88 * doll_scale^2 against visuals at 88 * doll_scale
 		# and made neighbouring drop targets overlap.
-		widget.resize(Vector2(88.0, 88.0) * doll_scale)
+		widget.resize(PAPER_DOLL_SLOT_SIZE * doll_scale)
 
 
 func _apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void:
@@ -1633,34 +1644,38 @@ func _preview_snapshot_matches(next_snapshot: Dictionary) -> bool:
 func _build_paper_doll() -> Control:
 	var doll := Control.new()
 	inventory_paper_doll = doll
-	doll.custom_minimum_size = Vector2(406, 470)
+	doll.custom_minimum_size = PAPER_DOLL_BASE_SIZE
 	doll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var center_frame := PanelContainer.new()
 	center_frame.name = "CenterFrame"
-	center_frame.position = Vector2(94, 92)
-	center_frame.size = Vector2(218, 284)
+	center_frame.position = PAPER_DOLL_FRAME_POSITION
+	center_frame.size = PAPER_DOLL_FRAME_SIZE
 	center_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center_frame.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.12), Color(0.87, 0.63, 0.19, 0.46), 1, 0))
 	doll.add_child(center_frame)
 
 	var ring := ColorRect.new()
 	ring.name = "CenterRing"
-	ring.position = Vector2(171, 177)
-	ring.size = Vector2(64, 64)
+	ring.position = PAPER_DOLL_RING_POSITION
+	ring.size = PAPER_DOLL_RING_SIZE
 	ring.rotation = PI / 4.0
 	ring.color = Color(0.87, 0.63, 0.19, 0.16)
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	doll.add_child(ring)
 
 	doll.add_child(_build_character_preview_panel())
-	var equip_slot_size := Vector2(88, 88)
-	_place_slot(doll, "head", "Head", Vector2(159, 0), equip_slot_size)
-	_place_slot(doll, "left_arm", "L. Arm", Vector2(0, 190), equip_slot_size)
-	_place_slot(doll, "right_arm", "R. Arm", Vector2(318, 190), equip_slot_size)
-	_place_slot(doll, "left_leg", "L. Leg", Vector2(0, 286), equip_slot_size)
-	_place_slot(doll, "right_leg", "R. Leg", Vector2(318, 286), equip_slot_size)
-	_place_slot(doll, "torso", "Torso", Vector2(159, 382), equip_slot_size)
+	var slot_titles := {
+		"head": "Head",
+		"left_arm": "L. Arm",
+		"right_arm": "R. Arm",
+		"left_leg": "L. Leg",
+		"right_leg": "R. Leg",
+		"torso": "Torso",
+	}
+	for slot in PAPER_DOLL_SLOT_POSITIONS:
+		var slot_id := str(slot)
+		_place_slot(doll, slot_id, str(slot_titles[slot_id]), PAPER_DOLL_SLOT_POSITIONS[slot_id], PAPER_DOLL_SLOT_SIZE)
 	return doll
 
 

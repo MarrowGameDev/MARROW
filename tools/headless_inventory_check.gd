@@ -124,6 +124,28 @@ func _check_slot_rects(ui: Node, res: Vector2i) -> Array[String]:
 				if (bands[i]["rect"] as Rect2).intersects(bands[j]["rect"] as Rect2):
 					problems.append("%s @ %dx%d: text bands overlap ('%s' vs '%s')" % [str(slot), res.x, res.y, str(bands[i]["text"]), str(bands[j]["text"])])
 
+	# Arms and legs must read as centred against the character preview: the
+	# vertical centre of the arm+leg block should line up with the centre of
+	# the preview frame.
+	var frame: Control = null
+	if ui.get("inventory_paper_doll") != null:
+		frame = (ui.get("inventory_paper_doll") as Control).get_node_or_null("CenterFrame") as Control
+	var limb_keys: Array = ["left_arm", "right_arm", "left_leg", "right_leg"]
+	if frame != null:
+		var top: float = INF
+		var bottom: float = -INF
+		for k in limb_keys:
+			if not rects.has(k):
+				continue
+			var r: Rect2 = rects[k]
+			top = minf(top, r.position.y)
+			bottom = maxf(bottom, r.end.y)
+		if top < INF:
+			var limb_centre: float = (top + bottom) * 0.5
+			var frame_centre: float = frame.position.y + frame.size.y * 0.5
+			if absf(limb_centre - frame_centre) > maxf(6.0, frame.size.y * 0.04):
+				problems.append("limbs not centred on preview @ %dx%d (limbs %.1f vs preview %.1f)" % [res.x, res.y, limb_centre, frame_centre])
+
 	# The figure must be optically centred inside the preview panel it lives in,
 	# not pinned to a corner. Compare the doll's rect against its parent area in
 	# shared (global) coordinates so container margins are accounted for.
