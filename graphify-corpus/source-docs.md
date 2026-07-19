@@ -381,6 +381,14 @@ La resolucion vive en un solo punto por capa: `BoneDatabase._type_id`,
 `generated_limb_definition_for`. Por eso cualquier API que aceptaba un
 `bone_id` acepta ahora un `instance_id` sin cambios en el llamador.
 
+Los builds guardan el TIPO por slot, no una pieza concreta. Atarlos a un
+`instance_id` los volvia casi inservibles: perder o cambiar la pieza exacta que
+estaba puesta al guardar rompia el build. Al aplicar, `_resolve_build_to_instances`
+elige la MEJOR calidad disponible de ese tipo entre lo que llevas encima
+(`frail < worn < normal < strong < pristine`), y si un tipo ocupa dos slots toma
+dos piezas distintas, las dos mejores. Si no llevas ninguna copia del tipo, el
+build falla y lo dice; no sustituye por otro tipo.
+
 Los stacks agrupan por `bone_id + quality_id + mutacion`
 (`BoneInstanceService.stack_key_for`), no solo por `bone_id`: apilar dos brazos
 de calidad distinta ocultaria que tienen stats efectivos distintos.
@@ -3163,6 +3171,25 @@ navegacion con teclado; eso sigue requiriendo una sesion manual.
   vertical del bloque brazos+piernas contra el centro del frame del preview en
   las cinco resoluciones. Probado contra las posiciones viejas (falla en las 5,
   desviacion de 30-61 px segun resolucion) y contra las nuevas (pasa).
+
+- 2026-07-18 (calidad en el ciclo de vida): la instancia conserva
+  `bone_id` + `quality_id` en inventario, equipar/desequipar, stacks, builds,
+  rollback y preview. `unequip_slot` solo borra el mapeo de slot, asi que la
+  pieza sigue en `bone_inventory` y vuelve siendo la misma instancia.
+  `PlayerStatsComponent.calculate` recibe el equipment state con instance_ids,
+  de modo que ya opera sobre stats efectivos.
+
+  Stack key = `bone_id | quality_id | mutacion | durabilidad`. La durabilidad
+  hoy es authored por tipo (no hay desgaste por pieza), pero entra en la clave
+  ahora para que agregar desgaste luego no pueda fusionar en silencio una
+  pieza intacta con una agrietada.
+
+  UI: filtro de calidad (All + las 5) y orden (Default / Quality: Lowest first
+  / Quality: Highest first), ambos combinables con el filtro corporal. Cada
+  tarjeta muestra la calidad como texto y un acento del color del tier. El
+  panel de detalles muestra nombre, slot, calidad, multiplicador,
+  `base -> efectivo` y la comparacion contra la pieza equipada, con efectivos
+  en ambos lados.
 
 ## docs/manual_gameplay_qa_checklist.md
 

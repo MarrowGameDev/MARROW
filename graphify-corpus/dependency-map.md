@@ -66,6 +66,8 @@
 - `scripts/player.gd` depends on `scripts/player_stats_component.gd` because it references class PlayerStatsComponent.
 - `scripts/player.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/player.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
+- `scripts/player_equipment_builds_component.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
+- `scripts/player_equipment_builds_component.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
 - `scripts/player_equipment_builds_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player_equipment_builds_component.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/player_equipment_builds_component.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
@@ -78,6 +80,7 @@
 - `scripts/player_inventory_component.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_inventory_empty_slot.gd` because it loads resource.
 - `scripts/player_inventory_ui.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
+- `scripts/player_inventory_ui.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
 - `scripts/player_inventory_ui.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player_inventory_ui.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/player_inventory_ui.gd` depends on `scripts/player_equipment_builds_component.gd` because it references class PlayerEquipmentBuildsComponent.
@@ -100,6 +103,8 @@
 - `scripts/tutorial_island_builder.gd` depends on `scenes/enemy.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scenes/bone.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scripts/demo_enemy_camp.gd` because it loads resource.
+- `scripts/ui_bone_item.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
+- `scripts/ui_bone_item.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
 - `scripts/ui_bone_item.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/ui_bone_item.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/ui_bone_item.gd` depends on `scripts/player_inventory_ui.gd` because it references class PlayerInventoryUI.

@@ -2421,6 +2421,10 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: _bone_counts(items: Array) -> Dictionary"""
         pass
 
+    def gd_func__resolve_build_to_instances(self):
+        """GDScript function: _resolve_build_to_instances(type_state: Dictionary) -> Dictionary"""
+        pass
+
     def gd_func__inventory_items(self):
         """GDScript function: _inventory_items() -> Array"""
         pass
@@ -2444,6 +2448,14 @@ class PlayerEquipmentBuildsComponent:
     def gd_func__result(self):
         """GDScript function: _result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary"""
         pass
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -2754,6 +2766,14 @@ class PlayerInventoryUI:
         """GDScript function: show_bone_info(bone_id: String) -> void"""
         pass
 
+    def gd_func__base_vs_effective_text(self):
+        """GDScript function: _base_vs_effective_text(bone_id: String) -> String"""
+        pass
+
+    def gd_func__format_number(self):
+        """GDScript function: _format_number(value: float) -> String"""
+        pass
+
     def gd_func__bone_comparison_text(self):
         """GDScript function: _bone_comparison_text(bone_id: String) -> String"""
         pass
@@ -2776,6 +2796,18 @@ class PlayerInventoryUI:
 
     def gd_func__build_inventory_tabs(self):
         """GDScript function: _build_inventory_tabs(parent: VBoxContainer) -> void"""
+        pass
+
+    def gd_func__make_inventory_dropdown(self):
+        """GDScript function: _make_inventory_dropdown() -> OptionButton"""
+        pass
+
+    def gd_func__on_inventory_quality_selected(self):
+        """GDScript function: _on_inventory_quality_selected(index: int) -> void"""
+        pass
+
+    def gd_func__on_inventory_sort_selected(self):
+        """GDScript function: _on_inventory_sort_selected(index: int) -> void"""
         pass
 
     def gd_func__on_inventory_filter_selected(self):
@@ -3054,6 +3086,10 @@ class PlayerInventoryUI:
         """GDScript function: _bone_matches_inventory_category(bone_id: String) -> bool"""
         pass
 
+    def gd_func__bone_matches_quality_filter(self):
+        """GDScript function: _bone_matches_quality_filter(bone_id: String) -> bool"""
+        pass
+
     def gd_func__compare_inventory_items(self):
         """GDScript function: _compare_inventory_items(a: String, b: String) -> bool"""
         pass
@@ -3097,6 +3133,10 @@ class PlayerInventoryUI:
     def depends_on_BoneInstanceService(self):
         """Relationship: references class BoneInstanceService."""
         return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -4273,6 +4313,14 @@ class BoneItemTile:
     def gd_func__drop_data(self):
         """GDScript function: _drop_data(_at_position: Vector2, data: Variant) -> void"""
         pass
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
