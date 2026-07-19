@@ -40,6 +40,15 @@ const SLOT_DISPLAY := {
 	"left_leg": "Left Leg",
 	"right_leg": "Right Leg",
 }
+# Grouped filters for the inventory dropdown, which offers Arms and Legs rather
+# than one entry per side. These belong to the FILTER vocabulary only and are
+# never equipment slot ids -- hence the prefix. A bare "legs" key would be
+# actively wrong here: LEGACY_SLOT_ALIASES already maps "legs" to right_leg, so
+# normalize_slot_id would quietly turn a both-legs filter into a right-leg one.
+const INVENTORY_FILTER_GROUPS := {
+	"group_arms": [SLOT_LEFT_ARM, SLOT_RIGHT_ARM],
+	"group_legs": [SLOT_LEFT_LEG, SLOT_RIGHT_LEG],
+}
 
 # Which SOCKETS a slot paints. The *_lower keys are the split forearms/shins, and
 # listing them here is the whole equipment change: equip_bone already loops these
@@ -156,6 +165,14 @@ static func slot_sort_index(slot_id: String) -> int:
 
 
 static func inventory_filter_matches_bone(filter_slot: String, bone_id: String) -> bool:
+	# Group filters are checked before normalising: normalize_slot_id does not
+	# know these keys and would return "" for them, matching every bone.
+	if INVENTORY_FILTER_GROUPS.has(filter_slot):
+		var compatible: Array[String] = compatible_slots_for_bone(bone_id)
+		for grouped_slot in INVENTORY_FILTER_GROUPS[filter_slot]:
+			if compatible.has(grouped_slot):
+				return true
+		return false
 	var normalized_filter := normalize_slot_id(filter_slot)
 	if normalized_filter == "":
 		return true

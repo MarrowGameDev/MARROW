@@ -36,6 +36,22 @@ func _initialize() -> void:
 	await process_frame
 	await process_frame
 
+	# Seed one bone per body part so the filters have something to filter. A
+	# bare player.tscn starts with an empty inventory, which would make every
+	# filter trivially "correct" because the grid is empty either way.
+	var seed_bones: Array = [
+		"head_bone", "torso_bone", "arm_bone", "leg_bone",
+		"normal_head_bone", "normal_body_bone",
+		"normal_left_arm_bone", "normal_right_arm_bone",
+		"normal_left_leg_bone", "normal_right_leg_bone",
+	]
+	if player.has_method("collect_bone"):
+		for id in seed_bones:
+			player.call("collect_bone", str(id))
+	else:
+		failures.append("player has no collect_bone(); cannot seed inventory")
+	await process_frame
+
 	var tabs: Dictionary = ui.get("inventory_tab_buttons")
 	print("tabs: ", tabs.keys())
 	if not tabs.has("builds"):
@@ -52,6 +68,48 @@ func _initialize() -> void:
 		if builds_index > settings_index:
 			failures.append("builds tab is placed after settings")
 
+	# Body-part filters live in the dropdown, not as tabs.
+	var dropdown: OptionButton = ui.get("inventory_filter_dropdown")
+	if dropdown == null:
+		failures.append("no inventory filter dropdown")
+	else:
+		var labels: Array = []
+		var cats: Array = []
+		for i in range(dropdown.item_count):
+			labels.append(dropdown.get_item_text(i))
+			cats.append(str(dropdown.get_item_metadata(i)))
+		print("filter dropdown: ", labels, " -> ", cats)
+		for expected in ["All", "Head", "Torso", "Arms", "Legs"]:
+			if not labels.has(expected):
+				failures.append("filter dropdown missing '%s'" % expected)
+		for gone in ["head", "torso", "left_arm", "right_arm", "left_leg", "right_leg"]:
+			if tabs.has(gone):
+				failures.append("body-part '%s' is still a tab button" % gone)
+
+		# Grouped filters must match both sides -- including one-sided pieces
+		# like normal_left_leg_bone -- and must not collapse to a single slot
+		# (the "legs" legacy-alias trap) or leak across body parts.
+		var should_match: Array = [
+			["group_arms", "arm_bone"],
+			["group_arms", "normal_left_arm_bone"],
+			["group_arms", "gorilla_right_arm_bone"],
+			["group_legs", "leg_bone"],
+			["group_legs", "normal_left_leg_bone"],
+			["group_legs", "normal_right_leg_bone"],
+		]
+		for pair in should_match:
+			if not EquipmentRulesService.inventory_filter_matches_bone(str(pair[0]), str(pair[1])):
+				failures.append("%s does not match %s" % [str(pair[0]), str(pair[1])])
+		var should_not_match: Array = [
+			["group_legs", "arm_bone"],
+			["group_arms", "leg_bone"],
+			["group_arms", "head_bone"],
+			["group_legs", "torso_bone"],
+		]
+		for pair in should_not_match:
+			if EquipmentRulesService.inventory_filter_matches_bone(str(pair[0]), str(pair[1])):
+				failures.append("%s wrongly matches %s" % [str(pair[0]), str(pair[1])])
+
 	ui.call("set_open", true)
 	await process_frame
 
@@ -61,7 +119,13 @@ func _initialize() -> void:
 		win.size = res
 		await process_frame
 		await process_frame
-		for category in tabs.keys():
+		# Every reachable view: the dropdown's filters plus the mode tabs.
+		var categories: Array = []
+		if dropdown != null:
+			for i in range(dropdown.item_count):
+				categories.append(str(dropdown.get_item_metadata(i)))
+		categories.append_array(tabs.keys())
+		for category in categories:
 			ui.call("_select_inventory_category", str(category))
 			await process_frame
 			var safe_area: Control = ui.get("inventory_safe_area")
@@ -71,6 +135,38 @@ func _initialize() -> void:
 			var sz: Vector2 = safe_area.size
 			if sz.x > float(res.x) + 1.0 or sz.y > float(res.y) + 1.0:
 				failures.append("%s @ %dx%d: safe area %s overflows viewport" % [str(category), res.x, res.y, str(sz)])
+
+		# Every tile the grid actually renders under a filter must belong to
+		# that filter -- the dropdown wiring is only correct if the visible
+		# contents change with it.
+		if dropdown != null:
+			for i in range(dropdown.item_count):
+				var cat: String = str(dropdown.get_item_metadata(i))
+				ui.call("_select_inventory_category", cat)
+				await process_frame
+				var grid: Node = ui.get("items_grid")
+				var shown: Array = []
+				var wrong: Array = []
+				for tile in grid.get_children():
+					var bone_id: Variant = tile.get("bone_id")
+					if bone_id == null or str(bone_id) == "":
+						continue  # empty padding slot
+					shown.append(str(bone_id))
+					if not EquipmentRulesService.inventory_filter_matches_bone(cat, str(bone_id)):
+						wrong.append(str(bone_id))
+				if not wrong.is_empty():
+					failures.append("filter '%s' @ %dx%d shows non-matching bones: %s" % [cat, res.x, res.y, str(wrong)])
+				if cat != "all" and shown.is_empty():
+					failures.append("filter '%s' @ %dx%d shows nothing at all" % [cat, res.x, res.y])
+				if res == RESOLUTIONS[0]:
+					print("  filter %-12s -> %d tiles" % [cat, shown.size()])
+
+		# Measure the doll on a grid view: the loop above ends on Settings,
+		# where the paper doll is hidden and its geometry is whatever the
+		# previous resolution left behind.
+		ui.call("_select_inventory_category", "all")
+		await process_frame
+		await process_frame
 		failures.append_array(_check_slot_rects(ui, res))
 		print("resolution %dx%d OK" % [res.x, res.y])
 

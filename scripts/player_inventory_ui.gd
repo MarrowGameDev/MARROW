@@ -10,6 +10,17 @@ const BUILD_PREVIEW_BASE_SIZE := Vector2(120.0, 158.0)
 # were previously written out in both _build_paper_doll() and the responsive
 # pass, and the two copies drifting apart is exactly what desynced the slots
 # before. Every consumer scales these by doll_scale.
+# Item-grid filters, in dropdown order. Arms and legs are grouped rather than
+# split per side: EquipmentRulesService.INVENTORY_FILTER_GROUPS owns what each
+# grouped key actually matches, so this table stays presentation-only.
+const INVENTORY_FILTER_OPTIONS: Array = [
+	{"category": "all", "text": "All"},
+	{"category": "head", "text": "Head"},
+	{"category": "torso", "text": "Torso"},
+	{"category": "group_arms", "text": "Arms"},
+	{"category": "group_legs", "text": "Legs"},
+]
+
 const PAPER_DOLL_BASE_SIZE := Vector2(406.0, 470.0)
 const PAPER_DOLL_SLOT_SIZE := Vector2(88.0, 88.0)
 const PAPER_DOLL_FRAME_POSITION := Vector2(94.0, 92.0)
@@ -64,6 +75,8 @@ var inventory_content_root: VBoxContainer = null
 var inventory_header: HBoxContainer = null
 var inventory_title_label: Label = null
 var inventory_tabs_container: HBoxContainer = null
+var inventory_filter_dropdown: OptionButton = null
+var inventory_filter_label: Label = null
 var inventory_body: HBoxContainer = null
 var inventory_left_panel: VBoxContainer = null
 var inventory_grid_panel: PanelContainer = null
@@ -174,9 +187,10 @@ func set_open(open: bool) -> void:
 
 
 func cycle_category() -> void:
-	var categories: Array[String] = ["all"]
-	for slot_id in EquipmentRulesService.CANONICAL_BODY_SLOTS:
-		categories.append(str(slot_id))
+	# Same order the dropdown shows, then the two panel modes.
+	var categories: Array[String] = []
+	for entry in INVENTORY_FILTER_OPTIONS:
+		categories.append(str(entry["category"]))
 	categories.append("builds")
 	categories.append("settings")
 	var index: int = categories.find(inventory_category)
@@ -524,19 +538,67 @@ void fragment() {
 func _build_inventory_tabs(parent: VBoxContainer) -> void:
 	inventory_tabs_container = HBoxContainer.new()
 	inventory_tabs_container.process_mode = Node.PROCESS_MODE_ALWAYS
-	inventory_tabs_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	inventory_tabs_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	parent.add_child(inventory_tabs_container)
 
-	_add_inventory_tab(inventory_tabs_container, "all", "All")
-	_add_inventory_tab(inventory_tabs_container, "head", "Head")
-	_add_inventory_tab(inventory_tabs_container, "torso", "Torso")
-	_add_inventory_tab(inventory_tabs_container, "left_arm", "L. Arm")
-	_add_inventory_tab(inventory_tabs_container, "right_arm", "R. Arm")
-	_add_inventory_tab(inventory_tabs_container, "left_leg", "L. Leg")
-	_add_inventory_tab(inventory_tabs_container, "right_leg", "R. Leg")
+	inventory_filter_label = Label.new()
+	inventory_filter_label.text = "Filter by"
+	inventory_filter_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	inventory_filter_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	inventory_tabs_container.add_child(inventory_filter_label)
+
+	inventory_filter_dropdown = OptionButton.new()
+	inventory_filter_dropdown.name = "InventoryFilterDropdown"
+	inventory_filter_dropdown.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory_filter_dropdown.focus_mode = Control.FOCUS_NONE
+	# Match the parchment styling the rest of the panel uses; the stock
+	# OptionButton theme is dark grey and reads as a different application.
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var background := Color(1.0, 1.0, 1.0, 0.55)
+		var border := Color(0.87, 0.63, 0.19, 0.85)
+		if state == "hover" or state == "pressed":
+			background = Color(1.0, 1.0, 1.0, 0.78)
+			border = Color(0.0, 0.78, 0.78, 0.85)
+		inventory_filter_dropdown.add_theme_stylebox_override(state, _make_inventory_style(background, border, 1, 0))
+	for color_role in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		inventory_filter_dropdown.add_theme_color_override(color_role, Color(0.03, 0.33, 0.38, 1.0))
+
+	var popup := inventory_filter_dropdown.get_popup()
+	popup.add_theme_stylebox_override("panel", _make_inventory_style(Color(0.99, 0.985, 0.955, 0.99), Color(0.87, 0.63, 0.19, 0.96), 2, 0))
+	popup.add_theme_stylebox_override("hover", _make_inventory_style(Color(0.0, 0.78, 0.78, 0.22), Color(0.0, 0.78, 0.78, 0.0), 0, 0))
+	popup.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	popup.add_theme_color_override("font_hover_color", Color(0.03, 0.33, 0.38, 1.0))
+
+	for entry in INVENTORY_FILTER_OPTIONS:
+		inventory_filter_dropdown.add_item(str(entry["text"]))
+		inventory_filter_dropdown.set_item_metadata(inventory_filter_dropdown.item_count - 1, str(entry["category"]))
+	inventory_filter_dropdown.item_selected.connect(_on_inventory_filter_selected)
+	inventory_tabs_container.add_child(inventory_filter_dropdown)
+
+	# Builds and Settings stay as they were: they switch the whole panel's
+	# mode, they are not filters over the item grid, so they do not belong in
+	# a "Filter by" dropdown.
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inventory_tabs_container.add_child(spacer)
 	_add_inventory_tab(inventory_tabs_container, "builds", "Builds")
 	_add_inventory_tab(inventory_tabs_container, "settings", "Settings")
+	# Keeps the last tab off the panel's right border instead of flush to it.
+	var end_pad := Control.new()
+	end_pad.custom_minimum_size = Vector2(6.0, 0.0)
+	end_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inventory_tabs_container.add_child(end_pad)
 	_refresh_inventory_tabs()
+
+
+func _on_inventory_filter_selected(index: int) -> void:
+	if inventory_filter_dropdown == null:
+		return
+	var category: Variant = inventory_filter_dropdown.get_item_metadata(index)
+	if category == null:
+		return
+	_select_inventory_category(str(category))
 
 
 func _add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void:
@@ -567,6 +629,16 @@ func _select_inventory_category(category: String) -> void:
 
 
 func _refresh_inventory_tabs() -> void:
+	# Keep the dropdown showing the live filter. Entering Builds/Settings does
+	# not clear it: those are modes, and the grid keeps its filter for when the
+	# player comes back to it.
+	if inventory_filter_dropdown != null:
+		for i in range(inventory_filter_dropdown.item_count):
+			if str(inventory_filter_dropdown.get_item_metadata(i)) == inventory_category:
+				if inventory_filter_dropdown.selected != i:
+					inventory_filter_dropdown.selected = i
+				break
+
 	for category in inventory_tab_buttons:
 		var category_name: String = str(category)
 		var button := inventory_tab_buttons[category_name] as Button
@@ -711,6 +783,16 @@ func _apply_inventory_responsive_layout() -> void:
 			continue
 		button.custom_minimum_size = Vector2(tab_width, tab_height)
 		button.add_theme_font_size_override("font_size", 14 if very_compact else (15 if compact else 18))
+
+	var tab_font_size: int = 14 if very_compact else (15 if compact else 18)
+	if inventory_filter_label != null:
+		inventory_filter_label.add_theme_font_size_override("font_size", tab_font_size)
+		inventory_filter_label.custom_minimum_size = Vector2(0, tab_height)
+	if inventory_filter_dropdown != null:
+		inventory_filter_dropdown.custom_minimum_size = Vector2(clampf(float(content_width) * 0.16, 130.0, 260.0), float(tab_height))
+		inventory_filter_dropdown.add_theme_font_size_override("font_size", tab_font_size)
+	if inventory_tabs_container != null:
+		inventory_tabs_container.add_theme_constant_override("separation", int(clampf(float(tab_gap) * 0.5, 6.0, 18.0)))
 
 	if inventory_title_label != null:
 		inventory_title_label.custom_minimum_size = Vector2(190 if compact else 260, header_height)

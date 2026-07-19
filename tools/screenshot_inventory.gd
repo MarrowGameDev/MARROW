@@ -38,11 +38,19 @@ func _initialize() -> void:
 		quit(1)
 		return
 
-	# Give the player some bones so the grid is populated like a real session.
-	if player.has_method("add_bone_to_inventory"):
+	# The dummy scene already seeds a full set of limbs via
+	# _seed_testing_inventory(); top up with the authored .tres bones so the
+	# grid shows a mix. The API is collect_bone() -- an earlier version called
+	# a non-existent add_bone_to_inventory() behind has_method(), so it
+	# silently added nothing.
+	if player.has_method("collect_bone"):
 		for id in ["torso_bone", "head_bone", "arm_bone", "leg_bone"]:
-			player.call("add_bone_to_inventory", id)
+			player.call("collect_bone", str(id))
 
+	# Collapse the testing-scene guide panel so it does not sit on top of the
+	# inventory in these captures (H hotkey, exercised here directly).
+	if world.has_method("_cycle_overlay_mode"):
+		world.call("_cycle_overlay_mode")
 	ui.call("set_open", true)
 	for shot in SHOTS:
 		var res: Vector2i = shot["res"]

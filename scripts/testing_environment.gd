@@ -27,6 +27,15 @@ var notes_editing: bool = false
 var observed_notes: String = ""
 var validation_log: Array[Dictionary] = []
 
+# The guide panel is wide enough to sit on top of the inventory and the paper
+# doll, which makes it impossible to check UI work in these scenes. H cycles it
+# through the three states below instead of only on/off, so the scene keeps a
+# small always-visible reminder of how to bring the full text back.
+enum OverlayMode {FULL, COMPACT, HIDDEN}
+const OVERLAY_PANEL_WIDTH: float = 460.0
+var overlay_mode: int = OverlayMode.FULL
+var testing_panel: PanelContainer = null
+
 
 const P0_VALIDATION_GUIDES: Array[Dictionary] = [
 	{
@@ -107,6 +116,11 @@ func _unhandled_input(event: InputEvent) -> void:
 					_cancel_notes_editing()
 				else:
 					get_tree().change_scene_to_file(MAIN_MENU_PATH)
+			KEY_H:
+				# Guarded so typing an "h" into the observed-result field does
+				# not also collapse the panel out from under the caret.
+				if not notes_editing:
+					_cycle_overlay_mode()
 			KEY_O:
 				if not notes_editing:
 					_begin_notes_editing()
@@ -404,7 +418,8 @@ func _build_ui() -> void:
 	var panel := PanelContainer.new()
 	panel.name = "TestingPanel"
 	panel.position = Vector2(20.0, 20.0)
-	panel.custom_minimum_size = Vector2(460.0, 0.0)
+	panel.custom_minimum_size = Vector2(OVERLAY_PANEL_WIDTH, 0.0)
+	testing_panel = panel
 	canvas.add_child(panel)
 
 	var margin := MarginContainer.new()
@@ -440,6 +455,11 @@ func _update_status() -> void:
 		if enemy != null and is_instance_valid(enemy) and bool(enemy.get("alive")):
 			alive_count += 1
 
+	if overlay_mode == OverlayMode.COMPACT:
+		var scene_tag: String = "DUMMY" if dummy_only_mode else "TEST"
+		status_label.text = "%s  |  Enemies: %d  |  H: expand" % [scene_tag, alive_count]
+		return
+
 	if dummy_only_mode:
 		status_label.text = "DUMMY TESTING ENVIRONMENT\n"
 		status_label.text += "Passive target room for animation, damage, limb, and hitbox checks.\n\n"
@@ -457,9 +477,42 @@ func _update_status() -> void:
 	status_label.text += "F1/F2: cycle P0 validation guide\n"
 	status_label.text += "O: type observed result   P: log PASS   F: log FAIL\n"
 	status_label.text += "Backspace: remove latest enemy   R: reset scene   Esc: menu\n"
+	status_label.text += "H: shrink/hide this panel (cycles full -> compact -> hidden)\n"
 	status_label.text += "Edit EnemySpawnPoints in this scene to add/remove default enemy positions."
 	status_label.text += "\n\n" + _current_validation_guide_text()
 	status_label.text += "\n\n" + _validation_log_summary_text()
+
+
+func _cycle_overlay_mode() -> void:
+	overlay_mode = (overlay_mode + 1) % OverlayMode.size()
+	_apply_overlay_mode()
+
+
+func _apply_overlay_mode() -> void:
+	if testing_panel != null:
+		testing_panel.visible = overlay_mode != OverlayMode.HIDDEN
+		# The panel is a PanelContainer with a 460px floor, so without
+		# clearing that floor the compact state would still block the same
+		# width of screen it does when expanded.
+		var width: float = OVERLAY_PANEL_WIDTH if overlay_mode == OverlayMode.FULL else 0.0
+		testing_panel.custom_minimum_size = Vector2(width, 0.0)
+	if status_label != null:
+		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if overlay_mode == OverlayMode.FULL else TextServer.AUTOWRAP_OFF
+		# Smaller type in the collapsed state: the point is to get out of the
+		# way of the UI being tested, not to stay legible from across the room.
+		if overlay_mode == OverlayMode.COMPACT:
+			status_label.add_theme_font_size_override("font_size", 13)
+		else:
+			status_label.remove_theme_font_size_override("font_size")
+	_update_status()
+	# A Control keeps whatever size it was last given, so the panel would stay
+	# as tall as the expanded text until something shrank it. Reset only after
+	# _update_status() has written the shorter text, otherwise it snaps back to
+	# the old minimum. Deferred as well because the Label's minimum size is
+	# recomputed during layout, not on assignment.
+	if testing_panel != null:
+		testing_panel.reset_size()
+		testing_panel.call_deferred("reset_size")
 
 
 func _cycle_validation_guide(direction: int) -> void:
@@ -487,6 +540,12 @@ func _current_validation_guide_text() -> String:
 
 
 func _begin_notes_editing() -> void:
+	# The notes field lives inside the panel, so typing into it while the panel
+	# is hidden would mean typing into something invisible. Restore the panel
+	# first; the recording flow always wins over the collapsed state.
+	if overlay_mode == OverlayMode.HIDDEN:
+		overlay_mode = OverlayMode.FULL
+		_apply_overlay_mode()
 	notes_editing = true
 	notes_edit.text = observed_notes
 	notes_edit.visible = true
