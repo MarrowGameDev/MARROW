@@ -1,8 +1,9 @@
 extends Node
 
 # Global dev hotkeys (autoload): press 6 to open the procedural locomotion WALK
-# demo, or 8 to open the LOCOMOTION LAB (live M2–M6 tuning menu) — so both are
-# reachable from a running build instead of opening the scene in the editor.
+# demo, 8 for the LOCOMOTION LAB (live M2–M6 tuning menu), 9 for the COMBAT demo,
+# or H for the SKELETON DETACH experiment — so all are reachable from a running
+# build instead of opening the scene in the editor.
 #
 # Uses _input + set_input_as_handled() so it takes precedence over per-scene key
 # handling. The dummy testing environment's ranged-enemy spawn was on 6 and has
@@ -13,6 +14,9 @@ extends Node
 const WALK_DEMO := "res://scenes/locomotion_walk.tscn"
 const LAB := "res://scenes/locomotion_lab.tscn"
 const COMBAT := "res://scenes/locomotion_combat.tscn"
+const DETACH := "res://scenes/detach_experiment.tscn"
+const SKELETON_WALK := "res://scenes/skeleton_walk.tscn"
+const SKELETON_LOCO := "res://scenes/skeleton_locomotion.tscn"
 
 
 func _input(event: InputEvent) -> void:
@@ -25,6 +29,12 @@ func _input(event: InputEvent) -> void:
 		_open(LAB)
 	elif key.keycode == KEY_9:
 		_open(COMBAT)
+	elif key.keycode == KEY_H:
+		_open(DETACH)
+	elif key.keycode == KEY_J:
+		_open(SKELETON_WALK)
+	elif key.keycode == KEY_K:
+		_open(SKELETON_LOCO)
 
 
 func _open(path: String) -> void:
