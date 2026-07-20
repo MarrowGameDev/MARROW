@@ -747,6 +747,7 @@
 - `EQUIPMENT_LOAD_SPEED_PENALTY_MAX`
 - `DURABILITY_CRACKED_THRESHOLD`
 - `UNKNOWN_COLOR`
+- `AUTO_EQUIP_SLOT_ORDER`
 
 ### Key Variables
 - `bone_id`
@@ -786,9 +787,9 @@
 - `damage_bonus`
 - `health_bonus`
 - `multiplier`
-- `total`
-- `synergy_bonus`
-- `exact`
+- `claimed`
+- `plan`
+- `worn`
 
 ### Functions
 - none
@@ -1820,6 +1821,7 @@
 ### Constants
 - `ATTACK_HITBOX_SCENE`
 - `ARROW_PROJECTILE_SCRIPT`
+- `BONE_PICKUP_SCENE`
 - `COMBO_STEP_ARM_SWORD`
 
 ### Key Variables
@@ -1930,6 +1932,8 @@
 - `_apply_head_only_lunge_displacement(offset: Vector3) -> void`
 - `_update_camera_animation_follow_offset() -> void`
 - `collect_bone(bone_id: String) -> void`
+- `drop_bone_to_ground(bone_id: String) -> Dictionary`
+- `_droppable_copy_of(bone_id: String) -> String`
 - `get_equipped_bone_id() -> String`
 - `has_bone_equipped(bone_id: String) -> bool`
 - `get_run_stats() -> Dictionary`
@@ -1941,6 +1945,7 @@
 - `apply_equipment_build(index: int) -> Dictionary`
 - `get_equipment_build_summaries() -> Array`
 - `get_equipment_build_report(index: int) -> Dictionary`
+- `auto_equip_best(criterion: String) -> Dictionary`
 - `get_equipment_build_indices() -> Array`
 - `create_equipment_build() -> int`
 - `delete_equipment_build(index: int) -> Dictionary`
@@ -1994,9 +1999,11 @@
 ### Resource Dependencies
 - `scenes/attack_hitbox.tscn`
 - `scripts/arrow_projectile.gd`
+- `scenes/bone.tscn`
 
 ### GameEvents Usage
 - `inventory_changed`
+- `drop_spawned`
 - `player_died`
 - `inventory_open_changed`
 
@@ -2320,11 +2327,14 @@
 - `bone_inventory`
 - `equip_cursor`
 - `instance_id`
+- `index`
 - `bone_id`
 
 ### Functions
 - `setup(player: Node, equipment: PlayerEquipmentComponent = null) -> void`
 - `collect_bone(bone_id: String) -> void`
+- `can_remove_bone(instance_id: String) -> bool`
+- `remove_bone(instance_id: String) -> bool`
 - `equip_next_bone() -> void`
 - `get_run_stats() -> Dictionary`
 - `get_inventory_items() -> Array`
@@ -2389,6 +2399,9 @@
 - `inventory_category`
 - `selected_bone_id`
 - `dragging_bone_id`
+- `pinned_compare_a`
+- `pinned_compare_b`
+- `inventory_auto_equip_dropdown`
 - `inventory_tab_buttons`
 - `inventory_safe_area`
 - `inventory_panel`
@@ -2417,9 +2430,6 @@
 - `inventory_preview_container`
 - `inventory_preview_viewport`
 - `inventory_preview_equipment_snapshot`
-- `inventory_details_panel`
-- `inventory_paper_doll`
-- `inventory_footer`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2435,13 +2445,18 @@
 - `has_bone_equipped(bone_id: String) -> bool`
 - `equip_bone(bone_id: String) -> void`
 - `equip_bone_in_slot(bone_id: String, slot: String) -> void`
+- `_attempt_equip(bone_id: String, slot: String) -> void`
+- `_on_equipment_hint(source: Node, _hint_id: String, text: String, _priority: int) -> void`
 - `unequip_slot(slot: String) -> void`
+- `drop_bone(bone_id: String) -> void`
 - `get_equipped_bone_for_slot(slot: String) -> String`
 - `select_bone(bone_id: String) -> void`
 - `_refresh_selection_visuals() -> void`
 - `begin_bone_drag(bone_id: String) -> void`
 - `end_bone_drag() -> void`
 - `_slot_list_text(slots: Array[String]) -> String`
+- `compare_with_selected(bone_id: String) -> void`
+- `_pair_comparison_text(a: String, b: String) -> String`
 - `show_bone_info(bone_id: String) -> void`
 - `_base_vs_effective_text(bone_id: String) -> String`
 - `_format_number(value: float) -> String`
@@ -2455,6 +2470,7 @@
 - `_make_inventory_dropdown() -> OptionButton`
 - `_on_inventory_quality_selected(index: int) -> void`
 - `_on_inventory_sort_selected(index: int) -> void`
+- `_on_auto_equip_selected(index: int) -> void`
 - `_on_inventory_filter_selected(index: int) -> void`
 - `_add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void`
 - `_select_inventory_category(category: String) -> void`
@@ -2477,6 +2493,7 @@
 - `_build_builds_action_row() -> Control`
 - `_style_badge(label: Label, text: String, base_color: Color) -> void`
 - `_build_build_preview(index: int) -> Control`
+- `_copy_player_head_model(rig: ModularSkeletonRig) -> void`
 - `_sync_all_build_previews() -> void`
 - `_sync_build_preview(index: int) -> void`
 - `_equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void`
@@ -2521,6 +2538,8 @@
 - `_make_rule() -> ColorRect`
 - `_make_inventory_style(bg: Color, border: Color, border_width: int = 1, radius: int = 0) -> StyleBoxFlat`
 - `_make_empty_inventory_slot() -> Control`
+- `_can_drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> bool`
+- `_drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> void`
 - `_build_character_preview_panel() -> Control`
 - `_inventory_preview_base_size() -> Vector2`
 - `_build_preview_room(parent: Node3D) -> void`
@@ -2571,6 +2590,7 @@
 - `inventory_changed`
 - `bone_equipped`
 - `bone_unequipped`
+- `tutorial_hint_requested`
 
 ### Input Actions
 - none
@@ -3533,6 +3553,8 @@
 - `_stack_badge`
 - `_frame`
 - `_selected`
+- `_favorite_label`
+- `_lock_label`
 - `tile_size`
 - `requested_size`
 - `pad`
@@ -3543,6 +3565,7 @@
 - `art_top`
 - `art_height`
 - `frame`
+- `lock_style`
 - `top_rule`
 - `quality_id`
 - `pip_count`
@@ -3559,11 +3582,8 @@
 - `caption_width`
 - `slot_text`
 - `side`
+- `mouse`
 - `background`
-- `quality_border`
-- `border`
-- `width`
-- `style`
 
 ### Functions
 - `setup(id: String, player_ref: Node, quantity: int = 1) -> void`
