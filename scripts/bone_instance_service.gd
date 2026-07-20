@@ -53,6 +53,8 @@ static func create_instance(bone_id: String, quality_id: String = "") -> String:
 	_instances[instance_id] = {
 		"bone_id": _bone_id_of_raw(bone_id),
 		"quality_id": resolved_quality,
+		"favorite": false,
+		"locked": false,
 	}
 	return instance_id
 
@@ -112,6 +114,41 @@ static func _legacy_quality_id_for(value: String) -> String:
 	return BoneQualityService.normalize_quality_id(BoneDatabase.quality(bone_id))
 
 
+# --- per-piece marks ------------------------------------------------------
+# Favourite is a handling preference (sorts first, shows a star); locked is a
+# protection contract: any future drop/destroy path must refuse a locked
+# piece (see PlayerInventoryComponent.can_remove_bone). Both live on the
+# instance and persist with the registry. Legacy plain bone_id Strings have
+# no instance to mark, so they always read false and toggles are no-ops.
+
+static func is_favorite(value: String) -> bool:
+	if is_instance_id(value) and _instances.has(value):
+		return bool((_instances[value] as Dictionary).get("favorite", false))
+	return false
+
+
+static func is_locked(value: String) -> bool:
+	if is_instance_id(value) and _instances.has(value):
+		return bool((_instances[value] as Dictionary).get("locked", false))
+	return false
+
+
+static func toggle_favorite(value: String) -> bool:
+	if is_instance_id(value) and _instances.has(value):
+		var record: Dictionary = _instances[value]
+		record["favorite"] = not bool(record.get("favorite", false))
+		return bool(record["favorite"])
+	return false
+
+
+static func toggle_locked(value: String) -> bool:
+	if is_instance_id(value) and _instances.has(value):
+		var record: Dictionary = _instances[value]
+		record["locked"] = not bool(record.get("locked", false))
+		return bool(record["locked"])
+	return false
+
+
 # Key used to decide whether two carried pieces stack together. Pieces only
 # stack when they are the same type AND the same quality AND the same mutation
 # -- otherwise a stack would hide the fact that its members have different
@@ -123,10 +160,14 @@ static func stack_key_for(value: String) -> String:
 	# Two pieces that stack must be interchangeable: if a Normal and a Strong
 	# arm shared a tile, the stack would hide that they roll different
 	# effective stats and pulling one out could hand back either.
-	return "%s|%s|%s|%d" % [
+	# Favourite/locked separate stacks too: pulling a piece out of a stack
+	# must never silently hand back (or hide) a marked one.
+	return "%s|%s|%s|%d|%d|%d" % [
 		bone_id,
 		str(data["quality_id"]),
 		BoneRulesService.mutation_id_for(bone_id),
+		1 if is_favorite(value) else 0,
+		1 if is_locked(value) else 0,
 		# Durability/condition. Per-instance wear does not exist yet (the
 		# durability fields are authored per type), so this currently varies
 		# only by type -- but keying on it now means adding per-instance wear
@@ -156,6 +197,8 @@ static func restore(data: Dictionary) -> void:
 			"bone_id": str(record.get("bone_id", "")),
 			# Restored, never re-rolled.
 			"quality_id": BoneQualityService.normalize_quality_id(str(record.get("quality_id", ""))),
+			"favorite": bool(record.get("favorite", false)),
+			"locked": bool(record.get("locked", false)),
 		}
 	_next_index = maxi(1, int(data.get("next_index", _instances.size() + 1)))
 

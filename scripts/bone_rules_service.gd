@@ -533,6 +533,57 @@ static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
 # the real numbers. Rounding the sum here and THEN applying a percentage would
 # compound two approximations -- e.g. a 5.5 bonus rounds to 6, and +10% turns
 # 7 into 7.7 -> 8, where the exact path gives 6.5 * 1.1 = 7.15 -> 7.
+const AUTO_EQUIP_SLOT_ORDER: Array = ["torso", "left_arm", "right_arm", "left_leg", "right_leg"]
+
+# Plans the best carried piece per slot for one criterion. PURE: returns
+# {slot_id: instance_id} and equips nothing -- the player applies it in
+# AUTO_EQUIP_SLOT_ORDER (torso first, because limbs cannot attach without
+# one). The head is excluded: it is the fixed core. Ties prefer the higher
+# quality rank, then the piece already worn, so re-running the same
+# criterion never churns equipment for nothing.
+static func plan_best_equipment(carried: Array, criterion: String, current_state: Dictionary = {}) -> Dictionary:
+	var claimed: Dictionary = {}
+	var plan: Dictionary = {}
+	for slot_id in AUTO_EQUIP_SLOT_ORDER:
+		var worn := str(current_state.get(slot_id, ""))
+		var best := ""
+		var best_score := -INF
+		var best_rank := -1
+		for item in carried:
+			var piece := str(item)
+			if piece == "" or claimed.has(piece):
+				continue
+			if not EquipmentRulesService.can_equip_bone_in_slot(piece, str(slot_id)):
+				continue
+			var score := auto_equip_score(piece, criterion)
+			var rank := BoneQualityService.rank_for(BoneInstanceService.quality_id_of(piece))
+			var wins := false
+			if score > best_score + 0.0001:
+				wins = true
+			elif absf(score - best_score) <= 0.0001:
+				if rank > best_rank:
+					wins = true
+				elif rank == best_rank and piece == worn and best != worn:
+					wins = true
+			if wins:
+				best = piece
+				best_score = score
+				best_rank = rank
+		if best != "":
+			claimed[best] = true
+			plan[slot_id] = best
+	return plan
+
+
+# Effective (quality-scaled) value of one piece under a criterion. "balanced"
+# sums the four real stats equally; no stat is invented for it.
+static func auto_equip_score(piece: String, criterion: String) -> float:
+	var bonus: Dictionary = adjusted_player_bonus_for(piece)
+	if criterion == "balanced":
+		return float(bonus["move_speed"]) + float(bonus["attack_range"]) + float(bonus["attack_damage"]) + float(bonus["max_health"])
+	return float(bonus.get(criterion, 0.0))
+
+
 static func aggregate_player_bonuses_exact(equipment_state: Dictionary) -> Dictionary:
 	var total: Dictionary = {
 		"move_speed": 0.0,

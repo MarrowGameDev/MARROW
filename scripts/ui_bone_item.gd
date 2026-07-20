@@ -14,6 +14,8 @@ var _stack_label: Label = null
 var _stack_badge: PanelContainer = null
 var _frame: PanelContainer = null
 var _selected: bool = false
+var _favorite_label: Label = null
+var _lock_label: Label = null
 
 const _BORDER_IDLE := Color(0.87, 0.63, 0.19, 0.78)
 const _BORDER_SELECTED := Color(0.0, 0.60, 0.62, 1.0)
@@ -59,6 +61,32 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	# Full name is always reachable on hover even though the card shows the
 	# abbreviated one.
 	tooltip_text = BoneRulesService.display_name_with_slot(id)
+
+	# Per-piece marks in the top-left corner: star = favourite, L = locked.
+	# Text glyphs, not colour alone, so they survive any palette.
+	_favorite_label = Label.new()
+	_favorite_label.text = "\u2605"
+	_favorite_label.position = Vector2(pad, pad * 0.5)
+	_favorite_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.16), 11, 16))
+	_favorite_label.add_theme_color_override("font_color", Color(0.85, 0.62, 0.05, 1.0))
+	_favorite_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_favorite_label.visible = false
+	add_child(_favorite_label)
+
+	_lock_label = Label.new()
+	_lock_label.text = "L"
+	_lock_label.position = Vector2(pad + min_side * 0.17, pad * 0.5)
+	_lock_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.12), 9, 13))
+	_lock_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.90, 1.0))
+	var lock_style := StyleBoxFlat.new()
+	lock_style.bg_color = Color(0.35, 0.30, 0.24, 0.95)
+	lock_style.content_margin_left = 4
+	lock_style.content_margin_right = 4
+	_lock_label.add_theme_stylebox_override("normal", lock_style)
+	_lock_label.tooltip_text = "Locked: cannot be dropped or destroyed"
+	_lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_lock_label.visible = false
+	add_child(_lock_label)
 
 	# The top rule doubles as the quality accent: it is the one always-visible
 	# mark of a piece's tier, so a Pristine and a Frail arm never look alike
@@ -183,10 +211,41 @@ func _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> v
 
 
 func _gui_input(event: InputEvent) -> void:
-	# Left press selects. Godot only turns a press into a drag once the cursor
-	# moves past its threshold, so selecting here does not interfere with
-	# dragging the same card out to a slot.
+	# Right-click drops this piece on the ground. Locked pieces refuse (the
+	# details panel says why); the worn copy of a stack is never the one
+	# dropped. Mirrors right-click on a slot, which unequips.
+	#
+	# DEFERRED, never direct: the drop rebuilds the grid, which frees this
+	# tile while the viewport is still dispatching this very event. A freed
+	# target mid-dispatch makes the viewport re-deliver the event to whatever
+	# new tile the rebuild placed under the cursor -- one click was observed
+	# dropping three different bones in a cascade. accept_event() plus
+	# call_deferred moves the rebuild after the dispatch ends.
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		accept_event()
+		if player != null and player.has_method("drop_bone"):
+			player.call_deferred("drop_bone", bone_id)
+		return
+	# Left press selects; Godot only turns a press into a drag past its move
+	# threshold, so none of these interfere with dragging the card to a slot.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse := event as InputEventMouseButton
+		# Double-click equips outright: the everyday action skips the
+		# select-then-drag ritual. The equip rules still decide the slot and
+		# can refuse (no torso yet, incompatible), exactly as a drag would.
+		# Deferred for the same freed-mid-dispatch reason as the drop above:
+		# equipping filters this tile's copy out of the grid.
+		if mouse.double_click:
+			accept_event()
+			if player != null and player.has_method("equip_bone"):
+				player.call_deferred("equip_bone", bone_id)
+			return
+		# Shift+click pins a head-to-head comparison against the SELECTED
+		# piece instead of moving the selection.
+		if mouse.shift_pressed:
+			if player != null and player.has_method("compare_with_selected"):
+				player.call("compare_with_selected", bone_id)
+			return
 		if player != null and player.has_method("select_bone"):
 			player.call("select_bone", bone_id)
 
@@ -214,6 +273,10 @@ func refresh() -> void:
 		_stack_label.text = "x" + str(stack_count)
 	if _stack_badge != null:
 		_stack_badge.visible = stack_count > 1
+	if _favorite_label != null:
+		_favorite_label.visible = BoneInstanceService.is_favorite(bone_id)
+	if _lock_label != null:
+		_lock_label.visible = BoneInstanceService.is_locked(bone_id)
 
 
 # Painted by PlayerInventoryUI when the player picks a card.

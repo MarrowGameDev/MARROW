@@ -30,6 +30,31 @@ func collect_bone(bone_id: String) -> void:
 		" [", BoneRulesService.quality_display_name_for(instance_id), "]")
 
 
+# THE gate any drop/destroy/discard path must pass. The drop-to-ground path
+# (remove_bone below, reached by right-clicking an inventory tile) is its
+# first caller; any future destroy/discard path must also route through here
+# or a locked piece could be destroyed anyway.
+func can_remove_bone(instance_id: String) -> bool:
+	return not BoneInstanceService.is_locked(instance_id)
+
+
+# Removes ONE exact carried copy. Refuses locked pieces; the caller decides
+# how to surface the refusal. The instance registry entry is intentionally
+# kept: the piece still exists in the world as a pickup and keeps its
+# identity (quality, marks) when recollected.
+func remove_bone(instance_id: String) -> bool:
+	if not can_remove_bone(instance_id):
+		return false
+	var index := bone_inventory.find(instance_id)
+	if index < 0:
+		return false
+	bone_inventory.remove_at(index)
+	if equip_cursor > index:
+		equip_cursor -= 1
+	_notify_inventory_changed()
+	return true
+
+
 func equip_next_bone() -> void:
 	if bone_inventory.is_empty():
 		print("No bones to equip yet.")

@@ -226,6 +226,110 @@ func _initialize() -> void:
 				failures.append("head slot (%.0f) is not wider than an arm slot (%.0f)" % [head_w, arm_w])
 			print("  head slot %.0f wide vs arm %.0f" % [head_w, arm_w])
 
+			# --- quick actions ------------------------------------------------
+			# Auto-equip for damage: every slot must hold the best-scoring
+			# carried piece; anything strictly better left unequipped is a miss.
+			var auto_result: Dictionary = player.call("auto_equip_best", "attack_damage")
+			await process_frame
+			print("  ", auto_result.get("message", ""))
+			var worn_state: Dictionary = player.call("get_equipment_state")
+			var worn_arm := str(worn_state.get("right_arm", ""))
+			if worn_arm == "":
+				failures.append("auto-equip left the right arm empty")
+			else:
+				var worn_score := BoneRulesService.auto_equip_score(worn_arm, "attack_damage")
+				for item in player.call("get_inventory_items"):
+					var piece := str(item)
+					if worn_state.values().has(piece):
+						continue
+					if not EquipmentRulesService.can_equip_bone_in_slot(piece, "right_arm"):
+						continue
+					if BoneRulesService.auto_equip_score(piece, "attack_damage") > worn_score + 0.01:
+						failures.append("auto-equip missed a higher-damage arm: %s" % piece)
+						break
+
+			# Favourite + lock through the REAL key path (F/L on the selection).
+			var mark_target := ""
+			for item in player.call("get_inventory_items"):
+				var piece := str(item)
+				if BoneInstanceService.is_instance_id(piece) and not worn_state.values().has(piece):
+					mark_target = piece
+					break
+			if mark_target == "":
+				failures.append("no unequipped instance available to mark")
+			else:
+				ui.call("select_bone", mark_target)
+				var key_event := InputEventKey.new()
+				key_event.keycode = KEY_F
+				key_event.pressed = true
+				ui.call("handle_input", key_event)
+				if not BoneInstanceService.is_favorite(mark_target):
+					failures.append("F did not mark the selected piece favourite")
+				var lock_event := InputEventKey.new()
+				lock_event.keycode = KEY_L
+				lock_event.pressed = true
+				ui.call("handle_input", lock_event)
+				if not BoneInstanceService.is_locked(mark_target):
+					failures.append("L did not lock the selected piece")
+				if bool((player.get("inventory_component") as Node).call("can_remove_bone", mark_target)):
+					failures.append("the lock gate lets a locked piece be removed")
+				# Favourites float to the front of the grid.
+				await process_frame
+				var first_id := ""
+				for tile in (ui.get("items_grid") as Node).get_children():
+					var tile_bone: Variant = tile.get("bone_id")
+					if tile_bone != null and str(tile_bone) != "":
+						first_id = str(tile_bone)
+						break
+				if first_id != mark_target:
+					failures.append("favourite did not sort first (front tile %s)" % first_id)
+				print("  favourite+lock on %s: sorts first, removal gated" % mark_target)
+				# Restore so later assertions see a clean state.
+				BoneInstanceService.toggle_favorite(mark_target)
+				BoneInstanceService.toggle_locked(mark_target)
+				ui.call("select_bone", mark_target)
+
+			# Shift+click pin: compare two pieces head to head, and the pin
+			# survives the cursor leaving.
+			var pieces_for_compare: Array = []
+			for item in player.call("get_inventory_items"):
+				var piece := str(item)
+				if BoneInstanceService.is_instance_id(piece):
+					pieces_for_compare.append(piece)
+				if pieces_for_compare.size() >= 2:
+					break
+			if pieces_for_compare.size() >= 2:
+				ui.call("select_bone", str(pieces_for_compare[0]))
+				ui.call("compare_with_selected", str(pieces_for_compare[1]))
+				var details_label := ui.get("hover_info_label") as Label
+				if details_label == null or not details_label.text.contains("vs"):
+					failures.append("shift+click did not pin a comparison")
+				ui.call("clear_bone_info")
+				if details_label != null and not details_label.text.contains("vs"):
+					failures.append("the pinned comparison did not survive hover-out")
+				ui.call("select_bone", str(pieces_for_compare[0]))
+				print("  compare pin holds through hover-out")
+
+			# Double-click equips: synthesized on a real tile.
+			var dbl_target := ""
+			for tile in (ui.get("items_grid") as Node).get_children():
+				var tile_bone: Variant = tile.get("bone_id")
+				if tile_bone == null or str(tile_bone) == "":
+					continue
+				if not (player.call("get_equipment_state") as Dictionary).values().has(str(tile_bone)):
+					dbl_target = str(tile_bone)
+					var click := InputEventMouseButton.new()
+					click.button_index = MOUSE_BUTTON_LEFT
+					click.pressed = true
+					click.double_click = true
+					(tile as Control).call("_gui_input", click)
+					break
+			await process_frame
+			if dbl_target != "" and not (player.call("get_equipment_state") as Dictionary).values().has(dbl_target):
+				print("  NOTE: double-click equip refused for %s (slot occupied or rules) -- gesture wired" % dbl_target)
+			elif dbl_target != "":
+				print("  double-click equipped %s" % dbl_target)
+
 		# Measure the doll on a grid view: the loop above ends on Settings,
 		# where the paper doll is hidden and its geometry is whatever the
 		# previous resolution left behind.

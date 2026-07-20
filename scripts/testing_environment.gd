@@ -424,10 +424,16 @@ func _build_ui() -> void:
 	panel.name = "TestingPanel"
 	panel.position = Vector2(20.0, 20.0)
 	panel.custom_minimum_size = Vector2(OVERLAY_PANEL_WIDTH, 0.0)
+	# This guide sits on layer 20, ABOVE the inventory (layer 5). With the
+	# default STOP filter it swallowed every click and drag over the left half
+	# of the screen -- exactly where the item grid lives -- so the whole
+	# overlay must be click-through. Only the notes LineEdit keeps input.
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	testing_panel = panel
 	canvas.add_child(panel)
 
 	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_right", 12)
@@ -436,6 +442,7 @@ func _build_ui() -> void:
 
 	var content := VBoxContainer.new()
 	content.name = "TestingPanelContent"
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(content)
 
 	status_label = Label.new()

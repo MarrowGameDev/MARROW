@@ -3,6 +3,9 @@ extends CharacterBody3D
 # Tier 1D: the short-lived, visible attack box we spawn in front of the player.
 const ATTACK_HITBOX_SCENE: PackedScene = preload("res://scenes/attack_hitbox.tscn")
 const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.gd")
+# Same pickup scene enemy deaths drop; player drop-to-ground reuses it so a
+# dropped piece behaves exactly like any other bone lying in the world.
+const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 
 # These are the player's normal stats before any bones are equipped.
 # The @export tag means you can tune these values in the Godot editor later.
@@ -292,7 +295,10 @@ func _physics_process(delta: float) -> void:
 	if detached_camera_offset_carry_timer > 0.0:
 		detached_camera_offset_carry_timer = maxf(detached_camera_offset_carry_timer - delta, 0.0)
 
-	if _input_just_pressed("attack") and not detached_torso_reattaching and not _is_backstab_executing():
+	# inventory_open gate: attack reads the raw action, so without it every
+	# click on the inventory UI (selecting a tile, starting a drag) also swings
+	# in the world behind the menu.
+	if _input_just_pressed("attack") and not inventory_open and not detached_torso_reattaching and not _is_backstab_executing():
 		if bow_equipped:
 			_start_bow_aim()
 		else:
@@ -1243,6 +1249,55 @@ func collect_bone(bone_id: String) -> void:
 		inventory_component.collect_bone(bone_id)
 
 
+# Drops a carried piece onto the ground as a pickup (right-click on an
+# inventory tile). The piece keeps its instance identity -- quality and marks
+# travel with it, so picking it back up recovers exactly the same bone.
+# Returns {"ok": bool, "message": String}; the inventory UI shows the message
+# either way, so a refusal (locked, in use) is never silent.
+func drop_bone_to_ground(bone_id: String) -> Dictionary:
+	if inventory_component == null:
+		return {"ok": false, "message": "No inventory."}
+	var instance_id := _droppable_copy_of(bone_id)
+	if instance_id == "":
+		return {"ok": false, "message": "That piece is worn right now. Unequip it before dropping."}
+	if not inventory_component.can_remove_bone(instance_id):
+		return {"ok": false, "message": BoneRulesService.display_name_with_slot(instance_id) + " is locked. Press L to unlock it before dropping."}
+	if not inventory_component.remove_bone(instance_id):
+		return {"ok": false, "message": "That piece is no longer in the inventory."}
+
+	var pickup := BONE_PICKUP_SCENE.instantiate()
+	get_parent().add_child(pickup)
+	var pickup_node := pickup as Node3D
+	if pickup_node != null:
+		var forward := -global_transform.basis.z
+		forward.y = 0.0
+		forward = forward.normalized() if forward.length() > 0.01 else Vector3.FORWARD
+		var spot := global_position + forward * 1.2
+		# Same ground height enemy drops use, so the pickup never spawns
+		# floating or buried on sloped test terrain.
+		pickup_node.global_position = Vector3(spot.x, 0.05, spot.z)
+	if pickup.has_method("set_bone_id"):
+		pickup.call("set_bone_id", instance_id)
+	GameEvents.drop_spawned.emit(instance_id, pickup, self)
+	print("Dropped ", BoneRulesService.display_name_with_slot(instance_id))
+	return {"ok": true, "message": "Dropped " + BoneRulesService.display_name_with_slot(instance_id) + ". Walk over it and hold the pickup key to take it back."}
+
+
+# The tile the player right-clicked shows one REPRESENTATIVE of a stack, and
+# that representative can be the copy currently worn. Never drop a worn piece
+# out from under the player: prefer the clicked instance if it is free,
+# otherwise any identical carried copy that is not equipped.
+func _droppable_copy_of(bone_id: String) -> String:
+	if not has_bone_equipped(bone_id):
+		return bone_id if get_inventory_items().has(bone_id) else ""
+	var key := BoneInstanceService.stack_key_for(bone_id)
+	for item in get_inventory_items():
+		var id := str(item)
+		if id != bone_id and not has_bone_equipped(id) and BoneInstanceService.stack_key_for(id) == key:
+			return id
+	return ""
+
+
 # Kept so arena objects can still detect "this body is the player." With multi-slot
 # equipping, trials should use has_bone_equipped() instead of a single active id.
 func get_equipped_bone_id() -> String:
@@ -1325,6 +1380,26 @@ func get_equipment_build_report(index: int) -> Dictionary:
 	if equipment_builds_component == null:
 		return {}
 	return equipment_builds_component.get_build_report(index)
+
+
+# Equips the best carried piece per slot for one criterion (or "balanced").
+# The plan is computed pure in BoneRulesService; this only applies it in the
+# torso-first order the equipment rules require.
+func auto_equip_best(criterion: String) -> Dictionary:
+	var plan: Dictionary = BoneRulesService.plan_best_equipment(get_inventory_items(), criterion, get_equipment_state())
+	var changed := 0
+	for slot_id in BoneRulesService.AUTO_EQUIP_SLOT_ORDER:
+		var piece := str(plan.get(slot_id, ""))
+		if piece == "" or get_equipped_bone_for_slot(str(slot_id)) == piece:
+			continue
+		equip_bone(piece, str(slot_id))
+		if get_equipped_bone_for_slot(str(slot_id)) == piece:
+			changed += 1
+	var labels := {"attack_damage": "Damage", "max_health": "Health", "move_speed": "Speed", "attack_range": "Reach", "balanced": "Balanced"}
+	return {
+		"equipped": changed,
+		"message": "Auto-equip (%s): %d piece(s) changed." % [str(labels.get(criterion, criterion)), changed],
+	}
 
 
 func get_equipment_build_indices() -> Array:
