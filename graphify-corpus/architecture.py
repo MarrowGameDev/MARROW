@@ -557,6 +557,10 @@ class BoneInstanceService:
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
 
+    def depends_on_PlayerInventoryComponent(self):
+        """Relationship: references class PlayerInventoryComponent."""
+        return PlayerInventoryComponent
+
 class BoneQualityService:
     """Godot script: scripts/bone_quality_service.gd
     class_name: BoneQualityService
@@ -2027,6 +2031,14 @@ class Player:
         """GDScript function: collect_bone(bone_id: String) -> void"""
         pass
 
+    def gd_func_drop_bone_to_ground(self):
+        """GDScript function: drop_bone_to_ground(bone_id: String) -> Dictionary"""
+        pass
+
+    def gd_func__droppable_copy_of(self):
+        """GDScript function: _droppable_copy_of(bone_id: String) -> String"""
+        pass
+
     def gd_func_get_equipped_bone_id(self):
         """GDScript function: get_equipped_bone_id() -> String"""
         pass
@@ -2069,6 +2081,10 @@ class Player:
 
     def gd_func_get_equipment_build_report(self):
         """GDScript function: get_equipment_build_report(index: int) -> Dictionary"""
+        pass
+
+    def gd_func_auto_equip_best(self):
+        """GDScript function: auto_equip_best(criterion: String) -> Dictionary"""
         pass
 
     def gd_func_get_equipment_build_indices(self):
@@ -2271,6 +2287,10 @@ class Player:
         """Uses GameEvents.inventory_changed."""
         pass
 
+    def uses_game_event_drop_spawned(self):
+        """Uses GameEvents.drop_spawned."""
+        pass
+
     def uses_game_event_player_died(self):
         """Uses GameEvents.player_died."""
         pass
@@ -2287,9 +2307,17 @@ class Player:
         """Relationship: loads resource."""
         return ArrowProjectile
 
+    def depends_on_SceneBone(self):
+        """Relationship: loads resource."""
+        return SceneBone
+
     def depends_on_BallisticsService(self):
         """Relationship: references class BallisticsService."""
         return BallisticsService
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
 
     def depends_on_BoneRulesService(self):
         """Relationship: references class BoneRulesService."""
@@ -2751,6 +2779,14 @@ class PlayerInventoryComponent:
         """GDScript function: collect_bone(bone_id: String) -> void"""
         pass
 
+    def gd_func_can_remove_bone(self):
+        """GDScript function: can_remove_bone(instance_id: String) -> bool"""
+        pass
+
+    def gd_func_remove_bone(self):
+        """GDScript function: remove_bone(instance_id: String) -> bool"""
+        pass
+
     def gd_func_equip_next_bone(self):
         """GDScript function: equip_next_bone() -> void"""
         pass
@@ -2854,8 +2890,20 @@ class PlayerInventoryUI:
         """GDScript function: equip_bone_in_slot(bone_id: String, slot: String) -> void"""
         pass
 
+    def gd_func__attempt_equip(self):
+        """GDScript function: _attempt_equip(bone_id: String, slot: String) -> void"""
+        pass
+
+    def gd_func__on_equipment_hint(self):
+        """GDScript function: _on_equipment_hint(source: Node, _hint_id: String, text: String, _priority: int) -> void"""
+        pass
+
     def gd_func_unequip_slot(self):
         """GDScript function: unequip_slot(slot: String) -> void"""
+        pass
+
+    def gd_func_drop_bone(self):
+        """GDScript function: drop_bone(bone_id: String) -> void"""
         pass
 
     def gd_func_get_equipped_bone_for_slot(self):
@@ -2880,6 +2928,14 @@ class PlayerInventoryUI:
 
     def gd_func__slot_list_text(self):
         """GDScript function: _slot_list_text(slots: Array[String]) -> String"""
+        pass
+
+    def gd_func_compare_with_selected(self):
+        """GDScript function: compare_with_selected(bone_id: String) -> void"""
+        pass
+
+    def gd_func__pair_comparison_text(self):
+        """GDScript function: _pair_comparison_text(a: String, b: String) -> String"""
         pass
 
     def gd_func_show_bone_info(self):
@@ -2932,6 +2988,10 @@ class PlayerInventoryUI:
 
     def gd_func__on_inventory_sort_selected(self):
         """GDScript function: _on_inventory_sort_selected(index: int) -> void"""
+        pass
+
+    def gd_func__on_auto_equip_selected(self):
+        """GDScript function: _on_auto_equip_selected(index: int) -> void"""
         pass
 
     def gd_func__on_inventory_filter_selected(self):
@@ -3020,6 +3080,10 @@ class PlayerInventoryUI:
 
     def gd_func__build_build_preview(self):
         """GDScript function: _build_build_preview(index: int) -> Control"""
+        pass
+
+    def gd_func__copy_player_head_model(self):
+        """GDScript function: _copy_player_head_model(rig: ModularSkeletonRig) -> void"""
         pass
 
     def gd_func__sync_all_build_previews(self):
@@ -3196,6 +3260,14 @@ class PlayerInventoryUI:
 
     def gd_func__make_empty_inventory_slot(self):
         """GDScript function: _make_empty_inventory_slot() -> Control"""
+        pass
+
+    def gd_func__can_drop_unequip_on_items_panel(self):
+        """GDScript function: _can_drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> bool"""
+        pass
+
+    def gd_func__drop_unequip_on_items_panel(self):
+        """GDScript function: _drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> void"""
         pass
 
     def gd_func__build_character_preview_panel(self):
@@ -3376,6 +3448,10 @@ class PlayerInventoryUI:
 
     def uses_game_event_bone_unequipped(self):
         """Uses GameEvents.bone_unequipped."""
+        pass
+
+    def uses_game_event_tutorial_hint_requested(self):
+        """Uses GameEvents.tutorial_hint_requested."""
         pass
 
     def depends_on_InventoryEmptySlot(self):

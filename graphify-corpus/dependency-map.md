@@ -24,6 +24,7 @@
 - `scripts/bone_instance_service.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
 - `scripts/bone_instance_service.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/bone_instance_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/bone_instance_service.gd` depends on `scripts/player_inventory_component.gd` because it references class PlayerInventoryComponent.
 - `scripts/bone_quality_service.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
 - `scripts/bone_quality_service.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/bone_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
@@ -57,7 +58,9 @@
 - `scripts/limb_bone_pickup.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/player.gd` depends on `scenes/attack_hitbox.tscn` because it loads resource.
 - `scripts/player.gd` depends on `scripts/arrow_projectile.gd` because it loads resource.
+- `scripts/player.gd` depends on `scenes/bone.tscn` because it loads resource.
 - `scripts/player.gd` depends on `scripts/ballistics_service.gd` because it references class BallisticsService.
+- `scripts/player.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
 - `scripts/player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player.gd` depends on `scripts/combat_targeting_service.gd` because it references class CombatTargetingService.
 - `scripts/player.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
