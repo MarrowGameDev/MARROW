@@ -220,6 +220,19 @@ func get_build_report(index: int) -> Dictionary:
 		saved_counts[slot_quality] = int(saved_counts.get(slot_quality, 0)) + 1
 	report["quality_counts"] = saved_counts
 
+	# Effects and composition describe the pieces that ACTUALLY RESOLVE, plus
+	# the worn head -- the same state the stats below are computed from, so a
+	# panel can never show a synergy the stat pipeline did not apply. A piece
+	# that is no longer carried contributes to nothing; `effects_partial` says
+	# so explicitly rather than letting a shorter list read as "no synergy".
+	# The head matters here beyond bookkeeping: it is a real piece with a real
+	# rolled quality, so it can be the fourth member of High-Quality Assembly.
+	var current_equipment := equipment_component.get_equipment_state()
+	var resolved_state: Dictionary = _with_current_head(snapshot["equipment_state"], current_equipment)
+	report["effects"] = _effects_for_state(resolved_state)
+	report["composition"] = _composition_for_state(resolved_state)
+	report["effects_partial"] = int(snapshot["missing_count"]) > 0
+
 	if int(snapshot["missing_count"]) > 0:
 		report["state"] = STATE_MISSING
 		report["message"] = "%d piece(s) no longer carried." % int(snapshot["missing_count"])
@@ -238,7 +251,6 @@ func get_build_report(index: int) -> Dictionary:
 	# them raw reported the head's weight as a permanent phantom delta on a
 	# build that was otherwise identical to the current gear. Applying a build
 	# leaves the head in place, so the build's stats include it too.
-	var current_equipment := equipment_component.get_equipment_state()
 	var build_stats := _stats_for_state(_with_current_head(build_state, current_equipment))
 	var current_stats := _stats_for_state(current_equipment)
 	var comparison: Dictionary = {}
@@ -252,7 +264,11 @@ func get_build_report(index: int) -> Dictionary:
 	report["stats"] = build_stats
 	report["current_stats"] = current_stats
 	report["comparison"] = comparison
-	report["effects"] = _effects_for_state(build_state)
+	# The worn loadout's own synergies, so a panel can show both sides of the
+	# comparison without evaluating anything itself. A build that matches the
+	# current equipment produces an identical list by construction: both go
+	# through the same evaluator over the same resolved state.
+	report["current_effects"] = _effects_for_state(current_equipment)
 	return report
 
 
@@ -265,11 +281,19 @@ func build_display_name(index: int) -> String:
 
 
 func _stats_for_state(state: Dictionary) -> Dictionary:
+	# Bases come from PlayerStatsComponent, which stored them ONCE at setup,
+	# before any equipment math ran. Reading player.max_health here is a trap:
+	# the player overwrites that property with the equipment-DERIVED maximum
+	# on every recalculation, so using it as a base fed the result back into
+	# the formula and double-counted every equipped HP bonus -- a worn set
+	# showed Health 22 on this screen while the real in-game maximum was 10.
+	# (Speed/damage/reach never had the bug: their base_* properties are
+	# separate variables the recalculation does not touch.)
 	var stats: Dictionary = BoneRulesService.player_stats_with_equipment(
-		_player_base("base_move_speed", 0.0),
-		_player_base("base_attack_range", 0.0),
-		int(_player_base("base_attack_damage", 0.0)),
-		int(_player_base("max_health", 1.0)),
+		_true_base("base_move_speed", 0.0),
+		_true_base("base_attack_range", 0.0),
+		int(_true_base("base_attack_damage", 0.0)),
+		int(_true_base("base_max_health", 1.0)),
 		state
 	)
 	return {
@@ -281,13 +305,15 @@ func _stats_for_state(state: Dictionary) -> Dictionary:
 	}
 
 
-func _player_base(property: String, fallback: float) -> float:
+func _true_base(property: String, fallback: float) -> float:
 	if owner_player == null:
 		return fallback
-	var value: Variant = owner_player.get(property)
-	if value == null:
-		return fallback
-	return float(value)
+	var stats_component: Variant = owner_player.get("stats_component")
+	if stats_component != null:
+		var stored: Variant = stats_component.get(property)
+		if stored != null:
+			return float(stored)
+	return fallback
 
 
 func _quality_counts_for(state: Dictionary) -> Dictionary:
@@ -301,20 +327,38 @@ func _quality_counts_for(state: Dictionary) -> Dictionary:
 	return counts
 
 
-# Reads the EXISTING synergy summary rather than inventing a second set system.
-# These are groupings the build would activate; they are descriptive only --
-# no automatic stat bonus is wired to them yet (see docs/equipment_flow.md).
+# The synergies this state actually grants, straight from the central
+# evaluator -- the SAME call the stat pipeline makes inside
+# BoneRulesService.aggregate_player_bonuses_exact. Nothing here decides whether
+# a rule is active, so a panel and the player's real stats cannot disagree.
+#
+# Entries are SynergyRulesService's render-ready shape:
+#   {id, label, category, tier, pieces, bonuses: [{stat, value, is_percent, text}]}
 func _effects_for_state(state: Dictionary) -> Array:
-	var summary: Dictionary = BoneRulesService.equipment_synergy_summary(state)
-	var effects: Array = []
-	var set_names: Dictionary = summary.get("set_names", {})
-	var set_counts: Dictionary = summary.get("set_counts", {})
-	for set_id in summary.get("active_set_ids", []):
-		var label := str(set_names.get(set_id, set_id))
-		effects.append("%s %d-piece" % [label, int(set_counts.get(set_id, 0))])
-	for synergy_id in summary.get("active_synergy_ids", []):
-		effects.append(str(synergy_id).capitalize())
-	return effects
+	return BoneRulesService.active_synergies_for(state)
+
+
+# Descriptive breakdown for the composition panel: which families are present
+# and how many pieces each has, which mirror pairs are matched, and how many
+# worn pieces clear the high-quality bar. Counts only -- the bonuses these do
+# or do not trigger come from _effects_for_state, so the two panels can never
+# tell different stories.
+func _composition_for_state(state: Dictionary) -> Dictionary:
+	var pairs: Dictionary = SynergyRulesService.symmetric_pairs(state)
+	var matched: Array = []
+	if str(pairs.get(SynergyRulesService.PAIR_ARMS, "")) != "":
+		matched.append(str((SynergyRulesService.SYMMETRY_RULES[SynergyRulesService.PAIR_ARMS] as Dictionary)["label"]))
+	if str(pairs.get(SynergyRulesService.PAIR_LEGS, "")) != "":
+		matched.append(str((SynergyRulesService.SYMMETRY_RULES[SynergyRulesService.PAIR_LEGS] as Dictionary)["label"]))
+
+	return {
+		"families": SynergyRulesService.family_composition(state),
+		"matched_pairs": matched,
+		"high_quality_count": SynergyRulesService.high_quality_piece_count(state),
+		# Denominator is every worn slot including the fixed head, because the
+		# head's rolled quality does count toward the high-quality threshold.
+		"worn_count": state.size(),
+	}
 
 
 func _apply_validated_state(target_state: Dictionary) -> void:

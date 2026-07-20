@@ -447,6 +447,18 @@ static func equipment_synergy_summary(equipment_state: Dictionary) -> Dictionary
 	}
 
 
+# Facade over SynergyRulesService, mirroring how this service already re-exports
+# EquipmentRulesService and DropPickupRulesService. Gameplay and UI read set
+# bonuses through here so there is one documented door into the rules, and so
+# the stat pipeline and the panels can never consult different evaluators.
+static func synergy_evaluation_for(equipment_state: Dictionary) -> Dictionary:
+	return SynergyRulesService.evaluate(equipment_state)
+
+
+static func active_synergies_for(equipment_state: Dictionary) -> Array:
+	return SynergyRulesService.evaluate(equipment_state)["active"]
+
+
 static func color_for(bone_id: String, fallback: Color = UNKNOWN_COLOR) -> Color:
 	var definition: Dictionary = EquipmentRulesService.generated_limb_definition_for(bone_id)
 	if not definition.is_empty():
@@ -521,6 +533,57 @@ static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
 # the real numbers. Rounding the sum here and THEN applying a percentage would
 # compound two approximations -- e.g. a 5.5 bonus rounds to 6, and +10% turns
 # 7 into 7.7 -> 8, where the exact path gives 6.5 * 1.1 = 7.15 -> 7.
+const AUTO_EQUIP_SLOT_ORDER: Array = ["torso", "left_arm", "right_arm", "left_leg", "right_leg"]
+
+# Plans the best carried piece per slot for one criterion. PURE: returns
+# {slot_id: instance_id} and equips nothing -- the player applies it in
+# AUTO_EQUIP_SLOT_ORDER (torso first, because limbs cannot attach without
+# one). The head is excluded: it is the fixed core. Ties prefer the higher
+# quality rank, then the piece already worn, so re-running the same
+# criterion never churns equipment for nothing.
+static func plan_best_equipment(carried: Array, criterion: String, current_state: Dictionary = {}) -> Dictionary:
+	var claimed: Dictionary = {}
+	var plan: Dictionary = {}
+	for slot_id in AUTO_EQUIP_SLOT_ORDER:
+		var worn := str(current_state.get(slot_id, ""))
+		var best := ""
+		var best_score := -INF
+		var best_rank := -1
+		for item in carried:
+			var piece := str(item)
+			if piece == "" or claimed.has(piece):
+				continue
+			if not EquipmentRulesService.can_equip_bone_in_slot(piece, str(slot_id)):
+				continue
+			var score := auto_equip_score(piece, criterion)
+			var rank := BoneQualityService.rank_for(BoneInstanceService.quality_id_of(piece))
+			var wins := false
+			if score > best_score + 0.0001:
+				wins = true
+			elif absf(score - best_score) <= 0.0001:
+				if rank > best_rank:
+					wins = true
+				elif rank == best_rank and piece == worn and best != worn:
+					wins = true
+			if wins:
+				best = piece
+				best_score = score
+				best_rank = rank
+		if best != "":
+			claimed[best] = true
+			plan[slot_id] = best
+	return plan
+
+
+# Effective (quality-scaled) value of one piece under a criterion. "balanced"
+# sums the four real stats equally; no stat is invented for it.
+static func auto_equip_score(piece: String, criterion: String) -> float:
+	var bonus: Dictionary = adjusted_player_bonus_for(piece)
+	if criterion == "balanced":
+		return float(bonus["move_speed"]) + float(bonus["attack_range"]) + float(bonus["attack_damage"]) + float(bonus["max_health"])
+	return float(bonus.get(criterion, 0.0))
+
+
 static func aggregate_player_bonuses_exact(equipment_state: Dictionary) -> Dictionary:
 	var total: Dictionary = {
 		"move_speed": 0.0,
@@ -537,6 +600,17 @@ static func aggregate_player_bonuses_exact(equipment_state: Dictionary) -> Dicti
 		total["attack_range"] = float(total["attack_range"]) + float(bonus["attack_range"])
 		total["attack_damage"] = float(total["attack_damage"]) + float(bonus["attack_damage"])
 		total["max_health"] = float(total["max_health"]) + float(bonus["max_health"])
+
+	# Set/synergy flat bonuses. Added AFTER the per-piece loop and deliberately
+	# NOT multiplied by any quality multiplier: a set bonus is a property of the
+	# combination, not of one piece, so there is no single piece whose quality
+	# could scale it. Still exact floats -- the one rounding stays at the end of
+	# player_stats_with_equipment.
+	var synergy_bonus: Dictionary = SynergyRulesService.evaluate(equipment_state)["bonus"]
+	total["move_speed"] = float(total["move_speed"]) + float(synergy_bonus["move_speed"])
+	total["attack_range"] = float(total["attack_range"]) + float(synergy_bonus["attack_range"])
+	total["attack_damage"] = float(total["attack_damage"]) + float(synergy_bonus["attack_damage"])
+	total["max_health"] = float(total["max_health"]) + float(synergy_bonus["max_health"])
 	return total
 
 
@@ -568,10 +642,30 @@ static func aggregate_player_stat_modifiers(equipment_state: Dictionary) -> Dict
 		total["equipment_weight"] = float(total["equipment_weight"]) + equipment_weight_for(bone_id) * weight_multiplier
 		total["inventory_weight"] = float(total["inventory_weight"]) + inventory_weight_for(bone_id) * weight_multiplier
 
+	# Set/synergy percentages are summed in BEFORE the clamps below, so
+	# PLAYER_STAT_PERCENT_LIMIT stays the single global ceiling and no synergy
+	# can escape it. Adding them after the clamp would let a set bonus exceed a
+	# limit that every other source respects.
+	var synergy_modifiers: Dictionary = SynergyRulesService.evaluate(equipment_state)["modifiers"]
+	total["damage_percent"] = float(total["damage_percent"]) + float(synergy_modifiers["damage_percent"])
+	total["speed_percent"] = float(total["speed_percent"]) + float(synergy_modifiers["speed_percent"])
+	total["health_percent"] = float(total["health_percent"]) + float(synergy_modifiers["health_percent"])
+	total["weight_percent"] = float(total["weight_percent"]) + float(synergy_modifiers["weight_percent"])
+
 	total["damage_percent"] = clampf(float(total["damage_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
 	total["speed_percent"] = clampf(float(total["speed_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
 	total["health_percent"] = clampf(float(total["health_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
 	total["weight_percent"] = clampf(float(total["weight_percent"]), -PLAYER_STAT_PERCENT_LIMIT, PLAYER_STAT_PERCENT_LIMIT)
+
+	# A synergy weight percentage scales the ASSEMBLED load, not one piece: the
+	# per-piece quality_weight_percent was already applied inside the loop
+	# above, so reusing the summed total here would count it twice. Only the
+	# synergy's own share multiplies the totals, and it feeds the load penalty
+	# like any other weight -- otherwise a "+5% Weight" penalty would print in
+	# the UI while changing nothing.
+	var synergy_weight_factor := maxf(0.0, 1.0 + float(synergy_modifiers["weight_percent"]))
+	total["equipment_weight"] = float(total["equipment_weight"]) * synergy_weight_factor
+	total["inventory_weight"] = float(total["inventory_weight"]) * synergy_weight_factor
 
 	var load_over_free := maxf(0.0, float(total["equipment_weight"]) - EQUIPMENT_FREE_WEIGHT)
 	total["load_speed_penalty"] = clampf(

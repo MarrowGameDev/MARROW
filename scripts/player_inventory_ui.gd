@@ -97,6 +97,10 @@ var inventory_status_label: Label = null
 var inventory_category: String = "all"
 var selected_bone_id: String = ""
 var dragging_bone_id: String = ""
+# Shift+click pins a head-to-head of two carried pieces in the details panel.
+var pinned_compare_a: String = ""
+var pinned_compare_b: String = ""
+var inventory_auto_equip_dropdown: OptionButton = null
 var inventory_tab_buttons: Dictionary = {}
 var inventory_safe_area: Control = null
 var inventory_panel: PanelContainer = null
@@ -127,6 +131,13 @@ var inventory_preview_container: SubViewportContainer = null
 var inventory_preview_viewport: SubViewport = null
 var inventory_preview_equipment_snapshot: Dictionary = {}
 var inventory_details_panel: PanelContainer = null
+var inventory_details_scroll: ScrollContainer = null
+# Last refusal reason announced by the equipment component (see _attempt_equip).
+var _last_equipment_hint_text: String = ""
+# While this deadline is in the future the details panel is showing WHY an
+# equip was refused; hover updates must not repaint over it or the reason
+# vanishes the instant the drag ends with the cursor over any tile.
+var _refusal_hold_until_ms: int = 0
 var inventory_paper_doll: Control = null
 var inventory_footer: HBoxContainer = null
 var settings_panel: ScrollContainer = null
@@ -167,7 +178,6 @@ var builds_match_banner: Label = null
 var builds_equipment_rows: Dictionary = {}
 var builds_save_button: Button = null
 var builds_apply_button: Button = null
-var builds_rename_button: Button = null
 var builds_delete_button: Button = null
 var builds_rename_edit: LineEdit = null
 var builds_new_button: Button = null
@@ -210,6 +220,7 @@ func setup(owner_player: Node) -> void:
 	GameEvents.inventory_changed.connect(_on_inventory_changed)
 	GameEvents.bone_equipped.connect(_on_bone_equipped)
 	GameEvents.bone_unequipped.connect(_on_bone_unequipped)
+	GameEvents.tutorial_hint_requested.connect(_on_equipment_hint)
 	_load_control_settings()
 	_build_inventory_ui()
 	_refresh_builds_screen()
@@ -221,6 +232,25 @@ func setup(owner_player: Node) -> void:
 
 
 func handle_input(event: InputEvent) -> void:
+	# Quick actions on the SELECTED piece while the inventory is open: F marks
+	# favourite, L locks. Guarded on selection so stray keys do nothing, and
+	# placed before the rebinding path so rebinding still captures everything
+	# once it is armed.
+	if rebinding_action == "" and selected_bone_id != "" \
+			and inventory_root != null and inventory_root.visible \
+			and event is InputEventKey and event.pressed and not event.echo:
+		var key := (event as InputEventKey).keycode
+		if key == KEY_F:
+			BoneInstanceService.toggle_favorite(selected_bone_id)
+			rebuild_item_tiles()
+			get_viewport().set_input_as_handled()
+			return
+		if key == KEY_L:
+			BoneInstanceService.toggle_locked(selected_bone_id)
+			rebuild_item_tiles()
+			get_viewport().set_input_as_handled()
+			return
+
 	if rebinding_action == "":
 		return
 	if not _is_bindable_control_event(event):
@@ -306,17 +336,55 @@ func has_bone_equipped(bone_id: String) -> bool:
 
 func equip_bone(bone_id: String) -> void:
 	if player != null:
-		player.call("equip_bone", bone_id)
+		_attempt_equip(bone_id, "")
 
 
 func equip_bone_in_slot(bone_id: String, slot: String) -> void:
 	if player != null:
-		player.call("equip_bone", bone_id, slot)
+		_attempt_equip(bone_id, slot)
+
+
+# Equip attempts can be refused by rules the drop target cannot see (no torso
+# yet, detached head, fixed core head). Those refusals used to print to the
+# console only, so in-game a rejected drop looked identical to a broken one.
+# Any refusal reason now lands in the details panel, where the player is
+# already looking.
+func _attempt_equip(bone_id: String, slot: String) -> void:
+	_last_equipment_hint_text = ""
+	var before := player.call("get_equipment_state") as Dictionary
+	player.call("equip_bone", bone_id, slot)
+	var after := player.call("get_equipment_state") as Dictionary
+	if before.hash() == after.hash() and hover_info_label != null:
+		var reason := _last_equipment_hint_text
+		if reason == "":
+			reason = "That piece cannot be equipped there right now."
+		hover_info_label.text = reason
+		_refusal_hold_until_ms = Time.get_ticks_msec() + 2500
+
+
+# The equipment component announces WHY an equip was refused through this
+# event (it is aimed at the tutorial hint HUD, which the testing scene does
+# not even have). Remember the text so _attempt_equip can show it.
+func _on_equipment_hint(source: Node, _hint_id: String, text: String, _priority: int) -> void:
+	if source == player:
+		_last_equipment_hint_text = text
 
 
 func unequip_slot(slot: String) -> void:
 	if player != null:
 		player.call("unequip_slot", slot)
+
+
+# Right-click on an inventory tile: drop the piece on the ground. The result
+# message (dropped, locked, worn) goes to the details panel and holds there
+# briefly, so the outcome is always visible.
+func drop_bone(bone_id: String) -> void:
+	if player == null or not player.has_method("drop_bone_to_ground"):
+		return
+	var result := player.call("drop_bone_to_ground", bone_id) as Dictionary
+	if hover_info_label != null:
+		hover_info_label.text = str(result.get("message", ""))
+		_refusal_hold_until_ms = Time.get_ticks_msec() + 2500
 
 
 func get_equipped_bone_for_slot(slot: String) -> String:
@@ -327,6 +395,10 @@ func get_equipped_bone_for_slot(slot: String) -> String:
 # paper-doll slot, and what the details panel falls back to when the cursor is
 # not over anything.
 func select_bone(bone_id: String) -> void:
+	pinned_compare_a = ""
+	pinned_compare_b = ""
+	# A deliberate click outranks a lingering refusal message.
+	_refusal_hold_until_ms = 0
 	selected_bone_id = "" if bone_id == selected_bone_id else bone_id
 	_refresh_selection_visuals()
 	if selected_bone_id == "":
@@ -354,6 +426,8 @@ func _refresh_selection_visuals() -> void:
 # worn slot. Paints every slot at once so the player can see the whole board:
 # gold where the piece fits, dimmed red where it does not.
 func begin_bone_drag(bone_id: String) -> void:
+	pinned_compare_a = ""
+	pinned_compare_b = ""
 	dragging_bone_id = bone_id
 	var compatible: Array[String] = EquipmentRulesService.compatible_slots_for_bone(bone_id)
 	for slot in slot_widgets:
@@ -390,6 +464,41 @@ func _slot_list_text(slots: Array[String]) -> String:
 	return " / ".join(names)
 
 
+# Shift+click: pin the clicked piece against the SELECTED one, head to head.
+# With no selection (or clicking the selected piece itself) it degrades to a
+# plain select, so the gesture is never a dead click.
+func compare_with_selected(bone_id: String) -> void:
+	if selected_bone_id == "" or selected_bone_id == bone_id:
+		select_bone(bone_id)
+		return
+	pinned_compare_a = selected_bone_id
+	pinned_compare_b = bone_id
+	if hover_info_label != null:
+		hover_info_label.text = _pair_comparison_text(pinned_compare_a, pinned_compare_b)
+
+
+func _pair_comparison_text(a: String, b: String) -> String:
+	var text := "%s (%s)   vs   %s (%s)\n" % [
+		BoneRulesService.display_name_with_slot(a), BoneQualityService.display_name_for(BoneInstanceService.quality_id_of(a)),
+		BoneRulesService.display_name_with_slot(b), BoneQualityService.display_name_for(BoneInstanceService.quality_id_of(b)),
+	]
+	var stats_a: Dictionary = BoneRulesService.adjusted_player_bonus_for(a)
+	var stats_b: Dictionary = BoneRulesService.adjusted_player_bonus_for(b)
+	for entry in [["move_speed", "Speed"], ["attack_range", "Reach"], ["attack_damage", "Damage"], ["max_health", "HP"]]:
+		var key := str(entry[0])
+		var value_a := float(stats_a.get(key, 0.0))
+		var value_b := float(stats_b.get(key, 0.0))
+		if absf(value_a) < 0.001 and absf(value_b) < 0.001:
+			continue
+		var delta := value_b - value_a
+		var delta_text := ""
+		if absf(delta) >= 0.001:
+			delta_text = "  (%s%s)" % ["+" if delta > 0.0 else "", _format_number(delta)]
+		text += "%s  %s vs %s%s\n" % [str(entry[1]), _format_number(value_a), _format_number(value_b), delta_text]
+	text += "Click any piece to clear the comparison."
+	return text
+
+
 func show_bone_info(bone_id: String) -> void:
 	if hover_info_label == null:
 		return
@@ -398,6 +507,11 @@ func show_bone_info(bone_id: String) -> void:
 	# message with that card's stats -- exactly when the player needs to know
 	# where the dragged piece can land.
 	if dragging_bone_id != "":
+		return
+	# A refusal reason also owns the panel briefly (see _attempt_equip): when
+	# a drop is rejected the cursor is usually over some tile, whose hover
+	# would repaint the panel the same frame the reason appears.
+	if Time.get_ticks_msec() < _refusal_hold_until_ms:
 		return
 	var quality_id := BoneInstanceService.quality_id_of(bone_id)
 	var multiplier := BoneQualityService.multiplier_for(quality_id)
@@ -493,6 +607,33 @@ func _bone_comparison_text(bone_id: String) -> String:
 		wrote_any = true
 	if not wrote_any:
 		text += "no stat change"
+	return text + _synergy_preview_text(bone_id, slot)
+
+
+# Which set/symmetry/quality rules equipping this piece would turn on or off.
+# Purely a preview: it builds a hypothetical state and asks the SAME evaluator
+# the stat pipeline uses, then throws the state away. Nothing is applied until
+# the piece is really equipped.
+func _synergy_preview_text(bone_id: String, slot: String) -> String:
+	var current := _equipment_state()
+	if current.is_empty():
+		return ""
+
+	var candidate := current.duplicate()
+	candidate[slot] = bone_id
+	var difference: Dictionary = SynergyRulesService.difference_between(current, candidate)
+
+	var text := ""
+	var activated: Array = difference.get("activated", [])
+	if not activated.is_empty():
+		text += "\nWould activate:"
+		for entry in activated:
+			text += "\n  " + SynergyRulesService.summary_line_for(entry)
+	var broken: Array = difference.get("broken", [])
+	if not broken.is_empty():
+		text += "\nWould break:"
+		for entry in broken:
+			text += "\n  " + SynergyRulesService.summary_line_for(entry)
 	return text
 
 
@@ -500,6 +641,13 @@ func clear_bone_info() -> void:
 	if hover_info_label == null:
 		return
 	if dragging_bone_id != "":
+		return
+	if Time.get_ticks_msec() < _refusal_hold_until_ms:
+		return
+	# A pinned comparison outranks the selection fallback: it exists precisely
+	# to survive the cursor wandering off.
+	if pinned_compare_a != "" and pinned_compare_b != "":
+		hover_info_label.text = _pair_comparison_text(pinned_compare_a, pinned_compare_b)
 		return
 	# Moving the cursor off a card falls back to whatever is selected rather
 	# than blanking the panel, so a selection stays inspectable while the
@@ -612,6 +760,13 @@ func _build_inventory_ui() -> void:
 	inventory_grid_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_grid_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	inventory_grid_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(1.0, 1.0, 1.0, 0.28), Color(0.87, 0.63, 0.19, 0.75), 1, 0))
+	# The tiles accept a worn piece dragged out of a slot, but the tiles do not
+	# cover the whole panel: the gaps between them and the band under the last
+	# row are bare PanelContainer, which rejects drops. Forwarding here makes
+	# "drop it anywhere on the item grid" unequip, which is what the gesture
+	# means -- without it the drag silently cancels unless the release lands
+	# pixel-perfect on a tile.
+	inventory_grid_panel.set_drag_forwarding(Callable(), _can_drop_unequip_on_items_panel, _drop_unequip_on_items_panel)
 	inventory_left_panel.add_child(inventory_grid_panel)
 
 	inventory_grid_margin = MarginContainer.new()
@@ -644,7 +799,10 @@ func _build_inventory_ui() -> void:
 	inventory_footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_footer.add_theme_constant_override("separation", 16)
 	inventory_content_root.add_child(inventory_footer)
-	_add_footer_hint(inventory_footer, "Right Click", "Unequip")
+	_add_footer_hint(inventory_footer, "2x Click", "Equip")
+	_add_footer_hint(inventory_footer, "Shift+Click", "Compare")
+	_add_footer_hint(inventory_footer, "F / L", "Fav / Lock")
+	_add_footer_hint(inventory_footer, "Right Click", "Drop item / Unequip slot")
 	_add_footer_hint(inventory_footer, "Esc / Inventory", "Back")
 	clear_bone_info()
 
@@ -678,14 +836,26 @@ func _build_right_inventory_panel() -> void:
 	_set_margin(details_margin, 18, 12, 18, 12)
 	inventory_details_panel.add_child(details_margin)
 
+	# The details text varies from one line ("Select an item...") to seven
+	# (a bone with quality, per-stat lines and a mutation blurb). Without this
+	# scroll the panel grew with the text, which both pushed the sheet past the
+	# window bottom AND moved every slot mid-drag the moment a selection
+	# repopulated the label. Fixed height, long text scrolls.
+	inventory_details_scroll = ScrollContainer.new()
+	inventory_details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	inventory_details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_details_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	details_margin.add_child(inventory_details_scroll)
+
 	hover_info_label = Label.new()
 	hover_info_label.name = "HoverInfoLabel"
 	hover_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hover_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hover_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hover_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hover_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hover_info_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
-	details_margin.add_child(hover_info_label)
+	inventory_details_scroll.add_child(hover_info_label)
 
 	inventory_label = Label.new()
 	inventory_label.name = "InventoryLabel"
@@ -787,6 +957,17 @@ func _build_inventory_tabs(parent: VBoxContainer) -> void:
 	inventory_sort_dropdown.item_selected.connect(_on_inventory_sort_selected)
 	inventory_tabs_container.add_child(inventory_sort_dropdown)
 
+	# One-shot action, not a filter: pick a stat and the best carried piece
+	# per slot is equipped for it. The dropdown snaps back to its placeholder
+	# after acting, so it reads as a button with options.
+	inventory_auto_equip_dropdown = _make_inventory_dropdown()
+	inventory_auto_equip_dropdown.name = "InventoryAutoEquipDropdown"
+	for entry in [["", "Auto-equip..."], ["attack_damage", "Damage"], ["max_health", "Health"], ["move_speed", "Speed"], ["attack_range", "Reach"], ["balanced", "Balanced"]]:
+		inventory_auto_equip_dropdown.add_item(str(entry[1]))
+		inventory_auto_equip_dropdown.set_item_metadata(inventory_auto_equip_dropdown.item_count - 1, str(entry[0]))
+	inventory_auto_equip_dropdown.item_selected.connect(_on_auto_equip_selected)
+	inventory_tabs_container.add_child(inventory_auto_equip_dropdown)
+
 	# Builds and Settings stay as they were: they switch the whole panel's
 	# mode, they are not filters over the item grid, so they do not belong in
 	# a "Filter by" dropdown.
@@ -842,6 +1023,18 @@ func _on_inventory_sort_selected(index: int) -> void:
 	inventory_sort_mode = str(inventory_sort_dropdown.get_item_metadata(index))
 	rebuild_item_tiles()
 	update_inventory_ui()
+
+
+func _on_auto_equip_selected(index: int) -> void:
+	if inventory_auto_equip_dropdown == null:
+		return
+	var criterion := str(inventory_auto_equip_dropdown.get_item_metadata(index))
+	inventory_auto_equip_dropdown.select(0)
+	if criterion == "" or player == null or not player.has_method("auto_equip_best"):
+		return
+	var result := player.call("auto_equip_best", criterion) as Dictionary
+	if hover_info_label != null:
+		hover_info_label.text = str(result.get("message", ""))
 
 
 func _on_inventory_filter_selected(index: int) -> void:
@@ -919,7 +1112,7 @@ func _refresh_inventory_mode() -> void:
 	# competing with "Inventory".
 	if inventory_title_label != null:
 		inventory_title_label.text = "Builds" if showing_builds else "Inventory"
-	for filter_control in [inventory_filter_label, inventory_filter_dropdown, inventory_quality_dropdown, inventory_sort_dropdown]:
+	for filter_control in [inventory_filter_label, inventory_filter_dropdown, inventory_quality_dropdown, inventory_sort_dropdown, inventory_auto_equip_dropdown]:
 		if filter_control != null:
 			(filter_control as Control).visible = not showing_builds
 	for secondary_control in [inventory_quality_label, inventory_sort_label_control]:
@@ -965,7 +1158,7 @@ func _apply_inventory_responsive_layout() -> void:
 	var body_gap := int(clampf(width * 0.008, 8.0, 18.0))
 	var tile_gap := int(clampf(width * 0.006, 5.0, 12.0))
 	var grid_inner_margin := int(clampf(width * 0.007, 6.0, 14.0))
-	var details_height := int(clampf(height * 0.095, 60.0, 96.0))
+	var details_height := int(clampf(height * 0.115, 64.0, 130.0))
 	var label_height := int(clampf(height * 0.052, 34.0, 46.0))
 	var footer_height := int(clampf(height * 0.032, 20.0, 32.0))
 	var header_height := int(clampf(height * 0.066, 38.0, 62.0))
@@ -1055,7 +1248,7 @@ func _apply_inventory_responsive_layout() -> void:
 	# Three dropdowns share the row now, so each takes a smaller slice and the
 	# secondary labels drop out first when the row gets tight.
 	var dropdown_width := clampf(float(content_width) * 0.13, 104.0, 210.0)
-	for dropdown in [inventory_filter_dropdown, inventory_quality_dropdown, inventory_sort_dropdown]:
+	for dropdown in [inventory_filter_dropdown, inventory_quality_dropdown, inventory_sort_dropdown, inventory_auto_equip_dropdown]:
 		if dropdown == null:
 			continue
 		dropdown.custom_minimum_size = Vector2(dropdown_width, float(tab_height))
@@ -1081,7 +1274,11 @@ func _apply_inventory_responsive_layout() -> void:
 	inventory_right_panel.add_theme_constant_override("separation", body_gap)
 	inventory_preview_panel.custom_minimum_size = Vector2(right_width, preview_height)
 	inventory_details_panel.custom_minimum_size = Vector2(right_width, details_height)
-	hover_info_label.custom_minimum_size = Vector2(maxi(180, right_width - 40), details_height - 24)
+	# The scroll is what actually pins the panel's height: a ScrollContainer's
+	# minimum never grows with its content, so a seven-line description scrolls
+	# instead of stretching the column and clipping the sheet's bottom edge.
+	inventory_details_scroll.custom_minimum_size = Vector2(maxi(180, right_width - 40), details_height - 24)
+	hover_info_label.custom_minimum_size = Vector2(maxi(160, right_width - 60), 0)
 	hover_info_label.add_theme_font_size_override("font_size", 12 if very_compact else (14 if compact else 16))
 	inventory_label.custom_minimum_size = Vector2(maxi(180, right_width), label_height)
 	inventory_label.add_theme_font_size_override("font_size", 11 if very_compact else (12 if compact else 13))
@@ -1469,7 +1666,23 @@ func _build_builds_detail_panel() -> Control:
 	builds_detail_title.text = "Build"
 	builds_detail_title.add_theme_font_size_override("font_size", 20)
 	builds_detail_title.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+	# The title IS the rename control: click it and it turns into an editor in
+	# place. Labels ignore the mouse by default, so both the filter and the
+	# cursor shape have to say "this is clickable".
+	builds_detail_title.mouse_filter = Control.MOUSE_FILTER_STOP
+	builds_detail_title.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	builds_detail_title.tooltip_text = "Click to rename"
+	builds_detail_title.gui_input.connect(_on_build_title_gui_input)
 	header.add_child(builds_detail_title)
+
+	builds_rename_edit = LineEdit.new()
+	builds_rename_edit.custom_minimum_size = Vector2(230, 0)
+	builds_rename_edit.add_theme_font_size_override("font_size", 20)
+	builds_rename_edit.process_mode = Node.PROCESS_MODE_ALWAYS
+	builds_rename_edit.visible = false
+	builds_rename_edit.text_submitted.connect(_on_rename_submitted)
+	builds_rename_edit.focus_exited.connect(_cancel_title_rename)
+	header.add_child(builds_rename_edit)
 
 	builds_header_badge = Label.new()
 	builds_header_badge.add_theme_font_size_override("font_size", 12)
@@ -1729,24 +1942,11 @@ func _build_builds_action_row() -> Control:
 	builds_apply_button.pressed.connect(_on_apply_pressed)
 	builds_action_row.add_child(builds_apply_button)
 
-	builds_rename_button = _make_build_preset_button("Rename")
-	builds_rename_button.pressed.connect(_on_rename_pressed)
-	builds_action_row.add_child(builds_rename_button)
-
 	builds_delete_button = _make_build_preset_button("Delete")
 	builds_delete_button.add_theme_color_override("font_color", Color(0.62, 0.20, 0.16, 1.0))
 	builds_delete_button.pressed.connect(_on_delete_pressed)
 	builds_action_row.add_child(builds_delete_button)
 
-	# Rename needs text entry, which this panel had none of. Hidden until the
-	# player asks for it so the action row stays uncluttered.
-	builds_rename_edit = LineEdit.new()
-	builds_rename_edit.placeholder_text = "New name, then Enter"
-	builds_rename_edit.custom_minimum_size = Vector2(190, 0)
-	builds_rename_edit.process_mode = Node.PROCESS_MODE_ALWAYS
-	builds_rename_edit.visible = false
-	builds_rename_edit.text_submitted.connect(_on_rename_submitted)
-	builds_action_row.add_child(builds_rename_edit)
 	return builds_action_row
 
 
@@ -1814,6 +2014,7 @@ func _build_build_preview(index: int) -> Control:
 	# Must be set before add_child: _ready() reads this flag while
 	# building sockets, same requirement as inventory_preview_rig above.
 	rig.use_split_limbs = true
+	_copy_player_head_model(rig)
 	rig_holder.add_child(rig)
 	if rig.has_method("set_body_progression_enabled"):
 		rig.set_body_progression_enabled(true)
@@ -1826,6 +2027,30 @@ func _build_build_preview(index: int) -> Control:
 
 	build_preview_rigs[index] = rig
 	return container
+
+
+# The in-world player gets its skull head from player.tscn's exported
+# head_model_* settings on ModularSkeletonRig. These preview rigs are built in
+# code, so without copying that config every preview regresses to the grey box
+# head the real player no longer wears. Copied from the live rig rather than
+# hardcoded here, so retuning the skull in the editor updates the previews too.
+# Must run BEFORE add_child: the rig builds its base head in _ready.
+func _copy_player_head_model(rig: ModularSkeletonRig) -> void:
+	if player == null:
+		return
+	var source := player.get("rig") as ModularSkeletonRig
+	if source == null:
+		return
+	rig.head_model_scene = source.head_model_scene
+	rig.head_model_scale = source.head_model_scale
+	rig.head_model_offset = source.head_model_offset
+	# The preview holders spin the whole rig 180 degrees to face the camera --
+	# irrelevant while every part was a symmetric box, but the skull has a
+	# face, and with the world rotation copied verbatim it shows the camera
+	# the back of its cranium. The extra half turn keeps it looking out of
+	# the screen (verified by screenshot: eye sockets toward the camera).
+	rig.head_model_rotation_deg = source.head_model_rotation_deg + Vector3(0.0, 180.0, 0.0)
+	rig.head_model_keep_material = source.head_model_keep_material
 
 
 func _sync_all_build_previews() -> void:
@@ -2031,14 +2256,31 @@ func _on_apply_pressed() -> void:
 		notify_equipment_changed()
 
 
-func _on_rename_pressed() -> void:
-	if builds_rename_edit == null:
+func _on_build_title_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_begin_title_rename()
+
+
+func _begin_title_rename() -> void:
+	if builds_rename_edit == null or builds_detail_title == null:
 		return
-	builds_rename_edit.visible = not builds_rename_edit.visible
-	if builds_rename_edit.visible:
-		builds_rename_edit.text = _build_name_for(builds_selected_index)
-		builds_rename_edit.grab_focus()
-		_set_build_preset_status("Type a new name and press Enter.")
+	builds_rename_edit.text = _build_name_for(builds_selected_index)
+	builds_detail_title.visible = false
+	builds_rename_edit.visible = true
+	builds_rename_edit.grab_focus()
+	builds_rename_edit.select_all()
+	_set_build_preset_status("Type a new name and press Enter.")
+
+
+# Clicking away abandons the edit without renaming. Submitting hides the
+# editor FIRST, so the focus_exited that follows finds it already hidden and
+# does nothing -- that ordering is what keeps submit and cancel from racing.
+func _cancel_title_rename() -> void:
+	if builds_rename_edit == null or not builds_rename_edit.visible:
+		return
+	builds_rename_edit.visible = false
+	if builds_detail_title != null:
+		builds_detail_title.visible = true
 
 
 func _on_rename_submitted(new_name: String) -> void:
@@ -2047,6 +2289,8 @@ func _on_rename_submitted(new_name: String) -> void:
 	var result := player.call("rename_equipment_build", builds_selected_index, new_name) as Dictionary
 	if builds_rename_edit != null:
 		builds_rename_edit.visible = false
+	if builds_detail_title != null:
+		builds_detail_title.visible = true
 	# Renaming touches the label only: pieces and stats are untouched, so the
 	# refresh below re-reads the same snapshot it had before.
 	_set_build_preset_status(str(result.get("message", "")))
@@ -2271,20 +2515,47 @@ func _apply_build_report_to_detail(report: Dictionary) -> void:
 		if missing > 0:
 			builds_composition_list.add_child(_make_dim_row("%d of these missing" % missing))
 
+	# Families, matched pairs and the high-quality tally, straight from the
+	# report. The panel counts nothing itself.
+	var composition: Dictionary = report.get("composition", {})
+	if not composition.is_empty():
+		var families: Dictionary = composition.get("families", {})
+		for set_id in families:
+			var family: Dictionary = families[set_id]
+			builds_composition_list.add_child(_make_count_row(
+				str(family.get("label", set_id)),
+				"%d / %d" % [int(family.get("count", 0)), int(family.get("max", 0))]
+			))
+		for pair_label in composition.get("matched_pairs", []):
+			builds_composition_list.add_child(_make_count_row(str(pair_label), ""))
+		var high_quality := int(composition.get("high_quality_count", 0))
+		if high_quality > 0:
+			builds_composition_list.add_child(_make_count_row(
+				"Strong or Pristine",
+				"%d / %d" % [high_quality, int(composition.get("worn_count", 0))]
+			))
+
 	# --- effects ----------------------------------------------------------
+	# Every row is a synergy the central evaluator reported as active for the
+	# state these stats were computed from, printed with its real effects. A
+	# name with no numbers would leave the player guessing what it did.
 	_clear_children(builds_effects_list)
 	var effects: Array = report.get("effects", [])
-	if missing > 0:
-		builds_effects_list.add_child(_make_dim_row("Unavailable - missing parts"))
-	elif effects.is_empty():
+	if state == "Empty":
 		builds_effects_list.add_child(_make_dim_row("No active effects"))
 	else:
-		for effect in effects:
-			var row := Label.new()
-			row.text = str(effect)
-			row.add_theme_font_size_override("font_size", 13)
-			row.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
-			builds_effects_list.add_child(row)
+		if bool(report.get("effects_partial", false)):
+			# Saved-but-unresolvable pieces grant nothing. Say which of the two
+			# the list describes instead of letting a short list read as "this
+			# build has few synergies".
+			builds_effects_list.add_child(_make_dim_row(
+				"From resolvable parts only - %d missing" % missing
+			))
+		if effects.is_empty():
+			builds_effects_list.add_child(_make_dim_row("No active effects"))
+		else:
+			for entry in effects:
+				builds_effects_list.add_child(_make_synergy_rows(entry))
 
 	# --- banner: one phrase, tinted by state ------------------------------
 	var banner_color := _build_state_color(state)
@@ -2321,8 +2592,6 @@ func _apply_build_report_to_detail(report: Dictionary) -> void:
 		builds_apply_button.disabled = state == "Empty" or missing > 0 or bool(report.get("matches_current", false))
 	if builds_delete_button != null:
 		builds_delete_button.disabled = _build_indices().size() <= 1
-	if builds_rename_button != null:
-		builds_rename_button.disabled = false
 
 
 func _fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void:
@@ -2441,6 +2710,59 @@ func _make_composition_row(quality_id: String, count: int) -> Control:
 	return row
 
 
+# Composition line without a quality dot: "Gorilla Parts   4 / 5". Pass an
+# empty value for a bare label ("Matching Arms").
+func _make_count_row(label_text: String, value_text: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 7)
+
+	var name_label := Label.new()
+	name_label.text = label_text
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+	row.add_child(name_label)
+
+	if value_text != "":
+		var value_label := Label.new()
+		value_label.text = value_text
+		value_label.add_theme_font_size_override("font_size", 13)
+		value_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
+		row.add_child(value_label)
+	return row
+
+
+# One active synergy: a headline ("Gorilla Parts - 2-piece") plus one indented
+# line per real effect ("Damage +6%"). The strings come from
+# SynergyRulesService, so the wording of an effect lives with the rule that
+# grants it and every panel spells it identically.
+func _make_synergy_rows(entry_value: Variant) -> Control:
+	var entry: Dictionary = entry_value
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", 1)
+
+	var headline := Label.new()
+	headline.text = SynergyRulesService.headline_for(entry)
+	headline.add_theme_font_size_override("font_size", 13)
+	headline.add_theme_color_override("font_color", Color(0.16, 0.20, 0.22, 1.0))
+	block.add_child(headline)
+
+	for effect_value in entry.get("bonuses", []):
+		var effect: Dictionary = effect_value
+		var effect_label := Label.new()
+		effect_label.text = "   " + str(effect.get("text", ""))
+		effect_label.add_theme_font_size_override("font_size", 12)
+		# A penalty and a bonus must be distinguishable at a glance; the sign in
+		# the text already carries it, colour only reinforces it.
+		var is_penalty := float(effect.get("value", 0.0)) < 0.0
+		effect_label.add_theme_color_override(
+			"font_color",
+			Color(0.62, 0.20, 0.16, 1.0) if is_penalty else Color(0.10, 0.45, 0.25, 1.0)
+		)
+		block.add_child(effect_label)
+	return block
+
+
 func _make_dim_row(text: String) -> Control:
 	var label := Label.new()
 	label.text = text
@@ -2548,6 +2870,22 @@ func _make_empty_inventory_slot() -> Control:
 	return slot
 
 
+# Drag-forwarding target for the items panel background (see where
+# inventory_grid_panel is built): only a piece dragged OUT of an equip slot is
+# accepted, and dropping it unequips that slot. Bones dragged from the grid
+# itself land here too when released over a gap -- rejected, so that drag just
+# cancels instead of doing something surprising.
+func _can_drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> bool:
+	if typeof(data) != TYPE_DICTIONARY:
+		return false
+	var drop: Dictionary = data as Dictionary
+	return str(drop.get("source", "")) == "slot" and str(drop.get("slot", "")) != ""
+
+
+func _drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> void:
+	unequip_slot(str((data as Dictionary).get("slot", "")))
+
+
 func _build_character_preview_panel() -> Control:
 	inventory_preview_container = SubViewportContainer.new()
 	inventory_preview_container.name = "CharacterPreview"
@@ -2597,6 +2935,7 @@ func _build_character_preview_panel() -> Control:
 	# does not have (fat waist, wide-set whole legs). Set BEFORE add_child: _ready
 	# fires on tree entry and builds the sockets from this flag.
 	inventory_preview_rig.use_split_limbs = true
+	_copy_player_head_model(inventory_preview_rig)
 	rig_holder.add_child(inventory_preview_rig)
 	if inventory_preview_rig.has_method("set_body_progression_enabled"):
 		inventory_preview_rig.set_body_progression_enabled(true)
@@ -3163,6 +3502,11 @@ func _bone_matches_quality_filter(bone_id: String) -> bool:
 
 
 func _compare_inventory_items(a: String, b: String) -> bool:
+	# Favourites first, whatever the sort mode: the mark exists to keep the
+	# pieces the player cares about in reach.
+	var favorite_a := BoneInstanceService.is_favorite(a)
+	if favorite_a != BoneInstanceService.is_favorite(b):
+		return favorite_a
 	if inventory_sort_mode == "quality_asc" or inventory_sort_mode == "quality_desc":
 		var rank_a := BoneQualityService.rank_for(BoneInstanceService.quality_id_of(a))
 		var rank_b := BoneQualityService.rank_for(BoneInstanceService.quality_id_of(b))
@@ -3223,7 +3567,7 @@ func update_inventory_ui() -> void:
 	if compact_text:
 		text += "Drag to equip. Right-click worn slots to remove."
 	else:
-		text += "Drag a bone onto a matching slot. Right-click a worn bone slot to remove."
+		text += "Drag a bone onto a matching slot. Right-click an item to drop it; right-click a worn slot to remove."
 	inventory_label.text = text
 
 

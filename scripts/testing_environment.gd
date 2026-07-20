@@ -116,6 +116,11 @@ func _unhandled_input(event: InputEvent) -> void:
 					_cancel_notes_editing()
 				else:
 					get_tree().change_scene_to_file(MAIN_MENU_PATH)
+			KEY_B:
+				# Same guard as H/O: typing a "b" into the notes field must
+				# not fire the breakdown.
+				if not notes_editing:
+					_print_stat_breakdown()
 			KEY_H:
 				# Guarded so typing an "h" into the observed-result field does
 				# not also collapse the panel out from under the caret.
@@ -419,10 +424,16 @@ func _build_ui() -> void:
 	panel.name = "TestingPanel"
 	panel.position = Vector2(20.0, 20.0)
 	panel.custom_minimum_size = Vector2(OVERLAY_PANEL_WIDTH, 0.0)
+	# This guide sits on layer 20, ABOVE the inventory (layer 5). With the
+	# default STOP filter it swallowed every click and drag over the left half
+	# of the screen -- exactly where the item grid lives -- so the whole
+	# overlay must be click-through. Only the notes LineEdit keeps input.
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	testing_panel = panel
 	canvas.add_child(panel)
 
 	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_right", 12)
@@ -431,6 +442,7 @@ func _build_ui() -> void:
 
 	var content := VBoxContainer.new()
 	content.name = "TestingPanelContent"
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(content)
 
 	status_label = Label.new()
@@ -478,9 +490,93 @@ func _update_status() -> void:
 	status_label.text += "O: type observed result   P: log PASS   F: log FAIL\n"
 	status_label.text += "Backspace: remove latest enemy   R: reset scene   Esc: menu\n"
 	status_label.text += "H: shrink/hide this panel (cycles full -> compact -> hidden)\n"
+	status_label.text += "B: print the exact stat breakdown (full decimals) to the console\n"
 	status_label.text += "Edit EnemySpawnPoints in this scene to add/remove default enemy positions."
 	status_label.text += "\n\n" + _current_validation_guide_text()
 	status_label.text += "\n\n" + _validation_log_summary_text()
+
+
+# Dumps every step of the stat formula with full decimals, so a number the HUD
+# shows rounded (HP 10) can be checked by hand: each piece's exact
+# contribution, the set/synergy flat and percentage parts, the aggregates, and
+# the official final value next to a reconstruction of the arithmetic. If the
+# reconstruction ever disagrees with the official column, this printout and
+# the formula have drifted apart -- which is itself worth seeing, so both are
+# printed instead of hiding one.
+func _print_stat_breakdown() -> void:
+	if player == null:
+		print("No player to break down.")
+		return
+	var stats_component: Variant = player.get("stats_component")
+	if stats_component == null:
+		print("No stats component on the player.")
+		return
+	var state: Dictionary = player.call("get_equipment_state")
+
+	var base_speed := float(stats_component.get("base_move_speed"))
+	var base_reach := float(stats_component.get("base_attack_range"))
+	var base_damage := int(stats_component.get("base_attack_damage"))
+	var base_health := int(stats_component.get("base_max_health"))
+
+	print("\n=== STAT BREAKDOWN (exact decimals) ===")
+	print("bases: speed %.4f  reach %.4f  damage %d  health %d" % [base_speed, base_reach, base_damage, base_health])
+	print("-- pieces (effective = base x quality multiplier):")
+	for slot_id in state:
+		var piece := str(state[slot_id])
+		if piece == "":
+			continue
+		var quality_id := BoneInstanceService.quality_id_of(piece)
+		var effective: Dictionary = BoneRulesService.adjusted_player_bonus_for(piece)
+		print("  %-10s %-24s %-9s x%.3f | speed %+.4f  reach %+.4f  damage %+.4f  health %+.4f" % [
+			str(slot_id), BoneRulesService.display_name_with_slot(piece), quality_id,
+			BoneQualityService.multiplier_for(quality_id),
+			float(effective["move_speed"]), float(effective["attack_range"]),
+			float(effective["attack_damage"]), float(effective["max_health"])])
+
+	var synergy: Dictionary = SynergyRulesService.evaluate(state)
+	print("-- sets & synergies:")
+	if (synergy["active"] as Array).is_empty():
+		print("  (none active)")
+	for entry in synergy["active"]:
+		print("  ", SynergyRulesService.summary_line_for(entry))
+	var synergy_bonus: Dictionary = synergy["bonus"]
+	print("  flat from sets: speed %+.4f  reach %+.4f  damage %+.4f  health %+.4f" % [
+		float(synergy_bonus["move_speed"]), float(synergy_bonus["attack_range"]),
+		float(synergy_bonus["attack_damage"]), float(synergy_bonus["max_health"])])
+
+	var exact: Dictionary = BoneRulesService.aggregate_player_bonuses_exact(state)
+	var mods: Dictionary = BoneRulesService.aggregate_player_stat_modifiers(state)
+	print("-- aggregates (pieces + set flats, no rounding):")
+	print("  bonus: speed %+.4f  reach %+.4f  damage %+.4f  health %+.4f" % [
+		float(exact["move_speed"]), float(exact["attack_range"]),
+		float(exact["attack_damage"]), float(exact["max_health"])])
+	print("  percents (clamped): damage %+.4f  speed %+.4f  health %+.4f  weight %+.4f" % [
+		float(mods["damage_percent"]), float(mods["speed_percent"]),
+		float(mods["health_percent"]), float(mods["weight_percent"])])
+	print("  equipment weight %.4f  ->  load speed penalty %.4f" % [
+		float(mods["equipment_weight"]), float(mods["load_speed_penalty"])])
+
+	var official: Dictionary = BoneRulesService.player_stats_with_equipment(
+		base_speed, base_reach, base_damage, base_health, state)
+	var health_pre := (float(base_health) + float(exact["max_health"])) * maxf(0.1, 1.0 + float(mods["health_percent"]))
+	var damage_pre := (float(base_damage) + float(exact["attack_damage"])) * maxf(0.1, 1.0 + float(mods["damage_percent"]))
+	var speed_multiplier := maxf(0.1, (1.0 + float(mods["speed_percent"])) * (1.0 - float(mods["load_speed_penalty"])))
+	var speed_pre := maxf(0.0, (base_speed + float(exact["move_speed"])) * speed_multiplier)
+	print("-- finals (reconstruction | official):")
+	print("  health: (%d %+.4f) x %.4f = %.4f -> roundi %d | official %d" % [
+		base_health, float(exact["max_health"]), 1.0 + float(mods["health_percent"]),
+		health_pre, maxi(1, roundi(health_pre)), int(official["max_health"])])
+	print("  damage: (%d %+.4f) x %.4f = %.4f -> roundi %d | official %d" % [
+		base_damage, float(exact["attack_damage"]), 1.0 + float(mods["damage_percent"]),
+		damage_pre, maxi(0, roundi(damage_pre)), int(official["attack_damage"])])
+	print("  speed : (%.4f %+.4f) x %.4f = %.4f | official %.4f" % [
+		base_speed, float(exact["move_speed"]), speed_multiplier, speed_pre, float(official["move_speed"])])
+	print("  reach : %.4f %+.4f = %.4f | official %.4f" % [
+		base_reach, float(exact["attack_range"]), base_reach + float(exact["attack_range"]), float(official["attack_range"])])
+	print("  player live: HP %s/%s  damage %s  speed %.4f" % [
+		str(player.get("health")), str(player.get("max_health")),
+		str(player.get("attack_damage")), float(player.get("move_speed"))])
+	print("=== END BREAKDOWN ===\n")
 
 
 func _cycle_overlay_mode() -> void:

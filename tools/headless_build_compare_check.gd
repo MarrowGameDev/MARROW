@@ -53,6 +53,16 @@ func _initialize() -> void:
 		if absf(delta) > 0.0:
 			failures.append("phantom delta on %s: %+.4f (build equals current gear)" % [str(key), delta])
 
+	# The screen's numbers must agree with the game's real ones: the Builds
+	# panel once fed player.max_health (already equipment-derived) back into
+	# the formula as the BASE, double-counting every equipped HP bonus -- a
+	# worn set showed Health 22 while the real in-game maximum was 10.
+	var screen_health := int(float((report.get("stats", {}) as Dictionary).get("health", -1)))
+	var real_max := int(player.get("max_health"))
+	if screen_health != real_max:
+		failures.append("Builds screen Health %d != real max_health %d (double-count regression)" % [screen_health, real_max])
+	print("   screen Health %d == real max %d" % [screen_health, real_max])
+
 	# The saved build must reference the WORN piece, not the better copy.
 	var slots: Dictionary = report.get("slots", {})
 	var saved_arm := str((slots.get(arm_slot, {}) as Dictionary).get("instance_id", ""))

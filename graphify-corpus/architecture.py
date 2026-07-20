@@ -611,6 +611,10 @@ class BoneRulesService:
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
 
+    def depends_on_SynergyRulesService(self):
+        """Relationship: references class SynergyRulesService."""
+        return SynergyRulesService
+
 class BoneTrialGate:
     """Godot script: scripts/bone_trial_gate.gd
     class_name: none
@@ -922,6 +926,10 @@ class Enemy:
 
     def gd_func_can_be_stealth_finished_by(self):
         """GDScript function: can_be_stealth_finished_by(player: Node3D) -> bool"""
+        pass
+
+    def gd_func_is_stealth_finish_lethal(self):
+        """GDScript function: is_stealth_finish_lethal() -> bool"""
         pass
 
     def gd_func_get_stealth_prompt_text(self):
@@ -2453,8 +2461,8 @@ class PlayerEquipmentBuildsComponent:
         """GDScript function: _stats_for_state(state: Dictionary) -> Dictionary"""
         pass
 
-    def gd_func__player_base(self):
-        """GDScript function: _player_base(property: String, fallback: float) -> float"""
+    def gd_func__true_base(self):
+        """GDScript function: _true_base(property: String, fallback: float) -> float"""
         pass
 
     def gd_func__quality_counts_for(self):
@@ -2463,6 +2471,10 @@ class PlayerEquipmentBuildsComponent:
 
     def gd_func__effects_for_state(self):
         """GDScript function: _effects_for_state(state: Dictionary) -> Array"""
+        pass
+
+    def gd_func__composition_for_state(self):
+        """GDScript function: _composition_for_state(state: Dictionary) -> Dictionary"""
         pass
 
     def gd_func__apply_validated_state(self):
@@ -2568,6 +2580,14 @@ class PlayerEquipmentBuildsComponent:
     def depends_on_PlayerEquipmentComponent(self):
         """Relationship: references class PlayerEquipmentComponent."""
         return PlayerEquipmentComponent
+
+    def depends_on_PlayerStatsComponent(self):
+        """Relationship: references class PlayerStatsComponent."""
+        return PlayerStatsComponent
+
+    def depends_on_SynergyRulesService(self):
+        """Relationship: references class SynergyRulesService."""
+        return SynergyRulesService
 
 class PlayerEquipmentComponent:
     """Godot script: scripts/player_equipment_component.gd
@@ -2878,6 +2898,10 @@ class PlayerInventoryUI:
         """GDScript function: _bone_comparison_text(bone_id: String) -> String"""
         pass
 
+    def gd_func__synergy_preview_text(self):
+        """GDScript function: _synergy_preview_text(bone_id: String, slot: String) -> String"""
+        pass
+
     def gd_func_clear_bone_info(self):
         """GDScript function: clear_bone_info() -> void"""
         pass
@@ -3062,8 +3086,16 @@ class PlayerInventoryUI:
         """GDScript function: _on_apply_pressed() -> void"""
         pass
 
-    def gd_func__on_rename_pressed(self):
-        """GDScript function: _on_rename_pressed() -> void"""
+    def gd_func__on_build_title_gui_input(self):
+        """GDScript function: _on_build_title_gui_input(event: InputEvent) -> void"""
+        pass
+
+    def gd_func__begin_title_rename(self):
+        """GDScript function: _begin_title_rename() -> void"""
+        pass
+
+    def gd_func__cancel_title_rename(self):
+        """GDScript function: _cancel_title_rename() -> void"""
         pass
 
     def gd_func__on_rename_submitted(self):
@@ -3124,6 +3156,14 @@ class PlayerInventoryUI:
 
     def gd_func__make_composition_row(self):
         """GDScript function: _make_composition_row(quality_id: String, count: int) -> Control"""
+        pass
+
+    def gd_func__make_count_row(self):
+        """GDScript function: _make_count_row(label_text: String, value_text: String) -> Control"""
+        pass
+
+    def gd_func__make_synergy_rows(self):
+        """GDScript function: _make_synergy_rows(entry_value: Variant) -> Control"""
         pass
 
     def gd_func__make_dim_row(self):
@@ -3365,6 +3405,10 @@ class PlayerInventoryUI:
     def depends_on_ModularSkeletonRig(self):
         """Relationship: references class ModularSkeletonRig."""
         return ModularSkeletonRig
+
+    def depends_on_SynergyRulesService(self):
+        """Relationship: references class SynergyRulesService."""
+        return SynergyRulesService
 
     def depends_on_BoneItemTile(self):
         """Relationship: references class BoneItemTile."""
@@ -3783,7 +3827,7 @@ class ProceduralPlayerAnimator:
         pass
 
     def gd_func_trigger_stealth_finish_attack(self):
-        """GDScript function: trigger_stealth_finish_attack() -> void"""
+        """GDScript function: trigger_stealth_finish_attack(lethal: bool = true) -> void"""
         pass
 
     def gd_func__capture_torso_head_miss_body_hold_transform(self):
@@ -3792,6 +3836,18 @@ class ProceduralPlayerAnimator:
 
     def gd_func_set_aiming(self):
         """GDScript function: set_aiming(enabled: bool) -> void"""
+        pass
+
+    def gd_func_set_stealth_ready(self):
+        """GDScript function: set_stealth_ready(enabled: bool) -> void"""
+        pass
+
+    def gd_func__update_stealth_ready_overlay(self):
+        """GDScript function: _update_stealth_ready_overlay(delta: float) -> void"""
+        pass
+
+    def gd_func__apply_stealth_ready_overlay(self):
+        """GDScript function: _apply_stealth_ready_overlay() -> void"""
         pass
 
     def gd_func_confirm_head_only_attack_contact(self):
@@ -4114,6 +4170,14 @@ class ProceduralPlayerAnimator:
         """GDScript function: _right_hand_rig_position() -> Vector3"""
         pass
 
+    def gd_func__apply_backstab_club_pose(self):
+        """GDScript function: _apply_backstab_club_pose(strength: float) -> void"""
+        pass
+
+    def gd_func__backstab_slam_t(self):
+        """GDScript function: _backstab_slam_t() -> float"""
+        pass
+
     def gd_func__apply_finisher_combo_pose(self):
         """GDScript function: _apply_finisher_combo_pose(strength: float) -> void"""
         pass
@@ -4188,6 +4252,37 @@ class RigTestPlayer:
     def depends_on_ProceduralPlayerAnimator(self):
         """Relationship: references class ProceduralPlayerAnimator."""
         return ProceduralPlayerAnimator
+
+class SynergyRulesService:
+    """Godot script: scripts/synergy_rules_service.gd
+    class_name: SynergyRulesService
+    extends: unknown
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/synergy_rules_service.gd'
+    godot_class_name = 'SynergyRulesService'
+    godot_extends = ''
+    gameplay_system = 'Supporting gameplay'
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_EquipmentRulesService(self):
+        """Relationship: references class EquipmentRulesService."""
+        return EquipmentRulesService
+
+    def depends_on_PlayerEquipmentComponent(self):
+        """Relationship: references class PlayerEquipmentComponent."""
+        return PlayerEquipmentComponent
 
 class TestingEnvironment:
     """Godot script: scripts/testing_environment.gd
@@ -4284,6 +4379,10 @@ class TestingEnvironment:
         """GDScript function: _update_status() -> void"""
         pass
 
+    def gd_func__print_stat_breakdown(self):
+        """GDScript function: _print_stat_breakdown() -> void"""
+        pass
+
     def gd_func__cycle_overlay_mode(self):
         """GDScript function: _cycle_overlay_mode() -> void"""
         pass
@@ -4344,9 +4443,25 @@ class TestingEnvironment:
         """Relationship: loads resource."""
         return SceneEnemy
 
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
+
+    def depends_on_SynergyRulesService(self):
+        """Relationship: references class SynergyRulesService."""
+        return SynergyRulesService
 
 class TutorialIslandBuilder:
     """Godot script: scripts/tutorial_island_builder.gd

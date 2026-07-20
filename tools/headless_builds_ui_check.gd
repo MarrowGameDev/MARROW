@@ -106,6 +106,39 @@ func _initialize() -> void:
 		failures.append("rename altered the build's pieces")
 	print("9. renamed to '%s', pieces unchanged" % str(builds.call("build_display_name", 1)))
 
+	# --- rename by clicking the title --------------------------------------
+	ui.call("_begin_title_rename")
+	await process_frame
+	var title_label := ui.get("builds_detail_title") as Label
+	var title_edit := ui.get("builds_rename_edit") as LineEdit
+	if title_label != null and title_label.visible:
+		failures.append("title label still visible while editing the name")
+	if title_edit == null or not title_edit.visible:
+		failures.append("title editor did not appear on click")
+	ui.call("_on_rename_submitted", "Click Rename")
+	for i in range(3):
+		await process_frame
+	if builds.call("build_display_name", 1) != "Click Rename":
+		failures.append("title rename did not stick")
+	if title_label != null and not title_label.visible:
+		failures.append("title label did not come back after submitting")
+	# Cancelling (click away) must change nothing.
+	ui.call("_begin_title_rename")
+	await process_frame
+	ui.call("_cancel_title_rename")
+	await process_frame
+	if builds.call("build_display_name", 1) != "Click Rename":
+		failures.append("cancelling the title edit changed the name")
+	if title_label != null and not title_label.visible:
+		failures.append("title label hidden after a cancelled edit")
+	# The Rename button is gone from the action row: the title IS the control.
+	var action_row := ui.get("builds_action_row") as HBoxContainer
+	if action_row != null:
+		for child in action_row.get_children():
+			if child is Button and (child as Button).text == "Rename":
+				failures.append("the old Rename button is still in the action row")
+	print("title rename: edited in place, cancel safe, button removed")
+
 	# --- New Build then Delete with visible confirmation -------------------
 	var before_count: int = (builds.call("build_indices") as Array).size()
 	ui.call("_on_new_build_pressed")

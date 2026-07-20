@@ -5,14 +5,19 @@ rule helpers.
 Scope (deliberately limited -- see docs/bone_data_structure.md): this
 milestone is data schema plus pure, stateless helper functions in
 BoneRulesService (durability_profile_for, mutation_profile_for,
-synergy_profile_for, equipment_synergy_summary). None of it is wired
-into gameplay yet -- durability never decreases, repair does nothing,
-set/synergy bonuses are never applied to stats, and mutations produce no
-effect. This is a read-only static/simulated check; it confirms the pure
+synergy_profile_for, equipment_synergy_summary).
+
+Durability and mutation are still NOT wired into gameplay: durability
+never decreases, repair does nothing, and mutations produce no effect.
+
+Set/synergy bonuses ARE wired now -- SynergyRulesService.evaluate
+consumes equipment_synergy_summary's counts and feeds real bonuses into
+the stat pipeline. That path is covered by tools/validate_synergy_rules.py;
+this file still only checks the counting helpers underneath it.
+
+This is a read-only static/simulated check; it confirms the pure
 functions exist and compute correctly against Python-mirrored expected
-values, not that anything calls them at runtime. Runtime state for
-individual item durability, and the rules that consume these helpers,
-are future work.
+values, not that anything calls them at runtime.
 """
 
 from __future__ import annotations
@@ -238,7 +243,7 @@ def main() -> int:
     if errors:
         print(f"Result: FAIL ({len(errors)} error(s)).")
         return 1
-    print("Result: OK (data schema and pure rule helpers intact; NOT wired into gameplay).")
+    print("Result: OK (data schema and counting helpers intact; durability/mutation still unwired).")
     return 0
 
 

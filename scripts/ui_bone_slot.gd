@@ -282,11 +282,14 @@ func _notification(what: int) -> void:
 			player.call("end_bone_drag")
 
 
-# Right-click clears this slot.
+# Right-click clears this slot. Deferred: unequipping refreshes the paper
+# doll, and freeing widgets while the viewport is dispatching this event makes
+# it re-deliver to whatever ends up under the cursor (see the tile's handler).
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		accept_event()
 		if player != null and player.has_method("unequip_slot"):
-			player.unequip_slot(slot_name)
+			player.call_deferred("unequip_slot", slot_name)
 
 
 func _make_slot_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat:
