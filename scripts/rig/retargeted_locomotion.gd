@@ -68,6 +68,8 @@ func _build_source(clip_paths: Dictionary, tree_parent: Node) -> Dictionary:
 		var model: Node = idle_model if state == "idle" else (load(clip_paths[state]) as PackedScene).instantiate()
 		var mp := _find_ap(model)
 		var anim: Animation = mp.get_animation(mp.get_animation_list()[0]).duplicate(true)
+		if state == "walk":
+			anim = _make_loopable(anim)   # human walk isn't authored as a loop
 		anim.loop_mode = Animation.LOOP_LINEAR if state in ["idle", "walk"] else Animation.LOOP_NONE
 		moves.add_animation(state, anim)
 		if state == "jump":
@@ -229,6 +231,56 @@ func _fb(skel: Skeleton3D, name: String) -> int:
 	if b < 0:
 		b = skel.find_bone(name.trim_prefix("CC_Base_"))
 	return b
+
+
+# Turn a clip that isn't authored as a loop (start pose != end pose) into a clean
+# loop: find the time where the whole-body pose recurs (its natural stride
+# period), trim to [0, period], and force the last key to equal the first.
+func _make_loopable(anim: Animation) -> Animation:
+	var length := anim.length
+	if length <= 0.1:
+		return anim
+	var best_t := length
+	var best_err := INF
+	var t := 0.45
+	while t <= length + 0.001:
+		var err := _pose_diff(anim, 0.0, t)
+		if err < best_err:
+			best_err = err
+			best_t = t
+		t += 1.0 / 30.0
+	print("loop-ify walk: period=%.3fs (residual %.3f rad) from %.2fs clip" % [best_t, best_err, length])
+
+	var out := Animation.new()
+	out.length = best_t
+	out.loop_mode = Animation.LOOP_LINEAR
+	var steps := maxi(2, int(round(best_t * 30.0)))
+	for ti in range(anim.get_track_count()):
+		var type := anim.track_get_type(ti)
+		if not (type == Animation.TYPE_ROTATION_3D or type == Animation.TYPE_POSITION_3D or type == Animation.TYPE_SCALE_3D):
+			continue
+		var tr := out.add_track(type)
+		out.track_set_path(tr, anim.track_get_path(ti))
+		for k in range(steps + 1):
+			var kt := best_t * float(k) / float(steps)
+			var st := 0.0 if k == steps else kt   # last key == first key -> exact loop
+			match type:
+				Animation.TYPE_ROTATION_3D:
+					out.rotation_track_insert_key(tr, kt, anim.rotation_track_interpolate(ti, st))
+				Animation.TYPE_POSITION_3D:
+					out.position_track_insert_key(tr, kt, anim.position_track_interpolate(ti, st))
+				Animation.TYPE_SCALE_3D:
+					out.scale_track_insert_key(tr, kt, anim.scale_track_interpolate(ti, st))
+	return out
+
+
+# Summed rotation difference between two times across all bone rotation tracks.
+func _pose_diff(anim: Animation, t0: float, t1: float) -> float:
+	var s := 0.0
+	for ti in range(anim.get_track_count()):
+		if anim.track_get_type(ti) == Animation.TYPE_ROTATION_3D:
+			s += anim.rotation_track_interpolate(ti, t0).angle_to(anim.rotation_track_interpolate(ti, t1))
+	return s
 
 
 func _rest_y(skel: Skeleton3D, bone: int) -> float:

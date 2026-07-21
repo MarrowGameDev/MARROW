@@ -8,9 +8,9 @@ extends Node3D
 const CC_SCENE: PackedScene = preload("res://assets/main_character.glb")
 const CLIPS := {
 	"idle": "res://assets/mutant_breathing_idle.fbx",
-	# mutant_walking is a clean loop (start == end); the human walking.fbx is not
-	# authored as a loop and snapped ~40deg at the seam.
-	"walk": "res://assets/mutant_walking.fbx",
+	# Upright human walk; RetargetedLocomotion loop-ifies it (it isn't authored as
+	# a loop) by trimming to its natural stride cycle.
+	"walk": "res://assets/walking.fbx",
 	"turn_l": "res://assets/mutant_left_turn.fbx",
 	"turn_r": "res://assets/mutant_right_turn.fbx",
 	"jump": "res://assets/running_jump.fbx",

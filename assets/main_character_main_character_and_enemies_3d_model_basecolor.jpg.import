@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://hknjjhy128s0"
-path="res://.godot/imported/main_character_main_character_and_enemies_3d_model_basecolor.jpg-f4b43f0567b32df6f51c14dba6581c03.ctex"
+path.s3tc="res://.godot/imported/main_character_main_character_and_enemies_3d_model_basecolor.jpg-f4b43f0567b32df6f51c14dba6581c03.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "9f960576e8f4690129ca336c89d14dad"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/main_character_main_character_and_enemies_3d_model_basecolor.jpg"
-dest_files=["res://.godot/imported/main_character_main_character_and_enemies_3d_model_basecolor.jpg-f4b43f0567b32df6f51c14dba6581c03.ctex"]
+dest_files=["res://.godot/imported/main_character_main_character_and_enemies_3d_model_basecolor.jpg-f4b43f0567b32df6f51c14dba6581c03.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
