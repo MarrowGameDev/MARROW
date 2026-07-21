@@ -33,6 +33,13 @@ var segments: Dictionary = {}         # segment id -> Array[MeshInstance3D]
 var _seg_of_bone: Dictionary = {}     # bone idx -> segment id
 var _severed: Dictionary = {}         # cut-root bone idx -> true
 var _cap_material: StandardMaterial3D = null
+# When the model is ALREADY split into per-limb part-meshes (like the main
+# character: separate "left arm", "left forearm", "left hand"… meshes), assign
+# each whole part-mesh to its dominant limb instead of splitting triangles by
+# bone. Respects the artist's separation and needs no caps (the parts are already
+# open at the joints), so detaching a limb keeps each part intact.
+var whole_parts := false
+const WHOLE_PART_MIN := 0.85          # keep a part whole only if this fraction is one limb
 
 
 func _init(skel: Skeleton3D, body: Node3D, debris: Node3D) -> void:
@@ -123,6 +130,24 @@ func _split_surface(arrays: Array, s_of_bind: Array, bone_of_bind: Array, materi
 		nrm[v] = n.normalized() if n.length() > 0.0001 else Vector3.UP
 		seg[v] = best_seg
 
+	# Whole-part mode: if this artist-authored part sits almost entirely in ONE
+	# limb, keep it intact (send every triangle there, no re-mesh, no cap). Parts
+	# that straddle a joint — the "hips" (both thighs + pelvis) or a combined
+	# thigh+calf "leg" mesh — fall back to the per-triangle split so the cut still
+	# lands at the joint instead of the whole part flying off with one side.
+	var forced_seg := ""
+	if whole_parts:
+		var counts: Dictionary = {}
+		var best_c := 0
+		for v in range(vcount):
+			var c: int = counts.get(seg[v], 0) + 1
+			counts[seg[v]] = c
+			if c > best_c:
+				best_c = c
+				forced_seg = seg[v]
+		if float(best_c) / float(vcount) < WHOLE_PART_MIN:
+			forced_seg = ""
+
 	# Vote each triangle to a segment. Also record CUT-boundary edges — an edge
 	# whose two triangles landed in different segments — so those loops can be
 	# capped and a severed limb / torso socket reads as solid, not hollow.
@@ -135,7 +160,7 @@ func _split_surface(arrays: Array, s_of_bind: Array, bone_of_bind: Array, materi
 		var a := indices[t]
 		var b := indices[t + 1]
 		var c := indices[t + 2]
-		var target := _vote(seg[a], seg[b], seg[c])
+		var target := forced_seg if forced_seg != "" else _vote(seg[a], seg[b], seg[c])
 		if not seg_tri.has(target):
 			seg_tri[target] = []
 		var lst: Array = seg_tri[target]

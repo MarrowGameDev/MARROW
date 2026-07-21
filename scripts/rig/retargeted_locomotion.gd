@@ -26,6 +26,7 @@ var _has_backward := false
 # spine/head toward upright so a light skeleton doesn't carry the mutant's weight.
 var time_scale := 1.0
 var jump_lift_scale := 1.0
+var jump_lead_trim := 0.0             # seconds of dead wind-up trimmed off the jump clip
 var uprightness := 0.0                # 0 = raw clip, 1 = fully upright spine
 const _SPINE := ["CC_Base_Waist", "CC_Base_Spine01", "CC_Base_Spine02",
 	"CC_Base_NeckTwist01", "CC_Base_Head"]
@@ -49,8 +50,9 @@ var _src_hips_rest_y := 0.0
 var _root_scale := 1.0
 
 
-func _init(clip_paths: Dictionary, cc_skeleton: Skeleton3D, tree_parent: Node) -> void:
+func _init(clip_paths: Dictionary, cc_skeleton: Skeleton3D, tree_parent: Node, lead_trim: float = 0.0) -> void:
 	_dst = cc_skeleton
+	jump_lead_trim = lead_trim   # build-time: the jump clip is trimmed in _build_source
 	var src := _build_source(clip_paths, tree_parent)
 	var ap: AnimationPlayer = src["ap"]
 	_build_tree(ap, tree_parent)
@@ -82,6 +84,8 @@ func _build_source(clip_paths: Dictionary, tree_parent: Node) -> Dictionary:
 		var anim: Animation = mp.get_animation(mp.get_animation_list()[0]).duplicate(true)
 		if state in ["walk", "run", "backward"]:
 			anim = _make_loopable(anim)   # these locomotion clips aren't authored as loops
+		elif state == "jump" and jump_lead_trim > 0.0:
+			anim = _trim_start(anim, jump_lead_trim)   # drop dead wind-up so the leap starts fast
 		anim.loop_mode = Animation.LOOP_LINEAR if state in _LOOPING else Animation.LOOP_NONE
 		moves.add_animation(state, anim)
 		if state == "jump":
@@ -129,11 +133,12 @@ func _build_tree(ap: AnimationPlayer, tree_parent: Node) -> void:
 			continue
 		bt.add_node("clip_" + shot, _clip(shot))
 		var os := AnimationNodeOneShot.new()
-		# Jump crossfades longer so walk->jump->walk is smooth (no snap to a
-		# neutral pose); turns/attacks stay snappy.
+		# Jump fades in FAST so the takeoff is responsive (a long fadein read as a
+		# delay), but fades out slower so the landing settles back into the gait
+		# instead of snapping. Turns/attacks stay snappy.
 		if shot == "jump":
-			os.fadein_time = 0.22
-			os.fadeout_time = 0.3
+			os.fadein_time = 0.10   # was 0.22 — the "transition before jumping" delay
+			os.fadeout_time = 0.28
 		else:
 			os.fadein_time = 0.07
 			os.fadeout_time = 0.12
@@ -331,6 +336,36 @@ func _make_loopable(anim: Animation) -> Animation:
 		for k in range(steps + 1):
 			var kt := best_t * float(k) / float(steps)
 			var st := 0.0 if k == steps else kt   # last key == first key -> exact loop
+			match type:
+				Animation.TYPE_ROTATION_3D:
+					out.rotation_track_insert_key(tr, kt, anim.rotation_track_interpolate(ti, st))
+				Animation.TYPE_POSITION_3D:
+					out.position_track_insert_key(tr, kt, anim.position_track_interpolate(ti, st))
+				Animation.TYPE_SCALE_3D:
+					out.scale_track_insert_key(tr, kt, anim.scale_track_interpolate(ti, st))
+	return out
+
+
+# Drop the first `skip` seconds off a one-shot clip (its dead lead-in) by
+# resampling [skip, length] into a fresh [0, length-skip] animation. Used to cut
+# the jump's slow wind-up so the leap starts almost as soon as the key is pressed.
+func _trim_start(anim: Animation, skip: float) -> Animation:
+	var new_len := anim.length - skip
+	if skip <= 0.0 or new_len <= 0.1:
+		return anim
+	var out := Animation.new()
+	out.length = new_len
+	out.loop_mode = Animation.LOOP_NONE
+	var steps := maxi(2, int(round(new_len * 30.0)))
+	for ti in range(anim.get_track_count()):
+		var type := anim.track_get_type(ti)
+		if not (type == Animation.TYPE_ROTATION_3D or type == Animation.TYPE_POSITION_3D or type == Animation.TYPE_SCALE_3D):
+			continue
+		var tr := out.add_track(type)
+		out.track_set_path(tr, anim.track_get_path(ti))
+		for k in range(steps + 1):
+			var kt := new_len * float(k) / float(steps)
+			var st := skip + kt
 			match type:
 				Animation.TYPE_ROTATION_3D:
 					out.rotation_track_insert_key(tr, kt, anim.rotation_track_interpolate(ti, st))

@@ -23,7 +23,13 @@ const WALK_SPEED := 1.6   # movement at full-walk blend (0.5)
 const RUN_SPEED := 3.4    # movement at full-run blend (1.0)
 const BACK_SPEED := 1.5
 const TURN_RATE := 2.5
-const TURN180_DURATION := 0.55   # spread the 180 over the clip, not instant
+# The turn-180 clip itself turns the mesh a full 180 (its hips rotation is
+# retargeted onto the character). So we DON'T rotate facing during the clip —
+# that just fights the clip and cancels out (the old "cut halfway" bug). Instead,
+# as the one-shot fades back to the base pose, we ramp facing to hold the new
+# heading, so the mesh's world orientation stays put through the handoff.
+const TURN180_CLIP := 0.667      # running_turn180 clip length
+const TURN180_FADE := 0.12       # matches the one-shot fadeout_time
 
 var _loco: RetargetedLocomotion
 var _char: Node3D
@@ -32,7 +38,8 @@ var _facing_yaw := 0.0
 var _jump_launch_speed := 0.0   # gait speed at takeoff, held through the jump
 var _base_forward := Vector3(0, 0, 1)   # the character's own forward (from its rig)
 var _backward := 0.0
-var _turn180_timer := 0.0
+var _turn180_clip := 0.0   # counts down the clip (mesh turns via the clip here)
+var _turn180_fade := 0.0   # counts down the fadeout (ramp facing to hold the turn)
 
 # orbit follow camera
 var _cam: Camera3D
@@ -62,7 +69,9 @@ func _ready() -> void:
 	if cc_skel != null:
 		_base_forward = _forward_of(cc_skel)
 		_cam_yaw = atan2(-_base_forward.x, -_base_forward.z)   # start behind the character
-		_loco = RetargetedLocomotion.new(CLIPS, cc_skel, self)
+		# 0.40 trims the running-jump clip's run-up so the leap starts ~0.15s after
+		# SPACE (was ~0.55s — the "jump is delayed"); still reaches full height.
+		_loco = RetargetedLocomotion.new(CLIPS, cc_skel, self, 0.40)
 		_loco.time_scale = 1.0        # normal pace (not agile)
 		_loco.jump_lift_scale = 3.5   # boost the small character's hop to read well
 		_loco.uprightness = 0.2       # mild unhunch (attack/turn clips are mutant)
@@ -81,9 +90,15 @@ func _process(delta: float) -> void:
 		_facing_yaw += delta * TURN_RATE
 	if Input.is_key_pressed(KEY_D):
 		_facing_yaw -= delta * TURN_RATE
-	if _turn180_timer > 0.0:
-		_facing_yaw += (PI / TURN180_DURATION) * delta   # smooth 180 while the clip plays
-		_turn180_timer -= delta
+	if _turn180_clip > 0.0:
+		_turn180_clip -= delta                  # clip is turning the mesh; don't fight it
+		if _turn180_clip <= 0.0:
+			_turn180_fade = TURN180_FADE
+	elif _turn180_fade > 0.0:
+		# As the clip fades out its 180, rotate facing in lock-step so the mesh's
+		# world heading holds and the base pose lands already turned.
+		_facing_yaw -= (PI / TURN180_FADE) * delta
+		_turn180_fade -= delta
 
 	var running := Input.is_key_pressed(KEY_SHIFT)
 	var fwd_in := Input.is_key_pressed(KEY_W)
@@ -138,9 +153,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_loco.trigger_jump()
 	elif key.keycode == KEY_E:
 		_loco.trigger_attack()
-	elif key.keycode == KEY_Q and _turn180_timer <= 0.0:
+	elif key.keycode == KEY_Q and _turn180_clip <= 0.0 and _turn180_fade <= 0.0:
 		_loco.trigger_turn180()
-		_turn180_timer = TURN180_DURATION   # rotate 180 smoothly over the clip
+		_turn180_clip = TURN180_CLIP        # let the clip turn the mesh; hold on fadeout
 	elif key.keycode == KEY_A and _speed_ratio < 0.25:
 		_loco.trigger_turn(true)
 	elif key.keycode == KEY_D and _speed_ratio < 0.25:

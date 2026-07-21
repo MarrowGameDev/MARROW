@@ -63,6 +63,9 @@ func _ready() -> void:
 		# Fidelity B: split the skinned mesh into per-limb geometry up front, so a
 		# severed limb is real geometry and the torso is left with an open cut.
 		_segmenter = SkeletonSegmenter.new(_skeleton, body_root, debris)
+		# The main character is already modeled as separate per-limb part-meshes, so
+		# detach whole parts along the artist's seams instead of re-splitting them.
+		_segmenter.whole_parts = true
 		_segmenter.build(model)
 
 	_frame_camera(model)
