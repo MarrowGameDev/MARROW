@@ -19,6 +19,11 @@ var _dst: Skeleton3D
 var _foot_l := -1
 var _foot_r := -1
 var _states: Dictionary = {}     # state -> true if present
+# "Lightness" knobs: play everything a bit faster and jump a bit floatier so a
+# light skeleton doesn't move like the heavy mutant the clips were made for.
+var time_scale := 1.0
+var jump_lift_scale := 1.0
+
 # Jump vertical: the retarget copies only rotations, so the hop is taken from the
 # source hips' own root motion (Y), scaled to the CC's hip height.
 var _jump_dur := 0.0
@@ -88,8 +93,8 @@ func _build_tree(ap: AnimationPlayer, tree_parent: Node) -> void:
 			continue
 		bt.add_node("clip_" + shot, _clip(shot))
 		var os := AnimationNodeOneShot.new()
-		os.fadein_time = 0.12
-		os.fadeout_time = 0.2
+		os.fadein_time = 0.07
+		os.fadeout_time = 0.12
 		bt.add_node("os_" + shot, os)
 		bt.connect_node("os_" + shot, 0, base)
 		bt.connect_node("os_" + shot, 1, "clip_" + shot)
@@ -116,10 +121,10 @@ func _clip(state: String) -> AnimationNodeAnimation:
 
 func update(delta: float, speed_ratio: float) -> void:
 	tree.set("parameters/move/blend_amount", clampf(speed_ratio, 0.0, 1.0))
-	tree.advance(delta)
+	tree.advance(delta * time_scale)
 	retargeter.apply()
 	if _jump_timer > 0.0:
-		_jump_timer = maxf(0.0, _jump_timer - delta)
+		_jump_timer = maxf(0.0, _jump_timer - delta * time_scale)
 
 
 func trigger_jump() -> void:
@@ -156,7 +161,7 @@ func ground(character_root: Node3D, ground_y: float = 0.0, foot_lift: float = 0.
 	# pinning a foot to the floor.
 	if _jump_timer > 0.0 and _src_hips >= 0:
 		var lift: float = (_src.get_bone_global_pose(_src_hips).origin.y - _src_hips_rest_y) * _root_scale
-		character_root.position.y = ground_y + maxf(0.0, lift)
+		character_root.position.y = ground_y + maxf(0.0, lift) * jump_lift_scale
 		return
 	var lowest := INF
 	for b in [_foot_l, _foot_r]:
