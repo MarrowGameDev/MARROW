@@ -11,7 +11,8 @@ extends RefCounted
 # clip_paths: { state -> "res://...fbx" } with states among:
 #   idle, walk (looping base) and turn_l, turn_r, jump, attack (one-shots).
 
-const _ONESHOTS := ["turn_l", "turn_r", "jump", "attack"]
+const _ONESHOTS := ["turn_l", "turn_r", "turn180", "jump", "attack"]
+const _LOOPING := ["idle", "walk", "run", "backward"]
 
 var tree: AnimationTree
 var retargeter: SkeletonRetargeter
@@ -19,6 +20,8 @@ var _dst: Skeleton3D
 var _foot_l := -1
 var _foot_r := -1
 var _states: Dictionary = {}     # state -> true if present
+var _loco_param := "parameters/move/blend_amount"
+var _has_backward := false
 # "Lightness" knobs (weight, not speed): jump a touch floatier, and unhunch the
 # spine/head toward upright so a light skeleton doesn't carry the mutant's weight.
 var time_scale := 1.0
@@ -77,9 +80,9 @@ func _build_source(clip_paths: Dictionary, tree_parent: Node) -> Dictionary:
 		var model: Node = idle_model if state == "idle" else (load(clip_paths[state]) as PackedScene).instantiate()
 		var mp := _find_ap(model)
 		var anim: Animation = mp.get_animation(mp.get_animation_list()[0]).duplicate(true)
-		if state == "walk":
-			anim = _make_loopable(anim)   # human walk isn't authored as a loop
-		anim.loop_mode = Animation.LOOP_LINEAR if state in ["idle", "walk"] else Animation.LOOP_NONE
+		if state in ["walk", "run", "backward"]:
+			anim = _make_loopable(anim)   # these locomotion clips aren't authored as loops
+		anim.loop_mode = Animation.LOOP_LINEAR if state in _LOOPING else Animation.LOOP_NONE
 		moves.add_animation(state, anim)
 		if state == "jump":
 			_jump_dur = anim.length
@@ -92,16 +95,35 @@ func _build_source(clip_paths: Dictionary, tree_parent: Node) -> Dictionary:
 func _build_tree(ap: AnimationPlayer, tree_parent: Node) -> void:
 	var bt := AnimationNodeBlendTree.new()
 
-	# Base: blend idle<->walk by speed.
-	bt.add_node("idle", _clip("idle"))
-	bt.add_node("walk", _clip("walk"))
-	var move := AnimationNodeBlend2.new()
-	bt.add_node("move", move)
-	bt.connect_node("move", 0, "idle")
-	bt.connect_node("move", 1, "walk")
+	# Base locomotion: idle -> walk -> run by speed (or idle<->walk if no run clip).
+	if _states.has("run"):
+		var bs := AnimationNodeBlendSpace1D.new()
+		bs.add_blend_point(_clip("idle"), 0.0)
+		bs.add_blend_point(_clip("walk"), 0.5)
+		bs.add_blend_point(_clip("run"), 1.0)
+		bt.add_node("loco", bs)
+		_loco_param = "parameters/loco/blend_position"
+	else:
+		bt.add_node("idle", _clip("idle"))
+		bt.add_node("walk", _clip("walk"))
+		var move := AnimationNodeBlend2.new()
+		bt.add_node("loco", move)
+		bt.connect_node("loco", 0, "idle")
+		bt.connect_node("loco", 1, "walk")
+		_loco_param = "parameters/loco/blend_amount"
+
+	# Backward blends over the forward locomotion.
+	var base := "loco"
+	if _states.has("backward"):
+		bt.add_node("back_clip", _clip("backward"))
+		var back := AnimationNodeBlend2.new()
+		bt.add_node("back", back)
+		bt.connect_node("back", 0, "loco")
+		bt.connect_node("back", 1, "back_clip")
+		base = "back"
+		_has_backward = true
 
 	# Chain the one-shots on top of the base.
-	var base := "move"
 	for shot in _ONESHOTS:
 		if not _states.has(shot):
 			continue
@@ -132,15 +154,17 @@ func _build_tree(ap: AnimationPlayer, tree_parent: Node) -> void:
 func _clip(state: String) -> AnimationNodeAnimation:
 	var n := AnimationNodeAnimation.new()
 	n.animation = "moves/" + state
-	if state in ["idle", "walk"]:
+	if state in _LOOPING:
 		n.loop_mode = Animation.LOOP_LINEAR
 	return n
 
 
 # ---- per-frame + triggers -------------------------------------------------
 
-func update(delta: float, speed_ratio: float) -> void:
-	tree.set("parameters/move/blend_amount", clampf(speed_ratio, 0.0, 1.0))
+func update(delta: float, speed_ratio: float, backward: float = 0.0) -> void:
+	tree.set(_loco_param, clampf(speed_ratio, 0.0, 1.0))
+	if _has_backward:
+		tree.set("parameters/back/blend_amount", clampf(backward, 0.0, 1.0))
 	tree.advance(delta * time_scale)
 	retargeter.apply()
 	if uprightness > 0.0:
@@ -202,6 +226,10 @@ func trigger_attack() -> void:
 
 func trigger_turn(left: bool) -> void:
 	_fire("turn_l" if left else "turn_r")
+
+
+func trigger_turn180() -> void:
+	_fire("turn180")
 
 
 func is_busy() -> bool:

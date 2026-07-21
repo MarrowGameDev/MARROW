@@ -1,22 +1,27 @@
 extends Node3D
 
-# Retargeted locomotion demo: Mixamo mutant clips drive the CC skeleton.
-#   W walk · A/D turn · SPACE jump · E / click attack · drag/wheel orbit camera.
+# Retargeted locomotion demo driving the main character.
+#   W walk · SHIFT+W run · S back · A/D turn · Q turn-180 · SPACE jump · E attack.
+#   Third-person follow camera (drag to orbit, wheel to zoom).
 #
 # Open scenes/skeleton_locomotion.tscn and run it (F6), or press K in a build.
 
 const CC_SCENE: PackedScene = preload("res://assets/main_character.glb")
 const CLIPS := {
-	"idle": "res://assets/mutant_breathing_idle.fbx",
-	# Upright human walk; RetargetedLocomotion loop-ifies it (it isn't authored as
-	# a loop) by trimming to its natural stride cycle.
+	"idle": "res://assets/breathing_idle.fbx",
+	# Locomotion clips are loop-ified (trimmed to their natural cycle) at load.
 	"walk": "res://assets/walking.fbx",
+	"run": "res://assets/running.fbx",
+	"backward": "res://assets/running_backward.fbx",
 	"turn_l": "res://assets/mutant_left_turn.fbx",
 	"turn_r": "res://assets/mutant_right_turn.fbx",
+	"turn180": "res://assets/running_turn180.fbx",
 	"jump": "res://assets/running_jump.fbx",
 	"attack": "res://assets/mutant_swiping.fbx",
 }
-const WALK_SPEED := 1.5
+const WALK_SPEED := 1.6   # movement at full-walk blend (0.5)
+const RUN_SPEED := 3.4    # movement at full-run blend (1.0)
+const BACK_SPEED := 1.5
 const TURN_RATE := 2.5
 
 var _loco: RetargetedLocomotion
@@ -25,6 +30,8 @@ var _speed_ratio := 0.0
 var _facing_yaw := 0.0
 var _jump_launch_speed := 0.0   # gait speed at takeoff, held through the jump
 var _base_forward := Vector3(0, 0, 1)   # the character's own forward (from its rig)
+var _backward := 0.0
+var _cam_orbit := 0.0   # user orbit offset on top of the auto follow-behind
 
 # orbit follow camera
 var _cam: Camera3D
@@ -57,8 +64,8 @@ func _ready() -> void:
 		_loco = RetargetedLocomotion.new(CLIPS, cc_skel, self)
 		_loco.time_scale = 1.0        # normal pace (not agile)
 		_loco.jump_lift_scale = 3.5   # boost the small character's hop to read well
-		_loco.uprightness = 0.3       # unhunch the heavy mutant posture
-		_loco.idle_normalize = 0.7    # plain upright stand when idle
+		_loco.uprightness = 0.2       # mild unhunch (attack/turn clips are mutant)
+		_loco.idle_normalize = 0.0    # real breathing idle already stands normally
 
 	var span := _frame_camera(cc_model)
 	_cam_target = _char.global_position + Vector3(0, span * 0.45, 0)
@@ -73,26 +80,44 @@ func _process(delta: float) -> void:
 		_facing_yaw += delta * TURN_RATE
 	if Input.is_key_pressed(KEY_D):
 		_facing_yaw -= delta * TURN_RATE
-	var walking := Input.is_key_pressed(KEY_W)
-	var target_speed := 1.0 if walking else 0.0
-	# Hold the takeoff gait through the jump so the base stays walk (never dips to
-	# idle) and forward momentum carries — a smooth walk -> running-jump -> walk.
+
+	var running := Input.is_key_pressed(KEY_SHIFT)
+	var fwd_in := Input.is_key_pressed(KEY_W)
+	var back_in := Input.is_key_pressed(KEY_S)
+	var target_speed := 0.0
+	var target_back := 0.0
+	if fwd_in:
+		target_speed = 1.0 if running else 0.5   # blendspace: 0.5 walk, 1.0 run
+	elif back_in:
+		target_back = 1.0
 	if _loco.is_jumping():
 		target_speed = maxf(target_speed, _jump_launch_speed)
 	_speed_ratio = lerpf(_speed_ratio, target_speed, 1.0 - exp(-8.0 * delta))
+	_backward = lerpf(_backward, target_back, 1.0 - exp(-8.0 * delta))
 
-	_loco.update(delta, _speed_ratio)
+	_loco.update(delta, _speed_ratio, _backward)
 	_loco.ground(_char, delta)
 
 	_char.rotation.y = _facing_yaw
-	# Move along the character's OWN forward (derived from its rig), rotated by the
-	# current facing — so it walks where it faces regardless of which axis the model
-	# was authored to point down.
+	# Move along the character's OWN forward (derived from its rig), rotated by facing.
 	var fwd := (Basis(Vector3.UP, _facing_yaw) * _base_forward)
 	fwd.y = 0.0
-	_char.position += fwd.normalized() * _speed_ratio * WALK_SPEED * delta
+	fwd = fwd.normalized()
+	var fwd_speed := (_speed_ratio / 0.5) * WALK_SPEED if _speed_ratio <= 0.5 \
+		else lerpf(WALK_SPEED, RUN_SPEED, (_speed_ratio - 0.5) / 0.5)
+	_char.position += fwd * fwd_speed * delta
+	_char.position -= fwd * _backward * BACK_SPEED * delta
 
-	_cam_target = _cam_target.lerp(_char.global_position + Vector3(0, 0.9, 0), 1.0 - exp(-6.0 * delta))
+	_update_follow_camera(delta)
+
+
+# Third-person: the camera trails behind the character's facing and follows it,
+# with the mouse adding an orbit offset.
+func _update_follow_camera(delta: float) -> void:
+	_cam_target = _cam_target.lerp(_char.global_position + Vector3(0, 0.6, 0), 1.0 - exp(-9.0 * delta))
+	var fwd := Basis(Vector3.UP, _facing_yaw) * _base_forward
+	var behind := atan2(-fwd.x, -fwd.z)
+	_cam_yaw = lerp_angle(_cam_yaw, behind + _cam_orbit, 1.0 - exp(-4.0 * delta))
 	_update_camera()
 
 
@@ -111,6 +136,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_loco.trigger_jump()
 	elif key.keycode == KEY_E:
 		_loco.trigger_attack()
+	elif key.keycode == KEY_Q:
+		_loco.trigger_turn180()
+		_facing_yaw += PI          # the turn reverses facing
 	elif key.keycode == KEY_A and _speed_ratio < 0.25:
 		_loco.trigger_turn(true)
 	elif key.keycode == KEY_D and _speed_ratio < 0.25:
@@ -193,7 +221,7 @@ func _handle_camera_input(event: InputEvent) -> bool:
 		return false
 	var mm := event as InputEventMouseMotion
 	if mm != null and _orbiting:
-		_cam_yaw -= mm.relative.x * ORBIT_SENS
+		_cam_orbit -= mm.relative.x * ORBIT_SENS   # offset on top of the follow-behind
 		_cam_pitch = clampf(_cam_pitch - mm.relative.y * ORBIT_SENS, -1.4, 1.4)
 		return true
 	return false
@@ -283,7 +311,7 @@ func _setup_ui() -> void:
 	panel.position = Vector2(16, 12)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_theme_color_override("font_color", Color.WHITE)
-	panel.text = "SKELETON LOCOMOTION — retargeted Mixamo mutant clips\n" + \
-		"W walk · A/D turn · SPACE jump · E attack\n" + \
-		"drag orbit · wheel zoom · R rebuild · ESC exit"
+	panel.text = "SKELETON LOCOMOTION — third-person\n" + \
+		"W walk · SHIFT+W run · S back · A/D turn · Q turn-180\n" + \
+		"SPACE jump · E attack · drag orbit · wheel zoom · R rebuild · ESC exit"
 	layer.add_child(panel)
