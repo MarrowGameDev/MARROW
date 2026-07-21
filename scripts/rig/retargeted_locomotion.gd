@@ -27,6 +27,15 @@ var uprightness := 0.0                # 0 = raw clip, 1 = fully upright spine
 const _SPINE := ["CC_Base_Waist", "CC_Base_Spine01", "CC_Base_Spine02",
 	"CC_Base_NeckTwist01", "CC_Base_Head"]
 
+# Normal idle: when standing (and not mid one-shot), straighten the legs+spine+head
+# toward the character's own rest and add a subtle breathe, so the hunched mutant
+# idle reads as a plain stand. 0 = off.
+var idle_normalize := 0.0
+var _idle_time := 0.0
+const _IDLE_BONES := ["CC_Base_L_Thigh", "CC_Base_R_Thigh", "CC_Base_L_Calf",
+	"CC_Base_R_Calf", "CC_Base_Waist", "CC_Base_Spine01", "CC_Base_Spine02",
+	"CC_Base_NeckTwist01", "CC_Base_Head"]
+
 # Jump vertical: the retarget copies only rotations, so the hop is taken from the
 # source hips' own root motion (Y), scaled to the CC's hip height.
 var _jump_dur := 0.0
@@ -136,8 +145,38 @@ func update(delta: float, speed_ratio: float) -> void:
 	retargeter.apply()
 	if uprightness > 0.0:
 		_lighten_posture()
+	_idle_time += delta
+	if idle_normalize > 0.0:
+		var amt := clampf(1.0 - speed_ratio * 1.6, 0.0, 1.0)
+		if _oneshot_active():
+			amt = 0.0
+		if amt > 0.0:
+			_normalize_idle(amt * idle_normalize)
 	if _jump_timer > 0.0:
 		_jump_timer = maxf(0.0, _jump_timer - delta * time_scale)
+
+
+func _oneshot_active() -> bool:
+	for shot in _ONESHOTS:
+		if _states.has(shot) and bool(tree.get("parameters/os_%s/active" % shot)):
+			return true
+	return false
+
+
+# Blend the legs/spine/head toward rest (a plain upright stand) and add a subtle
+# chest breathe.
+func _normalize_idle(w: float) -> void:
+	for bone_name in _IDLE_BONES:
+		var b := _fb(_dst, bone_name)
+		if b < 0:
+			continue
+		var rest := Quaternion(_dst.get_bone_rest(b).basis.orthonormalized())
+		_dst.set_bone_pose_rotation(b, _dst.get_bone_pose_rotation(b).slerp(rest, w))
+	var chest := _fb(_dst, "CC_Base_Spine01")
+	if chest >= 0:
+		var breathe := sin(_idle_time * 1.6) * deg_to_rad(2.2) * w
+		var cur := _dst.get_bone_pose_rotation(chest)
+		_dst.set_bone_pose_rotation(chest, cur * Quaternion(Vector3(1, 0, 0), breathe))
 
 
 # Blend the spine/head toward their upright rest, taking the "carrying weight"

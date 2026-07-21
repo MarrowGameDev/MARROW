@@ -58,6 +58,7 @@ func _ready() -> void:
 		_loco.time_scale = 1.0        # normal pace (not agile)
 		_loco.jump_lift_scale = 3.5   # boost the small character's hop to read well
 		_loco.uprightness = 0.3       # unhunch the heavy mutant posture
+		_loco.idle_normalize = 0.7    # plain upright stand when idle
 
 	var span := _frame_camera(cc_model)
 	_cam_target = _char.global_position + Vector3(0, span * 0.45, 0)
