@@ -15,7 +15,6 @@ const WALK_DEMO := "res://scenes/locomotion_walk.tscn"
 const LAB := "res://scenes/locomotion_lab.tscn"
 const COMBAT := "res://scenes/locomotion_combat.tscn"
 const DETACH := "res://scenes/detach_experiment.tscn"
-const SKELETON_WALK := "res://scenes/skeleton_walk.tscn"
 const SKELETON_LOCO := "res://scenes/skeleton_locomotion.tscn"
 
 
@@ -31,8 +30,6 @@ func _input(event: InputEvent) -> void:
 		_open(COMBAT)
 	elif key.keycode == KEY_H:
 		_open(DETACH)
-	elif key.keycode == KEY_J:
-		_open(SKELETON_WALK)
 	elif key.keycode == KEY_K:
 		_open(SKELETON_LOCO)
 
