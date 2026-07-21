@@ -8,7 +8,9 @@ extends Node3D
 const CC_SCENE: PackedScene = preload("res://assets/godot_skeleton_experiment.glb")
 const CLIPS := {
 	"idle": "res://assets/mutant_breathing_idle.fbx",
-	"walk": "res://assets/walking.fbx",
+	# mutant_walking is a clean loop (start == end); the human walking.fbx is not
+	# authored as a loop and snapped ~40deg at the seam.
+	"walk": "res://assets/mutant_walking.fbx",
 	"turn_l": "res://assets/mutant_left_turn.fbx",
 	"turn_r": "res://assets/mutant_right_turn.fbx",
 	"jump": "res://assets/mutant_jumping.fbx",
