@@ -7,7 +7,7 @@ extends Node3D
 # Open scenes/skeleton_locomotion.tscn and run it (F6), or press K in a build.
 
 const CC_SCENE: PackedScene = preload("res://assets/godot_skeleton_experiment.glb")
-const LIB_SCENE: PackedScene = preload("res://assets/animation_library.glb")
+const LIB_SCENE: PackedScene = preload("res://assets/walking.fbx")
 const WALK_SPEED := 1.4
 const TURN_RATE := 2.2
 
@@ -46,7 +46,8 @@ func _ready() -> void:
 	for mi in _meshes(lib):
 		mi.visible = false              # source only drives bones
 	if cc_skel != null:
-		_loco = RetargetedLocomotion.new(lib, cc_skel, self, "Idle_No", "Walk_Carry")
+		_loco = RetargetedLocomotion.new(lib, cc_skel, self, "mixamo_com", "mixamo_com")
+		_loco.natural_arms = false   # the Mixamo walk already has proper arm swing
 
 	var span := _frame_camera(cc_model)
 	_cam_target = _char.global_position + Vector3(0, span * 0.45, 0)

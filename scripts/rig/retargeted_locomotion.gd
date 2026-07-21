@@ -60,8 +60,10 @@ func update(delta: float, speed_ratio: float) -> void:
 	_blend = clampf(speed_ratio, 0.0, 1.0)
 	tree.set("parameters/blend_position", _blend)
 	tree.advance(delta)
-	retargeter.apply()
-	if natural_arms:
+	# weight = speed: at rest the CC blends back to a stand, at full speed it's the
+	# full walk (lets a single walk clip double as its own idle).
+	retargeter.apply(_blend)
+	if natural_arms and _blend > 0.02:
 		_override_arms()
 
 
