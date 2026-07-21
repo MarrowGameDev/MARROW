@@ -65,6 +65,7 @@ func _process(delta: float) -> void:
 	_speed_ratio = lerpf(_speed_ratio, 1.0 if walking else 0.0, 1.0 - exp(-8.0 * delta))
 
 	_loco.update(delta, _speed_ratio)
+	_loco.ground(_char)
 
 	_char.rotation.y = _facing_yaw
 	# The CC model's own forward is +X, so move along the character's basis X —
