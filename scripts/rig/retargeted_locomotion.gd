@@ -43,13 +43,13 @@ func _init(clip_paths: Dictionary, cc_skeleton: Skeleton3D, tree_parent: Node) -
 	var ap: AnimationPlayer = src["ap"]
 	_build_tree(ap, tree_parent)
 	retargeter = SkeletonRetargeter.new(src["skel"], cc_skeleton)
-	_foot_l = cc_skeleton.find_bone("CC_Base_L_Foot")
-	_foot_r = cc_skeleton.find_bone("CC_Base_R_Foot")
+	_foot_l = _fb(cc_skeleton, "CC_Base_L_Foot")
+	_foot_r = _fb(cc_skeleton, "CC_Base_R_Foot")
 	_src = src["skel"]
 	_src_hips = _src.find_bone("mixamorig_Hips")
 	if _src_hips >= 0:
 		_src_hips_rest_y = _rest_y(_src, _src_hips)
-		var cc_hips := cc_skeleton.find_bone("CC_Base_Hip")
+		var cc_hips := _fb(cc_skeleton, "CC_Base_Hip")
 		var cc_y := _rest_y(cc_skeleton, cc_hips) if cc_hips >= 0 else _src_hips_rest_y
 		_root_scale = cc_y / _src_hips_rest_y if absf(_src_hips_rest_y) > 0.0001 else 1.0
 
@@ -142,7 +142,7 @@ func update(delta: float, speed_ratio: float) -> void:
 # hunch out of the clip without changing its timing.
 func _lighten_posture() -> void:
 	for bone_name in _SPINE:
-		var b := _dst.find_bone(bone_name)
+		var b := _fb(_dst, bone_name)
 		if b < 0:
 			continue
 		var rest := Quaternion(_dst.get_bone_rest(b).basis.orthonormalized())
@@ -221,6 +221,14 @@ func _skel(n: Node) -> Skeleton3D:
 		if f != null:
 			return f
 	return null
+
+
+# Resolve a CC bone name with or without the "CC_Base_" prefix.
+func _fb(skel: Skeleton3D, name: String) -> int:
+	var b := skel.find_bone(name)
+	if b < 0:
+		b = skel.find_bone(name.trim_prefix("CC_Base_"))
+	return b
 
 
 func _rest_y(skel: Skeleton3D, bone: int) -> float:

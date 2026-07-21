@@ -5,7 +5,7 @@ extends Node3D
 #
 # Open scenes/skeleton_locomotion.tscn and run it (F6), or press K in a build.
 
-const CC_SCENE: PackedScene = preload("res://assets/godot_skeleton_experiment.glb")
+const CC_SCENE: PackedScene = preload("res://assets/main_character.glb")
 const CLIPS := {
 	"idle": "res://assets/mutant_breathing_idle.fbx",
 	# mutant_walking is a clean loop (start == end); the human walking.fbx is not

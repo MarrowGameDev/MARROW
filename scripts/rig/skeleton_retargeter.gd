@@ -69,7 +69,7 @@ func _init(source: Skeleton3D, target: Skeleton3D) -> void:
 	var map: Dictionary = s["map"]
 	for sname in map:
 		var sb := src_skel.find_bone(sname)
-		var db := dst_skel.find_bone(map[sname])
+		var db := _fb(dst_skel, map[sname])
 		if sb < 0 or db < 0:
 			continue
 		_pairs.append({
@@ -111,11 +111,20 @@ func _detect_scheme() -> String:
 	return ""
 
 
+# Resolve a CC bone name with or without the "CC_Base_" prefix, so the same map
+# drives both the CC_Base_* skeleton and the newer prefix-less character rig.
+func _fb(skel: Skeleton3D, name: String) -> int:
+	var b := skel.find_bone(name)
+	if b < 0:
+		b = skel.find_bone(name.trim_prefix("CC_Base_"))
+	return b
+
+
 func _anatomy_frame(skel: Skeleton3D, hips: String, head: String, thigh_l: String, thigh_r: String) -> Basis:
-	var hip_p := _rest_global(skel, skel.find_bone(hips)).origin
-	var head_p := _rest_global(skel, skel.find_bone(head)).origin
-	var lthigh := _rest_global(skel, skel.find_bone(thigh_l)).origin
-	var rthigh := _rest_global(skel, skel.find_bone(thigh_r)).origin
+	var hip_p := _rest_global(skel, _fb(skel, hips)).origin
+	var head_p := _rest_global(skel, _fb(skel, head)).origin
+	var lthigh := _rest_global(skel, _fb(skel, thigh_l)).origin
+	var rthigh := _rest_global(skel, _fb(skel, thigh_r)).origin
 	var y := (head_p - hip_p).normalized()
 	var x := (lthigh - rthigh).normalized()
 	var z := x.cross(y).normalized()
