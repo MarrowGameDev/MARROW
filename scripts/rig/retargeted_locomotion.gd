@@ -38,8 +38,12 @@ func _init(source_model: Node, cc_skeleton: Skeleton3D, tree_parent: Node,
 	var blend := AnimationNodeBlendSpace1D.new()
 	var idle_node := AnimationNodeAnimation.new()
 	idle_node.animation = idle_clip
+	idle_node.loop_mode = Animation.LOOP_LINEAR
 	var walk_node := AnimationNodeAnimation.new()
 	walk_node.animation = walk_clip
+	# The tree node's own loop_mode wins over the clip's, so set both or the walk
+	# plays once and snaps back.
+	walk_node.loop_mode = Animation.LOOP_LINEAR
 	blend.add_blend_point(idle_node, 0.0)
 	blend.add_blend_point(walk_node, 1.0)
 
