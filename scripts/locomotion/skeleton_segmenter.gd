@@ -39,7 +39,6 @@ var _cap_material: StandardMaterial3D = null
 # bone. Respects the artist's separation and needs no caps (the parts are already
 # open at the joints), so detaching a limb keeps each part intact.
 var whole_parts := false
-const WHOLE_PART_MIN := 0.85          # keep a part whole only if this fraction is one limb
 
 
 func _init(skel: Skeleton3D, body: Node3D, debris: Node3D) -> void:
@@ -130,23 +129,30 @@ func _split_surface(arrays: Array, s_of_bind: Array, bone_of_bind: Array, materi
 		nrm[v] = n.normalized() if n.length() > 0.0001 else Vector3.UP
 		seg[v] = best_seg
 
-	# Whole-part mode: if this artist-authored part sits almost entirely in ONE
-	# limb, keep it intact (send every triangle there, no re-mesh, no cap). Parts
-	# that straddle a joint — the "hips" (both thighs + pelvis) or a combined
-	# thigh+calf "leg" mesh — fall back to the per-triangle split so the cut still
-	# lands at the joint instead of the whole part flying off with one side.
+	# Whole-part mode: keep each artist-authored part intact — send every triangle
+	# to the ONE limb it mostly weights to, never splitting the mesh. The lone
+	# exception is a part that BRIDGES a left/right mirror pair (the pelvis "hips"
+	# mesh spans both thighs): it belongs to neither side, so it stays with the
+	# core instead of flying off with one leg.
 	var forced_seg := ""
 	if whole_parts:
 		var counts: Dictionary = {}
+		var left := 0
+		var right := 0
 		var best_c := 0
 		for v in range(vcount):
-			var c: int = counts.get(seg[v], 0) + 1
-			counts[seg[v]] = c
+			var sv := seg[v]
+			var c: int = counts.get(sv, 0) + 1
+			counts[sv] = c
+			if sv.begins_with("l_"):
+				left += 1
+			elif sv.begins_with("r_"):
+				right += 1
 			if c > best_c:
 				best_c = c
-				forced_seg = seg[v]
-		if float(best_c) / float(vcount) < WHOLE_PART_MIN:
-			forced_seg = ""
+				forced_seg = sv
+		if left > vcount * 0.25 and right > vcount * 0.25:
+			forced_seg = CORE   # bridges both sides -> stays with the torso
 
 	# Vote each triangle to a segment. Also record CUT-boundary edges — an edge
 	# whose two triangles landed in different segments — so those loops can be
