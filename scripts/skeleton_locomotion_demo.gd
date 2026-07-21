@@ -16,8 +16,8 @@ const CLIPS := {
 	"jump": "res://assets/mutant_jumping.fbx",
 	"attack": "res://assets/mutant_swiping.fbx",
 }
-const WALK_SPEED := 2.0   # quicker, lighter gait
-const TURN_RATE := 3.0
+const WALK_SPEED := 1.5
+const TURN_RATE := 2.5
 
 var _loco: RetargetedLocomotion
 var _char: Node3D
@@ -51,8 +51,9 @@ func _ready() -> void:
 
 	if cc_skel != null:
 		_loco = RetargetedLocomotion.new(CLIPS, cc_skel, self)
-		_loco.time_scale = 1.3        # quicker cadence = lighter
-		_loco.jump_lift_scale = 1.7   # floatier, higher hop
+		_loco.time_scale = 1.0        # normal pace (not agile)
+		_loco.jump_lift_scale = 1.4   # a touch floatier
+		_loco.uprightness = 0.3       # unhunch the heavy mutant posture
 
 	var span := _frame_camera(cc_model)
 	_cam_target = _char.global_position + Vector3(0, span * 0.45, 0)

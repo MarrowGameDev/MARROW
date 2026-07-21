@@ -19,10 +19,13 @@ var _dst: Skeleton3D
 var _foot_l := -1
 var _foot_r := -1
 var _states: Dictionary = {}     # state -> true if present
-# "Lightness" knobs: play everything a bit faster and jump a bit floatier so a
-# light skeleton doesn't move like the heavy mutant the clips were made for.
+# "Lightness" knobs (weight, not speed): jump a touch floatier, and unhunch the
+# spine/head toward upright so a light skeleton doesn't carry the mutant's weight.
 var time_scale := 1.0
 var jump_lift_scale := 1.0
+var uprightness := 0.0                # 0 = raw clip, 1 = fully upright spine
+const _SPINE := ["CC_Base_Waist", "CC_Base_Spine01", "CC_Base_Spine02",
+	"CC_Base_NeckTwist01", "CC_Base_Head"]
 
 # Jump vertical: the retarget copies only rotations, so the hop is taken from the
 # source hips' own root motion (Y), scaled to the CC's hip height.
@@ -123,8 +126,21 @@ func update(delta: float, speed_ratio: float) -> void:
 	tree.set("parameters/move/blend_amount", clampf(speed_ratio, 0.0, 1.0))
 	tree.advance(delta * time_scale)
 	retargeter.apply()
+	if uprightness > 0.0:
+		_lighten_posture()
 	if _jump_timer > 0.0:
 		_jump_timer = maxf(0.0, _jump_timer - delta * time_scale)
+
+
+# Blend the spine/head toward their upright rest, taking the "carrying weight"
+# hunch out of the clip without changing its timing.
+func _lighten_posture() -> void:
+	for bone_name in _SPINE:
+		var b := _dst.find_bone(bone_name)
+		if b < 0:
+			continue
+		var rest := Quaternion(_dst.get_bone_rest(b).basis.orthonormalized())
+		_dst.set_bone_pose_rotation(b, _dst.get_bone_pose_rotation(b).slerp(rest, uprightness))
 
 
 func trigger_jump() -> void:
