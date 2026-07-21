@@ -27,6 +27,14 @@ var _has_backward := false
 var time_scale := 1.0
 var jump_lift_scale := 1.0
 var jump_lead_trim := 0.0             # seconds of dead wind-up trimmed off the jump clip
+# When true, cancel the hips' yaw (rotation about world up) from the retargeted
+# pose each frame, so a clip that turns the whole body — the turn-180 — supplies
+# only its in-place leg pivot and the CALLER drives the actual heading (via the
+# character root). Without this, the clip's turn and the root's turn fight and the
+# mesh snaps at the one-shot handoff.
+var suppress_root_yaw := false
+var _hips := -1
+var _hips_rest_basis := Basis()
 var uprightness := 0.0                # 0 = raw clip, 1 = fully upright spine
 const _SPINE := ["CC_Base_Waist", "CC_Base_Spine01", "CC_Base_Spine02",
 	"CC_Base_NeckTwist01", "CC_Base_Head"]
@@ -59,6 +67,9 @@ func _init(clip_paths: Dictionary, cc_skeleton: Skeleton3D, tree_parent: Node, l
 	retargeter = SkeletonRetargeter.new(src["skel"], cc_skeleton)
 	_foot_l = _fb(cc_skeleton, "CC_Base_L_Foot")
 	_foot_r = _fb(cc_skeleton, "CC_Base_R_Foot")
+	_hips = _fb(cc_skeleton, "CC_Base_Hip")
+	if _hips >= 0:
+		_hips_rest_basis = _rest_basis(cc_skeleton, _hips)
 	_src = src["skel"]
 	_src_hips = _src.find_bone("mixamorig_Hips")
 	if _src_hips >= 0:
@@ -172,6 +183,8 @@ func update(delta: float, speed_ratio: float, backward: float = 0.0) -> void:
 		tree.set("parameters/back/blend_amount", clampf(backward, 0.0, 1.0))
 	tree.advance(delta * time_scale)
 	retargeter.apply()
+	if suppress_root_yaw and _hips >= 0:
+		_strip_hips_yaw()
 	if uprightness > 0.0:
 		_lighten_posture()
 	_idle_time += delta
@@ -183,6 +196,28 @@ func update(delta: float, speed_ratio: float, backward: float = 0.0) -> void:
 			_normalize_idle(amt * idle_normalize)
 	if _jump_timer > 0.0:
 		_jump_timer = maxf(0.0, _jump_timer - delta * time_scale)
+
+
+# Remove the hips' rotation about world up (its yaw delta from rest), keeping its
+# tilt/lean, so the body stops turning FROM the clip — the caller turns the root
+# instead. Swing-twist decomposition about UP isolates the yaw to cancel.
+func _strip_hips_yaw() -> void:
+	var par := _dst.get_bone_parent(_hips)
+	var parent_basis: Basis = _dst.get_bone_global_pose(par).basis if par >= 0 else Basis()
+	var gb := _dst.get_bone_global_pose(_hips).basis.orthonormalized()
+	var q := (gb * _hips_rest_basis.inverse()).get_rotation_quaternion()   # world delta from rest
+	var twist := _twist(q, Vector3.UP)                                     # its yaw part
+	var new_gb := Basis(twist.inverse() * q) * _hips_rest_basis            # yaw removed
+	_dst.set_bone_pose_rotation(_hips, (parent_basis.inverse() * new_gb).get_rotation_quaternion())
+
+
+# Twist component of q about `axis` (swing-twist decomposition).
+func _twist(q: Quaternion, axis: Vector3) -> Quaternion:
+	var a := axis.normalized()
+	var proj := a * Vector3(q.x, q.y, q.z).dot(a)
+	var t := Quaternion(proj.x, proj.y, proj.z, q.w)
+	var n := t.length()
+	return t / n if n > 0.0001 else Quaternion.IDENTITY
 
 
 func _oneshot_active() -> bool:
@@ -383,6 +418,18 @@ func _pose_diff(anim: Animation, t0: float, t1: float) -> float:
 		if anim.track_get_type(ti) == Animation.TYPE_ROTATION_3D:
 			s += anim.rotation_track_interpolate(ti, t0).angle_to(anim.rotation_track_interpolate(ti, t1))
 	return s
+
+
+func _rest_basis(skel: Skeleton3D, bone: int) -> Basis:
+	var xf := Transform3D()
+	var b := bone
+	var chain: Array = []
+	while b >= 0:
+		chain.append(b)
+		b = skel.get_bone_parent(b)
+	for i in range(chain.size() - 1, -1, -1):
+		xf = xf * skel.get_bone_rest(chain[i])
+	return xf.basis.orthonormalized()
 
 
 func _rest_y(skel: Skeleton3D, bone: int) -> float:

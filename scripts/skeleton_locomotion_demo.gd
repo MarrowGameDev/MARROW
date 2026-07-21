@@ -23,13 +23,13 @@ const WALK_SPEED := 1.6   # movement at full-walk blend (0.5)
 const RUN_SPEED := 3.4    # movement at full-run blend (1.0)
 const BACK_SPEED := 1.5
 const TURN_RATE := 2.5
-# The turn-180 clip itself turns the mesh a full 180 (its hips rotation is
-# retargeted onto the character). So we DON'T rotate facing during the clip —
-# that just fights the clip and cancels out (the old "cut halfway" bug). Instead,
-# as the one-shot fades back to the base pose, we ramp facing to hold the new
-# heading, so the mesh's world orientation stays put through the handoff.
-const TURN180_CLIP := 0.667      # running_turn180 clip length
-const TURN180_FADE := 0.12       # matches the one-shot fadeout_time
+# Turn-180: the clip's own body turn is SUPPRESSED (suppress_root_yaw), leaving
+# just its in-place leg pivot, and we rotate the heading smoothly ourselves over
+# the clip. So the clip pose and the base pose both face the same way — no fight,
+# no handoff snap (the old "looks back then returns" was the clip's turn and the
+# root's turn cancelling, then the base pose snapping in).
+const TURN180_DURATION := 0.667  # rotate the heading over the clip's length
+const TURN180_SETTLE := 0.15     # hold the suppression a touch past the turn
 
 var _loco: RetargetedLocomotion
 var _char: Node3D
@@ -38,8 +38,8 @@ var _facing_yaw := 0.0
 var _jump_launch_speed := 0.0   # gait speed at takeoff, held through the jump
 var _base_forward := Vector3(0, 0, 1)   # the character's own forward (from its rig)
 var _backward := 0.0
-var _turn180_clip := 0.0   # counts down the clip (mesh turns via the clip here)
-var _turn180_fade := 0.0   # counts down the fadeout (ramp facing to hold the turn)
+var _turn180_t := -1.0     # >=0 while a turn-180 is in progress
+var _turn180_from := 0.0   # heading captured when the turn started
 
 # orbit follow camera
 var _cam: Camera3D
@@ -90,15 +90,13 @@ func _process(delta: float) -> void:
 		_facing_yaw += delta * TURN_RATE
 	if Input.is_key_pressed(KEY_D):
 		_facing_yaw -= delta * TURN_RATE
-	if _turn180_clip > 0.0:
-		_turn180_clip -= delta                  # clip is turning the mesh; don't fight it
-		if _turn180_clip <= 0.0:
-			_turn180_fade = TURN180_FADE
-	elif _turn180_fade > 0.0:
-		# As the clip fades out its 180, rotate facing in lock-step so the mesh's
-		# world heading holds and the base pose lands already turned.
-		_facing_yaw -= (PI / TURN180_FADE) * delta
-		_turn180_fade -= delta
+	if _turn180_t >= 0.0:
+		_turn180_t += delta
+		var p := clampf(_turn180_t / TURN180_DURATION, 0.0, 1.0)
+		_facing_yaw = _turn180_from - PI * smoothstep(0.0, 1.0, p)   # smooth, monotonic
+		if _turn180_t >= TURN180_DURATION + TURN180_SETTLE:
+			_loco.suppress_root_yaw = false     # hand the hips back to the gait
+			_turn180_t = -1.0
 
 	var running := Input.is_key_pressed(KEY_SHIFT)
 	var fwd_in := Input.is_key_pressed(KEY_W)
@@ -153,9 +151,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_loco.trigger_jump()
 	elif key.keycode == KEY_E:
 		_loco.trigger_attack()
-	elif key.keycode == KEY_Q and _turn180_clip <= 0.0 and _turn180_fade <= 0.0:
+	elif key.keycode == KEY_Q and _turn180_t < 0.0:
 		_loco.trigger_turn180()
-		_turn180_clip = TURN180_CLIP        # let the clip turn the mesh; hold on fadeout
+		_loco.suppress_root_yaw = true      # clip supplies the leg pivot; we turn the heading
+		_turn180_from = _facing_yaw
+		_turn180_t = 0.0
 	elif key.keycode == KEY_A and _speed_ratio < 0.25:
 		_loco.trigger_turn(true)
 	elif key.keycode == KEY_D and _speed_ratio < 0.25:
