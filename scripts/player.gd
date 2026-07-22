@@ -19,6 +19,8 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 # and whole-body hits). Tune live in the Inspector; the shape rebuilds on change.
 @export var body_collision_radius: float = 0.4: set = _set_body_collision_radius
 @export var body_collision_height: float = 1.6: set = _set_body_collision_height
+# Draw the capsule as a translucent shape so you can SEE the player hitbox in-game.
+@export var show_body_hitbox: bool = false: set = _set_show_body_hitbox
 @export_group("")
 @export var base_attack_range: float = 2.0
 @export var base_attack_damage: int = 1
@@ -254,6 +256,12 @@ func _set_body_collision_height(v: float) -> void:
 		_apply_body_collision()
 
 
+func _set_show_body_hitbox(v: bool) -> void:
+	show_body_hitbox = v
+	if is_inside_tree():
+		_apply_body_collision()
+
+
 func _apply_body_collision() -> void:
 	var cs := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if cs == null:
@@ -265,6 +273,23 @@ func _apply_body_collision() -> void:
 	dup.radius = body_collision_radius
 	dup.height = maxf(body_collision_height, body_collision_radius * 2.0)
 	cs.shape = dup
+	# Mirror the shape onto the (normally hidden) capsule mesh so it can be shown.
+	var mi := get_node_or_null("MeshInstance3D") as MeshInstance3D
+	if mi != null:
+		var cm := mi.mesh as CapsuleMesh
+		if cm == null:
+			cm = CapsuleMesh.new()
+			mi.mesh = cm
+		cm.radius = dup.radius
+		cm.height = dup.height
+		mi.visible = show_body_hitbox
+		if show_body_hitbox and mi.material_override == null:
+			var m := StandardMaterial3D.new()
+			m.albedo_color = Color(0.2, 0.9, 1.0, 0.28)
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mi.material_override = m
 
 
 func _spawn_torso_pickup() -> void:
