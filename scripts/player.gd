@@ -108,6 +108,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var start_as_head: bool = true
 @export var torso_pickup_offset: Vector3 = Vector3(0, 0, 2.5)
 @export var head_follower_scale: float = 2.6   # match the new skull to the rolling head socket
+@export var head_follower_lift: float = 0.25   # raise the skull so it rests ON the ground
 @export_group("")
 
 const TORSO_PICKUP_SCRIPT: Script = preload("res://scripts/torso_pickup.gd")
@@ -456,6 +457,7 @@ func _physics_process(delta: float) -> void:
 	# animator posed it this frame), so the new head keeps all the old animations.
 	if _head_follower != null and _head_socket != null and is_instance_valid(_head_socket):
 		_head_follower.global_transform = _head_socket.global_transform
+		_head_follower.global_position.y += head_follower_lift   # rest the skull on the ground
 
 
 func _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3:
