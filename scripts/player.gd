@@ -11,7 +11,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 # the legs can only express a 0.32 m stride, so speed IS foot speed. 2.6 puts
 # normal movement where the leap gait reads: ~0.19 s strides, full chest cycle.
 # (Author-directed 2026-07-16: "if needed, have the overall walking speed lower".)
-@export var base_move_speed: float = 2.1
+@export var base_move_speed: float = 3.2
 @export var sprint_multiplier: float = 1.55
 @export var jump_velocity: float = 8.5
 @export var base_attack_range: float = 2.0
