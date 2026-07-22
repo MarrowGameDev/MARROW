@@ -9,6 +9,9 @@
 [ext_resource type="PackedScene" path="res://scenes/open_world_stage.tscn" id="7_open_world_stage"]
 [ext_resource type="PackedScene" path="res://scenes/guide_wisp.tscn" id="8_guide_wisp"]
 [ext_resource type="Script" uid="uid://c4f5w67u7swm4" path="res://scripts/tutorial_island_builder.gd" id="9_tutorial_island"]
+[ext_resource type="PackedScene" path="res://assets/palm_tree_1.glb" id="10_palm1"]
+[ext_resource type="PackedScene" path="res://assets/palm_tree_2.glb" id="11_palm2"]
+[ext_resource type="PackedScene" path="res://assets/palm_tree_3.glb" id="12_palm3"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -207,3 +210,23 @@ dropped_bone_id = "rib_bone"
 
 [node name="ExitPortal" parent="." unique_id=1385022951 instance=ExtResource("5_exit_portal")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+
+[node name="Palms" type="Node3D" parent="."]
+
+[node name="Palm1" parent="Palms" instance=ExtResource("10_palm1")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 7, 1.93, 42)
+
+[node name="Palm2" parent="Palms" instance=ExtResource("11_palm2")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, -8, 1.85, 44)
+
+[node name="Palm3" parent="Palms" instance=ExtResource("12_palm3")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 11, 1.73, 47)
+
+[node name="Palm4" parent="Palms" instance=ExtResource("10_palm1")]
+transform = Transform3D(4.2, 0, 0, 0, 4.2, 0, 0, 0, 4.2, -6, 1.62, 36)
+
+[node name="Palm5" parent="Palms" instance=ExtResource("12_palm3")]
+transform = Transform3D(5.5, 0, 0, 0, 5.5, 0, 0, 0, 5.5, 4, 1.9, 48)
+
+[node name="Palm6" parent="Palms" instance=ExtResource("11_palm2")]
+transform = Transform3D(4.6, 0, 0, 0, 4.6, 0, 0, 0, 4.6, -12, 1.7, 34)
