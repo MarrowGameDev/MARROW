@@ -155,7 +155,8 @@ func _categorize_parts(model: Node) -> void:
 	_build_spine_detach()
 
 
-# Cache the spine vertebrae (bottom-to-top) so they can be spread apart mid-jump.
+# Cache the spine vertebrae (bottom-to-top) + the head so they can fly apart mid-
+# jump: the spine spreads and the whole skull pops up above it, then reassembles.
 func _build_spine_detach() -> void:
 	_spine_meshes.clear(); _spine_rest.clear(); _spine_dir.clear()
 	var items: Array = []
@@ -172,6 +173,12 @@ func _build_spine_detach() -> void:
 		var lat := (0.05 if i % 2 == 0 else -0.05) * (1.0 + i * 0.15)
 		var fwd := (0.03 if i % 3 == 0 else -0.03)
 		_spine_dir.append(Vector3(lat, 0.02 + i * spine_detach_spread, fwd))
+	# The head pops off as one piece, flying up above the top of the spread spine.
+	var head_lift := 0.02 + float(items.size()) * spine_detach_spread + 0.12
+	for mi in _head_meshes:
+		_spine_meshes.append(mi)
+		_spine_rest.append((mi as MeshInstance3D).position)
+		_spine_dir.append(Vector3(0.0, head_lift, 0.03))
 
 
 # 0 = assembled, 1 = fully flown apart. Drives the spine's mid-jump disassembly.
