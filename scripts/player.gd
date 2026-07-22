@@ -90,7 +90,15 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var finger_bone_cooldown: float = 0.55
 @export var finger_bone_throw_speed: float = 12.0
 @export var finger_bone_throw_gravity: float = 8.0
+@export_group("Assembly")
+# Start the run as just a head; the torso (ribs+spine+hips) lies on the floor as
+# a pickup that assembles onto the head when collected.
+@export var start_as_head: bool = true
+@export var torso_pickup_offset: Vector3 = Vector3(0, 0, 2.5)
 @export_group("")
+
+const TORSO_PICKUP_SCRIPT: Script = preload("res://scripts/torso_pickup.gd")
+var _torso_assembled: bool = false
 
 # These are the active stats the movement and attack code actually use.
 # They start from the base stats, then equipped bones can modify them.
@@ -206,6 +214,30 @@ func _ready() -> void:
 		GameEvents.inventory_changed.emit(self, inventory_component.get_inventory_items(), inventory_component.get_run_stats())
 	_setup_procedural_character()
 	_update_mouse_mode()
+	if start_as_head and retargeted_body != null:
+		retargeted_body.show_only_head()
+		call_deferred("_spawn_torso_pickup")
+
+
+# Drop the torso (ribs+spine+hips) on the floor in front of the start position.
+func _spawn_torso_pickup() -> void:
+	if _torso_assembled:
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var pickup: Node3D = TORSO_PICKUP_SCRIPT.new()
+	scene.add_child(pickup)
+	pickup.global_position = global_position + global_transform.basis * torso_pickup_offset
+
+
+# Called by the torso pickup when the head walks into it.
+func assemble_torso() -> void:
+	if _torso_assembled:
+		return
+	_torso_assembled = true
+	if retargeted_body != null:
+		retargeted_body.reveal_torso()
 
 
 func _input(event: InputEvent) -> void:

@@ -32,6 +32,13 @@ const CLIPS := {
 @export var aim_arm_left: bool = true
 @export var aim_upper_deg: float = 88.0    # lift the upper arm to point forward
 @export var aim_fore_deg: float = 0.0      # forearm straighten
+# Assembly: start showing only the head, then reveal the torso (ribs+spine+hips)
+# when it's picked up. Limbs stay hidden until later. Each partial state drops the
+# body so the visible bottom sits near the ground (a head on the floor, then the
+# ribcage building up), instead of floating at full standing height.
+@export var start_as_head: bool = false
+@export var head_only_y: float = -2.05     # skull rests near the floor
+@export var head_torso_y: float = -1.5     # hips near the floor, head above
 
 var _loco: RetargetedLocomotion
 var _body: Node3D
@@ -41,6 +48,9 @@ var _backward := 0.0
 var _aiming := false
 var _aim_weight := 0.0
 var _disabled := false
+var _head_meshes: Array = []
+var _torso_meshes: Array = []
+var _limb_meshes: Array = []
 
 
 func _ready() -> void:
@@ -63,6 +73,10 @@ func _ready() -> void:
 	_body = _find_body(self)
 	if hide_sibling_rig:
 		_hide_old_rig()
+
+	_categorize_parts(model)
+	if start_as_head:
+		show_only_head()
 
 
 func _process(delta: float) -> void:
@@ -116,6 +130,64 @@ func set_aiming(enabled: bool) -> void:
 
 func skeleton() -> Skeleton3D:
 	return _find_skeleton(_model) if _model != null else null
+
+
+# ---- body-part assembly (head -> +torso) --------------------------------------
+
+# Sort the character's authored part-meshes into head / torso / limbs by name.
+func _categorize_parts(model: Node) -> void:
+	_head_meshes.clear(); _torso_meshes.clear(); _limb_meshes.clear()
+	for mi in _all_meshes(model):
+		var n := String(mi.name).to_lower()
+		if "skull" in n or "teeth" in n or "head" in n or "neck" in n or "jaw" in n:
+			_head_meshes.append(mi)
+		elif "rib" in n or "spine" in n or "hip" in n or "solar" in n or "shoulder" in n or "pelvis" in n:
+			_torso_meshes.append(mi)
+		else:
+			_limb_meshes.append(mi)
+
+
+func show_only_head() -> void:
+	_set_visible(_head_meshes, true)
+	_set_visible(_torso_meshes, false)
+	_set_visible(_limb_meshes, false)
+	position.y = head_only_y
+
+
+func reveal_torso() -> void:
+	_set_visible(_torso_meshes, true)
+	position.y = head_torso_y
+
+
+func show_all_parts() -> void:
+	_set_visible(_head_meshes, true)
+	_set_visible(_torso_meshes, true)
+	_set_visible(_limb_meshes, true)
+	position.y = foot_offset_y
+
+
+# The head/torso meshes only (used to build the floor pickup's visual).
+func head_mesh_names() -> Array:
+	return _head_meshes.map(func(m): return String(m.name))
+
+
+func torso_mesh_names() -> Array:
+	return _torso_meshes.map(func(m): return String(m.name))
+
+
+func _set_visible(meshes: Array, v: bool) -> void:
+	for m in meshes:
+		if is_instance_valid(m):
+			(m as MeshInstance3D).visible = v
+
+
+func _all_meshes(n: Node) -> Array:
+	var out: Array = []
+	if n is MeshInstance3D:
+		out.append(n)
+	for c in n.get_children():
+		out.append_array(_all_meshes(c))
+	return out
 
 
 # Turn this body OFF and restore the original procedural rig — used for enemy
