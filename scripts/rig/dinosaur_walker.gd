@@ -18,6 +18,10 @@ const MODEL: PackedScene = preload("res://assets/dinosaur.glb")
 @export var duty: float = 0.65             # fraction of the cycle a foot is planted
 @export var body_bob: float = 0.015        # vertical body sway
 @export var auto_advance: float = 0.0      # >0: also translate this node forward (demo)
+@export var body_scale: float = 1.0        # scale the ~0.4m creature up for the game
+@export var ground_offset: float = 0.0     # drop so the feet sit at the body's feet
+@export var drive_from_body: bool = false  # derive speed_ratio from the owner's velocity
+@export var run_speed: float = 3.0         # velocity that maps to full cadence
 
 # leg id -> {bones:[hip,j1,j2,foot], phase, side}. Diagonal gait: front-left pairs
 # with back-right (phase 0); front-right with back-left (phase 0.5).
@@ -34,15 +38,22 @@ var _root_bone := -1
 var _root_rest_y := 0.0
 var _t := 0.0
 var _speed_ratio := 1.0             # 0..1, set by the owner (0 = stand)
+var _body: Node3D
 
 
 func _ready() -> void:
+	if body_scale != 1.0:
+		scale = Vector3.ONE * body_scale
+	if ground_offset != 0.0:
+		position.y = ground_offset
 	var model := MODEL.instantiate()
 	add_child(model)
 	_skel = _find_skeleton(model)
 	if _skel == null:
 		push_warning("DinosaurWalker: no skeleton")
 		return
+	if drive_from_body:
+		_body = _find_body(self)
 	_root_bone = _skel.find_bone("root")
 	if _root_bone >= 0:
 		_root_rest_y = _skel.get_bone_pose_position(_root_bone).y
@@ -70,7 +81,12 @@ func set_speed_ratio(r: float) -> void:
 func _process(delta: float) -> void:
 	if _skel == null or _legs.is_empty():
 		return
-	_t += delta * cycle_hz * _speed_ratio
+	if _body != null:
+		var vv: Variant = _body.get("velocity")
+		if vv is Vector3:
+			var flat := Vector3(vv.x, 0.0, vv.z)
+			_speed_ratio = clampf(flat.length() / maxf(run_speed, 0.01), 0.0, 1.0)
+	_t += delta * cycle_hz * maxf(_speed_ratio, 0.0)
 	if auto_advance > 0.0:
 		position += global_transform.basis.z * auto_advance * _speed_ratio * delta
 
@@ -133,6 +149,15 @@ func _pose_chain(bones: Array, pts: PackedVector3Array) -> void:
 
 func _bpos(bone: int) -> Vector3:
 	return _skel.get_bone_global_pose(bone).origin
+
+
+func _find_body(n: Node) -> Node3D:
+	var p := n.get_parent()
+	while p != null:
+		if p is CharacterBody3D:
+			return p as Node3D
+		p = p.get_parent()
+	return null
 
 
 func _find_skeleton(n: Node) -> Skeleton3D:

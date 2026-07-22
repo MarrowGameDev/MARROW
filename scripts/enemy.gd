@@ -232,6 +232,10 @@ func _ready() -> void:
 			retargeted_body.disable()
 		else:
 			retargeted_body.set_body_tint(normal_color)
+	# Lizards become the procedural quadruped dinosaur skeleton (spawned only for
+	# lizards so other enemies don't load the dino mesh).
+	if lizard_profile_active:
+		_setup_dino_visual()
 	_update_health_label()
 	_build_vision_cone()
 	_set_player_visible(false, true)
@@ -1825,6 +1829,21 @@ func _set_enemy_color(new_color: Color) -> void:
 
 	enemy_material.albedo_color = new_color
 	_set_rig_color(new_color)
+
+
+# Replace the lizard's procedural rig with the quadruped dinosaur skeleton, driven
+# by the enemy's velocity. Hides the modular rig (its logic still runs underneath).
+func _setup_dino_visual() -> void:
+	if visual_root == null:
+		return
+	var walker: Node3D = (load("res://scripts/rig/dinosaur_walker.gd")).new()
+	walker.name = "DinosaurWalker"
+	walker.drive_from_body = true
+	walker.body_scale = 1.6
+	walker.ground_offset = -0.6
+	visual_root.add_child(walker)
+	if rig != null:
+		rig.visible = false
 
 
 func _setup_procedural_character() -> void:
