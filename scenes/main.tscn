@@ -9,9 +9,9 @@
 [ext_resource type="PackedScene" path="res://scenes/open_world_stage.tscn" id="7_open_world_stage"]
 [ext_resource type="PackedScene" path="res://scenes/guide_wisp.tscn" id="8_guide_wisp"]
 [ext_resource type="Script" uid="uid://c4f5w67u7swm4" path="res://scripts/tutorial_island_builder.gd" id="9_tutorial_island"]
-[ext_resource type="PackedScene" path="res://assets/palm_tree_1.glb" id="10_palm1"]
-[ext_resource type="PackedScene" path="res://assets/palm_tree_2.glb" id="11_palm2"]
-[ext_resource type="PackedScene" path="res://assets/palm_tree_3.glb" id="12_palm3"]
+[ext_resource type="PackedScene" path="res://scenes/palm_tree_1.tscn" id="10_palm1"]
+[ext_resource type="PackedScene" path="res://scenes/palm_tree_2.tscn" id="11_palm2"]
+[ext_resource type="PackedScene" path="res://scenes/palm_tree_3.tscn" id="12_palm3"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
