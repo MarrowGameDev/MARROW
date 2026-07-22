@@ -14,6 +14,12 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var base_move_speed: float = 3.2
 @export var sprint_multiplier: float = 1.55
 @export var jump_velocity: float = 8.5
+@export_group("Player hitbox")
+# The player's OWN body collision capsule (its physical hitbox — walls, ground,
+# and whole-body hits). Tune live in the Inspector; the shape rebuilds on change.
+@export var body_collision_radius: float = 0.4: set = _set_body_collision_radius
+@export var body_collision_height: float = 1.6: set = _set_body_collision_height
+@export_group("")
 @export var base_attack_range: float = 2.0
 @export var base_attack_damage: int = 1
 
@@ -219,6 +225,7 @@ func _ready() -> void:
 		GameEvents.inventory_changed.emit(self, inventory_component.get_inventory_items(), inventory_component.get_run_stats())
 	_setup_procedural_character()
 	_update_mouse_mode()
+	_apply_body_collision()
 	if start_as_head and retargeted_body != null:
 		# Drive the new skull from the old rig's rolling head socket, so it keeps
 		# the original head roll/hop/attack animations while head-only.
@@ -233,6 +240,33 @@ func _ready() -> void:
 
 
 # Drop the torso (ribs+spine+hips) on the floor in front of the start position.
+# Rebuild the player's collision capsule from the exported size (duplicated so a
+# shared sub-resource isn't mutated).
+func _set_body_collision_radius(v: float) -> void:
+	body_collision_radius = maxf(v, 0.05)
+	if is_inside_tree():
+		_apply_body_collision()
+
+
+func _set_body_collision_height(v: float) -> void:
+	body_collision_height = maxf(v, 0.1)
+	if is_inside_tree():
+		_apply_body_collision()
+
+
+func _apply_body_collision() -> void:
+	var cs := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if cs == null:
+		return
+	var cap := cs.shape as CapsuleShape3D
+	if cap == null:
+		return
+	var dup := cap.duplicate() as CapsuleShape3D
+	dup.radius = body_collision_radius
+	dup.height = maxf(body_collision_height, body_collision_radius * 2.0)
+	cs.shape = dup
+
+
 func _spawn_torso_pickup() -> void:
 	if _torso_assembled:
 		return
