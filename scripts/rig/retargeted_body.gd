@@ -139,10 +139,12 @@ func _categorize_parts(model: Node) -> void:
 	_head_meshes.clear(); _torso_meshes.clear(); _limb_meshes.clear()
 	for mi in _all_meshes(model):
 		var n := String(mi.name).to_lower()
-		if "skull" in n or "teeth" in n or "head" in n or "neck" in n or "jaw" in n:
-			_head_meshes.append(mi)
-		elif "rib" in n or "spine" in n or "hip" in n or "solar" in n or "shoulder" in n or "pelvis" in n:
+		# Torso first: the neck/spine vertebrae belong to the body, not the skull
+		# (e.g. the "upper spine(neck" mesh), so they only appear with the torso.
+		if "rib" in n or "spine" in n or "hip" in n or "solar" in n or "shoulder" in n or "pelvis" in n or "neck" in n:
 			_torso_meshes.append(mi)
+		elif "skull" in n or "teeth" in n or "head" in n or "jaw" in n:
+			_head_meshes.append(mi)
 		else:
 			_limb_meshes.append(mi)
 

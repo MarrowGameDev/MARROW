@@ -24,7 +24,7 @@ func _ready() -> void:
 	# Show only the torso; hide head + limbs.
 	for mi in _meshes(model):
 		var n := String(mi.name).to_lower()
-		mi.visible = ("rib" in n or "spine" in n or "hip" in n or "solar" in n or "shoulder" in n or "pelvis" in n)
+		mi.visible = ("rib" in n or "spine" in n or "hip" in n or "solar" in n or "shoulder" in n or "pelvis" in n or "neck" in n)
 
 	# Pickup trigger volume.
 	var col := CollisionShape3D.new()
