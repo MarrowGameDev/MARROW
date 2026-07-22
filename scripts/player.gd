@@ -243,7 +243,7 @@ func _ready() -> void:
 			visual_root.add_child(_head_follower)
 		else:
 			retargeted_body.show_only_head()   # fallback: static skull, no roll
-		call_deferred("_spawn_torso_pickup")
+		_spawn_torso_pickup_deferred()
 
 
 # Drop the torso (ribs+spine+hips) on the floor in front of the start position.
@@ -303,6 +303,14 @@ func _apply_body_collision() -> void:
 			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			m.cull_mode = BaseMaterial3D.CULL_DISABLED
 			mi.material_override = m
+
+
+# The spawn system repositions the player AFTER _ready (from origin to its real
+# arena spot), so wait a beat before dropping the torso — otherwise it lands at the
+# old origin (out in the sea) 35 m from where the player actually starts.
+func _spawn_torso_pickup_deferred() -> void:
+	await get_tree().create_timer(0.4).timeout
+	_spawn_torso_pickup()
 
 
 func _spawn_torso_pickup() -> void:
