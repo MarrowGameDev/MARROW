@@ -122,6 +122,9 @@ var bow_visual: Node3D = null
 var bow_equipped: bool = false
 var bow_aiming: bool = false
 var bow_charge_time: float = 0.0
+# Finger-shooting: when NO bow is equipped, hold the ranged input to raise the
+# arm and aim, release to fire the finger bone. The finger regrows instantly.
+var finger_aiming: bool = false
 var aim_reticle_layer: CanvasLayer = null
 var aim_reticle_root: Control = null
 var aim_reticle_dot: ColorRect = null
@@ -160,6 +163,10 @@ var detached_camera_offset_carry_timer: float = 0.0
 @onready var visual_root: Node3D = $VisualRoot
 @onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
 @onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
+# New retargeted character visual (main_character.glb). Optional: null in scenes
+# that still use only the procedural rig. Locomotion self-drives from velocity;
+# attack/jump/aim are forwarded from here.
+@onready var retargeted_body: Node = get_node_or_null("VisualRoot/RetargetedBody")
 @onready var camera_controller: PlayerCameraController = $CameraPivot
 
 
@@ -264,11 +271,15 @@ func _physics_process(delta: float) -> void:
 	if _input_just_released("attack") and bow_aiming and not detached_torso_reattaching:
 		_release_bow_shot()
 	if _input_just_pressed("ranged_attack") and not bow_equipped and not detached_torso_reattaching:
-		_try_bow_shot()
+		_start_finger_aim()
+	if _input_just_released("ranged_attack") and finger_aiming and not detached_torso_reattaching:
+		_release_finger_shot()
 
 	# Space gives the player a clean hop. The floor check prevents air-jumping.
 	if _input_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
+		if retargeted_body != null:
+			retargeted_body.trigger_jump()
 
 	# If the player is in the air, build up downward speed over time.
 	# delta means "how much time passed since the last physics frame."
@@ -292,7 +303,9 @@ func _physics_process(delta: float) -> void:
 
 	# Tier 1D: remember the last direction we actually moved, so an attack while
 	# standing still still swings the way we were last heading.
-	if bow_aiming:
+	if bow_aiming or finger_aiming:
+		# Face the aim while aiming so you can strafe/backpedal (this is what makes
+		# the backward-walk read while aiming).
 		var aim_forward: Vector3 = _get_camera_forward_direction()
 		aim_forward.y = 0.0
 		if aim_forward.length() > 0.01:
@@ -381,6 +394,8 @@ func _try_attack() -> void:
 	var combo_step: int = _next_combo_animation_step()
 	if animator != null:
 		animator.trigger_attack(combo_step)
+	if retargeted_body != null:
+		retargeted_body.trigger_attack()
 
 	# Aim the swing in the direction the player last moved.
 	var forward := current_move_direction
@@ -636,8 +651,36 @@ func _start_bow_aim() -> void:
 	_update_aim_reticle_ui()
 	if animator != null and animator.has_method("set_aiming"):
 		animator.set_aiming(true)
+	if retargeted_body != null:
+		retargeted_body.set_aiming(true)
 	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
 		camera_controller.set_aim_zoom(true, bow_aim_zoom_distance)
+
+
+# Finger shooting (no bow): raise the arm and aim, then release to fire the finger.
+func _start_finger_aim() -> void:
+	if not bow_enabled or not can_shoot_bow or _head_launch_attack_input_blocked():
+		return
+	finger_aiming = true
+	if retargeted_body != null:
+		retargeted_body.set_aiming(true)
+	if animator != null and animator.has_method("set_aiming"):
+		animator.set_aiming(true)
+	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
+		camera_controller.set_aim_zoom(true, bow_aim_zoom_distance)
+
+
+func _release_finger_shot() -> void:
+	if not finger_aiming:
+		return
+	finger_aiming = false
+	if retargeted_body != null:
+		retargeted_body.set_aiming(false)
+	if animator != null and animator.has_method("set_aiming"):
+		animator.set_aiming(false)
+	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
+		camera_controller.set_aim_zoom(false)
+	_try_bow_shot()   # no-bow path fires the finger-bone projectile
 
 
 func _release_bow_shot() -> void:
@@ -659,6 +702,8 @@ func _cancel_bow_aim() -> void:
 	_set_aim_reticle_visible(false)
 	if animator != null and animator.has_method("set_aiming"):
 		animator.set_aiming(false)
+	if retargeted_body != null:
+		retargeted_body.set_aiming(false)
 	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
 		camera_controller.set_aim_zoom(false)
 
