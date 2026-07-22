@@ -189,6 +189,9 @@ const HIT_COLOR: Color = Color(1, 0.95, 0.45, 1)
 @onready var visual_root: Node3D = $VisualRoot
 @onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
 @onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
+# New skeleton-character visual for NORMAL enemies. Disabled for lizard/gorilla
+# variants, which keep their own proportioned rig (and get their own mesh).
+@onready var retargeted_body: Node = get_node_or_null("VisualRoot/RetargetedBody")
 
 
 # _ready runs once when this enemy enters the running scene.
@@ -223,6 +226,12 @@ func _ready() -> void:
 	if lizard_profile_active:
 		normal_color = lizard_body_color
 	_set_enemy_color(normal_color)
+	# Normal enemies wear the new skeleton character; special variants keep theirs.
+	if retargeted_body != null:
+		if lizard_profile_active or gorilla_profile_active:
+			retargeted_body.disable()
+		else:
+			retargeted_body.set_body_tint(normal_color)
 	_update_health_label()
 	_build_vision_cone()
 	_set_player_visible(false, true)
@@ -452,6 +461,8 @@ func _try_attack_player(player: Node) -> void:
 	_lunge()
 	if animator != null:
 		animator.trigger_attack()
+	if retargeted_body != null:
+		retargeted_body.trigger_attack()
 	if player.has_method("take_player_damage"):
 		player.take_player_damage(contact_damage, global_position)
 

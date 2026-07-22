@@ -40,6 +40,7 @@ var _speed := 0.0
 var _backward := 0.0
 var _aiming := false
 var _aim_weight := 0.0
+var _disabled := false
 
 
 func _ready() -> void:
@@ -65,7 +66,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _loco == null:
+	if _loco == null or _disabled:
 		return
 	var v := Vector3.ZERO
 	if _body != null:
@@ -100,12 +101,12 @@ func _process(delta: float) -> void:
 # ---- hooks forwarded from the owning body -------------------------------------
 
 func trigger_attack() -> void:
-	if _loco != null:
+	if _loco != null and not _disabled:
 		_loco.trigger_attack()
 
 
 func trigger_jump() -> void:
-	if _loco != null:
+	if _loco != null and not _disabled:
 		_loco.trigger_jump()
 
 
@@ -115,6 +116,32 @@ func set_aiming(enabled: bool) -> void:
 
 func skeleton() -> Skeleton3D:
 	return _find_skeleton(_model) if _model != null else null
+
+
+# Turn this body OFF and restore the original procedural rig — used for enemy
+# variants (lizard, gorilla) that keep their own visual.
+func disable() -> void:
+	_disabled = true
+	set_process(false)
+	if _model != null:
+		_model.queue_free()
+		_model = null
+	var vr := get_parent()
+	if vr != null:
+		for c in vr.get_children():
+			if c != self and c is Node3D and c.name != "ProceduralAnimator":
+				(c as Node3D).visible = true
+
+
+func is_disabled() -> bool:
+	return _disabled
+
+
+# Re-tint at runtime (enemies color their skeleton to read as hostile).
+func set_body_tint(c: Color) -> void:
+	body_tint = c
+	if _model != null:
+		_apply_tint(_model, c)
 
 
 # Blend the shooting arm up toward a forward point, by aim weight w.

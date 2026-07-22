@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy.gd" id="1_enemy_script"]
 [ext_resource type="Script" path="res://scripts/rig/modular_skeleton_rig.gd" id="2_rig"]
 [ext_resource type="Script" path="res://scripts/rig/procedural_enemy_animator.gd" id="3_anim"]
+[ext_resource type="Script" path="res://scripts/rig/retargeted_body.gd" id="4_retbody"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_enemy"]
 size = Vector3(1.0, 1.2, 1.0)
@@ -32,6 +33,10 @@ script = ExtResource("2_rig")
 
 [node name="ProceduralAnimator" type="Node3D" parent="VisualRoot"]
 script = ExtResource("3_anim")
+
+[node name="RetargetedBody" type="Node3D" parent="VisualRoot"]
+script = ExtResource("4_retbody")
+body_tint = Color(0.86, 0.4, 0.36, 1)
 
 [node name="VisionMesh" type="MeshInstance3D" parent="."]
 
