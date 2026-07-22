@@ -117,7 +117,9 @@ var _torso_assembled: bool = false
 # original head animations (roll/hop/attack) while the player is head-only.
 var _head_follower: Node3D = null
 var _head_socket: Node3D = null
-var _spine_detach: float = 0.0   # 0 grounded .. 1 airborne (spine flown apart)
+@export var swirl_spin_speed: float = 9.0   # tornado spin rate (rad/s) mid-jump
+var _swirl_w: float = 0.0        # 0 grounded .. 1 airborne (whirling apart)
+var _swirl_phase: float = 0.0    # advancing tornado spin angle
 
 # These are the active stats the movement and attack code actually use.
 # They start from the base stats, then equipped bones can modify them.
@@ -499,11 +501,14 @@ func _physics_process(delta: float) -> void:
 		_head_follower.global_transform = _head_socket.global_transform
 		_head_follower.global_position.y += head_follower_lift   # rest the skull on the ground
 
-	# Head+torso jump: spring the spine apart while airborne, reassemble on landing.
+	# Head+torso jump: the whole body whirls apart in a cartoon tornado while airborne
+	# and spirals back into place on landing.
 	if _torso_assembled and retargeted_body != null:
-		var target_detach := 1.0 if not is_on_floor() else 0.0
-		_spine_detach = lerpf(_spine_detach, target_detach, 1.0 - exp(-7.0 * delta))
-		retargeted_body.set_spine_detach(_spine_detach)
+		var target_whirl := 1.0 if not is_on_floor() else 0.0
+		_swirl_w = lerpf(_swirl_w, target_whirl, 1.0 - exp(-6.0 * delta))
+		if _swirl_w > 0.01:
+			_swirl_phase += swirl_spin_speed * delta
+		retargeted_body.set_body_swirl(_swirl_w, _swirl_phase)
 
 
 func _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3:
