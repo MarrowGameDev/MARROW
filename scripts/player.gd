@@ -17,8 +17,12 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export_group("Player hitbox")
 # The player's OWN body collision capsule (its physical hitbox — walls, ground,
 # and whole-body hits). Tune live in the Inspector; the shape rebuilds on change.
-@export var body_collision_radius: float = 0.4: set = _set_body_collision_radius
-@export var body_collision_height: float = 1.6: set = _set_body_collision_height
+# Defaults are sized/lowered for the HEAD state so the hitbox hugs the skull on
+# the ground instead of a tall capsule. offset_y + radius keep the capsule BOTTOM
+# where it was, so the body's rest height and the head grounding don't shift.
+@export var body_collision_radius: float = 0.24: set = _set_body_collision_radius
+@export var body_collision_height: float = 0.48: set = _set_body_collision_height
+@export var body_collision_offset_y: float = -0.56: set = _set_body_collision_offset_y
 # Draw the capsule as a translucent shape so you can SEE the player hitbox in-game.
 @export var show_body_hitbox: bool = false: set = _set_show_body_hitbox
 @export_group("")
@@ -256,6 +260,12 @@ func _set_body_collision_height(v: float) -> void:
 		_apply_body_collision()
 
 
+func _set_body_collision_offset_y(v: float) -> void:
+	body_collision_offset_y = v
+	if is_inside_tree():
+		_apply_body_collision()
+
+
 func _set_show_body_hitbox(v: bool) -> void:
 	show_body_hitbox = v
 	if is_inside_tree():
@@ -273,6 +283,7 @@ func _apply_body_collision() -> void:
 	dup.radius = body_collision_radius
 	dup.height = maxf(body_collision_height, body_collision_radius * 2.0)
 	cs.shape = dup
+	cs.position.y = body_collision_offset_y
 	# Mirror the shape onto the (normally hidden) capsule mesh so it can be shown.
 	var mi := get_node_or_null("MeshInstance3D") as MeshInstance3D
 	if mi != null:
@@ -282,6 +293,7 @@ func _apply_body_collision() -> void:
 			mi.mesh = cm
 		cm.radius = dup.radius
 		cm.height = dup.height
+		mi.position.y = body_collision_offset_y
 		mi.visible = show_body_hitbox
 		if show_body_hitbox and mi.material_override == null:
 			var m := StandardMaterial3D.new()
