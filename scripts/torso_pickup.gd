@@ -88,9 +88,11 @@ func _snap_to_ground() -> void:
 func _on_body_entered(body: Node) -> void:
 	if _collected:
 		return
-	if body != null and body.has_method("assemble_torso"):
+	# Collect the REAL torso bone into the inventory (does NOT auto-equip) — the
+	# player equips it themselves, and the body appears only once it's equipped.
+	if body != null and body.has_method("collect_bone"):
 		_collected = true
-		body.assemble_torso()
+		body.collect_bone("torso_bone")
 		queue_free()
 
 

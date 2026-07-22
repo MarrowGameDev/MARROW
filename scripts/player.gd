@@ -233,6 +233,9 @@ func _ready() -> void:
 	_setup_procedural_character()
 	_update_mouse_mode()
 	_apply_body_collision()
+	# The torso appears only when the "body" slot is actually equipped (not on pickup).
+	GameEvents.bone_equipped.connect(_on_bone_equipped)
+	GameEvents.bone_unequipped.connect(_on_bone_unequipped)
 	if start_as_head and retargeted_body != null:
 		# Drive the new skull from the old rig's rolling head socket, so it keeps
 		# the original head roll/hop/attack animations while head-only.
@@ -325,7 +328,19 @@ func _spawn_torso_pickup() -> void:
 
 
 # Called by the torso pickup when the head walks into it.
-func assemble_torso() -> void:
+# The body ("torso_bone") was actually equipped -> show the head+torso on the new
+# character and grow the hitbox. Unequipping reverts to the rolling head.
+func _on_bone_equipped(_bone_id: String, slot: String, who: Node) -> void:
+	if who == self and slot == "body":
+		_show_torso_body()
+
+
+func _on_bone_unequipped(_bone_id: String, slot: String, who: Node) -> void:
+	if who == self and slot == "body":
+		_revert_to_head()
+
+
+func _show_torso_body() -> void:
 	if _torso_assembled:
 		return
 	_torso_assembled = true
@@ -337,6 +352,22 @@ func assemble_torso() -> void:
 		retargeted_body.exit_head_follower_mode()
 		retargeted_body.show_only_head()
 		retargeted_body.reveal_torso()
+	# Grow the hitbox to cover the standing head+torso.
+	body_collision_radius = 0.34
+	body_collision_height = 1.2
+	body_collision_offset_y = -0.1
+
+
+func _revert_to_head() -> void:
+	if not _torso_assembled:
+		return
+	_torso_assembled = false
+	if retargeted_body != null and _head_socket != null and is_instance_valid(_head_socket):
+		_head_follower = retargeted_body.enter_head_follower_mode(head_follower_scale)
+		visual_root.add_child(_head_follower)
+	body_collision_radius = 0.24
+	body_collision_height = 0.48
+	body_collision_offset_y = -0.56
 
 
 func _input(event: InputEvent) -> void:
