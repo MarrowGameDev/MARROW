@@ -1,7 +1,7 @@
 class_name EnemyRockProjectile
 extends Area3D
 
-@export var damage: int = 1
+@export var damage: int = 12
 @export var lifetime: float = 4.0
 @export var projectile_gravity: float = 24.0
 @export var radius: float = 0.18

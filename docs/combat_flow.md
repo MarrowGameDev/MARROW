@@ -1,5 +1,14 @@
 # Flujo de combate
 
+## Escala de balance vigente
+
+La vertical slice usa daño base 10, vida del jugador 50 y enemigo estándar
+40 HP/10 daño. Movimiento y alcance conservan unidades de mundo. Gorilla usa
+una banda resistente (mínimo 70 HP/14 daño), mientras Lizard cambia vida por
+movilidad. Los valores, presupuestos de piezas y matriz reproducible viven en
+`docs/combat_balance.md`; cualquier cambio de escala debe actualizar esa
+matriz y `tools/headless_balance_matrix_check.gd`.
+
 Este documento describe combate del jugador, enemigos, proyectiles, stealth,
 danio, limb loss, huida y respuesta de AI.
 

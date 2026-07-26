@@ -23,14 +23,14 @@ const QUALITY_PRISTINE := "pristine"
 # and tools/validate_bone_quality.py checks it without running the engine.
 const QUALITY_TABLE := {
 	QUALITY_FRAIL: {
-		"multiplier": 0.85,
+		"multiplier": 0.90,
 		"probability": 2.5,
 		"rank": 0,
 		"display_name": "Frail",
 		"color": Color(0.62, 0.42, 0.40, 1.0),
 	},
 	QUALITY_WORN: {
-		"multiplier": 0.925,
+		"multiplier": 0.95,
 		"probability": 12.5,
 		"rank": 1,
 		"display_name": "Worn",
@@ -44,14 +44,14 @@ const QUALITY_TABLE := {
 		"color": Color(1.0, 0.94, 0.68, 1.0),
 	},
 	QUALITY_STRONG: {
-		"multiplier": 1.075,
+		"multiplier": 1.05,
 		"probability": 12.5,
 		"rank": 3,
 		"display_name": "Strong",
 		"color": Color(0.55, 0.78, 0.52, 1.0),
 	},
 	QUALITY_PRISTINE: {
-		"multiplier": 1.15,
+		"multiplier": 1.10,
 		"probability": 2.5,
 		"rank": 4,
 		"display_name": "Pristine",

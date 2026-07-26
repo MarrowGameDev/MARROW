@@ -343,26 +343,26 @@ func _apply_profile(enemy: Node, profile: String) -> void:
 	match profile:
 		"gorilla":
 			enemy.set("gorilla_profile_mode", "Always")
-			enemy.set("max_health", 8)
-			enemy.set("contact_damage", 2)
+			enemy.set("max_health", 70)
+			enemy.set("contact_damage", 14)
 			enemy.set("move_speed", 2.4)
 		"lizard":
 			enemy.set("lizard_profile_mode", "Always")
-			enemy.set("max_health", 4)
+			enemy.set("max_health", 40)
 			enemy.set("move_speed", 3.4)
 		"ranged":
 			enemy.set("ranged_attacker_enabled", true)
-			enemy.set("max_health", 3)
+			enemy.set("max_health", 32)
 			enemy.set("move_speed", 2.2)
 			enemy.set("ranged_attack_range", 18.0)
 		"dummy":
 			enemy.set("dummy_target_enabled", true)
-			enemy.set("max_health", 12)
+			enemy.set("max_health", 120)
 			enemy.set("move_speed", 0.0)
 			enemy.set("contact_damage", 0)
 			enemy.set("detection_range", 0.0)
 		_:
-			enemy.set("max_health", 3)
+			enemy.set("max_health", 40)
 			enemy.set("move_speed", 2.8)
 
 

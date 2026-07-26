@@ -152,7 +152,7 @@ func _initialize() -> void:
 		print("7. details:\n", details)
 		if not details.contains("Frail"):
 			failures.append("details do not name the quality")
-		if not details.contains("x0.85"):
+		if not details.contains("x0.90"):
 			failures.append("details do not show the multiplier")
 		if not details.contains("->"):
 			failures.append("details do not show base -> effective")

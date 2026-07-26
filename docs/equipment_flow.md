@@ -208,15 +208,15 @@ Todas las constantes viven en `scripts/bone_rules_service.gd`. No hay
 unidades fisicas reales (kg, etc.); son numeros de diseno adimensionales
 calibrados por prueba y error, igual que el resto del balance del proyecto.
 
-- `EQUIPMENT_FREE_WEIGHT := 3.0`: suma de `equipment_weight` (peso ya
+- `EQUIPMENT_FREE_WEIGHT := 6.0`: suma de `equipment_weight` (peso ya
   ajustado por calidad) que el jugador carga sin penalizacion. Mismas
   unidades que `weight`/`equipment_weight` en los `.tres` de hueso.
-- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06`: fraccion de
+- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.04`: fraccion de
   `move_speed` que se resta por cada unidad de `equipment_weight` que
-  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 5.0 de peso equipado con 3.0
-  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.06 = 0.12 (12%).
-- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30`: techo de la penalizacion de
-  velocidad (30%), sin importar cuanto peso adicional se equipe.
+  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 8.0 de peso equipado con 6.0
+  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.04 = 0.08 (8%).
+- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.25`: techo de la penalizacion de
+  velocidad (25%), sin importar cuanto peso adicional se equipe.
 - `PLAYER_STAT_PERCENT_LIMIT := 0.75`: techo/piso (+-75%) para la suma de
   `quality_damage_percent`, `quality_speed_percent`, `quality_health_percent`
   y `quality_weight_percent` acumulados por todas las piezas equipadas.

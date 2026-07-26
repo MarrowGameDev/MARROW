@@ -111,7 +111,7 @@ const FAMILY_RULES := {
 			},
 			{
 				"pieces": 4,
-				"modifiers": {"damage_percent": 0.05, "speed_percent": -0.03},
+				"modifiers": {"damage_percent": 0.06, "speed_percent": -0.03},
 			},
 		],
 	},

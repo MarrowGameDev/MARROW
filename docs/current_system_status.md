@@ -57,8 +57,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
-- Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
-  `legendario`; UI can localize display text separately.
+- Canonical quality ids are `frail`, `worn`, `normal`, `strong` and
+  `pristine`; Spanish ids remain supported as legacy aliases.
 - Quality percentage modifiers now feed the deterministic player stat formula
   for damage, speed, health and equipped weight; drop tuning remains passive.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
@@ -72,9 +72,10 @@ refactor pass.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`. Equipped
   load can apply a capped movement-speed penalty through `BoneRulesService`.
-- Bone set/synergy fields can be summarized from equipped state through
-  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
-  applied to stats yet, and durability does not decrease at runtime.
+- Bone set/synergy fields are evaluated by `SynergyRulesService`; family
+  tiers, bilateral symmetry and High-Quality Assembly affect the same runtime
+  stats consumed by gameplay, Inventory and Builds. Durability still does not
+  decrease at runtime.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 

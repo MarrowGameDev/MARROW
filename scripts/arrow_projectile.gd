@@ -1,7 +1,7 @@
 class_name ArrowProjectile
 extends Area3D
 
-@export var damage: int = 1
+@export var damage: int = 8
 @export var lifetime: float = 3.0
 @export var projectile_gravity: float = 6.0
 @export var radius: float = 0.08

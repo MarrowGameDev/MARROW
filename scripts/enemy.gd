@@ -7,7 +7,7 @@ const ROCK_PROJECTILE_SCRIPT: Script = preload("res://scripts/enemy_rock_project
 const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.gd")
 
 # --- Combat / AI tuning (all editable per-enemy in the Inspector) -------------
-@export var max_health: int = 3
+@export var max_health: int = 40
 @export var move_speed: float = 3.0          # slower than the player, so you can kite
 @export var detection_range: float = 11.0    # how close before it starts chasing
 @export_range(20.0, 180.0, 1.0) var vision_angle_degrees: float = 90.0
@@ -15,7 +15,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var vision_check_interval: float = 0.15
 @export_range(6, 24, 1) var vision_cone_segments: int = 12
 @export var attack_range: float = 1.7        # how close before it can hit you
-@export var contact_damage: int = 1
+@export var contact_damage: int = 10
 @export var attack_cooldown: float = 1.1      # seconds between its hits
 @export var dummy_target_enabled: bool = false
 @export var search_duration: float = 20.0
@@ -35,7 +35,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var ranged_attack_range: float = 13.0
 @export var ranged_attack_cooldown: float = 2.2
 @export var ranged_attack_windup: float = 0.35
-@export var ranged_arrow_damage: int = 1
+@export var ranged_arrow_damage: int = 8
 @export var ranged_arrow_speed: float = 13.0
 @export var ranged_arrow_gravity: float = 5.0
 @export_group("")
@@ -47,12 +47,12 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export_range(0.1, 1.0, 0.05) var crawl_speed_multiplier: float = 0.38
 @export_group("Gorilla Profile")
 @export_enum("Auto", "Always", "Never") var gorilla_profile_mode: String = "Auto"
-@export var gorilla_profile_min_health: int = 5
-@export var gorilla_profile_min_damage: int = 2
+@export var gorilla_profile_min_health: int = 70
+@export var gorilla_profile_min_damage: int = 14
 @export_range(0.3, 1.0, 0.05) var gorilla_move_speed_multiplier: float = 0.68
 @export_range(1.0, 2.5, 0.05) var gorilla_attack_cooldown_multiplier: float = 1.25
-@export var gorilla_health_bonus: int = 2
-@export var gorilla_damage_bonus: int = 1
+@export var gorilla_health_bonus: int = 30
+@export var gorilla_damage_bonus: int = 4
 @export var gorilla_attack_range_bonus: float = 0.25
 @export var gorilla_knockback_bonus: float = 1.5
 @export var gorilla_can_throw_rocks: bool = true
@@ -70,7 +70,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 # A heavy rock falls hard. This drives the descent AND the arc height, because the
 # solve raises the launch to keep the same hang time under stronger gravity.
 @export var gorilla_rock_gravity: float = 32.0
-@export var gorilla_rock_damage: int = 1
+@export var gorilla_rock_damage: int = 12
 @export_group("")
 @export_group("Lizard Profile")
 @export_enum("Auto", "Always", "Never") var lizard_profile_mode: String = "Never"
@@ -78,12 +78,12 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var lizard_sees_through_walls: bool = true
 @export var lizard_body_color: Color = Color(0.23, 0.78, 0.34, 1.0)
 @export_range(0.5, 1.8, 0.05) var lizard_move_speed_multiplier: float = 1.08
-@export_range(0.35, 1.0, 0.05) var lizard_health_multiplier: float = 0.85
+@export_range(0.35, 1.0, 0.05) var lizard_health_multiplier: float = 0.80
 @export var lizard_saliva_min_range: float = 2.2
 @export var lizard_saliva_range: float = 12.0
 @export var lizard_saliva_cooldown: float = 1.8
 @export var lizard_saliva_windup: float = 0.28
-@export var lizard_saliva_damage: int = 1
+@export var lizard_saliva_damage: int = 8
 @export var lizard_saliva_speed: float = 15.0
 @export var lizard_saliva_gravity: float = 1.5
 @export var lizard_wall_climb_probe_distance: float = 0.85
@@ -94,7 +94,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var bone_recovery_enabled: bool = true
 @export var bone_recovery_safe_delay: float = 10.0
 @export var bone_recovery_pickup_range: float = 1.15
-@export var bone_recovery_heal_per_part: int = 1
+@export var bone_recovery_heal_per_part: int = 8
 @export var bone_recovery_move_speed_multiplier: float = 0.65
 @export var bone_recovery_safe_range: float = 0.0
 @export var bone_recovery_part_lifetime: float = 45.0
@@ -111,7 +111,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export_range(0.0, 1.0, 0.05) var limb_pickup_drop_chance: float = 0.35
 @export_range(3, 8, 1) var target_limb_loss_steps: int = 5
 @export var guarantee_limb_pickup_on_death: bool = true
-@export var stealth_finish_max_health: int = 3
+@export var stealth_finish_max_health: int = 40
 @export var stealth_finish_range: float = 2.2
 @export_range(0.0, 1.0, 0.05) var stealth_behind_dot: float = 0.45
 @export var failed_stealth_damage_multiplier: int = 2
