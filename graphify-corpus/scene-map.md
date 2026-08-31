@@ -1,5 +1,16 @@
 # Godot Scene Map
 
+## scenes/_ch.tscn
+
+### Attached Scripts
+- `scripts/_ch.gd`
+
+### Instanced Scenes
+- none
+
+### Nodes
+- `CH`
+
 ## scenes/attack_hitbox.tscn
 
 ### Attached Scripts
@@ -12,6 +23,21 @@
 - `AttackHitbox`
 - `CollisionShape3D`
 - `Visual`
+
+## scenes/beach_cliff_test.tscn
+
+### Attached Scripts
+- `scripts/terrain/beach_cliff_terrain.gd`
+
+### Instanced Scenes
+- none
+
+### Nodes
+- `BeachCliffTest`
+- `WorldEnvironment`
+- `Sun`
+- `Terrain`
+- `Camera3D`
 
 ## scenes/bone.tscn
 
@@ -42,6 +68,35 @@
 - `CollisionShape3D`
 - `GateLabel`
 
+## scenes/crab.tscn
+
+### Attached Scripts
+- `scripts/crab_scuttle.gd`
+
+### Instanced Scenes
+- `assets/crab_walk.fbx`
+
+### Nodes
+- `Crab`
+- `CollisionShape3D`
+- `Model`
+
+## scenes/creature_walk_test.tscn
+
+### Attached Scripts
+- `scripts/creature_walk_test.gd`
+- `scripts/rig/creature_walker.gd`
+
+### Instanced Scenes
+- none
+
+### Nodes
+- `CreatureWalkTest`
+- `Crab`
+- `Col`
+- `VisualRoot`
+- `CreatureWalker`
+
 ## scenes/dummy_testing_environment.tscn
 
 ### Attached Scripts
@@ -60,7 +115,7 @@
 ### Attached Scripts
 - `scripts/enemy.gd`
 - `scripts/rig/modular_skeleton_rig.gd`
-- `scripts/rig/procedural_enemy_animator.gd`
+- `scripts/rig/animated_character.gd`
 
 ### Instanced Scenes
 - none
@@ -71,7 +126,7 @@
 - `CollisionShape3D`
 - `VisualRoot`
 - `ModularSkeletonRig`
-- `ProceduralAnimator`
+- `AnimatedCharacter`
 - `VisionMesh`
 - `HealthLabel`
 
@@ -115,49 +170,65 @@
 - `Orb`
 - `Label3D`
 
-## scenes/locomotion_combat.tscn
+## scenes/head_only_test.tscn
 
 ### Attached Scripts
-- `scripts/locomotion/locomotion_combat.gd`
+- `scripts/creature_walk_test.gd`
+- `scripts/head_only_controller.gd`
+- `scripts/head_only_enemy.gd`
+- `scripts/player_health.gd`
 
 ### Instanced Scenes
 - none
 
 ### Nodes
-- `LocomotionCombat`
+- `HeadOnlyTest`
+- `Crab`
+- `Col`
+- `VisualRoot`
+- `HeadOnlyController`
+- `Enemy`
+- `Enemy2`
+- `Enemy3`
 
-## scenes/locomotion_gallery.tscn
+## scenes/head_torso_test.tscn
 
 ### Attached Scripts
-- `scripts/locomotion/locomotion_gallery.gd`
+- `scripts/head_torso_test.gd`
+- `scripts/head_only_controller.gd`
 
 ### Instanced Scenes
 - none
 
 ### Nodes
-- `LocomotionGallery`
+- `HeadTorsoTest`
+- `Body`
+- `Col`
+- `VisualRoot`
+- `HeadTorso`
 
-## scenes/locomotion_lab.tscn
+## scenes/heavy_crab_enemy.tscn
 
 ### Attached Scripts
-- `scripts/locomotion/locomotion_lab.gd`
+- `scripts/heavy_crab_enemy.gd`
 
 ### Instanced Scenes
 - none
 
 ### Nodes
-- `LocomotionLab`
+- `HeavyCrab`
+- `Col`
 
-## scenes/locomotion_walk.tscn
+## scenes/heavy_crab_test.tscn
 
 ### Attached Scripts
-- `scripts/locomotion/locomotion_walk.gd`
+- `scripts/heavy_crab_test.gd`
 
 ### Instanced Scenes
 - none
 
 ### Nodes
-- `LocomotionWalk`
+- `HeavyCrabTest`
 
 ## scenes/main.tscn
 
@@ -173,6 +244,12 @@
 - `scenes/exit_portal.tscn`
 - `scenes/open_world_stage.tscn`
 - `scenes/guide_wisp.tscn`
+- `scenes/palm_tree_1.tscn`
+- `scenes/palm_tree_2.tscn`
+- `scenes/palm_tree_3.tscn`
+- `scenes/crab.tscn`
+- `scenes/rock.tscn`
+- `assets/whale_skeleton.glb`
 
 ### Nodes
 - `Main`
@@ -206,6 +283,41 @@
 - `HeavyTrialGate`
 - `EnemyBonus`
 - `ExitPortal`
+- `Palms`
+- `Palm1`
+- `Palm2`
+- `Palm3`
+- `Palm4`
+- `Palm5`
+- `Palm6`
+- `Crabs`
+- `Crab1`
+- `Crab2`
+- `Crab3`
+- `Crab4`
+- `Crab5`
+- `Rocks`
+- `Rock1`
+- `Rock2`
+- `Rock3`
+- `Rock4`
+- `Rock5`
+- `Rock6`
+- `Rock7`
+- `Rock8`
+- `Rock9`
+- `Rock10`
+- `Rock11`
+- `Rock12`
+- `Rock13`
+- `Rock14`
+- `Rock15`
+- `Rock16`
+- `Rock17`
+- `Rock18`
+- `Rock19`
+- `Rock20`
+- `BeachWhale`
 
 ## scenes/main_menu.tscn
 
@@ -235,12 +347,51 @@
 - `StageTriggerShape`
 - `StageLabel`
 
+## scenes/palm_tree_1.tscn
+
+### Attached Scripts
+- none
+
+### Instanced Scenes
+- `assets/palm_tree_1.glb`
+
+### Nodes
+- `PalmTree1`
+- `Mesh`
+- `TrunkCollision`
+
+## scenes/palm_tree_2.tscn
+
+### Attached Scripts
+- none
+
+### Instanced Scenes
+- `assets/palm_tree_2.glb`
+
+### Nodes
+- `PalmTree2`
+- `Mesh`
+- `TrunkCollision`
+
+## scenes/palm_tree_3.tscn
+
+### Attached Scripts
+- none
+
+### Instanced Scenes
+- `assets/palm_tree_3.glb`
+
+### Nodes
+- `PalmTree3`
+- `Mesh`
+- `TrunkCollision`
+
 ## scenes/player.tscn
 
 ### Attached Scripts
 - `scripts/player.gd`
 - `scripts/rig/modular_skeleton_rig.gd`
-- `scripts/rig/procedural_player_animator.gd`
+- `scripts/rig/animated_character.gd`
 - `scripts/player_camera_controller.gd`
 - `scripts/tuning_menu_ui.gd`
 
@@ -253,7 +404,7 @@
 - `CollisionShape3D`
 - `VisualRoot`
 - `ModularSkeletonRig`
-- `ProceduralAnimator`
+- `AnimatedCharacter`
 - `SocketArmRight`
 - `SocketArmLeft`
 - `SocketLegs`
@@ -263,34 +414,16 @@
 - `Camera3D`
 - `TuningMenuUI`
 
-## scenes/rig_test.tscn
+## scenes/rock.tscn
 
 ### Attached Scripts
-- `scripts/rig/rig_test_player.gd`
-- `scripts/rig/modular_skeleton_rig.gd`
-- `scripts/rig/procedural_player_animator.gd`
+- `scripts/rock.gd`
 
 ### Instanced Scenes
-- `assets/skeleton_model.glb`
-- `assets/skeleton_rigged.glb`
+- none
 
 ### Nodes
-- `RigTest`
-- `WorldEnvironment`
-- `DirectionalLight3D`
-- `Ground`
-- `GroundMesh`
-- `GroundCollision`
-- `Ramp`
-- `RampMesh`
-- `RampCollision`
-- `RigTestPlayer`
-- `CollisionShape3D`
-- `CameraPivot`
-- `Camera3D`
-- `VisualRoot`
-- `ModularSkeletonRig`
-- `ProceduralAnimator`
+- `Rock`
 
 ## scenes/testing_environment.tscn
 

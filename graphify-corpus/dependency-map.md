@@ -2,10 +2,14 @@
 
 ## Script Relationships
 
-- `scripts/_rt6.gd` depends on `scenes/rig_test.tscn` because it loads resource.
-- `scripts/_rt6.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
+- `scripts/_ch.gd` depends on `assets/crab_head_character_optimized.glb` because it loads resource.
 - `scripts/arena_goal_manager.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/arena_goal_manager.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
+- `scripts/attack_head.gd` depends on `assets/crab_head_character_optimized.glb` because it loads resource.
+- `scripts/body_dock.gd` depends on `assets/crab_head_character_optimized.glb` because it loads resource.
+- `scripts/body_dock.gd` depends on `scripts/body_sentinel.gd` because it references class BodySentinel.
+- `scripts/body_dock.gd` depends on `scripts/game_groups.gd` because it references class GameGroups.
+- `scripts/body_sentinel.gd` depends on `scripts/game_groups.gd` because it references class GameGroups.
 - `scripts/bone.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/bone.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/bone_data_catalog.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
@@ -21,6 +25,10 @@
 - `scripts/bone_rules_service.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/bone_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/bone_trial_gate.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/creature_walk_test.gd` depends on `scripts/player_camera_controller.gd` because it loads resource.
+- `scripts/creature_walk_test.gd` depends on `scripts/body_dock.gd` because it loads resource.
+- `scripts/creature_walk_test.gd` depends on `scripts/charge_arc.gd` because it loads resource.
+- `scripts/creature_walk_test.gd` depends on `scripts/player_camera_controller.gd` because it references class PlayerCameraController.
 - `scripts/demo_enemy_camp.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
@@ -32,117 +40,29 @@
 - `scripts/enemy.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/enemy.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/enemy.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/enemy.gd` depends on `scripts/rig/animated_character.gd` because it references class AnimatedCharacter.
 - `scripts/enemy.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
-- `scripts/enemy.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
 - `scripts/equipment_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/equipment_rules_service.gd` depends on `scripts/bone_definition.gd` because it references class BoneDefinition.
 - `scripts/equipment_rules_service.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
+- `scripts/head_only_controller.gd` depends on `assets/crab_head_character_optimized.glb` because it loads resource.
+- `scripts/head_only_controller.gd` depends on `scripts/attack_head.gd` because it loads resource.
+- `scripts/head_only_enemy.gd` depends on `scripts/head_only_controller.gd` because it loads resource.
+- `scripts/head_only_enemy.gd` depends on `scripts/game_groups.gd` because it references class GameGroups.
+- `scripts/head_torso_test.gd` depends on `scripts/player_camera_controller.gd` because it loads resource.
+- `scripts/head_torso_test.gd` depends on `scripts/training_dummy.gd` because it loads resource.
+- `scripts/head_torso_test.gd` depends on `scripts/part_pickup.gd` because it loads resource.
+- `scripts/head_torso_test.gd` depends on `scripts/trailing_part.gd` because it loads resource.
+- `scripts/head_torso_test.gd` depends on `scripts/cloth_verlet.gd` because it loads resource.
+- `scripts/heavy_crab_enemy.gd` depends on `assets/heavy_crab.glb` because it loads resource.
+- `scripts/heavy_crab_test.gd` depends on `scenes/heavy_crab_enemy.tscn` because it loads resource.
+- `scripts/inventory_preview_character.gd` depends on `assets/main_character.glb` because it loads resource.
 - `scripts/limb_bone_pickup.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/limb_bone_pickup.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
-- `scripts/locomotion/attack_controller.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/attack_controller.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/body_graph.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/body_measure.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/body_measure.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/chain_ik.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/contact_lock.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/contact_lock.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/detachment.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/detachment.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/gait_controller.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/gait_controller.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/gait_controller.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/gait_controller.gd` depends on `scripts/locomotion/gait_oscillator.gd` because it references class GaitOscillator.
-- `scripts/locomotion/gait_controller.gd` depends on `scripts/locomotion/root_pose_solver.gd` because it references class RootPoseSolver.
-- `scripts/locomotion/impact_response.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/attack_controller.gd` because it references class AttackController.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/impact_response.gd` because it references class ImpactResponse.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/locomotion_combat.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/locomotion_gallery.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/locomotion_gallery.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/locomotion_gallery.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/locomotion_gallery.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/locomotion_gallery.gd` depends on `scripts/locomotion/geom2d.gd` because it references class Geom2d.
-- `scripts/locomotion/locomotion_gallery.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/locomotion_gallery.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/locomotion_lab.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/locomotion_lab.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/locomotion_lab.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/locomotion_lab.gd` depends on `scripts/locomotion/gait_controller.gd` because it references class GaitController.
-- `scripts/locomotion/locomotion_lab.gd` depends on `scripts/locomotion/gait_pattern.gd` because it references class GaitPattern.
-- `scripts/locomotion/locomotion_lab.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/locomotion_lab.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/gait_controller.gd` because it references class GaitController.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/gait_pattern.gd` because it references class GaitPattern.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/locomotion_walk.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/locomotion_zoo.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/locomotion_zoo.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/locomotion_zoo.gd` depends on `scripts/locomotion/geom2d.gd` because it references class Geom2d.
-- `scripts/locomotion/locomotion_zoo.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/stance_generator.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/stance_generator.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/stance_generator.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/stance_generator.gd` depends on `scripts/locomotion/geom2d.gd` because it references class Geom2d.
-- `scripts/locomotion/test_attack.gd` depends on `scripts/locomotion/attack_controller.gd` because it references class AttackController.
-- `scripts/locomotion/test_attack.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/test_attack.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/test_attack.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_attack.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/test_body_graph.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/test_body_graph.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/test_body_measure.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/test_body_measure.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/test_body_measure.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/test_chain_ik.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/test_contact_lock.gd` depends on `scripts/locomotion/contact_lock.gd` because it references class ContactLock.
-- `scripts/locomotion/test_contact_lock.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_contact_lock.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/test_detachment.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/test_detachment.gd` depends on `scripts/locomotion/detachment.gd` because it references class Detachment.
-- `scripts/locomotion/test_detachment.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_gait.gd` depends on `scripts/locomotion/gait_controller.gd` because it references class GaitController.
-- `scripts/locomotion/test_gait.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_gait.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/test_gait_pattern.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/test_gait_pattern.gd` depends on `scripts/locomotion/gait_controller.gd` because it references class GaitController.
-- `scripts/locomotion/test_gait_pattern.gd` depends on `scripts/locomotion/gait_oscillator.gd` because it references class GaitOscillator.
-- `scripts/locomotion/test_gait_pattern.gd` depends on `scripts/locomotion/gait_pattern.gd` because it references class GaitPattern.
-- `scripts/locomotion/test_gait_pattern.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_gait_pattern.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/test_gallery.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/test_gallery.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/test_gallery.gd` depends on `scripts/locomotion/chain_ik.gd` because it references class ChainIK.
-- `scripts/locomotion/test_gallery.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_gallery.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/test_impact.gd` depends on `scripts/locomotion/body_measure.gd` because it references class BodyMeasure.
-- `scripts/locomotion/test_impact.gd` depends on `scripts/locomotion/impact_response.gd` because it references class ImpactResponse.
-- `scripts/locomotion/test_impact.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_root_pose.gd` depends on `scripts/locomotion/root_pose_solver.gd` because it references class RootPoseSolver.
-- `scripts/locomotion/test_stance_generator.gd` depends on `scripts/locomotion/body_graph.gd` because it references class BodyGraph.
-- `scripts/locomotion/test_stance_generator.gd` depends on `scripts/locomotion/body_part.gd` because it references class BodyPart.
-- `scripts/locomotion/test_stance_generator.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_stance_generator.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/test_terrain.gd` depends on `scripts/locomotion/gait_controller.gd` because it references class GaitController.
-- `scripts/locomotion/test_terrain.gd` depends on `scripts/locomotion/gait_pattern.gd` because it references class GaitPattern.
-- `scripts/locomotion/test_terrain.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_terrain.gd` depends on `scripts/locomotion/root_pose_solver.gd` because it references class RootPoseSolver.
-- `scripts/locomotion/test_terrain.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
-- `scripts/locomotion/test_turning.gd` depends on `scripts/locomotion/gait_controller.gd` because it references class GaitController.
-- `scripts/locomotion/test_turning.gd` depends on `scripts/locomotion/gait_pattern.gd` because it references class GaitPattern.
-- `scripts/locomotion/test_turning.gd` depends on `scripts/locomotion/locomotion_zoo.gd` because it references class LocomotionZoo.
-- `scripts/locomotion/test_turning.gd` depends on `scripts/locomotion/stance_generator.gd` because it references class StanceGenerator.
+- `scripts/part_pickup.gd` depends on `assets/crab_head_character_optimized.glb` because it loads resource.
 - `scripts/player.gd` depends on `scenes/attack_hitbox.tscn` because it loads resource.
 - `scripts/player.gd` depends on `scripts/arrow_projectile.gd` because it loads resource.
+- `scripts/player.gd` depends on `scripts/torso_pickup.gd` because it loads resource.
 - `scripts/player.gd` depends on `scripts/ballistics_service.gd` because it references class BallisticsService.
 - `scripts/player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player.gd` depends on `scripts/combat_targeting_service.gd` because it references class CombatTargetingService.
@@ -152,34 +72,35 @@
 - `scripts/player.gd` depends on `scripts/player_inventory_component.gd` because it references class PlayerInventoryComponent.
 - `scripts/player.gd` depends on `scripts/player_inventory_ui.gd` because it references class PlayerInventoryUI.
 - `scripts/player.gd` depends on `scripts/player_stats_component.gd` because it references class PlayerStatsComponent.
+- `scripts/player.gd` depends on `scripts/rig/animated_character.gd` because it references class AnimatedCharacter.
 - `scripts/player.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
-- `scripts/player.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
 - `scripts/player_equipment_component.gd` depends on `scenes/equipped_bone.tscn` because it loads resource.
 - `scripts/player_equipment_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player_equipment_component.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/player_equipment_component.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
+- `scripts/player_health.gd` depends on `scripts/game_groups.gd` because it references class GameGroups.
 - `scripts/player_inventory_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player_inventory_component.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_inventory_empty_slot.gd` because it loads resource.
+- `scripts/player_inventory_ui.gd` depends on `scripts/inventory_preview_character.gd` because it loads resource.
 - `scripts/player_inventory_ui.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/player_inventory_ui.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
-- `scripts/player_inventory_ui.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_bone_item.gd` because it references class BoneItemTile.
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_bone_slot.gd` because it references class BoneSlotWidget.
 - `scripts/player_inventory_ui.gd` depends on `scripts/ui_inventory_empty_slot.gd` because it references class InventoryEmptySlot.
 - `scripts/player_stats_component.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/rig/animated_character.gd` depends on `assets/main_character.glb` because it loads resource.
+- `scripts/rig/creature_walker.gd` depends on `assets/crab_head_character_optimized.glb` because it loads resource.
 - `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/rig/modular_skeleton_rig.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
-- `scripts/rig/procedural_enemy_animator.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
-- `scripts/rig/procedural_player_animator.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
-- `scripts/rig/rig_test_player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
-- `scripts/rig/rig_test_player.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
-- `scripts/rig/rig_test_player.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
+- `scripts/rock.gd` depends on `assets/rock_boulders.glb` because it loads resource.
 - `scripts/testing_environment.gd` depends on `scenes/player.tscn` because it loads resource.
 - `scripts/testing_environment.gd` depends on `scenes/enemy.tscn` because it loads resource.
 - `scripts/testing_environment.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/testing_environment.gd` depends on `scripts/tuning_menu_ui.gd` because it references class TuningMenuUI.
+- `scripts/torso_pickup.gd` depends on `assets/main_character.glb` because it loads resource.
+- `scripts/trailing_part.gd` depends on `assets/crab_head_character_optimized.glb` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scenes/enemy.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scenes/bone.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scripts/demo_enemy_camp.gd` because it loads resource.
@@ -191,19 +112,29 @@
 
 ## Scene Relationships
 
+- `scenes/_ch.tscn` uses script `scripts/_ch.gd`.
 - `scenes/attack_hitbox.tscn` uses script `scripts/attack_hitbox.gd`.
+- `scenes/beach_cliff_test.tscn` uses script `scripts/terrain/beach_cliff_terrain.gd`.
 - `scenes/bone.tscn` uses script `scripts/bone.gd`.
 - `scenes/bone_trial_gate.tscn` uses script `scripts/bone_trial_gate.gd`.
+- `scenes/crab.tscn` uses script `scripts/crab_scuttle.gd`.
+- `scenes/crab.tscn` instantiates scene `assets/crab_walk.fbx`.
+- `scenes/creature_walk_test.tscn` uses script `scripts/creature_walk_test.gd`.
+- `scenes/creature_walk_test.tscn` uses script `scripts/rig/creature_walker.gd`.
 - `scenes/dummy_testing_environment.tscn` uses script `scripts/testing_environment.gd`.
 - `scenes/enemy.tscn` uses script `scripts/enemy.gd`.
 - `scenes/enemy.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
-- `scenes/enemy.tscn` uses script `scripts/rig/procedural_enemy_animator.gd`.
+- `scenes/enemy.tscn` uses script `scripts/rig/animated_character.gd`.
 - `scenes/exit_portal.tscn` uses script `scripts/exit_portal.gd`.
 - `scenes/guide_wisp.tscn` uses script `scripts/guide_wisp.gd`.
-- `scenes/locomotion_combat.tscn` uses script `scripts/locomotion/locomotion_combat.gd`.
-- `scenes/locomotion_gallery.tscn` uses script `scripts/locomotion/locomotion_gallery.gd`.
-- `scenes/locomotion_lab.tscn` uses script `scripts/locomotion/locomotion_lab.gd`.
-- `scenes/locomotion_walk.tscn` uses script `scripts/locomotion/locomotion_walk.gd`.
+- `scenes/head_only_test.tscn` uses script `scripts/creature_walk_test.gd`.
+- `scenes/head_only_test.tscn` uses script `scripts/head_only_controller.gd`.
+- `scenes/head_only_test.tscn` uses script `scripts/head_only_enemy.gd`.
+- `scenes/head_only_test.tscn` uses script `scripts/player_health.gd`.
+- `scenes/head_torso_test.tscn` uses script `scripts/head_torso_test.gd`.
+- `scenes/head_torso_test.tscn` uses script `scripts/head_only_controller.gd`.
+- `scenes/heavy_crab_enemy.tscn` uses script `scripts/heavy_crab_enemy.gd`.
+- `scenes/heavy_crab_test.tscn` uses script `scripts/heavy_crab_test.gd`.
 - `scenes/main.tscn` uses script `scripts/arena_goal_manager.gd`.
 - `scenes/main.tscn` uses script `scripts/world_map_manager.gd`.
 - `scenes/main.tscn` uses script `scripts/tutorial_island_builder.gd`.
@@ -213,17 +144,22 @@
 - `scenes/main.tscn` instantiates scene `scenes/exit_portal.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/open_world_stage.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/guide_wisp.tscn`.
+- `scenes/main.tscn` instantiates scene `scenes/palm_tree_1.tscn`.
+- `scenes/main.tscn` instantiates scene `scenes/palm_tree_2.tscn`.
+- `scenes/main.tscn` instantiates scene `scenes/palm_tree_3.tscn`.
+- `scenes/main.tscn` instantiates scene `scenes/crab.tscn`.
+- `scenes/main.tscn` instantiates scene `scenes/rock.tscn`.
+- `scenes/main.tscn` instantiates scene `assets/whale_skeleton.glb`.
 - `scenes/main_menu.tscn` uses script `scripts/main_menu.gd`.
 - `scenes/open_world_stage.tscn` uses script `scripts/open_world_stage.gd`.
+- `scenes/palm_tree_1.tscn` instantiates scene `assets/palm_tree_1.glb`.
+- `scenes/palm_tree_2.tscn` instantiates scene `assets/palm_tree_2.glb`.
+- `scenes/palm_tree_3.tscn` instantiates scene `assets/palm_tree_3.glb`.
 - `scenes/player.tscn` uses script `scripts/player.gd`.
 - `scenes/player.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
-- `scenes/player.tscn` uses script `scripts/rig/procedural_player_animator.gd`.
+- `scenes/player.tscn` uses script `scripts/rig/animated_character.gd`.
 - `scenes/player.tscn` uses script `scripts/player_camera_controller.gd`.
 - `scenes/player.tscn` uses script `scripts/tuning_menu_ui.gd`.
 - `scenes/player.tscn` instantiates scene `assets/skull.glb`.
-- `scenes/rig_test.tscn` uses script `scripts/rig/rig_test_player.gd`.
-- `scenes/rig_test.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
-- `scenes/rig_test.tscn` uses script `scripts/rig/procedural_player_animator.gd`.
-- `scenes/rig_test.tscn` instantiates scene `assets/skeleton_model.glb`.
-- `scenes/rig_test.tscn` instantiates scene `assets/skeleton_rigged.glb`.
+- `scenes/rock.tscn` uses script `scripts/rock.gd`.
 - `scenes/testing_environment.tscn` uses script `scripts/testing_environment.gd`.
