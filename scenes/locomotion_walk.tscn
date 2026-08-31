@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://c5hpe8ma45mxw"]
-
-[ext_resource type="Script" uid="uid://bbig0qh1iq1h1" path="res://scripts/locomotion/locomotion_walk.gd" id="1_walk"]
-
-[node name="LocomotionWalk" type="Node3D"]
-script = ExtResource("1_walk")

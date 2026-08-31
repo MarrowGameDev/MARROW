@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://dthfgcam25mvt"]
-
-[ext_resource type="Script" uid="uid://06rt17yqn0ue" path="res://scripts/locomotion/locomotion_lab.gd" id="1_lab"]
-
-[node name="LocomotionLab" type="Node3D"]
-script = ExtResource("1_lab")

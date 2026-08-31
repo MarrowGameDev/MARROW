@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://c2edr606m0oot"]
-
-[ext_resource type="Script" uid="uid://beitg8evevi8p" path="res://scripts/locomotion/locomotion_gallery.gd" id="1_gallery"]
-
-[node name="LocomotionGallery" type="Node3D"]
-script = ExtResource("1_gallery")

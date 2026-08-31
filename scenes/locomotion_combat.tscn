@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" uid="uid://cy5u57lryj715" path="res://scripts/locomotion/locomotion_combat.gd" id="1_combat"]
-
-[node name="LocomotionCombat" type="Node3D"]
-script = ExtResource("1_combat")
