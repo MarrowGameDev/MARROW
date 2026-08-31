@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://be08dmygomnn5"]
+
+[ext_resource type="Script" path="res://scripts/heavy_crab_enemy.gd" id="1_crab"]
+
+[sub_resource type="CapsuleShape3D" id="Cap"]
+radius = 0.7
+height = 2.0
+
+[node name="HeavyCrab" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_crab")
+
+[node name="Col" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+shape = SubResource("Cap")

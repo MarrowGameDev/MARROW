@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://dhtorsotst001"]
+
+[ext_resource type="Script" uid="uid://ce6wa8b17n1k6" path="res://scripts/head_torso_test.gd" id="1_root"]
+[ext_resource type="Script" uid="uid://dktq1jsfpyr53" path="res://scripts/head_only_controller.gd" id="2_ctrl"]
+
+[sub_resource type="CapsuleShape3D" id="Cap"]
+radius = 0.35
+height = 1.4
+
+[node name="HeadTorsoTest" type="Node3D"]
+script = ExtResource("1_root")
+
+[node name="Body" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+
+[node name="Col" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("Cap")
+
+[node name="VisualRoot" type="Node3D" parent="Body"]
+
+[node name="HeadTorso" type="Node3D" parent="Body/VisualRoot"]
+script = ExtResource("2_ctrl")
+visible_parts = Array[String](["head"])
+hop_height_variation = 0.14

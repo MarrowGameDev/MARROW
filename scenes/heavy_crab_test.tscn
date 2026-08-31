@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c8vmuo4bqr3ge"]
+
+[ext_resource type="Script" path="res://scripts/heavy_crab_test.gd" id="1_root"]
+
+[node name="HeavyCrabTest" type="Node3D"]
+script = ExtResource("1_root")

@@ -188,10 +188,11 @@ const HIT_COLOR: Color = Color(1, 0.95, 0.45, 1)
 @onready var vision_mesh: MeshInstance3D = $VisionMesh
 @onready var visual_root: Node3D = $VisualRoot
 @onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
-@onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
-# New skeleton-character visual for NORMAL enemies. Disabled for lizard/gorilla
-# variants, which keep their own proportioned rig (and get their own mesh).
-@onready var retargeted_body: Node = get_node_or_null("VisualRoot/RetargetedBody")
+# The procedural animator is gone; kept null so its old guarded call sites no-op.
+var animator = null
+# Clip-driven skeleton-character visual (AnimatedCharacter) for NORMAL enemies.
+# Disabled for lizard/gorilla variants, which keep their own proportioned rig.
+@onready var retargeted_body: Node = get_node_or_null("VisualRoot/AnimatedCharacter")
 
 
 # _ready runs once when this enemy enters the running scene.
@@ -232,10 +233,6 @@ func _ready() -> void:
 			retargeted_body.disable()
 		else:
 			retargeted_body.set_body_tint(normal_color)
-	# Lizards become the procedural quadruped dinosaur skeleton (spawned only for
-	# lizards so other enemies don't load the dino mesh).
-	if lizard_profile_active:
-		_setup_dino_visual()
 	_update_health_label()
 	_build_vision_cone()
 	_set_player_visible(false, true)
@@ -1831,37 +1828,17 @@ func _set_enemy_color(new_color: Color) -> void:
 	_set_rig_color(new_color)
 
 
-# Replace the lizard's procedural rig with the quadruped dinosaur skeleton, driven
-# by the enemy's velocity. Hides the modular rig (its logic still runs underneath).
-func _setup_dino_visual() -> void:
-	if visual_root == null:
-		return
-	var walker: Node3D = (load("res://scripts/rig/dinosaur_walker.gd")).new()
-	walker.name = "DinosaurWalker"
-	walker.drive_from_body = true
-	walker.body_scale = 1.6
-	walker.ground_offset = -0.6
-	visual_root.add_child(walker)
-	if rig != null:
-		rig.visible = false
-
-
 func _setup_procedural_character() -> void:
-	if animator == null or rig == null:
+	# The procedural animator is gone; keep only the rig's proportions/hitbox wiring.
+	if rig == null:
 		return
 
 	if lizard_profile_active and rig.has_method("apply_lizard_proportions"):
 		rig.apply_lizard_proportions()
 	elif gorilla_profile_active and rig.has_method("apply_gorilla_proportions"):
 		rig.apply_gorilla_proportions()
-	animator.rig = rig
-	animator.turn_target = null
 	if rig.has_method("set_body_hitbox_owner"):
 		rig.call("set_body_hitbox_owner", self, "enemy_body_hurtboxes")
-	if animator.has_method("set_player_body_progression_enabled"):
-		animator.set_player_body_progression_enabled(false)
-	if animator.has_method("set_crawl_mode"):
-		animator.set_crawl_mode(crawling_due_to_leg_loss)
 	_setup_ranged_bow_visual()
 
 

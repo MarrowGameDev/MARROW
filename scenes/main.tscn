@@ -12,6 +12,9 @@
 [ext_resource type="PackedScene" path="res://scenes/palm_tree_1.tscn" id="10_palm1"]
 [ext_resource type="PackedScene" path="res://scenes/palm_tree_2.tscn" id="11_palm2"]
 [ext_resource type="PackedScene" path="res://scenes/palm_tree_3.tscn" id="12_palm3"]
+[ext_resource type="PackedScene" path="res://scenes/crab.tscn" id="13_crab"]
+[ext_resource type="PackedScene" path="res://scenes/rock.tscn" id="14_rock"]
+[ext_resource type="PackedScene" uid="uid://6p4l1gqpkfhb" path="res://assets/whale_skeleton.glb" id="15_whale"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -36,6 +39,8 @@ albedo_color = Color(0.42, 0.45, 0.5, 1)
 roughness = 0.9
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_sight_wall"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1s1xl"]
 
 [node name="Main" type="Node3D" unique_id=176242980]
 
@@ -211,22 +216,144 @@ dropped_bone_id = "rib_bone"
 [node name="ExitPortal" parent="." unique_id=1385022951 instance=ExtResource("5_exit_portal")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
 
-[node name="Palms" type="Node3D" parent="."]
+[node name="Palms" type="Node3D" parent="." unique_id=1845242490]
 
-[node name="Palm1" parent="Palms" instance=ExtResource("10_palm1")]
-transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 7, 1.93, 42)
+[node name="Palm1" parent="Palms" unique_id=1704396283 instance=ExtResource("10_palm1")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 10, -0.07000017, 30)
+disable_mode = 1
+physics_material_override = SubResource("PhysicsMaterial_1s1xl")
 
-[node name="Palm2" parent="Palms" instance=ExtResource("11_palm2")]
-transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, -8, 1.85, 44)
+[node name="Palm2" parent="Palms" unique_id=698946096 instance=ExtResource("11_palm2")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, -16, -0.14999998, 26)
 
-[node name="Palm3" parent="Palms" instance=ExtResource("12_palm3")]
-transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 11, 1.73, 47)
+[node name="Palm3" parent="Palms" unique_id=1640672498 instance=ExtResource("12_palm3")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 11, -0.26999998, 47)
 
-[node name="Palm4" parent="Palms" instance=ExtResource("10_palm1")]
+[node name="Palm4" parent="Palms" unique_id=81477928 instance=ExtResource("10_palm1")]
 transform = Transform3D(4.2, 0, 0, 0, 4.2, 0, 0, 0, 4.2, -6, 1.62, 36)
 
-[node name="Palm5" parent="Palms" instance=ExtResource("12_palm3")]
-transform = Transform3D(5.5, 0, 0, 0, 5.5, 0, 0, 0, 5.5, 4, 1.9, 48)
+[node name="Palm5" parent="Palms" unique_id=832408451 instance=ExtResource("12_palm3")]
+transform = Transform3D(5.5, 0, 0, 0, 5.5, 0, 0, 0, 5.5, 4, -0.100000024, 48)
 
-[node name="Palm6" parent="Palms" instance=ExtResource("11_palm2")]
-transform = Transform3D(4.6, 0, 0, 0, 4.6, 0, 0, 0, 4.6, -12, 1.7, 34)
+[node name="Palm6" parent="Palms" unique_id=682781820 instance=ExtResource("11_palm2")]
+transform = Transform3D(4.6, 0, 0, 0, 4.6, 0, 0, 0, 4.6, -12, -0.29999995, 34)
+
+[node name="Crabs" type="Node3D" parent="." unique_id=1102943559]
+
+[node name="Crab1" parent="Crabs" unique_id=263412353 instance=ExtResource("13_crab")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 40)
+
+[node name="Crab2" parent="Crabs" unique_id=1762599606 instance=ExtResource("13_crab")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 39)
+
+[node name="Crab3" parent="Crabs" unique_id=1014473948 instance=ExtResource("13_crab")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 44)
+
+[node name="Crab4" parent="Crabs" unique_id=1989754088 instance=ExtResource("13_crab")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 3)
+
+[node name="Crab5" parent="Crabs" unique_id=1779202638 instance=ExtResource("13_crab")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 6)
+
+[node name="Rocks" type="Node3D" parent="." unique_id=1482038513]
+
+[node name="Rock1" parent="Rocks" unique_id=680579257 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -5)
+mesh_index = 10
+target_width = 2.4
+
+[node name="Rock2" parent="Rocks" unique_id=617733739 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 9)
+mesh_index = 1
+target_width = 2.0
+
+[node name="Rock3" parent="Rocks" unique_id=1485083874 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 22)
+mesh_index = 3
+target_width = 1.5
+
+[node name="Rock4" parent="Rocks" unique_id=1526219673 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0, -18)
+mesh_index = 9
+target_width = 2.2
+
+[node name="Rock5" parent="Rocks" unique_id=1504012507 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0, 30)
+mesh_index = 6
+target_width = 1.8
+
+[node name="Rock6" parent="Rocks" unique_id=1694190624 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 41)
+mesh_index = 0
+target_width = 2.6
+
+[node name="Rock7" parent="Rocks" unique_id=1074980524 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 0, 35)
+mesh_index = 13
+target_width = 1.4
+
+[node name="Rock8" parent="Rocks" unique_id=1525501578 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 6)
+mesh_index = 4
+target_width = 1.9
+
+[node name="Rock9" parent="Rocks" unique_id=101598812 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -8)
+mesh_index = 15
+target_width = 2.1
+
+[node name="Rock10" parent="Rocks" unique_id=78960396 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -26)
+mesh_index = 5
+
+[node name="Rock11" parent="Rocks" unique_id=554224916 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 28)
+mesh_index = 11
+target_width = 1.3
+
+[node name="Rock12" parent="Rocks" unique_id=371610226 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 0, -15)
+mesh_index = 16
+target_width = 1.7
+
+[node name="Rock13" parent="Rocks" unique_id=960361851 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, 18)
+mesh_index = 2
+target_width = 1.0
+
+[node name="Rock14" parent="Rocks" unique_id=1106582676 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 52)
+mesh_index = 8
+target_width = 1.5
+
+[node name="Rock15" parent="Rocks" unique_id=736528866 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0, 49)
+mesh_index = 14
+target_width = 1.2
+
+[node name="Rock16" parent="Rocks" unique_id=113545954 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -32)
+mesh_index = 7
+target_width = 1.8
+
+[node name="Rock17" parent="Rocks" unique_id=1152387704 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 0, 20)
+mesh_index = 12
+target_width = 1.1
+
+[node name="Rock18" parent="Rocks" unique_id=1257387952 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 0, -22)
+mesh_index = 3
+target_width = 2.0
+
+[node name="Rock19" parent="Rocks" unique_id=341189642 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 33)
+mesh_index = 1
+target_width = 1.4
+
+[node name="Rock20" parent="Rocks" unique_id=1581469362 instance=ExtResource("14_rock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0, -13)
+mesh_index = 10
+
+[node name="BeachWhale" parent="." unique_id=607357192 instance=ExtResource("15_whale")]
+transform = Transform3D(-54.812725, 5.07392, -23.870914, 0, 58.688858, 12.474702, 24.404203, 11.396207, -53.614937, -14.63, -1.35, 45.22)

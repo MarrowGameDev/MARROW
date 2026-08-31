@@ -107,21 +107,17 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 # a pickup that assembles onto the head when collected.
 @export var start_as_head: bool = true
 @export var torso_pickup_offset: Vector3 = Vector3(0, 0, 2.5)
-@export var head_follower_scale: float = 2.6   # match the new skull to the rolling head socket
-@export var head_follower_lift: float = 0.25   # raise the skull so it rests ON the ground
 @export_group("")
 
 const TORSO_PICKUP_SCRIPT: Script = preload("res://scripts/torso_pickup.gd")
 var _torso_assembled: bool = false
-# The new skull, driven by the old rig's rolling head socket, so it keeps ALL the
-# original head animations (roll/hop/attack) while the player is head-only.
-var _head_follower: Node3D = null
-var _head_socket: Node3D = null
-@export var swirl_spin_speed: float = 9.0   # tornado spin rate (rad/s) mid-jump
-@export var swirl_duration: float = 2.2     # how long the whole tornado runs (s)
-var _swirl_w: float = 0.0        # 0 assembled .. 1 whirling apart
-var _swirl_phase: float = 0.0    # advancing tornado spin angle
-var _swirl_timer: float = 0.0    # counts down the tornado's fixed duration
+# Slim head-launch: in head/torso-only mode an attack darts the whole skeleton (and
+# its visible skull) at the target for a short beat, then normal movement resumes.
+# The follow-hitbox does the damage; this is just the visible lunge.
+@export var head_lunge_speed: float = 7.5
+@export var head_lunge_duration: float = 0.18
+var _lunge_timer: float = 0.0
+var _lunge_velocity: Vector3 = Vector3.ZERO
 
 # These are the active stats the movement and attack code actually use.
 # They start from the base stats, then equipped bones can modify them.
@@ -193,11 +189,14 @@ var detached_camera_offset_carry_timer: float = 0.0
 @onready var socket_body: Node3D = $SocketBody
 @onready var visual_root: Node3D = $VisualRoot
 @onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
-@onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
-# New retargeted character visual (main_character.glb). Optional: null in scenes
-# that still use only the procedural rig. Locomotion self-drives from velocity;
-# attack/jump/aim are forwarded from here.
-@onready var retargeted_body: Node = get_node_or_null("VisualRoot/RetargetedBody")
+# The procedural animator is gone. Kept as a null so the old head-launch guards
+# (`if animator != null and animator.has_method(...)`) simply no-op instead of
+# needing every call site torn out. The head-launch is now a slim bespoke lunge.
+var animator = null
+# Clip-driven visual (main_character.glb via AnimatedCharacter). Locomotion
+# self-drives from velocity; jump/attack are forwarded; per-slot meshes reveal on
+# equip. The name is kept as `retargeted_body` so existing call sites are unchanged.
+@onready var retargeted_body: Node = get_node_or_null("VisualRoot/AnimatedCharacter")
 @onready var camera_controller: PlayerCameraController = $CameraPivot
 
 
@@ -242,15 +241,8 @@ func _ready() -> void:
 	GameEvents.bone_equipped.connect(_on_bone_equipped)
 	GameEvents.bone_unequipped.connect(_on_bone_unequipped)
 	if start_as_head and retargeted_body != null:
-		# Drive the new skull from the old rig's rolling head socket, so it keeps
-		# the original head roll/hop/attack animations while head-only.
-		if rig != null and rig.has_method("get_socket"):
-			_head_socket = rig.get_socket("head")
-		if _head_socket != null:
-			_head_follower = retargeted_body.enter_head_follower_mode(head_follower_scale)
-			visual_root.add_child(_head_follower)
-		else:
-			retargeted_body.show_only_head()   # fallback: static skull, no roll
+		# Start showing only the skull; the torso is a floor pickup.
+		retargeted_body.show_only_head()
 		_spawn_torso_pickup_deferred()
 
 
@@ -349,12 +341,8 @@ func _show_torso_body() -> void:
 	if _torso_assembled:
 		return
 	_torso_assembled = true
-	# Retire the rolling-head follower and show the assembled head+torso body.
-	if _head_follower != null:
-		_head_follower.queue_free()
-		_head_follower = null
+	# Show the assembled head+torso body on the clip-driven character.
 	if retargeted_body != null:
-		retargeted_body.exit_head_follower_mode()
 		retargeted_body.show_only_head()
 		retargeted_body.reveal_torso()
 	# Grow the hitbox to cover the standing head+torso.
@@ -367,9 +355,8 @@ func _revert_to_head() -> void:
 	if not _torso_assembled:
 		return
 	_torso_assembled = false
-	if retargeted_body != null and _head_socket != null and is_instance_valid(_head_socket):
-		_head_follower = retargeted_body.enter_head_follower_mode(head_follower_scale)
-		visual_root.add_child(_head_follower)
+	if retargeted_body != null:
+		retargeted_body.show_only_head()
 	body_collision_radius = 0.24
 	body_collision_height = 0.48
 	body_collision_offset_y = -0.56
@@ -447,8 +434,6 @@ func _physics_process(delta: float) -> void:
 		velocity.y = jump_velocity
 		if retargeted_body != null:
 			retargeted_body.trigger_jump()
-		if _torso_assembled:
-			_swirl_timer = swirl_duration   # run the tornado for its full length
 
 	# If the player is in the air, build up downward speed over time.
 	# delta means "how much time passed since the last physics frame."
@@ -496,32 +481,15 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * current_move_speed + damage_knockback.x
 	velocity.z = direction.z * current_move_speed + damage_knockback.z
 
+	# Slim head-launch lunge: while it's running, the body darts at the target and
+	# steering input is ignored, so the skull's dive reads cleanly.
+	if _lunge_timer > 0.0:
+		_lunge_timer = maxf(0.0, _lunge_timer - delta)
+		velocity.x = _lunge_velocity.x + damage_knockback.x
+		velocity.z = _lunge_velocity.z + damage_knockback.z
+
 	# move_and_slide moves the body, checks collisions, and slides along walls/floors instead of passing through them.
 	move_and_slide()
-	_update_procedural_animation(delta, current_move_speed)
-	# Mirror the old rig's rolling head socket onto the new skull (after the
-	# animator posed it this frame), so the new head keeps all the old animations.
-	if _head_follower != null and _head_socket != null and is_instance_valid(_head_socket):
-		_head_follower.global_transform = _head_socket.global_transform
-		_head_follower.global_position.y += head_follower_lift   # rest the skull on the ground
-
-	# Head+torso jump: the whole body whirls apart in a cartoon tornado and spirals
-	# back into place, over a fixed duration (independent of the short airtime).
-	if _torso_assembled and retargeted_body != null:
-		if _swirl_timer > 0.0:
-			_swirl_timer = maxf(0.0, _swirl_timer - delta)
-			var prog := 1.0 - _swirl_timer / maxf(swirl_duration, 0.01)
-			# fly out (rise) -> hold the tornado -> spiral back in (fall)
-			if prog < 0.18:
-				_swirl_w = smoothstep(0.0, 1.0, prog / 0.18)
-			elif prog < 0.7:
-				_swirl_w = 1.0
-			else:
-				_swirl_w = smoothstep(0.0, 1.0, (1.0 - prog) / 0.3)
-			_swirl_phase += swirl_spin_speed * delta
-		elif _swirl_w > 0.001:
-			_swirl_w = lerpf(_swirl_w, 0.0, 1.0 - exp(-8.0 * delta))
-		retargeted_body.set_body_swirl(_swirl_w, _swirl_phase)
 
 
 func _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3:
@@ -587,7 +555,7 @@ func _try_attack() -> void:
 	if animator != null:
 		animator.trigger_attack(combo_step)
 	if retargeted_body != null:
-		retargeted_body.trigger_attack()
+		retargeted_body.trigger_attack()   # plays the swipe clip on the character
 
 	# Aim the swing in the direction the player last moved.
 	var forward := current_move_direction
@@ -620,6 +588,12 @@ func _try_attack() -> void:
 		hitbox.follow_height = head_only_attack_hitbox_height
 	if hitbox.has_signal("hit_confirmed"):
 		hitbox.hit_confirmed.connect(_on_attack_hit_confirmed)
+
+	# Slim head-launch: dart the whole skeleton (skull included) at the target for a
+	# short beat. The follow-hitbox above lands the hit; this is the visible dive.
+	if head_launch_attack:
+		_lunge_velocity = forward * head_lunge_speed
+		_lunge_timer = head_lunge_duration
 
 	# Add it to the world (not as a child of the player) so it stays where it was
 	# swung and cleans itself up after its brief lifetime.
@@ -1084,13 +1058,9 @@ func _flash_player_attack() -> void:
 
 
 func _setup_procedural_character() -> void:
-	if animator == null or rig == null:
+	# The procedural animator is gone; only the rig's equipment/hitbox wiring stays.
+	if rig == null:
 		return
-
-	animator.rig = rig
-	animator.turn_target = visual_root
-	if animator.has_method("set_player_body_progression_enabled"):
-		animator.set_player_body_progression_enabled(true)
 	if rig.has_method("set_body_hitbox_owner"):
 		rig.set_body_hitbox_owner(self)
 

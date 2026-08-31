@@ -63,7 +63,7 @@ var control_labels: Dictionary = {}
 var control_buttons: Dictionary = {}
 var rebinding_action: String = ""
 var rebinding_button: Button = null
-var inventory_preview_rig: ModularSkeletonRig = null
+var inventory_preview_char: Node3D = null   # new main-character preview by equipped slot
 var inventory_preview_root: Node3D = null
 var slot_widgets: Dictionary = {}
 var items_grid: GridContainer = null
@@ -951,15 +951,11 @@ func _build_character_preview_panel() -> Control:
 	rig_holder.scale = Vector3.ONE * 1.08
 	preview_scene.add_child(rig_holder)
 
-	inventory_preview_rig = ModularSkeletonRig.new()
-	inventory_preview_rig.name = "PreviewModularSkeletonRig"
-	# Must match the in-world player or the paper doll depicts a body the player
-	# does not have (fat waist, wide-set whole legs). Set BEFORE add_child: _ready
-	# fires on tree entry and builds the sockets from this flag.
-	inventory_preview_rig.use_split_limbs = true
-	rig_holder.add_child(inventory_preview_rig)
-	if inventory_preview_rig.has_method("set_body_progression_enabled"):
-		inventory_preview_rig.set_body_progression_enabled(true)
+	# Show the NEW main character, revealing only the part-meshes for the equipped
+	# slots, so the paper doll matches what the in-world player actually wears.
+	inventory_preview_char = (load("res://scripts/inventory_preview_character.gd") as Script).new()
+	inventory_preview_char.name = "PreviewCharacter"
+	rig_holder.add_child(inventory_preview_char)
 
 	var camera := Camera3D.new()
 	camera.name = "PreviewCamera"
@@ -1000,18 +996,9 @@ func _make_preview_room_box(name: String, size: Vector3, position: Vector3, colo
 
 
 func sync_preview() -> void:
-	if inventory_preview_rig == null or not is_instance_valid(inventory_preview_rig):
-		return
-
-	var current_slots: Array = inventory_preview_rig.equipped_ids.keys()
-	for slot_id in current_slots:
-		inventory_preview_rig.unequip_slot(str(slot_id))
-
-	for slot in equipped:
-		var bone_id: String = str(equipped[slot])
-		var bone_def: Dictionary = BoneRulesService.definition_for(bone_id)
-		if not bone_def.is_empty():
-			inventory_preview_rig.equip_bone(bone_id, bone_def)
+	# Reveal exactly the equipped slots on the new-character preview.
+	if inventory_preview_char != null and is_instance_valid(inventory_preview_char):
+		inventory_preview_char.sync(equipped.keys())
 
 
 func _build_paper_doll() -> Control:
