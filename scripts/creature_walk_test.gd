@@ -16,7 +16,6 @@ extends Node3D
 var _head: Node
 var _cam: Camera3D              # the game's Camera3D (under the PlayerCameraController spring arm)
 var _cam_ctrl: Node3D           # the PlayerCameraController pivot (for camera-relative movement)
-var _charge_arc: Control        # headbutt charge meter — a 2/5-circle arc, right of screen centre
 var _dock: Node3D               # the headless body waiting on the map (press R to return + reattach)
 var _orbiting := false          # the head is spiralling into the body's socket to reattach
 var _detaching := false         # the head is leaping off the neck back to head-only
@@ -109,11 +108,6 @@ func _ready() -> void:
 	GameEvents.player_damaged.connect(_on_player_damaged)
 	GameEvents.player_died.connect(_on_player_died)
 
-	_charge_arc = Control.new()
-	_charge_arc.set_script(load("res://scripts/charge_arc.gd"))
-	_charge_arc.visible = false
-	layer.add_child(_charge_arc)
-
 	# "Press R to reattach" hint — shown until the head is back on the body
 	_reattach_prompt = Label.new()
 	_reattach_prompt.text = "Press R to reattach"
@@ -184,14 +178,8 @@ func _process(_delta: float) -> void:
 	# The camera follows the character on its own (PlayerCameraController). Here we only drive
 	# the on-screen UI (charge meter + R prompt).
 
-	# charge meter — a fixed 2/5-circle arc, right of screen centre, while holding Left-click
-	if _charge_arc != null and _head != null and _head.has_method("is_charging") and _head.is_charging():
-		_charge_arc.visible = true
-		_charge_arc.set_ratio(_head.charge_ratio())
-		var vp := get_viewport().get_visible_rect().size
-		_charge_arc.position = Vector2(vp.x * 0.59, vp.y * 0.5)   # right of centre (a little closer in)
-	elif _charge_arc != null:
-		_charge_arc.visible = false
+	# (the headbutt charge meter is now drawn by the head controller itself, so it shows in
+	# every scene — not just this harness)
 
 	# R prompt — "hop off" when on the body, "reattach" when off it and in range
 	if _reattach_prompt != null:

@@ -101,6 +101,7 @@ signal hit_landed   # emitted the instant the headbutt connects (for camera shak
 @export var attack_forward_sign: float = 1.0                 # flip to -1 if the headbutt drives the wrong way
 @export var attack_damage: int = 3                           # MAX damage (at full charge); scales down with less charge
 @export var attack_charge_time: float = 1.0                  # hold time (s) to reach a full charge
+@export var show_charge_bar: bool = true                     # player head draws the headbutt charge arc (auto-off for AI heads)
 @export var attack_min_power: float = 0.45                   # leap/power floor for a quick tap (uncharged)
 @export var attack_hitstop: float = 0.08                     # freeze on impact (hit-stop) for weight
 @export var attack_impact_crush: float = 0.38                # how hard the head crushes on contact
@@ -114,8 +115,14 @@ signal hit_landed   # emitted the instant the headbutt connects (for camera shak
 @export var combo_leap: float = 1.1                           # apex height of each dive-strike (m) — big arcing leaps
 @export var combo_return_leap: float = 0.95                   # apex of the jump back to the body (m)
 @export var combo_max: int = 4                               # cap on chained hits before it must return
+@export var detached_reach_min: float = 0.9                  # tap: the detached head lands THIS far from the torso
+@export var detached_reach_max: float = 4.0                  # full charge: it flies THIS far out (then walks back to reattach)
+@export var detached_leap_charge_mult: float = 2.2          # strike-arc apex multiplier at full charge (a longer leap arcs higher)
+@export var detached_airtime_charge_mult: float = 2.0       # full charge keeps the head airborne THIS much longer, so a long jump isn't yanked down by gravity mid-flight
 @export var reattach_jump_dist: float = 1.5                  # body within this of the fallen head -> hop straight back on; beyond -> WALK back first
-@export var head_walk_speed: float = 3.2                     # head-only walk speed the fallen head uses to catch a far body
+@export var head_walk_speed: float = 3.2                     # MAX (run) speed the fallen head uses to catch a far body
+@export var head_walk_min_speed: float = 1.2                 # slow walk when the body is right there (no need to run)
+@export var head_speed_per_metre: float = 1.4               # walk->run ramp: head speed grows this much per metre of gap
 @export var head_walk_hop: float = 0.28                      # hop height of that walk-back
 @export var head_walk_hop_rate: float = 2.4                  # hops/sec of the walk-back
 @export var head_walk_stretch: float = 0.22                  # airborne stretch of the walking head (head-only-style squash/stretch)
@@ -179,6 +186,8 @@ var _datk := DAtk.STRIKE          # detached-head combo phase
 var _datk_t := 0.0                # time in the current phase
 var _datk_from := Vector3.ZERO    # world pos this phase's arc starts from
 var _datk_anchor := Vector3.ZERO  # FIXED world spot the head fell to and fights from (stays put as the body moves)
+var _datk_leap := 1.1             # strike-arc apex for THIS attack (scaled up by charge)
+var _datk_strike_time := 0.32     # strike-arc airtime for THIS attack (longer for a longer leap -> constant-looking gravity)
 var _head_pos := Vector3.ZERO     # head's tracked ground position while walking back to a far body
 var _walk_phase := 0.0            # walk-back hop phase
 var _walk_body_spd := 0.0         # smoothed peak body speed, so the walking head catches a running body
@@ -188,6 +197,8 @@ var _crouching := false          # Ctrl held: no hops — grounded wobble-slide 
 var _crouch_phase := 0.0
 var _charging := false           # holding attack -> loading a charged headbutt
 var _charge := 0.0               # 0..1 charge accumulated while held
+var _charge_layer: CanvasLayer = null   # overlay hosting the charge arc (created lazily for the player head)
+var _charge_arc: Control = null         # the on-screen headbutt charge meter
 var _attack_charge := 1.0        # charge the in-flight attack fired with (scales leap + damage)
 var _charge_from_y := 0.0        # walk pose captured when charging starts (blend INTO the load)
 var _charge_from_pitch := 0.0
@@ -336,6 +347,7 @@ func part_socket_world(part_name: String) -> Vector3:
 
 
 func _process(delta: float) -> void:
+	_update_charge_bar()   # keep the headbutt charge meter live before any early-return below
 	# skinned-mesh transforms aren't valid on frame 0 — wait a few frames, then ground the head
 	if not _grounded:
 		_gframe += 1
@@ -987,6 +999,29 @@ func charge_ratio() -> float:
 	return _charge
 
 
+# The player head OWNS its charge meter, so the arc shows in every scene that uses this
+# controller — not only the demo harness that used to build it. AI heads set
+# read_attack_input=false, so they never spawn a bar. Created lazily (after _ready, so the
+# enemy setup has already cleared read_attack_input).
+func _update_charge_bar() -> void:
+	if not show_charge_bar or not read_attack_input:
+		return
+	if _charge_arc == null:
+		_charge_layer = CanvasLayer.new()
+		add_child(_charge_layer)
+		_charge_arc = Control.new()
+		_charge_arc.set_script(load("res://scripts/charge_arc.gd"))
+		_charge_arc.visible = false
+		_charge_layer.add_child(_charge_arc)
+	if is_charging():
+		_charge_arc.visible = true
+		_charge_arc.set_ratio(charge_ratio())
+		var vp := get_viewport().get_visible_rect().size
+		_charge_arc.position = Vector2(vp.x * 0.59, vp.y * 0.5)   # right of screen centre
+	else:
+		_charge_arc.visible = false
+
+
 # Begin loading a charged headbutt (player holds Left-click). The head recoils, deepening
 # with the charge; releasing fires trigger_attack(charge, true).
 func _begin_charge() -> void:
@@ -1050,7 +1085,14 @@ func trigger_attack(charge: float = 1.0, skip_windup: bool = false) -> void:
 		_datk_from = _sk
 		# anchor the fight spot to the FLOOR (not the socket, which bobs while walking -> the head would float)
 		var _fl := _floor_y(_body.global_position) if _body != null else 0.0
-		_datk_anchor = Vector3(_sk.x + _fw.x * attack_reach, _fl + head_ground_clear, _sk.z + _fw.z * attack_reach)
+		# the MORE it was charged, the FURTHER out the head flies from the torso (a tap lands close,
+		# a full charge lands well past reattach_jump_dist -> it must WALK back and jump into the socket)
+		var _reach := lerpf(detached_reach_min, detached_reach_max, _attack_charge)
+		_datk_anchor = Vector3(_sk.x + _fw.x * _reach, _fl + head_ground_clear, _sk.z + _fw.z * _reach)
+		# a longer leap arcs HIGHER and stays airborne LONGER, so gravity reads the same at any distance
+		# (instead of a far jump being slammed to the ground in the same short airtime)
+		_datk_leap = combo_leap * lerpf(1.0, detached_leap_charge_mult, _attack_charge)
+		_datk_strike_time = combo_strike_time * lerpf(1.0, detached_airtime_charge_mult, _attack_charge)
 		_datk_hit_done = false
 		_combo = 0
 	else:
@@ -1271,14 +1313,14 @@ func _do_attack_detached(delta: float) -> void:
 		DAtk.STRIKE:
 			# leap off (socket, hit 1) or bounce up (anchor, chained) and DIVE — a full somersault,
 			# like the lone head's headbutt — landing back at the FIXED anchor (never follows the body)
-			var t := clampf(_datk_t / maxf(combo_strike_time, 0.01), 0.0, 1.0)
+			var t := clampf(_datk_t / maxf(_datk_strike_time, 0.01), 0.0, 1.0)
 			var te := smoothstep(0.0, 1.0, t)
-			var pos := _datk_from.lerp(_datk_anchor, te) + Vector3.UP * (combo_leap * sin(PI * te))
+			var pos := _datk_from.lerp(_datk_anchor, te) + Vector3.UP * (_datk_leap * sin(PI * te))
 			_place_attack_head_spin(pos, right, fwd, TAU * te)
 			if not _datk_hit_done and t >= 0.5:
 				_datk_hit_done = true
 				_try_hit_detached()
-			if _datk_t >= combo_strike_time:
+			if _datk_t >= _datk_strike_time:
 				_datk = DAtk.RECOVER
 				_datk_t = 0.0
 		DAtk.RECOVER:
@@ -1313,12 +1355,25 @@ func _do_attack_detached(delta: float) -> void:
 			if _body != null:
 				body_spd = maxf(Vector2(_body.velocity.x, _body.velocity.z).length(), _speed)
 			_walk_body_spd = maxf(_walk_body_spd * exp(-3.0 * delta), body_spd)   # hold the recent peak (robust to frame jitter)
-			var walk_spd := maxf(head_walk_speed, _walk_body_spd * head_catch_up_mult)
+			# speed scales with DISTANCE from the reattach hand-off: far -> run, then DESCALE to a gentle
+			# arrival walk as it closes in. head_walk_speed is the run speed, BUT a RUNNING body raises the
+			# cap (catch-up) so the head can still chase down a body faster than its own run speed, and the
+			# floor rises to the body's speed so it never falls behind while the body keeps moving.
+			var handoff := reattach_jump_dist * 0.8
+			var chase := _walk_body_spd * head_catch_up_mult
+			var run_cap := maxf(head_walk_speed, chase)                 # rise above run speed to catch a fast body
+			var floor_spd := maxf(head_walk_min_speed, _walk_body_spd)  # never slower than the body while it moves
+			var walk_spd := clampf((gap - handoff) * head_speed_per_metre, floor_spd, run_cap)
 			if gap > 0.001:
 				_head_pos += to / gap * minf(walk_spd * delta, gap)
-			_walk_phase += delta * head_walk_hop_rate * clampf(walk_spd / maxf(head_walk_speed, 0.01), 1.0, 2.5)
+			# gentler hop cadence when strolling in close, quicker when running — reads as walk vs run
+			# gravity-consistent bound: a faster run makes BIGGER leaps that stay airborne LONGER —
+			# apex grows with speed, cadence slows as 1/sqrt(speed), so airtime² tracks apex and gravity
+			# reads the SAME at any pace (instead of fast, floaty little hops).
+			var spd_ratio := clampf(walk_spd / maxf(head_walk_speed, 0.01), 0.7, 2.2)
+			_walk_phase += delta * head_walk_hop_rate / sqrt(spd_ratio)
 			var hop_n := absf(sin(_walk_phase * PI))          # 0 on the ground .. 1 at the apex
-			var wy := _datk_anchor.y + head_walk_hop * hop_n
+			var wy := _datk_anchor.y + head_walk_hop * spd_ratio * hop_n
 			var s := 1.0 + head_walk_stretch * hop_n - head_walk_squash * (1.0 - hop_n)   # stretch airborne, squash on landing
 			var pitch := deg_to_rad(head_walk_lean) * cos(_walk_phase * PI)                # lean forward launching, brace back landing
 			_place_attack_head_walk(Vector3(_head_pos.x, wy, _head_pos.z), to, s, pitch)
