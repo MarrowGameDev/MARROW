@@ -21,8 +21,7 @@ var _orbiting := false          # the head is spiralling into the body's socket 
 var _detaching := false         # the head is leaping off the neck back to head-only
 var _reattached := false
 var _r_prev := false            # edge-detect the R key so a hold doesn't toggle repeatedly
-var _reattach_prompt: Label     # on-screen "Press R to reattach" hint
-var _hp_fill: ColorRect         # player health bar fill (top-left)
+var _reattach_prompt: Label     # on-screen "Press E to equip" hint
 var _dmg_flash: ColorRect       # full-screen red flash when the player is hit
 
 
@@ -91,26 +90,19 @@ func _ready() -> void:
 	_dmg_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_dmg_flash)
 
-	# player health bar (top-left): dark backing + coloured fill (green full -> red low)
-	var hp_bg := ColorRect.new()
-	hp_bg.color = Color(0, 0, 0, 0.5)
-	hp_bg.position = Vector2(24, 22); hp_bg.size = Vector2(264, 26)
-	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(hp_bg)
-	_hp_fill = ColorRect.new()
-	_hp_fill.color = Color(0.3, 0.85, 0.35)
-	_hp_fill.position = Vector2(28, 26); _hp_fill.size = Vector2(256, 18)
-	_hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(_hp_fill)
+	# player life (top-left): a row of bones that break then empty right -> left (self-wired to GameEvents)
+	var bones := Control.new()
+	bones.set_script(load("res://scripts/bone_health_hud.gd"))
+	bones.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(bones)
 
-	# listen on the GameEvents bus for the player's combat state (HUD / flash / respawn)
-	GameEvents.player_health_changed.connect(_on_player_health)
+	# listen on the GameEvents bus for the player's combat state (flash / respawn; life = the bones above)
 	GameEvents.player_damaged.connect(_on_player_damaged)
 	GameEvents.player_died.connect(_on_player_died)
 
-	# "Press R to reattach" hint — shown until the head is back on the body
+	# "Press E to equip" hint — shown until the head is back on the body
 	_reattach_prompt = Label.new()
-	_reattach_prompt.text = "Press R to reattach"
+	_reattach_prompt.text = "Press E to equip"
 	_reattach_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_reattach_prompt.add_theme_font_size_override("font_size", 26)
 	_reattach_prompt.add_theme_color_override("font_color", Color(1, 1, 1))
@@ -125,9 +117,9 @@ func _physics_process(delta: float) -> void:
 		_crab.velocity.y -= gravity * delta
 	else:
 		_crab.velocity.y = 0.0
-	# R is edge-triggered (a press, not a hold) and TOGGLES: attach when off the body & in range,
+	# E is edge-triggered (a press, not a hold) and TOGGLES: EQUIP the body when off it & in range,
 	# hop off when on the body.
-	var r_now := Input.is_physical_key_pressed(KEY_R)
+	var r_now := Input.is_physical_key_pressed(KEY_E)
 	var r_pressed := r_now and not _r_prev
 	_r_prev = r_now
 
@@ -186,11 +178,11 @@ func _process(_delta: float) -> void:
 		var show := false
 		if _dock != null and not _orbiting and not _detaching:
 			if _reattached:
-				_reattach_prompt.text = "Press R to hop off"
+				_reattach_prompt.text = "Press E to hop off"
 				show = true
 			elif _crab_to_dock().length() < reattach_range:
 				if _dock.is_free():
-					_reattach_prompt.text = "Press R to reattach"
+					_reattach_prompt.text = "Press E to equip"
 					show = true
 				elif _dock.is_enemy_held():
 					_reattach_prompt.text = "An enemy took your body — defeat it to reclaim it!"
@@ -200,14 +192,6 @@ func _process(_delta: float) -> void:
 			var vp := get_viewport().get_visible_rect().size
 			_reattach_prompt.size = Vector2(vp.x, 44)
 			_reattach_prompt.position = Vector2(0, vp.y - 76)
-
-
-func _on_player_health(_player: Node, hp: int, max_hp: int) -> void:
-	if _hp_fill == null:
-		return
-	var ratio := float(hp) / float(maxi(max_hp, 1))
-	_hp_fill.size.x = 256.0 * ratio
-	_hp_fill.color = Color(0.85, 0.28, 0.28).lerp(Color(0.3, 0.85, 0.35), ratio)
 
 
 func _on_player_damaged(_player: Node, _amount: int, _source: Node) -> void:

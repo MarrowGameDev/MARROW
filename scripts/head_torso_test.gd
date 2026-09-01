@@ -24,6 +24,7 @@ var _hud: Label
 var _parts_total := 0
 var _parts_got := 0
 var _assembling := false      # the whole torso reassembles at once, once triggered
+var _e_prev := false          # edge-trigger for the E equip key
 var _crawling := false        # crouch-crawl: head-only + detached parts rolling behind
 var _standing := false        # crouch released: the parts are flying back up into the body
 var _trail_parts: Array = []  # the detached parts trailing the head
@@ -80,14 +81,20 @@ func _ready() -> void:
 		_spawn_part(pn, scatter[pn])
 		_parts_total += 1
 
-	# HUD: parts recovered
+	# HUD
 	var layer := CanvasLayer.new(); add_child(layer)
+	# player life: a row of bones that break then empty right -> left (self-wired to GameEvents)
+	var bones := Control.new()
+	bones.set_script(load("res://scripts/bone_health_hud.gd"))
+	bones.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(bones)
+	# parts recovered (below the bones)
 	_hud = Label.new()
 	_hud.add_theme_font_size_override("font_size", 24)
 	_hud.add_theme_color_override("font_color", Color(1, 1, 1))
 	_hud.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	_hud.add_theme_constant_override("outline_size", 6)
-	_hud.position = Vector2(24, 20)
+	_hud.position = Vector2(28, 84)
 	layer.add_child(_hud)
 	_update_hud()
 
@@ -134,12 +141,23 @@ func _process(delta: float) -> void:
 			if _ctrl.has_method("trigger_jump"):
 				_ctrl.trigger_jump(assembly_jump_scale, true)   # big leap, but no body stretch
 		return
-	# reach the buried torso parts -> the WHOLE torso reassembles at once
+	# reach a buried torso part AND press E -> the WHOLE torso reassembles at once (no auto-attach)
+	var e_now := Input.is_physical_key_pressed(KEY_E)
+	var e_pressed := e_now and not _e_prev
+	_e_prev = e_now
+	var near_part := false
 	for p in get_tree().get_nodes_in_group("part_pickups"):
 		var to: Vector3 = p.global_position - _body.global_position; to.y = 0.0
 		if to.length() <= pickup_range:
-			_trigger_assembly(get_tree().get_nodes_in_group("part_pickups"))
+			near_part = true
 			break
+	if _hud != null and _parts_got < _parts_total:
+		if near_part:
+			_hud.text = "Press E to equip the torso"
+		else:
+			_update_hud()
+	if near_part and e_pressed:
+		_trigger_assembly(get_tree().get_nodes_in_group("part_pickups"))
 
 
 func _trigger_assembly(parts: Array) -> void:

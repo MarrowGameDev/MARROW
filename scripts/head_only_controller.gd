@@ -43,6 +43,7 @@ const POSE_CLIP := "head in armature"   # played for the authored head pose (bob
 @export var torso_bend_lower_frac: float = 0.15        # share of the bend on the lower spine (root) — small, or it tilts the whole body
 @export var torso_bend_mid_frac: float = 0.9          # share on the mid spine (torso trunk) — this is the real torso bend
 @export var torso_bend_smooth: float = 13.0           # how quickly it eases between the air/landing poses
+@export var hip_arch_deg: float = 12.0                # walk: as the UPPER torso arches forward on each step, the HIPS thrust/arch forward this much extra (a hip-led body arch under the stabilized head; 0 = old behaviour)
 @export var spine_head_stabilize: float = 0.7        # keep the head level while the torso bends (1 = steady, 0 = head rides the bend)
 @export_subgroup("")
 @export var squash_node_frac: float = 0.3                   # once assembled, only this much of the squash is uniform node-scale; the rest SLIDES the parts (head/neck/torso) together and apart along the spine
@@ -70,10 +71,10 @@ const POSE_CLIP := "head in armature"   # played for the authored head pose (bob
 @export_group("Jump (Space)")
 @export var read_jump_input: bool = true                     # player reads Space; enemies call trigger_jump()
 @export var jump_height: float = 0.4                         # apex ~= neck altitude on the standing rig (0.40 m above feet)
-@export var jump_duration: float = 0.82                      # total jump time (s)
-@export var jump_anticipate: float = 0.12                    # crouch before launch (s)
+@export var jump_duration: float = 0.90                      # total jump time (s) — bumped with jump_anticipate so the airborne arc is unchanged
+@export var jump_anticipate: float = 0.20                    # crouch/CHARGE before launch (s) — longer wind-up so it loads up before springing
 @export var jump_recover: float = 0.15                       # landing recovery (s)
-@export var jump_crouch: float = 0.30                        # anticipation + impact squash depth (deform)
+@export var jump_crouch: float = 0.36                        # anticipation + impact squash depth (deform) — deeper load so the charge reads
 @export var jump_tilt_deg: float = 28.0                      # head tilts back through the fall
 @export var jump_tilt_start: float = 0.3                     # when the back-tilt begins (fraction of air time; <0.5 = during the rise)
 @export var jump_rise_frac: float = 0.5                      # portion of air time RISING; 0.5 = symmetric arc (apex at mid-distance)
@@ -87,7 +88,8 @@ signal hit_landed   # emitted the instant the headbutt connects (for camera shak
 @export var read_attack_input: bool = true                   # player reads Attack; AI calls trigger_attack()
 @export var attack_duration: float = 0.8                     # forward-leap headbutt (s) — whole cycle scales with this
 @export var attack_windup: float = 0.28                      # coil/crouch portion (0..1 of duration)
-@export var attack_reach: float = 0.9                        # forward leap distance (metres)
+@export var attack_reach: float = 0.9                        # forward leap distance (metres) at NO charge
+@export var head_reach_charge_mult: float = 2.6              # head-only: full charge lunges (and reaches to hit) THIS x further
 @export var attack_hop: float = 0.7                          # how high the head leaps on a HIT ram (stay near the target)
 @export var attack_flip_height: float = 1.9                  # how high the head leaps on a MISS somersault (the flourish)
 @export var attack_slam: float = 0.12                        # how far it drops below base on the headbutt
@@ -96,6 +98,8 @@ signal hit_landed   # emitted the instant the headbutt connects (for camera shak
 @export var attack_load: float = 0.28                        # compression while loading the windup (spring load)
 @export var attack_windup_tilt: float = 0.0                  # rear the head BACK while winding up (0 = no backward tilt)
 @export var attack_stretch: float = 0.45                     # forward stretch on the leap (ram)
+@export var attack_move_stretch: float = 0.06                # detached head stretches along its flight this much per m/s of speed (reads the EFFORT of the dive)
+@export var attack_move_stretch_max: float = 0.7            # cap on that velocity stretch
 @export var attack_chomp: float = 0.34                       # squash on the headbutt impact
 @export var attack_lean_deg: float = 34.0                    # pitch forward, ramming forehead-first
 @export var attack_forward_sign: float = 1.0                 # flip to -1 if the headbutt drives the wrong way
@@ -114,7 +118,16 @@ signal hit_landed   # emitted the instant the headbutt connects (for camera shak
 @export var head_ground_clear: float = 0.28                   # height of the head's centre above the FLOOR while it fights on the ground (m)
 @export var combo_leap: float = 1.1                           # apex height of each dive-strike (m) — big arcing leaps
 @export var combo_return_leap: float = 0.95                   # apex of the jump back to the body (m)
-@export var combo_max: int = 4                               # cap on chained hits before it must return
+@export var combo_max: int = 5                               # cap on chained hits before it must return
+@export var combo_advance: float = 0.85                      # each chained hit JUMPS the head THIS far forward (the combo walks in)
+@export_subgroup("Strike punch (detached head)")
+@export var attack_gravity: float = 20.0                    # base gravity of the dive (m/s²) — the RISE uses this, the FALL scales off it; higher = falls faster
+@export var fall_gravity_mult: float = 2.2                  # the HIGHER the leap (charge), the harder it falls: full charge multiplies fall gravity by this
+@export var fall_power: float = 2.6                         # >2 = the fall ACCELERATES as time passes (hangs near the apex, then plummets); 2 = plain gravity
+@export var strike_ease: float = 2.3                        # >1 = wind up slow then EXPLODE forward into the strike (horizontal anticipation curve)
+@export var strike_rear: float = 0.32                       # anticipation: rear THIS far back (m) before darting in
+@export var strike_impact_hitstop: float = 0.09             # freeze the head THIS long on contact (weight); 0 = no hit-stop
+@export var impact_recover_time: float = 0.1                # after the freeze, the chomp EASES back over this long (fast, but not an instant snap)
 @export var detached_reach_min: float = 0.9                  # tap: the detached head lands THIS far from the torso
 @export var detached_reach_max: float = 4.0                  # full charge: it flies THIS far out (then walks back to reattach)
 @export var detached_leap_charge_mult: float = 2.2          # strike-arc apex multiplier at full charge (a longer leap arcs higher)
@@ -176,6 +189,9 @@ var _attack_hit := false     # true = rammed something -> recoil; false = miss -
 var _attack_advance := 0.0   # body distance already carried forward on a miss
 var _attack_target: Node = null  # what the ram will hit (damage dealt at contact)
 var _hitstop_t := 0.0            # remaining hit-stop freeze time
+var _attack_prev_pos := Vector3.ZERO   # flying head's last-frame world pos, for velocity-based stretch
+var _attack_prev_valid := false
+var _datk_impact := 0.0          # impact-chomp amount (1 on the slam, eases back to 0 fast)
 var _attack_buffered := false    # a click landed mid-attack; fire one more the instant this ends
 var _attack_style := 0           # which attack variant this swing is (spin axis): 0 somersault, 1 twirl, 2 roll
 var _aim_target: Node3D = null   # target the headbutt locked onto (steer toward it during the windup)
@@ -187,7 +203,10 @@ var _datk_t := 0.0                # time in the current phase
 var _datk_from := Vector3.ZERO    # world pos this phase's arc starts from
 var _datk_anchor := Vector3.ZERO  # FIXED world spot the head fell to and fights from (stays put as the body moves)
 var _datk_leap := 1.1             # strike-arc apex for THIS attack (scaled up by charge)
-var _datk_strike_time := 0.32     # strike-arc airtime for THIS attack (longer for a longer leap -> constant-looking gravity)
+var _datk_air_up := 0.4           # time to RISE to the apex (under attack_gravity)
+var _datk_fall_time := 0.4        # time to FALL back (under the heavier fall gravity below)
+var _datk_fall_g := 16.0          # fall gravity for THIS dive (higher for a higher leap -> harder landing)
+var _datk_strike_time := 0.8      # total dive airtime = rise + fall
 var _head_pos := Vector3.ZERO     # head's tracked ground position while walking back to a far body
 var _walk_phase := 0.0            # walk-back hop phase
 var _walk_body_spd := 0.0         # smoothed peak body speed, so the walking head catches a running body
@@ -1058,6 +1077,11 @@ func _do_charge(delta: float) -> void:
 func trigger_attack(charge: float = 1.0, skip_windup: bool = false) -> void:
 	if _jump_active:
 		return
+	# the head is on its way BACK to the body (walking home / jumping to the socket) and NOT on the
+	# socket yet -> it can't launch another attack; cancel the input instead of queueing it
+	if _attack_active and _attack_detached and (_datk == DAtk.WALK or _datk == DAtk.REATTACH):
+		_attack_buffered = false   # coming back -> also drop any queued swing so nothing fires on arrival
+		return
 	if _attack_active:
 		_attack_buffered = true   # queue one more; it fires the instant this attack ends (combo chain)
 		return
@@ -1092,7 +1116,13 @@ func trigger_attack(charge: float = 1.0, skip_windup: bool = false) -> void:
 		# a longer leap arcs HIGHER and stays airborne LONGER, so gravity reads the same at any distance
 		# (instead of a far jump being slammed to the ground in the same short airtime)
 		_datk_leap = combo_leap * lerpf(1.0, detached_leap_charge_mult, _attack_charge)
-		_datk_strike_time = combo_strike_time * lerpf(1.0, detached_airtime_charge_mult, _attack_charge)
+		# RISE at the base gravity (natural launch), but FALL under a heavier gravity the higher it leaps,
+		# so a big charged jump floats up then CRASHES down (more fall acceleration = weight), while a small
+		# tap is a gentle symmetric hop. Airtime is still gravity-derived (t = sqrt(2h/g)).
+		_datk_air_up = sqrt(2.0 * _datk_leap / maxf(attack_gravity, 1.0))
+		_datk_fall_g = attack_gravity * lerpf(1.0, fall_gravity_mult, _attack_charge)
+		_datk_fall_time = sqrt(2.0 * _datk_leap / maxf(_datk_fall_g, 1.0))
+		_datk_strike_time = _datk_air_up + _datk_fall_time
 		_datk_hit_done = false
 		_combo = 0
 	else:
@@ -1144,13 +1174,14 @@ func _do_attack(delta: float) -> void:
 		_do_attack_detached(delta)   # assembled: only the HEAD flies out & back; torso stays planted
 		return
 	_move_gate = 1.0   # the attack drives the body itself; don't also gate it to the hop cadence
+	var reach := attack_reach * lerpf(1.0, head_reach_charge_mult, _attack_charge)   # charge -> further lunge
 	if _hitstop_t > 0.0:
 		# HIT-STOP: freeze jammed against the target (crushed) for a punchy impact
 		_hitstop_t -= delta
 		var cs := maxf(0.35, 1.0 - attack_impact_crush)
 		var cinv := 1.0 / sqrt(cs)
 		position.y = _base_y + attack_hop * lerpf(attack_min_power, 1.0, _attack_charge)
-		position.z = attack_forward_sign * attack_reach
+		position.z = attack_forward_sign * reach
 		scale = Vector3(character_scale * cinv, character_scale * cinv, character_scale * cs)
 		_apply_attack_rotation(_attack_contact_flip * attack_forward_sign)   # frozen mid-spin on this variant's axis
 		return
@@ -1190,7 +1221,7 @@ func _do_attack(delta: float) -> void:
 			var t_contact := 0.34
 			if t < t_contact:
 				var lt := smoothstep(0.0, 1.0, t / t_contact)
-				fwd = lerpf(-draw, attack_reach, lt)
+				fwd = lerpf(-draw, reach, lt)
 				up = lerpf(lift, hop, lt)
 				zs = lerpf(1.0 - loadd, 1.0 + attack_stretch, lt)
 				flip = lerpf(-rear, contact_flip, lt)
@@ -1206,8 +1237,8 @@ func _do_attack(delta: float) -> void:
 			else:
 				# REVERSE: unwind the flip back to upright and fall back home to (0,0)
 				var rt := (t - t_contact) / (1.0 - t_contact)
-				fwd = lerpf(attack_reach, 0.0, smoothstep(0.0, 1.0, sqrt(clampf(rt, 0.0, 1.0))))
-				up = hop * (1.0 - rt * rt)
+				fwd = lerpf(reach, 0.0, smoothstep(0.0, 1.0, sqrt(clampf(rt, 0.0, 1.0))))
+				up = hop * (1.0 - pow(rt, fall_power))   # accelerating fall back down
 				zs = lerpf(1.0 - attack_impact_crush, 1.0, smoothstep(0.0, 1.0, rt))
 				flip = lerpf(contact_flip, 0.0, smoothstep(0.0, 1.0, rt))
 		else:
@@ -1218,11 +1249,11 @@ func _do_attack(delta: float) -> void:
 			if t < 0.45:
 				up = lerpf(lift, mhop, smoothstep(0.0, 1.0, t / 0.45))
 			else:
-				up = mhop * (1.0 - smoothstep(0.0, 1.0, (t - 0.45) / 0.55))
+				up = mhop * (1.0 - pow(clampf((t - 0.45) / 0.55, 0.0, 1.0), fall_power))   # accelerating fall from the apex
 			# release the draw-back to centre, then let the body carry the roll forward
 			fwd = lerpf(-draw, 0.0, smoothstep(0.0, 1.0, minf(t / 0.3, 1.0)))
 			zs = 1.0 + attack_stretch * sin(PI * clampf(t, 0.0, 1.0)) * 0.6
-			var adv := attack_reach * smoothstep(0.0, 1.0, t)
+			var adv := reach * smoothstep(0.0, 1.0, t)
 			if _body != null:
 				_body.global_position += _attack_world_fwd() * (adv - _attack_advance)
 			_attack_advance = adv
@@ -1293,6 +1324,10 @@ func _steer_to_aim(delta: float) -> void:
 # head's socket so it reads as the head leaping off the body and returning.
 func _do_attack_detached(delta: float) -> void:
 	_move_gate = 1.0
+	if _hitstop_t > 0.0:
+		# HIT-STOP: freeze the flying head on the frame it slammed home (weight); the torso is free to keep going
+		_hitstop_t -= delta
+		return
 	if _speed <= 0.2:
 		# stationary -> the torso stays planted at rest while the head does the work
 		position.y = lerpf(position.y, _base_y, 1.0 - exp(-14.0 * delta))
@@ -1311,26 +1346,46 @@ func _do_attack_detached(delta: float) -> void:
 	_datk_t += delta
 	match _datk:
 		DAtk.STRIKE:
-			# leap off (socket, hit 1) or bounce up (anchor, chained) and DIVE — a full somersault,
-			# like the lone head's headbutt — landing back at the FIXED anchor (never follows the body)
-			var t := clampf(_datk_t / maxf(_datk_strike_time, 0.01), 0.0, 1.0)
-			var te := smoothstep(0.0, 1.0, t)
-			var pos := _datk_from.lerp(_datk_anchor, te) + Vector3.UP * (_datk_leap * sin(PI * te))
-			_place_attack_head_spin(pos, right, fwd, TAU * te)
-			if not _datk_hit_done and t >= 0.5:
+			# A real gravity LEAP: the head arcs up and falls back at attack_gravity (same fall rate as the
+			# hop/jump — never slams down too fast), while the HORIZONTAL travel explodes forward (ease-in)
+			# so it darts into the target and lands the hit on ground contact.
+			var e := _datk_t                                            # seconds into the dive
+			# vertical: rise under attack_gravity, fall under the heavier _datk_fall_g (accelerates HARDER the
+			# higher the leap). apex at e = _datk_air_up; ground (0) at launch and at rise+fall.
+			var vy := 0.0
+			if e < _datk_air_up:
+				var tt := _datk_air_up - e
+				vy = maxf(_datk_leap - 0.5 * attack_gravity * tt * tt, 0.0)
+			else:
+				# fall time normalized 0..1; fall_power > 2 makes the drop ACCELERATE (rate increments as it falls)
+				var tf := clampf((e - _datk_air_up) / maxf(_datk_fall_time, 0.001), 0.0, 1.0)
+				vy = _datk_leap * (1.0 - pow(tf, fall_power))
+			var hp := pow(clampf(e / maxf(_datk_strike_time, 0.01), 0.0, 1.0), strike_ease)   # explosive forward dart
+			# anticipation: pull BACK from the target early (a brief telegraph before the dart)
+			var wu := clampf(e / maxf(_datk_air_up * 0.5, 0.01), 0.0, 1.0)
+			var rear := -fwd.normalized() * (strike_rear * sin(PI * wu))
+			var pos := _datk_from.lerp(_datk_anchor, hp) + Vector3.UP * vy + rear
+			_place_attack_head_spin(pos, right, fwd, TAU * hp, delta)
+			if not _datk_hit_done and e >= _datk_strike_time:
 				_datk_hit_done = true
 				_try_hit_detached()
+				_hitstop_t = strike_impact_hitstop
+				_datk_impact = 1.0                # full chomp now, then it eases back over impact_recover_time
+				_attack_prev_valid = false        # pure chomp on the slam frame (no velocity stretch)
+				_place_attack_head_spin(_datk_anchor, right, fwd, TAU, delta)   # slam pose, held through the freeze
+				return
 			if _datk_t >= _datk_strike_time:
 				_datk = DAtk.RECOVER
 				_datk_t = 0.0
 		DAtk.RECOVER:
 			# on the ground at the anchor. If the BODY wandered too far -> walk after it; else chain the
 			# next dive if queued; else, when the window elapses, hop home
-			_place_attack_head_spin(_datk_anchor + Vector3.UP * (0.03 * sin(_datk_t * 12.0)), right, fwd, 0.0)
+			_place_attack_head_spin(_datk_anchor + Vector3.UP * (0.03 * sin(_datk_t * 12.0)), right, fwd, 0.0, delta)
 			var body_gap := Vector2(socket.x - _datk_anchor.x, socket.z - _datk_anchor.z).length()
 			if body_gap > reattach_jump_dist:
 				_head_pos = _datk_anchor
-				_walk_phase = 0.0
+				_walk_phase = hop_spring_frac   # start the walk at the LAUNCH point (clean push-off, no braced recoil)
+				_attack_buffered = false        # committing to the walk home -> drop any queued swing (no far leap on arrival)
 				_datk = DAtk.WALK
 				_datk_t = 0.0
 			elif _attack_buffered and (_combo + 1) < combo_max:
@@ -1338,6 +1393,10 @@ func _do_attack_detached(delta: float) -> void:
 				_combo += 1
 				_attack_style = (_attack_style + 1) % maxi(attack_style_count, 1)   # vary the spin each hit
 				_datk_from = _datk_anchor
+				# each chained hit LEAPS the head a step forward (it's jumping), so the combo walks in
+				var step := Vector3(fwd.x, 0.0, fwd.z)
+				if step.length() > 0.01:
+					_datk_anchor += step.normalized() * combo_advance
 				_datk_hit_done = false
 				_datk = DAtk.STRIKE
 				_datk_t = 0.0
@@ -1367,16 +1426,22 @@ func _do_attack_detached(delta: float) -> void:
 			if gap > 0.001:
 				_head_pos += to / gap * minf(walk_spd * delta, gap)
 			# gentler hop cadence when strolling in close, quicker when running — reads as walk vs run
-			# gravity-consistent bound: a faster run makes BIGGER leaps that stay airborne LONGER —
-			# apex grows with speed, cadence slows as 1/sqrt(speed), so airtime² tracks apex and gravity
-			# reads the SAME at any pace (instead of fast, floaty little hops).
-			var spd_ratio := clampf(walk_spd / maxf(head_walk_speed, 0.01), 0.7, 2.2)
-			_walk_phase += delta * head_walk_hop_rate / sqrt(spd_ratio)
-			var hop_n := absf(sin(_walk_phase * PI))          # 0 on the ground .. 1 at the apex
-			var wy := _datk_anchor.y + head_walk_hop * spd_ratio * hop_n
-			var s := 1.0 + head_walk_stretch * hop_n - head_walk_squash * (1.0 - hop_n)   # stretch airborne, squash on landing
-			var pitch := deg_to_rad(head_walk_lean) * cos(_walk_phase * PI)                # lean forward launching, brace back landing
-			_place_attack_head_walk(Vector3(_head_pos.x, wy, _head_pos.z), to, s, pitch)
+			# ANIMATE the walk-back with the SAME hop the LONE HEAD uses (head-only movement), driven at
+			# the return speed and blending walk->run just like head-only, so the head coming home reads
+			# exactly like the head walking on its own — springy load, arced hop, lean, squash, wobble.
+			var rt := smoothstep(run_speed * 0.6, run_speed, walk_spd)
+			var e_hh := lerpf(hop_height, run_hop_height, rt)
+			var e_ln := lerpf(lean_deg, run_lean_deg, rt)
+			var e_ft := lerpf(fall_tilt_deg, run_fall_tilt_deg, rt)
+			var e_st := lerpf(jump_stretch, run_stretch, rt)
+			var air_now := _walk_phase >= hop_spring_frac
+			var clk := sqrt(hop_height / maxf(e_hh, 0.01)) if air_now else clampf(walk_spd / run_speed, 0.7, 1.0)
+			_walk_phase += delta * hop_rate * clk
+			if _walk_phase >= 1.0:
+				_walk_phase = fposmod(_walk_phase, 1.0)
+			var pose := _hop_pose(_walk_phase, 1.0, deg_to_rad(e_ln), deg_to_rad(e_ft), e_st)
+			var wy := _datk_anchor.y + e_hh * pose[0]
+			_place_attack_head_walk(Vector3(_head_pos.x, wy, _head_pos.z), to, pose[1], pose[2], pose[3])
 			if gap <= reattach_jump_dist * 0.8:
 				_datk_from = Vector3(_head_pos.x, _datk_anchor.y, _head_pos.z)
 				_datk = DAtk.REATTACH
@@ -1386,20 +1451,50 @@ func _do_attack_detached(delta: float) -> void:
 			var t := clampf(_datk_t / maxf(combo_return_time, 0.01), 0.0, 1.0)
 			var te := smoothstep(0.0, 1.0, t)
 			var pos := _datk_from.lerp(socket, te) + Vector3.UP * (combo_return_leap * sin(PI * te))
-			_place_attack_head_spin(pos, right, fwd, 0.0)
+			_place_attack_head_spin(pos, right, fwd, 0.0, delta)
 			if _datk_t >= combo_return_time:
 				_end_detached_attack()
 
 
-func _place_attack_head_spin(pos: Vector3, right: Vector3, fwd: Vector3, spin: float) -> void:
+func _place_attack_head_spin(pos: Vector3, right: Vector3, fwd: Vector3, spin: float, delta: float = 0.0) -> void:
 	if _attack_head == null or not is_instance_valid(_attack_head):
 		return
 	var yaw := Quaternion.IDENTITY
 	if _body != null:
 		yaw = _body.global_transform.basis.get_rotation_quaternion()
 	var q := Quaternion(_combo_spin_axis(fwd, right), spin) * yaw   # face the body, then spin on this variant's axis
+	var deform := Basis.IDENTITY
+	# EFFORT: the head elongates ALONG the (horizontal) direction it's flying, proportional to speed.
+	if _attack_prev_valid and delta > 0.0001:
+		var vel := (pos - _attack_prev_pos) / delta
+		var vel_h := Vector3(vel.x, 0.0, vel.z)   # horizontal travel only — a vertical slam must not make the head tall
+		var k := 1.0 + clampf(vel_h.length() * attack_move_stretch, 0.0, attack_move_stretch_max)
+		deform = _planar_scale_basis(vel_h, k)
+	# IMPACT CHOMP that EASES OUT fast (not an instant snap): compress along the ram, decaying to 0.
+	if _datk_impact > 0.0:
+		deform = _planar_scale_basis(fwd, clampf(1.0 - attack_chomp * _datk_impact, 0.2, 1.0)) * deform
+		_datk_impact = maxf(_datk_impact - delta / maxf(impact_recover_time, 0.001), 0.0)
+	_attack_prev_pos = pos
+	_attack_prev_valid = true
 	_attack_head.global_position = pos
-	_attack_head.transform.basis = Basis(q).scaled(Vector3.ONE * character_scale)
+	_attack_head.transform.basis = (deform * Basis(q)).scaled(Vector3.ONE * character_scale)
+
+
+# HORIZONTAL-plane scale: factor k along the horizontal direction `dir_h`, 1/k across it (sideways),
+# and 1.0 vertically — so the head lengthens/widens in the plane it's moving in but NEVER gets taller
+# or shorter (vertical stretch looked unnatural). k > 1 stretches along travel; k < 1 is the impact splat.
+func _planar_scale_basis(dir_h: Vector3, k: float) -> Basis:
+	var f := Vector3(dir_h.x, 0.0, dir_h.z)
+	if f.length_squared() < 1e-8 or absf(k - 1.0) < 1e-4:
+		return Basis.IDENTITY
+	f = f.normalized()
+	var r := f.cross(Vector3.UP).normalized()   # perpendicular, still horizontal
+	# symmetric scale S = k*(f⊗f) + (1/k)*(r⊗r) + 1*(up⊗up); f,r are horizontal so Y stays exactly 1
+	var ik := 1.0 / k
+	var s00 := k * f.x * f.x + ik * r.x * r.x
+	var s02 := k * f.x * f.z + ik * r.x * r.z
+	var s22 := k * f.z * f.z + ik * r.z * r.z
+	return Basis(Vector3(s00, 0.0, s02), Vector3(0.0, 1.0, 0.0), Vector3(s02, 0.0, s22))
 
 
 # Spin axis for the current attack variant, applied to the flying head (like the head-only styles).
@@ -1426,6 +1521,7 @@ func _ensure_attack_head() -> void:
 		yaw = _body.global_transform.basis.get_rotation_quaternion()
 	_attack_head.global_position = part_socket_world("head")   # start exactly on the socket (seamless swap)
 	_attack_head.transform.basis = Basis(yaw).scaled(Vector3.ONE * character_scale)
+	_attack_prev_valid = false   # fresh attack -> no stale velocity on the first frame
 
 
 func _try_hit_detached() -> void:
@@ -1450,12 +1546,46 @@ func _place_attack_head_face(pos: Vector3, dir: Vector3) -> void:
 	_attack_head.transform.basis = Basis(Quaternion(Vector3.UP, yaw)).scaled(Vector3.ONE * character_scale)
 
 
-# like _place_attack_head_face but with the head-only WALK pose: forward/back lean + squash/stretch.
-func _place_attack_head_walk(pos: Vector3, dir: Vector3, s: float, pitch: float) -> void:
+# The LONE HEAD's walk-hop pose from a phase p in [0,1): [y_norm, squash, pitch_rad, roll_rad].
+# This is the exact curve _process runs for head-only movement (springy ground load -> airborne
+# arc with a rounded apex -> landing compress, organic lean, wobble). Shared so the detached head
+# walking back to the torso reads identically to the head walking on its own. amt = hop strength;
+# y_norm is the 0..amt vertical arc (multiply by the peak hop height).
+func _hop_pose(p: float, amt: float, lean_r: float, fall_r: float, stretch: float) -> PackedFloat32Array:
+	var y_norm := 0.0
+	var s := 1.0
+	var pitch := lean_r
+	if p < hop_spring_frac:
+		var gp := p / maxf(hop_spring_frac, 0.001)                # 0 landed .. 1 launch
+		var rel := smoothstep(0.5, 1.0, gp)                       # 0 held-compressed .. 1 released
+		s = 1.0 - land_squash * (1.0 - rel) * amt
+		pitch = lerpf(-fall_r, lean_r, smoothstep(0.0, 1.0, gp))  # braced back on landing -> rock forward to push off
+	else:
+		var ap := (p - hop_spring_frac) / maxf(1.0 - hop_spring_frac, 0.001)   # 0 launch .. 1 land
+		var yn: float
+		var comp := 0.0
+		if ap < rise_frac:
+			var rr := ap / maxf(rise_frac, 0.001)
+			yn = sin(rr * PI * 0.5)                               # rise, easing INTO the apex
+			pitch = lean_r * (1.0 - smoothstep(0.0, 1.0, rr))
+		else:
+			var fp := (ap - rise_frac) / maxf(1.0 - rise_frac, 0.001)
+			yn = cos(fp * PI * 0.5)                               # fall, easing OUT of the apex
+			comp = clampf(1.0 - yn / 0.30, 0.0, 1.0)
+			comp *= comp
+			pitch = -fall_r * smoothstep(0.0, 1.0, fp)            # lean back through the descent
+		y_norm = yn * amt
+		s = 1.0 + stretch * yn * amt * amt - land_squash * comp * amt
+	var roll := deg_to_rad(wobble_deg) * sin(p * TAU) * amt
+	return PackedFloat32Array([y_norm, s, pitch * amt, roll])
+
+
+# like _place_attack_head_face but with the head-only WALK pose: forward/back lean + squash/stretch + wobble.
+func _place_attack_head_walk(pos: Vector3, dir: Vector3, s: float, pitch: float, roll: float = 0.0) -> void:
 	if _attack_head == null or not is_instance_valid(_attack_head):
 		return
 	var yaw := atan2(dir.x, dir.z) if dir.length() > 0.01 else 0.0
-	var q := Quaternion(Vector3.UP, yaw) * Quaternion(Vector3.RIGHT, pitch)   # face travel, then lean
+	var q := Quaternion(Vector3.UP, yaw) * Quaternion(Vector3.RIGHT, pitch) * Quaternion(Vector3.BACK, roll)  # face travel, lean, wobble
 	var inv := 1.0 / sqrt(maxf(s, 0.05))                                       # volume-preserving squash/stretch
 	_attack_head.global_position = pos
 	_attack_head.transform.basis = Basis(q).scaled(Vector3(character_scale * inv, character_scale * s, character_scale * inv))
@@ -1522,7 +1652,7 @@ func _raycast_target() -> Node:
 		return null
 	var space := _body.get_world_3d().direct_space_state
 	var from := _body.global_position + Vector3(0.0, 0.25, 0.0)
-	var q := PhysicsRayQueryParameters3D.create(from, from + fwd * (attack_reach + 0.2))
+	var q := PhysicsRayQueryParameters3D.create(from, from + fwd * (attack_reach * lerpf(1.0, head_reach_charge_mult, _attack_charge) + 0.2))
 	q.exclude = [_body.get_rid()]
 	q.collision_mask = 1
 	var hit := space.intersect_ray(q)
@@ -1551,13 +1681,18 @@ func _do_spine_expr(delta: float) -> void:
 	if _speed > 0.2:
 		target = deg_to_rad(lerpf(torso_bend_land_deg, -torso_bend_air_deg, air))
 	_spine_swing = lerpf(_spine_swing, target, 1.0 - exp(-torso_bend_smooth * delta))
+	# as the UPPER torso arches FORWARD (landing phase, positive swing), the HIPS arch/thrust forward to
+	# meet it — a hip-led wave, so the lower body comes up into the arch instead of the upper bending
+	# over a static base. Only on the forward part of the swing; zero in the air / when standing.
+	var arch_n := clampf(maxf(_spine_swing, 0.0) / maxf(deg_to_rad(torso_bend_land_deg), 0.01), 0.0, 1.0)
+	var hip_arch := deg_to_rad(hip_arch_deg) * arch_n
 	if _mid_spine >= 0:
 		_skel.set_bone_pose_rotation(_mid_spine, _mid_rest_rot * Quaternion(Vector3.RIGHT, _spine_swing * torso_bend_mid_frac))
 	if _lower_spine >= 0:
-		_skel.set_bone_pose_rotation(_lower_spine, _lower_rest_rot * Quaternion(Vector3.RIGHT, _spine_swing * torso_bend_lower_frac))
-	# keep the head level while the torso bends under it
+		_skel.set_bone_pose_rotation(_lower_spine, _lower_rest_rot * Quaternion(Vector3.RIGHT, _spine_swing * torso_bend_lower_frac + hip_arch))
+	# keep the head level while the torso bends/arches under it (counter the hip arch too)
 	if _head_bone >= 0 and spine_head_stabilize > 0.0:
-		var counter := -_spine_swing * (torso_bend_mid_frac + torso_bend_lower_frac) * spine_head_stabilize
+		var counter := -(_spine_swing * (torso_bend_mid_frac + torso_bend_lower_frac) + hip_arch) * spine_head_stabilize
 		_skel.set_bone_pose_rotation(_head_bone, _head_rest_rot * Quaternion(Vector3.RIGHT, counter))
 
 

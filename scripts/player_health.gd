@@ -5,7 +5,7 @@ extends CharacterBody3D
 # It announces state on the GameEvents bus (AGENTS: "Usar senales/eventos para comunicar sistemas
 # desacoplados"): the HUD, flash, and respawn listen there rather than reaching into this node.
 
-@export var max_health: int = 10
+@export var max_health: int = 4       # 4 bones, one hit each (full -> outline)
 @export var invuln_time: float = 0.5    # brief i-frames after a hit so a single headbutt = one hit
 
 var _hp := 0
