@@ -40,6 +40,27 @@ static func next_pickup_hold_progress(current_progress: float, delta: float, is_
 	return 0.0
 
 
+# A hold has to start from a FRESH press.
+#
+# Without this, anything that comes into existence under a finger that is
+# already down counts that press as its own: chest loot dropped at the player's
+# feet by the very hold that opened the chest, or an enemy killed while
+# interact happens to be held, gets vacuumed up before the player has seen it.
+# From the player's side the loot simply never appeared.
+#
+# Callers latch this when focus begins (see interact_is_held) and feed the latch
+# back each frame; while it stays true they must not accumulate hold. It clears
+# on the first frame the player lets go.
+static func next_fresh_press_latch(awaiting_release: bool, is_holding: bool) -> bool:
+	return awaiting_release and is_holding
+
+
+# Whether interact is down right now. Used to decide whether a pickup or
+# container that has just taken focus must wait for a release first.
+static func interact_is_held() -> bool:
+	return Input.is_action_pressed(PICKUP_ACTION)
+
+
 static func pickup_hold_is_complete(hold_progress: float, pickup_hold_time: float) -> bool:
 	return hold_progress >= maxf(0.01, pickup_hold_time)
 

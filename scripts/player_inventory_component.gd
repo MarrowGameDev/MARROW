@@ -55,6 +55,33 @@ func remove_bone(instance_id: String) -> bool:
 	return true
 
 
+# Replaces the carried set wholesale, for a save restore. Deliberately NOT
+# collect_bone in a loop: collecting announces a pickup and, for a plain
+# bone_id, brings a NEW piece into existence with a fresh quality roll. A
+# restore must resurrect the pieces the player already had, so ids pass through
+# untouched and the registry (restored first, by the caller) supplies their
+# quality.
+#
+# Unknown ids are dropped rather than kept: a piece whose instance is gone would
+# render as a nameless tile and could be equipped for no stats.
+func restore_items(items: Array) -> Dictionary:
+	var restored: Array[String] = []
+	var dropped: Array[String] = []
+	for raw_id in items:
+		var instance_id := str(raw_id)
+		if instance_id == "":
+			continue
+		if BoneInstanceService.is_instance_id(instance_id) and not BoneInstanceService.has_instance(instance_id):
+			dropped.append(instance_id)
+			continue
+		restored.append(instance_id)
+
+	bone_inventory = restored
+	equip_cursor = 0
+	_notify_inventory_changed()
+	return {"restored": restored.size(), "dropped": dropped}
+
+
 func equip_next_bone() -> void:
 	if bone_inventory.is_empty():
 		print("No bones to equip yet.")

@@ -66,11 +66,12 @@ inventario.
 Rareza:
 - Los campos `rarity`, `rarity_rank`, `rarity_color` y `rarity_drop_weight`
   viven en `BoneDefinition` y pasan por `BoneDatabase`.
-- `rarity_drop_weight` no cambia drops automaticamente todavia; queda listo
-  para cuando se defina una tabla de drops ponderada.
-- `quality_drop_percent` permite expresar una intencion de ajuste porcentual por
-  calidad. No modifica drops automaticamente hasta que exista una regla clara en
-  `DropRulesService`.
+- `rarity_drop_weight` y `quality_drop_percent` **si** tienen consumidor desde
+  2026-08-04: las tablas de loot de cofres los usan para elegir pieza y para
+  sesgar la calidad. Ver `docs/chest_and_loot_flow.md`.
+- Los drops de ENEMIGOS siguen sin ponderar: `Enemy` elige el limb por las
+  reglas de `DropPickupRulesService`, no por peso de rareza. Unificar ambos
+  caminos es trabajo pendiente, no algo que ya ocurra.
 - Rarezas canonicas para drops: `comun`, `corrupto`, `maldito`, `especial`,
   `legendario`. No usar labels legacy como `Common`, `Uncommon` o `Rare`.
 - Rareza no debe mezclarse con calidad. Calidad describe condicion/valor de la
@@ -90,20 +91,32 @@ Rareza:
 1. Player entra al area del pickup.
 2. Pickup llama `enter_bone_pickup_range` en player.
 3. Se emite `pickup_focus_changed(..., true)`.
-4. Mientras se mantiene interact, `DropPickupRulesService` calcula progreso.
-5. Cuando el hold completa, pickup llama `player.collect_bone`.
-6. Se emite `pickup_collected`.
-7. Se emite `pickup_focus_changed(..., false)`.
-8. El pickup se elimina.
+4. Si interact YA estaba apretado al tomar foco, el pickup queda a la espera de
+   una pulsacion fresca (`DropPickupRulesService.next_fresh_press_latch`) y no
+   acumula nada hasta que el jugador suelte. Sin esto, un pickup que nace bajo
+   un dedo ya apretado -- loot de un cofre recien abierto, o un enemigo muerto
+   con interact mantenido -- se auto-recoge antes de ser visible.
+5. Mientras se mantiene interact, `DropPickupRulesService` calcula progreso.
+6. Cuando el hold completa, pickup llama `player.collect_bone`.
+7. Se emite `pickup_collected`.
+8. Se emite `pickup_focus_changed(..., false)`.
+9. El pickup se elimina.
+
+`Player.nearby_bone_pickups` se incrementa y decrementa pero **nadie lo lee**.
+No es una exclusion entre interactuables; no construir sobre el.
 
 ## Camp chest
 
+Desde 2026-08-04 el camp ya no dibuja ni maneja su cofre: compone un
+`LootChest` (`scenes/chest.tscn`). El flujo completo esta en
+`docs/chest_and_loot_flow.md`; el resumen es:
+
 1. `DemoEnemyCamp` registra enemigos.
 2. Escucha `GameEvents.enemy_defeated`.
-3. Cuando todos estan muertos, unlock.
+3. Cuando todos estan muertos, llama `chest.unlock()`.
 4. Emite `camp_state_changed`.
-5. Si el player mantiene interact en el cofre, llama `collect_bone`.
-6. Emite `camp_chest_opened`.
+5. El cofre maneja su propio hold y entrega la recompensa.
+6. El camp escucha `chest_opened` y reemite `camp_chest_opened`.
 
 ## Puntos delicados
 
@@ -145,3 +158,11 @@ En `TESTING ENVIRONMENT`:
   `heavy_bone`, `dummy_bone`, `rib_bone`) ya tienen Resources en `data/bones/`.
 - 2026-07-14: Se agregaron campos de rareza y peso de drop por rareza sin
   activar todavia reglas ponderadas de loot.
+- 2026-08-04: `rarity_drop_weight` y `quality_drop_percent` pasaron a tener
+  consumidor real a traves de las tablas de loot de cofres. Los drops de
+  enemigos siguen sin ponderar. `DemoEnemyCamp` ahora compone un `LootChest`
+  reutilizable en vez de dibujar el suyo.
+- 2026-08-04 (correccion): todos los pickups exigen una pulsacion fresca. Un
+  pickup que aparecia mientras interact estaba apretado se recogia solo. Afecta
+  a `bone.gd` y `limb_bone_pickup.gd`; la regla vive en
+  `DropPickupRulesService.next_fresh_press_latch`.

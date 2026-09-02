@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LootTableDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot_table_definition.gd" id="1_loottable"]
+
+[resource]
+script = ExtResource("1_loottable")
+table_id = "heavy_cache"
+display_name = "Heavy Cache"
+description = "Heavy Ruin. Gorilla mass and the Heavy Bone. Every piece trades speed for damage or health, which is the region's whole lesson."
+guaranteed_bone_ids = Array[String](["heavy_bone"])
+entries = Array[String](["gorilla_right_arm_bone", "gorilla_left_arm_bone", "gorilla_right_leg_bone", "gorilla_left_leg_bone", "gorilla_body_bone"])
+min_rolls = 1
+max_rolls = 2
+allow_duplicates = false
+quality_bias = 0.1
+difficulty_min = 5
+difficulty_max = 6

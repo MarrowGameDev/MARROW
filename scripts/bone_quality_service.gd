@@ -18,6 +18,13 @@ const QUALITY_NORMAL := "normal"
 const QUALITY_STRONG := "strong"
 const QUALITY_PRISTINE := "pristine"
 
+# How far roll_quality_id_biased may tilt the ladder in one direction. Matches
+# BoneRulesService.PLAYER_STAT_PERCENT_LIMIT on purpose: the project already
+# treats +-75% as the edge of "a modifier, not a replacement". At the cap,
+# Pristine is ~3x its base weight and Frail ~1/3 -- a strong tilt that still
+# cannot make a rung unreachable.
+const QUALITY_BIAS_LIMIT := 0.75
+
 # rank orders the ladder (0 = worst). probability is a percentage and the
 # column must total exactly 100.0 -- assert_probabilities_total() enforces it
 # and tools/validate_bone_quality.py checks it without running the engine.
@@ -181,6 +188,52 @@ static func total_probability() -> float:
 	for quality_id in QUALITY_ORDER:
 		total += float(QUALITY_TABLE[quality_id]["probability"])
 	return total
+
+
+# Same ladder, same rolls, but with the probability column tilted toward the
+# good or the bad end. A bias of +0.2 makes every rung 20% more likely than the
+# rung below it (Pristine x1.44, Frail x0.69); -0.2 tilts the other way.
+#
+# The tilt is a ratio between ADJACENT rungs rather than a per-rung table, so a
+# caller only has to pick one number and the ordering of the ladder can never
+# be broken by a badly authored bias. Normal stays the pivot: its weight is
+# always exactly its base probability.
+#
+# A zero bias delegates to roll_quality_id() so the unbiased path stays a
+# single implementation -- loot tables cannot drift away from the drops that
+# already exist.
+static func roll_quality_id_biased(bias: float) -> String:
+	if is_zero_approx(bias):
+		return roll_quality_id()
+
+	var weights := biased_probabilities(bias)
+	var total := 0.0
+	for quality_id in QUALITY_ORDER:
+		total += float(weights[quality_id])
+	if total <= 0.0:
+		return QUALITY_NORMAL
+
+	_ensure_rng()
+	var roll: float = _rng.randf() * total
+	var cumulative := 0.0
+	for quality_id in QUALITY_ORDER:
+		cumulative += float(weights[quality_id])
+		if roll < cumulative:
+			return str(quality_id)
+	return QUALITY_NORMAL
+
+
+# Exposed so a validator can assert the shape of a tilt without rolling, and so
+# UI could one day show "this chest favours better pieces" from real numbers.
+static func biased_probabilities(bias: float) -> Dictionary:
+	var clamped: float = clampf(bias, -QUALITY_BIAS_LIMIT, QUALITY_BIAS_LIMIT)
+	var step: float = 1.0 + clamped
+	var pivot_rank: int = rank_for(QUALITY_NORMAL)
+	var weights: Dictionary = {}
+	for quality_id in QUALITY_ORDER:
+		var distance: int = int(QUALITY_TABLE[quality_id]["rank"]) - pivot_rank
+		weights[quality_id] = float(QUALITY_TABLE[quality_id]["probability"]) * pow(step, float(distance))
+	return weights
 
 
 static func is_quality_id(value: String) -> bool:

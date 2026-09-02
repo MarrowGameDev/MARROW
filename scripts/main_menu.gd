@@ -58,12 +58,22 @@ func _build_menu() -> void:
 	subtitle.add_theme_font_size_override("font_size", 18)
 	layout.add_child(subtitle)
 
-	layout.add_child(_make_menu_button("PLAY DEMO", Callable(self, "_open_demo")))
+	# NEW RUN always starts from a clean world. CONTINUE is the only path that
+	# loads a save, and it is disabled outright when there is nothing to load --
+	# a button that silently does nothing is worse than one that is greyed out.
+	layout.add_child(_make_menu_button("NEW RUN", Callable(self, "_open_demo")))
+
+	var continue_button := _make_menu_button("CONTINUE", Callable(self, "_continue_demo"))
+	continue_button.disabled = not SaveService.has_save()
+	if continue_button.disabled:
+		continue_button.tooltip_text = "No saved run yet. Use SAVE in-game first."
+	layout.add_child(continue_button)
+
 	layout.add_child(_make_menu_button("TESTING ENVIRONMENT", Callable(self, "_open_testing_environment")))
 	layout.add_child(_make_menu_button("DUMMY TESTING", Callable(self, "_open_dummy_testing_environment")))
 
 	var hint := Label.new()
-	hint.text = "Use testing rooms for camera, enemy, movement, animation, damage, and rig checks."
+	hint.text = "Progress is not saved automatically. Use SAVE in-game, then CONTINUE here.\nUse testing rooms for camera, enemy, movement, animation, damage, and rig checks."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	layout.add_child(hint)
@@ -80,6 +90,17 @@ func _make_menu_button(text: String, callback: Callable) -> Button:
 
 
 func _open_demo() -> void:
+	# Explicitly clears the request, so a CONTINUE that was clicked and then
+	# backed out of cannot leak into a fresh run.
+	SaveCoordinator.load_requested_on_start = false
+	get_tree().paused = false
+	get_tree().change_scene_to_file(DEMO_SCENE_PATH)
+
+
+func _continue_demo() -> void:
+	# The flag is static because change_scene_to_file frees this menu; the
+	# SaveCoordinator in the demo scene reads and clears it.
+	SaveCoordinator.load_requested_on_start = true
 	get_tree().paused = false
 	get_tree().change_scene_to_file(DEMO_SCENE_PATH)
 

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LootTableDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot_table_definition.gd" id="1_loottable"]
+
+[resource]
+script = ExtResource("1_loottable")
+table_id = "ribfen_cache"
+display_name = "Ribfen Cache"
+description = "Ribfen Bonus, the optional side region. One torso, guaranteed Rib Bone: a hybrid reward for players who go off the main route."
+guaranteed_bone_ids = Array[String](["rib_bone"])
+entries = Array[String](["lizard_body_bone", "normal_body_bone", "dummy_bone"])
+min_rolls = 1
+max_rolls = 1
+allow_duplicates = false
+quality_bias = 0.1
+difficulty_min = 3
+difficulty_max = 5

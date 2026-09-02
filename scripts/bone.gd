@@ -11,6 +11,10 @@ extends Area3D
 var collected: bool = false
 var player_in_range: Node3D = null
 var hold_progress: float = 0.0
+# Set when the player takes focus while already holding interact. See
+# DropPickupRulesService.next_fresh_press_latch: this pickup must not count a
+# press that was underway before it existed.
+var awaiting_fresh_press: bool = false
 var prompt_label: Label3D = null
 var bone_material: StandardMaterial3D = null
 var marker_material: StandardMaterial3D = null
@@ -39,6 +43,17 @@ func _process(delta: float) -> void:
 		return
 
 	var was_holding := Input.is_action_pressed(DropPickupRulesService.PICKUP_ACTION)
+
+	# Chest loot lands at the player's feet while the hold that opened the chest
+	# is still going. Counting that press here would collect the piece before it
+	# was ever visible.
+	awaiting_fresh_press = DropPickupRulesService.next_fresh_press_latch(awaiting_fresh_press, was_holding)
+	if awaiting_fresh_press:
+		if hold_progress > 0.0:
+			hold_progress = 0.0
+			_update_prompt()
+		return
+
 	var next_progress := DropPickupRulesService.next_pickup_hold_progress(hold_progress, delta, was_holding)
 	if was_holding:
 		hold_progress = next_progress
@@ -67,6 +82,7 @@ func _on_body_entered(body: Node3D) -> void:
 	if body.has_method("collect_bone"):
 		player_in_range = body
 		hold_progress = 0.0
+		awaiting_fresh_press = DropPickupRulesService.interact_is_held()
 		body.call("enter_bone_pickup_range")
 		GameEvents.pickup_focus_changed.emit(self, bone_id, body, true)
 		_update_prompt()

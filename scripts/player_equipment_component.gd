@@ -11,6 +11,16 @@ const TORSO_REQUIRED_SLOTS := [
 	EquipmentRulesService.SLOT_RIGHT_LEG,
 	EquipmentRulesService.SLOT_LEFT_LEG,
 ]
+# Torso first: TORSO_REQUIRED_SLOTS cannot attach without it, so any bulk apply
+# that ran in dictionary order would silently drop every limb. The head is
+# absent on purpose -- it is the fixed core and is never re-applied.
+const APPLY_ORDER := [
+	EquipmentRulesService.SLOT_TORSO,
+	EquipmentRulesService.SLOT_LEFT_ARM,
+	EquipmentRulesService.SLOT_RIGHT_ARM,
+	EquipmentRulesService.SLOT_LEFT_LEG,
+	EquipmentRulesService.SLOT_RIGHT_LEG,
+]
 
 var owner_player: Node = null
 var equipped: Dictionary = {}
@@ -103,6 +113,41 @@ func has_bone_equipped(bone_id: String) -> bool:
 
 func get_equipment_state() -> Dictionary:
 	return equipped.duplicate()
+
+
+# Makes the worn equipment match target_state exactly: anything not named is
+# taken off, anything named is put on, torso before limbs.
+#
+# This lives here rather than in a caller because it is the equipment's own
+# rule, and because it now has more than one consumer -- build presets and save
+# restore both need "wear exactly this set" and must not drift apart. Callers
+# stay responsible for deciding whether target_state is legitimate; this only
+# carries it out, through the same equip_bone/unequip_slot the player uses.
+func apply_equipment_state(target_state: Dictionary) -> void:
+	var current_state := get_equipment_state()
+	for slot in current_state.keys():
+		var slot_id := EquipmentRulesService.normalize_slot_id(str(slot))
+		if slot_id == "" or slot_id == CORE_HEAD_SLOT:
+			continue
+		if not target_state.has(slot_id):
+			unequip_slot(slot_id)
+
+	for slot_id in APPLY_ORDER:
+		var bone_id := str(target_state.get(slot_id, ""))
+		if bone_id == "":
+			continue
+		if get_equipped_bone_for_slot(slot_id) == bone_id:
+			continue
+		equip_bone(bone_id, slot_id)
+
+
+# Whether the worn equipment already IS target_state. Used to detect a partial
+# apply (a late equip rejection) so the caller can roll back.
+func matches_equipment_state(target_state: Dictionary) -> bool:
+	for slot_id in APPLY_ORDER:
+		if str(target_state.get(slot_id, "")) != get_equipped_bone_for_slot(str(slot_id)):
+			return false
+	return true
 
 
 func get_swap_count() -> int:

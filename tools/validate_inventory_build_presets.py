@@ -72,11 +72,28 @@ def check_static_contract() -> list[str]:
         "PlayerEquipmentComponent.TORSO_REQUIRED_SLOTS",
         "is_head_detached_from_torso",
         "config.save(BUILD_SETTINGS_PATH)",
-        "equipment_component.equip_bone(bone_id, slot_id)",
+        # Applying a build must go through the equipment component's own
+        # "wear exactly this set" routine, which equips per explicit slot in
+        # torso-before-limbs order. That routine used to be a private copy in
+        # this component; it moved to PlayerEquipmentComponent on 2026-08-04 so
+        # build presets and save restore share one implementation instead of
+        # two that can drift. The per-slot equip is pinned below, on the
+        # equipment component, where it now lives.
+        "equipment_component.apply_equipment_state(target_state)",
     ]
     for fragment in required_component_fragments:
         if fragment not in component:
             errors.append(f"missing build component fragment: {fragment}")
+
+    shared_apply_fragments = [
+        "func apply_equipment_state(target_state: Dictionary) -> void:",
+        "func matches_equipment_state(target_state: Dictionary) -> bool:",
+        "const APPLY_ORDER := [",
+        "equip_bone(bone_id, slot_id)",
+    ]
+    for fragment in shared_apply_fragments:
+        if fragment not in equipment:
+            errors.append(f"missing shared apply fragment in equipment component: {fragment}")
 
     # A previous version of apply_build() only reported a failed apply; it
     # never restored the pre-apply equipment, so a build that failed

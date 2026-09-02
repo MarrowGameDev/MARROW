@@ -465,3 +465,17 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-15: Guardar sobre un build no vacio y Aplicar un build ahora
   requieren una segunda pulsacion del mismo boton dentro de 4 segundos
   para confirmar (sin dialogo nativo, mismo estilo DIY del resto de la UI).
+- 2026-08-04: La rutina de "llevar puesto exactamente este set" salio de
+  `PlayerEquipmentBuildsComponent` y paso a
+  `PlayerEquipmentComponent.apply_equipment_state` / `matches_equipment_state`,
+  junto con `APPLY_ORDER`. Motivo: dejo de tener un solo consumidor. Los
+  presets de build y la restauracion de partida (`docs/save_flow.md`)
+  necesitan la misma regla, y mantener dos copias garantizaba que se
+  separaran. `_apply_validated_state` y `_matches_equipment_state` siguen
+  existiendo en el componente de builds como delegaciones de una linea, asi
+  que el contrato de rollback de `apply_build` no cambio. El orden torso
+  antes que extremidades sigue siendo obligatorio: `TORSO_REQUIRED_SLOTS` no
+  puede engancharse sin torso, y aplicar en orden de diccionario descartaria
+  todas las extremidades en silencio. Verificado con
+  `python -B tools/validate_inventory_build_presets.py` y los checks headless
+  de builds.

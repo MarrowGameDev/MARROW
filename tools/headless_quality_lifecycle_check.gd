@@ -152,8 +152,18 @@ func _initialize() -> void:
 		print("7. details:\n", details)
 		if not details.contains("Frail"):
 			failures.append("details do not name the quality")
-		if not details.contains("x0.90"):
+		# Read the multiplier back out of the rendered line and compare it as a
+		# NUMBER. Pinning the literal is what silently broke this check: 69e3483
+		# rebalanced Frail from 0.85 to 0.90 and updated the literal to "x0.90",
+		# but the panel formats through _format_number, which trims trailing
+		# zeros and prints "x0.9". The assertion became unmatchable and no one
+		# noticed, because nothing ran the suite.
+		var expected_multiplier: float = BoneQualityService.multiplier_for(BoneQualityService.QUALITY_FRAIL)
+		var shown_multiplier := _parse_multiplier(details)
+		if is_nan(shown_multiplier):
 			failures.append("details do not show the multiplier")
+		elif not is_equal_approx(shown_multiplier, expected_multiplier):
+			failures.append("details show multiplier %s, expected %s" % [shown_multiplier, expected_multiplier])
 		if not details.contains("->"):
 			failures.append("details do not show base -> effective")
 		if not details.contains("vs equipped"):
@@ -212,6 +222,18 @@ func _initialize() -> void:
 		for f in failures:
 			print("  - ", f)
 	quit(0 if failures.is_empty() else 1)
+
+
+# Pulls the number out of the "(xN)" the details panel prints beside the quality
+# name. Returns NAN when no such line is present, so "absent" and "wrong value"
+# stay distinguishable failures.
+func _parse_multiplier(details: String) -> float:
+	var regex := RegEx.new()
+	regex.compile("\\(x([0-9]+(?:\\.[0-9]+)?)\\)")
+	var found := regex.search(details)
+	if found == null:
+		return NAN
+	return found.get_string(1).to_float()
 
 
 func _find_player(node: Node) -> Node:

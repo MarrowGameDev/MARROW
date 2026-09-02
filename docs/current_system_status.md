@@ -79,6 +79,35 @@ refactor pass.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
+## Cofres y loot
+
+- `LootTableDefinition` es el `Resource` de una tabla autorada; las siete tablas
+  actuales viven en `data/loot_tables/`.
+- `LootTableService` es puro: decide QUE sale, nunca crea la pieza. El cofre
+  llama `BoneInstanceService.create_instance` con la calidad ya rodada.
+- `LootChest` (`scenes/chest.tscn`) es la escena reutilizable de contenedor, con
+  cuatro modos de bloqueo y dos de entrega.
+- `rarity_drop_weight` y `quality_drop_percent` dejaron de ser datos sin
+  consumidor: las tablas los usan. Los drops de enemigos siguen sin ponderar.
+- `BoneQualityService.roll_quality_id_biased` inclina la escalera de calidad;
+  un sesgo de 0 delega en `roll_quality_id()`, asi que los drops previos no
+  cambiaron.
+- `DemoEnemyCamp` compone un `LootChest` en vez de dibujar el suyo, y conserva
+  `reward_bone_id` como tabla inline de un item.
+- Detalle completo en `docs/chest_and_loot_flow.md`.
+
+## Persistencia
+
+- `SaveService` lee/escribe `user://marrow_save.json` y conoce el orden de
+  restauracion: instancias, inventario, equipamiento, mundo, RNG.
+- `SaveCoordinator` decide cuando se guarda (cofre abierto, trial superado,
+  cierre de ventana) y encuentra al jugador.
+- `BoneInstanceService.serialize()/restore()` existian sin llamador; este
+  sistema es su primer consumidor.
+- Los presets de build siguen en `user://equipment_builds.cfg` a proposito.
+- Las escenas de prueba no llevan `SaveCoordinator`, para no pisar una partida.
+- Detalle completo en `docs/save_flow.md`.
+
 ## Testing
 
 - `scenes/testing_environment.tscn` is the unified sandbox for camera, enemies,
