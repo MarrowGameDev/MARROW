@@ -383,6 +383,7 @@
 - `collected`
 - `player_in_range`
 - `hold_progress`
+- `awaiting_fresh_press`
 - `prompt_label`
 - `bone_material`
 - `marker_material`
@@ -694,6 +695,7 @@
 - `QUALITY_NORMAL`
 - `QUALITY_STRONG`
 - `QUALITY_PRISTINE`
+- `QUALITY_BIAS_LIMIT`
 - `QUALITY_TABLE`
 - `QUALITY_ORDER`
 - `LEGACY_QUALITY_ALIASES`
@@ -703,6 +705,11 @@
 - `roll`
 - `cumulative`
 - `total`
+- `weights`
+- `clamped`
+- `step`
+- `pivot_rank`
+- `distance`
 - `profile`
 - `tint`
 - `base_color`
@@ -832,6 +839,7 @@
 
 ### Functions
 - `_ready() -> void`
+- `restore_completed_state(was_completed: bool) -> void`
 - `_process(_delta: float) -> void`
 - `_on_body_entered(body: Node3D) -> void`
 - `_on_body_exited(body: Node3D) -> void`
@@ -846,6 +854,122 @@
 
 ### GameEvents Usage
 - `trial_completed`
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## LootChest
+
+- Source file: `scripts/chest.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `chest_id`
+- `display_name`
+- `loot_table_id`
+- `delivery_mode`
+- `lock_mode`
+- `required_trial_id`
+- `required_bone_id`
+- `open_hold_time`
+
+### Constants
+- `BONE_SCENE`
+- `LOCKED_COLOR`
+- `UNLOCKED_COLOR`
+- `OPENED_COLOR`
+- `OPEN_LID_ANGLE`
+- `SPAWN_RADIUS`
+- `SPAWN_HEIGHT`
+- `SPAWN_TOWARD_OPENER`
+- `VISUAL_LOCKED`
+- `VISUAL_UNLOCKED`
+- `VISUAL_OPENED`
+
+### Key Variables
+- `unlocked`
+- `opened`
+- `player_in_range`
+- `interact_reserved`
+- `hold_progress`
+- `awaiting_fresh_press`
+- `_inline_table`
+- `_last_contents_names`
+- `_base_material`
+- `_lid_material`
+- `_last_visual_state`
+- `_last_prompt`
+- `is_holding`
+- `target_unlocked`
+- `contents`
+- `verb`
+- `instance_ids`
+- `loot`
+- `world`
+- `pickup`
+- `pickup_node`
+- `origin`
+- `base_angle`
+- `toward_player`
+- `angle`
+- `existing`
+- `material`
+- `state`
+- `color`
+- `target_angle`
+- `tween`
+- `text`
+- `percent`
+
+### Functions
+- `_ready() -> void`
+- `_process(delta: float) -> void`
+- `unlock() -> void`
+- `lock() -> void`
+- `use_single_bone_reward(bone_id: String) -> void`
+- `is_openable_source() -> bool`
+- `can_be_opened_now() -> bool`
+- `restore_state(was_unlocked: bool, was_opened: bool) -> void`
+- `open() -> Array[String]`
+- `_announce(instance_ids: Array[String]) -> void`
+- `_create_contents() -> Array[String]`
+- `_roll_loot() -> Array[Dictionary]`
+- `_deliver(instance_ids: Array[String]) -> void`
+- `_spawn_pickup(instance_id: String, index: int, total: int) -> void`
+- `_spawn_position(index: int, total: int) -> Vector3`
+- `_lock_is_satisfied() -> bool`
+- `_player_has_required_bone() -> bool`
+- `_on_trial_completed(trial_id: String, _trial_name: String) -> void`
+- `_on_body_entered(body: Node3D) -> void`
+- `_on_body_exited(body: Node3D) -> void`
+- `_update_processing() -> void`
+- `_reserve_interact_lock() -> void`
+- `_release_interact_lock() -> void`
+- `_prepare_materials() -> void`
+- `_own_material(mesh: MeshInstance3D) -> StandardMaterial3D`
+- `_refresh_visuals(animate: bool = true) -> void`
+- `_visual_state() -> int`
+- `_refresh_prompt() -> void`
+- `_prompt_text() -> String`
+- `_emit_state_changed() -> void`
+- `_identity() -> String`
+
+### Resource Dependencies
+- `scenes/bone.tscn`
+
+### GameEvents Usage
+- `trial_completed`
+- `chest_opened`
+- `tutorial_hint_requested`
+- `drop_spawned`
+- `chest_state_changed`
 
 ### Input Actions
 - none
@@ -907,67 +1031,57 @@
 ### Exported Tuning
 - `camp_name`
 - `reward_bone_id`
+- `loot_table_id`
 - `chest_open_hold_time`
+- `chest_id`
 
 ### Constants
-- none
+- `CHEST_SCENE`
+- `CHEST_OFFSET`
 
 ### Key Variables
 - `enemies`
 - `unlocked`
 - `opened`
-- `player_in_range`
-- `interact_reserved`
-- `hold_progress`
+- `chest`
 - `label`
-- `chest_mesh`
 - `flame_mesh`
-- `chest_material`
 - `flame_time`
-- `pulse`
 - `all_cleared`
+- `reward_id`
+- `count`
 - `fire_root`
 - `log_mesh`
 - `log_box`
 - `flame`
-- `chest_root`
-- `box`
-- `lid`
-- `lid_box`
-- `area`
-- `shape_node`
-- `sphere`
-- `percent`
-- `count`
 - `material`
 
 ### Functions
 - `_ready() -> void`
-- `register_enemy(enemy: Node) -> void`
 - `_process(delta: float) -> void`
+- `register_enemy(enemy: Node) -> void`
+- `refresh_state() -> void`
 - `_update_state() -> void`
 - `_on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void`
+- `_on_chest_state_changed(changed_chest: Node, _chest_id: String, chest_unlocked: bool, chest_opened: bool) -> void`
+- `_on_chest_opened(opened_chest: Node, _chest_id: String, contents: Array, player: Node) -> void`
 - `_emit_camp_state_changed() -> void`
-- `_open_chest() -> void`
-- `_on_chest_body_entered(body: Node3D) -> void`
-- `_on_chest_body_exited(body: Node3D) -> void`
-- `_reserve_player_interact_lock() -> void`
-- `_release_player_interact_lock() -> void`
-- `_build_visuals() -> void`
-- `_build_campfire() -> void`
-- `_build_chest() -> void`
-- `_update_chest_visual() -> void`
-- `_update_label() -> void`
 - `_remaining_enemy_count() -> int`
+- `_build_chest() -> void`
+- `_build_campfire() -> void`
+- `_build_label() -> void`
+- `_update_label() -> void`
 - `_make_material(color: Color, glowing: bool = false) -> StandardMaterial3D`
 
 ### Resource Dependencies
-- none
+- `scenes/chest.tscn`
 
 ### GameEvents Usage
 - `enemy_defeated`
-- `camp_state_changed`
+- `chest_opened`
+- `chest_state_changed`
 - `camp_chest_opened`
+- `camp_state_changed`
 
 ### Input Actions
 - none
@@ -1043,6 +1157,10 @@
 - `contact_damage`
 - `attack_cooldown`
 - `dummy_target_enabled`
+- `turn_speed_degrees`
+- `gorilla_turn_speed_degrees`
+- `lizard_turn_speed_degrees`
+- `crawl_turn_multiplier`
 - `search_duration`
 - `search_stop_distance`
 - `search_turn_speed`
@@ -1138,6 +1256,8 @@
 - `LIMB_BONE_PICKUP_SCRIPT`
 - `ROCK_PROJECTILE_SCRIPT`
 - `ARROW_PROJECTILE_SCRIPT`
+- `SPAWN_FACING_SETTLED_RADIANS`
+- `MIN_VISIBLE_SCALE`
 - `HIT_COLOR`
 
 ### Key Variables
@@ -1240,6 +1360,7 @@
 - `_can_recover_bone_part() -> bool`
 - `_get_bone_recovery_move() -> Vector3`
 - `_get_recovering_limb_key() -> String`
+- `_valid_limb_body(limb_key: String) -> Node3D`
 - `_is_detached_limb_body_valid(limb_key: String) -> bool`
 - `_recover_detached_limb(limb_key: String) -> void`
 - `_recovery_group_key(limb_key: String) -> String`
@@ -1271,6 +1392,9 @@
 - `_set_lizard_torso_blocks_visible(is_visible: bool) -> void`
 - `_restore_attached_limbs() -> void`
 - `_update_crawl_state(force_refresh: bool = false) -> void`
+- `capture_save_state() -> Dictionary`
+- `restore_save_state(data: Dictionary) -> void`
+- `_become_dead_silently() -> void`
 - `die() -> void`
 - `_death_pop() -> void`
 - `_hide_until_respawn() -> void`
@@ -1295,6 +1419,7 @@
 - `_setup_procedural_character() -> void`
 - `_update_procedural_animation(delta: float) -> void`
 - `_get_effective_move_speed() -> float`
+- `_get_effective_turn_speed_degrees() -> float`
 - `_setup_ranged_bow_visual() -> void`
 - `_make_bow_piece(piece_name: String, size: Vector3, local_position: Vector3, color: Color) -> MeshInstance3D`
 - `_set_rig_color(new_color: Color) -> void`
@@ -1532,6 +1657,8 @@
 - `tutorial_hint_requested(source: Node, hint_id: String, text: String, priority: int)`
 - `camp_state_changed(camp: Node, unlocked: bool, opened: bool, remaining_enemies: int)`
 - `camp_chest_opened(camp: Node, reward_bone_id: String, player: Node)`
+- `chest_state_changed(chest: Node, chest_id: String, unlocked: bool, opened: bool)`
+- `chest_opened(chest: Node, chest_id: String, contents: Array, player: Node)`
 
 ### Exported Tuning
 - none
@@ -1633,6 +1760,7 @@
 - `collected`
 - `player_in_range`
 - `hold_progress`
+- `awaiting_fresh_press`
 - `prompt_label`
 - `was_holding`
 - `next_progress`
@@ -1661,6 +1789,111 @@
 ### Node Path Lookups
 - `PromptLabel`
 
+## LootTableDefinition
+
+- Source file: `scripts/loot_table_definition.gd`
+- Extends: `Resource`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `table_id`
+- `display_name`
+- `description`
+- `guaranteed_bone_ids`
+- `entries`
+- `weight_overrides`
+- `min_rolls`
+- `max_rolls`
+- `allow_duplicates`
+- `quality_bias`
+- `difficulty_min`
+- `difficulty_max`
+
+### Constants
+- none
+
+### Key Variables
+- `low`
+- `high`
+- `errors`
+- `seen`
+- `bone_id`
+- `count`
+
+### Functions
+- `matches_difficulty(difficulty: int) -> bool`
+- `has_weight_override(bone_id: String) -> bool`
+- `weight_override_for(bone_id: String) -> float`
+- `roll_count_range() -> Vector2i`
+- `validation_errors() -> Array[String]`
+- `_bone_id_errors(ids: Array[String], field_name: String) -> Array[String]`
+- `_resolved_weight(bone_id: String) -> float`
+- `_distinct_entry_count() -> int`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## LootTableService
+
+- Source file: `scripts/loot_table_service.gd`
+- Extends: `unknown`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `TABLE_PATHS`
+- `TABLE_ORDER`
+- `MAX_PICK_ATTEMPTS`
+
+### Key Variables
+- `ids`
+- `resource`
+- `table`
+- `errors`
+- `results`
+- `picked`
+- `span`
+- `count`
+- `bone_id`
+- `bias`
+- `report`
+- `id`
+- `total`
+- `roll`
+- `cumulative`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## main_menu
 
 - Source file: `scripts/main_menu.gd`
@@ -1685,6 +1918,7 @@
 - `layout`
 - `title`
 - `subtitle`
+- `continue_button`
 - `hint`
 - `button`
 
@@ -1693,6 +1927,7 @@
 - `_build_menu() -> void`
 - `_make_menu_button(text: String, callback: Callable) -> Button`
 - `_open_demo() -> void`
+- `_continue_demo() -> void`
 - `_open_testing_environment() -> void`
 - `_open_dummy_testing_environment() -> void`
 
@@ -2174,9 +2409,9 @@
 - `quality_id`
 - `pairs`
 - `matched`
-- `current_state`
-- `expected`
-- `actual`
+- `source`
+- `carried`
+- `claimed`
 
 ### Functions
 - `setup(player: Node, equipment: PlayerEquipmentComponent) -> void`
@@ -2245,6 +2480,7 @@
 - `CORE_HEAD_SLOT`
 - `CORE_TORSO_SLOT`
 - `TORSO_REQUIRED_SLOTS`
+- `APPLY_ORDER`
 
 ### Key Variables
 - `owner_player`
@@ -2254,6 +2490,8 @@
 - `rig`
 - `slot`
 - `bone_id`
+- `current_state`
+- `slot_id`
 - `socket`
 - `visual`
 - `normalized_target`
@@ -2274,6 +2512,8 @@
 - `get_equipped_bone_for_slot(slot: String) -> String`
 - `has_bone_equipped(bone_id: String) -> bool`
 - `get_equipment_state() -> Dictionary`
+- `apply_equipment_state(target_state: Dictionary) -> void`
+- `matches_equipment_state(target_state: Dictionary) -> bool`
 - `get_swap_count() -> int`
 - `_equip_bone_in_slot(bone_id: String, force_core: bool = false, target_slot: String = "") -> bool`
 - `_slot_for_request(bone_id: String, target_slot: String = "") -> String`
@@ -2328,6 +2568,8 @@
 - `equip_cursor`
 - `instance_id`
 - `index`
+- `restored`
+- `dropped`
 - `bone_id`
 
 ### Functions
@@ -2335,6 +2577,7 @@
 - `collect_bone(bone_id: String) -> void`
 - `can_remove_bone(instance_id: String) -> bool`
 - `remove_bone(instance_id: String) -> bool`
+- `restore_items(items: Array) -> Dictionary`
 - `equip_next_bone() -> void`
 - `get_run_stats() -> Dictionary`
 - `get_inventory_items() -> Array`
@@ -3217,6 +3460,139 @@
 ### Node Path Lookups
 - none
 
+## SaveCoordinator
+
+- Source file: `scripts/save_coordinator.gd`
+- Extends: `Node`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `autosave_enabled`
+- `show_save_buttons`
+- `player_path`
+- `world_root_path`
+
+### Constants
+- none
+
+### Key Variables
+- `last_report`
+- `_defeated_keys`
+- `_player`
+- `_world_root`
+- `_status_label`
+- `_status_timer`
+- `data`
+- `saved`
+- `world`
+- `key`
+- `canvas`
+- `root`
+- `row`
+- `button`
+- `players`
+- `dropped`
+
+### Functions
+- `_ready() -> void`
+- `_process(delta: float) -> void`
+- `save_game() -> bool`
+- `load_game() -> Dictionary`
+- `new_game() -> void`
+- `autosave(reason: String) -> void`
+- `_on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void`
+- `_on_chest_opened(_chest: Node, chest_id: String, _contents: Array, _player: Node) -> void`
+- `_on_trial_completed(trial_id: String, _trial_name: String) -> void`
+- `_notification(what: int) -> void`
+- `_build_ui() -> void`
+- `_make_button(text: String, callback: Callable) -> Button`
+- `_set_status(text: String) -> void`
+- `_resolve_player() -> Node`
+- `_resolve_world_root() -> Node`
+- `_report_load(report: Dictionary) -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- `enemy_defeated`
+- `chest_opened`
+- `trial_completed`
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## SaveService
+
+- Source file: `scripts/save_service.gd`
+- Extends: `unknown`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `DEFAULT_SAVE_PATH`
+- `SAVE_VERSION`
+- `CHEST_GROUP`
+- `TRIAL_GROUP`
+- `ENEMY_RECORD_GROUP`
+- `CAMP_GROUP`
+
+### Key Variables
+- `file`
+- `raw`
+- `parsed`
+- `data`
+- `version`
+- `report`
+- `instances`
+- `inventory_component`
+- `inventory_report`
+- `equipment_component`
+- `target_state`
+- `rng`
+- `applied`
+- `player_node`
+- `position`
+- `raw_position`
+- `state`
+- `slot_id`
+- `bone_id`
+- `states`
+- `seen`
+- `unlocked`
+- `opened`
+- `id`
+- `wanted`
+- `entry`
+- `key`
+- `ids`
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- `chest_state_changed`
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## SynergyRulesService
 
 - Source file: `scripts/synergy_rules_service.gd`
@@ -3322,6 +3698,7 @@
 - `MAIN_MENU_PATH`
 - `PLAYER_SCENE`
 - `ENEMY_SCENE`
+- `CHEST_SCENE`
 - `VALIDATION_LOG_PATH`
 - `OVERLAY_PANEL_WIDTH`
 - `P0_VALIDATION_GUIDES`
@@ -3345,6 +3722,8 @@
 - `environment`
 - `env`
 - `sun`
+- `chests`
+- `chest`
 - `body`
 - `mesh_instance`
 - `mesh`
@@ -3367,13 +3746,13 @@
 - `state`
 - `base_speed`
 - `base_reach`
-- `base_damage`
-- `base_health`
 
 ### Functions
 - `_ready() -> void`
 - `_unhandled_input(event: InputEvent) -> void`
 - `_build_world() -> void`
+- `_build_test_chests() -> void`
+- `_make_test_chest(parent: Node3D, node_name: String, pos: Vector3, properties: Dictionary) -> void`
 - `_make_box(box_name: String, pos: Vector3, size: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> StaticBody3D`
 - `_make_material(color: Color) -> StandardMaterial3D`
 - `_find_or_create_spawn_root() -> void`
@@ -3409,6 +3788,7 @@
 ### Resource Dependencies
 - `scenes/player.tscn`
 - `scenes/enemy.tscn`
+- `scenes/chest.tscn`
 
 ### GameEvents Usage
 - `enemy_defeated`

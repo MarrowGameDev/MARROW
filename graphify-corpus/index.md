@@ -4,10 +4,10 @@ This generated corpus translates the Godot project into Markdown that Graphify c
 It is derived from source files and should be rebuilt before Graphify runs.
 
 ## Included Source
-- GDScript files: 44
-- Godot scenes: 14
-- Documentation files: 19
-- Project/root files: 3
+- GDScript files: 49
+- Godot scenes: 15
+- Documentation files: 23
+- Project/root files: 2
 
 ## Generated Maps
 - `architecture.py`: synthetic Python AST map used by Graphify code-only extraction.
