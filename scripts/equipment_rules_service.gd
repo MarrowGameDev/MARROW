@@ -255,11 +255,11 @@ static func generated_limb_definition_for(raw_id: String) -> Dictionary:
 		"quality_score": _generated_limb_quality_score(source_profile),
 		"quality_multiplier": _generated_limb_quality_multiplier(source_profile),
 		"quality_color": _generated_limb_quality_color(source_profile),
-		"quality_damage_percent": _generated_limb_quality_damage_percent(source_profile),
-		"quality_speed_percent": _generated_limb_quality_speed_percent(source_profile),
-		"quality_health_percent": _generated_limb_quality_health_percent(source_profile),
+		"quality_damage_percent": _generated_limb_quality_damage_percent(source_profile, limb_key),
+		"quality_speed_percent": _generated_limb_quality_speed_percent(source_profile, limb_key),
+		"quality_health_percent": _generated_limb_quality_health_percent(source_profile, limb_key),
 		"quality_drop_percent": _generated_limb_quality_drop_percent(source_profile),
-		"quality_weight_percent": _generated_limb_quality_weight_percent(source_profile),
+		"quality_weight_percent": _generated_limb_quality_weight_percent(source_profile, limb_key),
 		"rarity": _generated_limb_rarity(source_profile),
 		"rarity_rank": _generated_limb_rarity_rank(source_profile),
 		"rarity_color": _generated_limb_rarity_color(source_profile),
@@ -372,32 +372,26 @@ static func _generated_limb_quality_multiplier(source_profile: String) -> float:
 	return BoneDefinition.default_quality_multiplier(_generated_limb_quality(source_profile))
 
 
-static func _generated_limb_quality_damage_percent(source_profile: String) -> float:
-	match source_profile:
-		"gorilla":
-			return 0.08
-		"lizard":
-			return -0.03
-		_:
-			return 0.0
+static func _generated_limb_quality_damage_percent(source_profile: String, limb_key: String) -> float:
+	if source_profile == "gorilla" and limb_key in ["right_arm", "left_arm"]:
+		return 0.02
+	return 0.0
 
 
-static func _generated_limb_quality_speed_percent(source_profile: String) -> float:
-	match source_profile:
-		"gorilla":
-			return -0.06
-		"lizard":
-			return 0.08
-		_:
-			return 0.0
+static func _generated_limb_quality_speed_percent(source_profile: String, limb_key: String) -> float:
+	if source_profile == "gorilla" and limb_key in ["right_leg", "left_leg"]:
+		return -0.02
+	if source_profile == "lizard" and limb_key in ["right_leg", "left_leg"]:
+		return 0.03
+	return 0.0
 
 
-static func _generated_limb_quality_health_percent(source_profile: String) -> float:
-	match source_profile:
-		"gorilla":
-			return 0.05
-		_:
-			return 0.0
+static func _generated_limb_quality_health_percent(source_profile: String, limb_key: String) -> float:
+	if source_profile == "gorilla" and limb_key == "body":
+		return 0.02
+	if source_profile == "lizard" and limb_key == "body":
+		return -0.02
+	return 0.0
 
 
 static func _generated_limb_quality_drop_percent(source_profile: String) -> float:
@@ -408,14 +402,12 @@ static func _generated_limb_quality_drop_percent(source_profile: String) -> floa
 			return 0.0
 
 
-static func _generated_limb_quality_weight_percent(source_profile: String) -> float:
-	match source_profile:
-		"gorilla":
-			return 0.1
-		"lizard":
-			return -0.08
-		_:
-			return 0.0
+static func _generated_limb_quality_weight_percent(source_profile: String, limb_key: String) -> float:
+	if source_profile == "gorilla" and limb_key == "body":
+		return 0.05
+	if source_profile == "lizard" and limb_key == "body":
+		return -0.04
+	return 0.0
 
 
 static func _generated_limb_quality_color(source_profile: String) -> Color:
@@ -663,28 +655,45 @@ static func _generated_limb_synergy_score(source_profile: String, limb_key: Stri
 
 static func _generated_limb_bonus(source_profile: String, limb_key: String) -> Dictionary:
 	var bonus: Dictionary = PLAYER_BONUS_DEFAULTS.duplicate()
-	match limb_key:
-		"right_arm", "left_arm":
-			bonus["attack_range"] = 0.8
-			bonus["max_health"] = 1
-		"right_leg", "left_leg":
-			bonus["move_speed"] = 0.8
-			bonus["max_health"] = 1
-		"body":
-			bonus["max_health"] = 2
-		"head":
-			bonus["attack_damage"] = 1
-
 	match source_profile:
 		"gorilla":
-			bonus["move_speed"] = float(bonus["move_speed"]) - 0.4
-			bonus["attack_damage"] = int(bonus["attack_damage"]) + 1
-			if limb_key == "body":
-				bonus["max_health"] = int(bonus["max_health"]) + 1
+			match limb_key:
+				"right_arm", "left_arm":
+					bonus["attack_range"] = 0.25
+					bonus["attack_damage"] = 3
+					bonus["max_health"] = 2
+				"right_leg", "left_leg":
+					bonus["move_speed"] = -0.15
+					bonus["max_health"] = 4
+				"body":
+					bonus["attack_damage"] = 1
+					bonus["max_health"] = 20
+				"head":
+					bonus["attack_damage"] = 2
 		"lizard":
-			bonus["move_speed"] = float(bonus["move_speed"]) + 0.5
-			if limb_key == "head":
-				bonus["attack_range"] = float(bonus["attack_range"]) + 0.6
+			match limb_key:
+				"right_arm", "left_arm":
+					bonus["move_speed"] = 0.15
+					bonus["attack_range"] = 0.55
+				"right_leg", "left_leg":
+					bonus["move_speed"] = 0.8
+				"body":
+					bonus["move_speed"] = 0.35
+					bonus["max_health"] = 8
+				"head":
+					bonus["attack_range"] = 0.6
+		_:
+			match limb_key:
+				"right_arm", "left_arm":
+					bonus["attack_range"] = 0.45
+					bonus["attack_damage"] = 1
+				"right_leg", "left_leg":
+					bonus["move_speed"] = 0.35
+					bonus["max_health"] = 2
+				"body":
+					bonus["max_health"] = 12
+				"head":
+					bonus["attack_damage"] = 2
 	return bonus
 
 

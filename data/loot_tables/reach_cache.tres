@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LootTableDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot_table_definition.gd" id="1_loottable"]
+
+[resource]
+script = ExtResource("1_loottable")
+table_id = "reach_cache"
+display_name = "Reach Cache"
+description = "Reach Ridge. Arms only. The guaranteed Arm Bone is what makes the region's trial gate passable, so the chest can teach reach without depending on a roll."
+guaranteed_bone_ids = Array[String](["arm_bone"])
+entries = Array[String](["normal_right_arm_bone", "normal_left_arm_bone", "lizard_right_arm_bone", "lizard_left_arm_bone"])
+min_rolls = 1
+max_rolls = 2
+allow_duplicates = false
+quality_bias = 0.05
+difficulty_min = 3
+difficulty_max = 4

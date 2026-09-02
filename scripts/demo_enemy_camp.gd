@@ -3,30 +3,55 @@ extends Node3D
 
 # A demo encounter pocket: enemies gather around a campfire, and the chest opens
 # only after every registered camp enemy has been cleared.
+#
+# The camp owns ONE rule: are all my enemies dead yet. Everything about the
+# container -- how it looks, how long the hold takes, what comes out, whether it
+# was already emptied in a previous session -- belongs to the LootChest it
+# instances, which is the same chest used everywhere else on the map.
+
+const CHEST_SCENE: PackedScene = preload("res://scenes/chest.tscn")
+const CHEST_OFFSET := Vector3(1.8, 0.0, 0.0)
 
 @export var camp_name: String = "Enemy Camp"
+# Single-reward compatibility path, kept so existing camps keep giving exactly
+# what they gave before. Ignored when loot_table_id names a real table.
 @export var reward_bone_id: String = "dummy_bone"
+# Preferred for new camps: a real table, so a camp can hand out a small spread
+# instead of one fixed bone.
+@export var loot_table_id: String = ""
 @export var chest_open_hold_time: float = 0.65
+# Save key for this camp's chest. Left empty it falls back to the camp's node
+# name, which tutorial_island_builder already makes unique per camp.
+@export var chest_id: String = ""
 
 var enemies: Array[Node] = []
 var unlocked: bool = false
 var opened: bool = false
-var player_in_range: Node3D = null
-var interact_reserved: bool = false
-var hold_progress: float = 0.0
 
+var chest: LootChest = null
 var label: Label3D = null
-var chest_mesh: MeshInstance3D = null
 var flame_mesh: MeshInstance3D = null
-var chest_material: StandardMaterial3D = null
 var flame_time: float = 0.0
 
 
 func _ready() -> void:
 	add_to_group("enemy_camps")
 	GameEvents.enemy_defeated.connect(_on_enemy_defeated)
-	_build_visuals()
+	GameEvents.chest_opened.connect(_on_chest_opened)
+	GameEvents.chest_state_changed.connect(_on_chest_state_changed)
+	_build_campfire()
+	_build_label()
+	_build_chest()
 	_update_label()
+
+
+# Only the campfire flicker lives here now. The chest runs its own hold timer,
+# and only while a player is actually standing at it.
+func _process(delta: float) -> void:
+	if flame_mesh == null:
+		return
+	flame_time += delta
+	flame_mesh.scale = Vector3.ONE * (1.0 + sin(flame_time * 8.0) * 0.12)
 
 
 func register_enemy(enemy: Node) -> void:
@@ -40,44 +65,29 @@ func register_enemy(enemy: Node) -> void:
 	_update_label()
 
 
-func _process(delta: float) -> void:
-	flame_time += delta
-	if flame_mesh != null:
-		var pulse := 1.0 + sin(flame_time * 8.0) * 0.12
-		flame_mesh.scale = Vector3.ONE * pulse
-
-	if opened or not unlocked or player_in_range == null:
-		if hold_progress > 0.0:
-			hold_progress = 0.0
-			_update_label()
-		return
-
-	if Input.is_action_pressed(DropPickupRulesService.PICKUP_ACTION):
-		hold_progress += delta
-		_update_label()
-		if hold_progress >= chest_open_hold_time:
-			_open_chest()
-	else:
-		if hold_progress > 0.0:
-			hold_progress = 0.0
-			_update_label()
+# Recount live enemies and re-derive the lock. Called after a save restore
+# swaps this camp's enemies out from under it; also safe to call at any time.
+func refresh_state() -> void:
+	_update_state()
+	_update_label()
 
 
 func _update_state() -> void:
 	if opened:
 		return
 
-	var all_cleared := true
-	for enemy in enemies:
-		if enemy != null and is_instance_valid(enemy) and bool(enemy.get("alive")):
-			all_cleared = false
-			break
+	var all_cleared := _remaining_enemy_count() == 0
+	if all_cleared == unlocked:
+		return
 
-	if all_cleared != unlocked:
-		unlocked = all_cleared
-		_update_chest_visual()
-		_emit_camp_state_changed()
-		_update_label()
+	unlocked = all_cleared
+	if chest != null:
+		if unlocked:
+			chest.unlock()
+		else:
+			chest.lock()
+	_emit_camp_state_changed()
+	_update_label()
 
 
 func _on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void:
@@ -87,73 +97,79 @@ func _on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void:
 	_update_label()
 
 
+# The chest is the single source of truth for whether the reward was claimed.
+# The camp mirrors it instead of tracking a second copy, which is what lets a
+# save restore the chest alone and have the camp label follow.
+func _on_chest_state_changed(changed_chest: Node, _chest_id: String, chest_unlocked: bool, chest_opened: bool) -> void:
+	if changed_chest != chest:
+		return
+	if opened == chest_opened and unlocked == chest_unlocked:
+		return
+
+	opened = chest_opened
+	unlocked = chest_unlocked or chest_opened
+	_emit_camp_state_changed()
+	_update_label()
+
+
+func _on_chest_opened(opened_chest: Node, _chest_id: String, contents: Array, player: Node) -> void:
+	if opened_chest != chest:
+		return
+
+	opened = true
+	_emit_camp_state_changed()
+	_update_label()
+	# Kept for compatibility with anything still listening for the camp-specific
+	# event. It reports the first piece, which is what the single reward_bone_id
+	# path always produced.
+	var reward_id: String = str(contents[0]) if not contents.is_empty() else ""
+	GameEvents.camp_chest_opened.emit(self, reward_id, player)
+
+
 func _emit_camp_state_changed() -> void:
 	GameEvents.camp_state_changed.emit(self, unlocked, opened, _remaining_enemy_count())
 
 
-func _open_chest() -> void:
-	if opened or not unlocked:
+func _remaining_enemy_count() -> int:
+	var count := 0
+	for enemy in enemies:
+		if enemy != null and is_instance_valid(enemy) and bool(enemy.get("alive")):
+			count += 1
+	return count
+
+
+# --- construction ---------------------------------------------------------
+
+func _build_chest() -> void:
+	chest = CHEST_SCENE.instantiate() as LootChest
+	if chest == null:
+		push_warning("DemoEnemyCamp '%s': chest scene did not instantiate." % camp_name)
 		return
 
-	opened = true
-	hold_progress = 0.0
-	_update_chest_visual()
-	_emit_camp_state_changed()
+	chest.name = "RewardChest"
+	chest.position = CHEST_OFFSET
+	chest.chest_id = chest_id if chest_id != "" else name + "_chest"
+	chest.display_name = camp_name
+	chest.open_hold_time = chest_open_hold_time
+	# The camp decides when it opens, so the chest waits to be told.
+	chest.lock_mode = LootChest.LockMode.EXTERNAL
+	chest.delivery_mode = LootChest.DeliveryMode.DIRECT_TO_INVENTORY
 
-	if player_in_range != null and reward_bone_id != "" and player_in_range.has_method("collect_bone"):
-		player_in_range.call("collect_bone", reward_bone_id)
+	# Exactly one loot source, never both. Leaving the chest's default table id
+	# in place while also handing it an inline table would work today (the
+	# inline one wins) but would silently start handing out field loot the day
+	# someone removed the inline call.
+	chest.loot_table_id = loot_table_id
+	add_child(chest)
 
-	GameEvents.camp_chest_opened.emit(self, reward_bone_id, player_in_range)
-	_release_player_interact_lock()
-	_update_label()
+	# After add_child so the chest is ready to receive it. The legacy single
+	# bone becomes a one-item table and goes through the same roll path as
+	# everything else.
+	if loot_table_id == "":
+		chest.use_single_bone_reward(reward_bone_id)
 
-
-func _on_chest_body_entered(body: Node3D) -> void:
-	if body.has_method("collect_bone"):
-		player_in_range = body
-		_reserve_player_interact_lock()
-		hold_progress = 0.0
-		_update_label()
-
-
-func _on_chest_body_exited(body: Node3D) -> void:
-	if body != player_in_range:
-		return
-
-	_release_player_interact_lock()
-	player_in_range = null
-	hold_progress = 0.0
-	_update_label()
-
-
-func _reserve_player_interact_lock() -> void:
-	if interact_reserved or player_in_range == null:
-		return
-	if player_in_range.has_method("enter_interact_range"):
-		player_in_range.call("enter_interact_range")
-		interact_reserved = true
-
-
-func _release_player_interact_lock() -> void:
-	if not interact_reserved or player_in_range == null:
-		return
-	if player_in_range.has_method("exit_interact_range"):
-		player_in_range.call("exit_interact_range")
-	interact_reserved = false
-
-
-func _build_visuals() -> void:
-	_build_campfire()
-	_build_chest()
-
-	label = Label3D.new()
-	label.name = "CampLabel"
-	label.position = Vector3(0.0, 2.2, 0.0)
-	label.font_size = 34
-	label.outline_size = 7
-	label.outline_modulate = Color(0.03, 0.02, 0.01, 1.0)
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	add_child(label)
+	if unlocked:
+		chest.unlock()
 
 
 func _build_campfire() -> void:
@@ -181,57 +197,20 @@ func _build_campfire() -> void:
 	fire_root.add_child(flame_mesh)
 
 
-func _build_chest() -> void:
-	var chest_root := Node3D.new()
-	chest_root.name = "RewardChest"
-	chest_root.position = Vector3(1.8, 0.35, 0.0)
-	add_child(chest_root)
-
-	chest_mesh = MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(1.1, 0.7, 0.8)
-	chest_mesh.mesh = box
-	chest_material = _make_material(Color(0.30, 0.18, 0.08, 1.0))
-	chest_mesh.material_override = chest_material
-	chest_root.add_child(chest_mesh)
-
-	var lid := MeshInstance3D.new()
-	var lid_box := BoxMesh.new()
-	lid_box.size = Vector3(1.2, 0.18, 0.9)
-	lid.mesh = lid_box
-	lid.position = Vector3(0.0, 0.44, 0.0)
-	lid.material_override = _make_material(Color(0.55, 0.38, 0.16, 1.0))
-	chest_root.add_child(lid)
-
-	var area := Area3D.new()
-	area.name = "ChestOpenArea"
-	area.collision_layer = 0
-	area.collision_mask = 1
-	chest_root.add_child(area)
-
-	var shape_node := CollisionShape3D.new()
-	var sphere := SphereShape3D.new()
-	sphere.radius = 1.5
-	shape_node.shape = sphere
-	area.add_child(shape_node)
-
-	area.body_entered.connect(Callable(self, "_on_chest_body_entered"))
-	area.body_exited.connect(Callable(self, "_on_chest_body_exited"))
+func _build_label() -> void:
+	label = Label3D.new()
+	label.name = "CampLabel"
+	label.position = Vector3(0.0, 2.2, 0.0)
+	label.font_size = 34
+	label.outline_size = 7
+	label.outline_modulate = Color(0.03, 0.02, 0.01, 1.0)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	add_child(label)
 
 
-func _update_chest_visual() -> void:
-	if chest_material == null:
-		return
-
-	if opened:
-		chest_material.albedo_color = Color(0.16, 0.48, 0.20, 1.0)
-		chest_mesh.rotation.x = -0.12
-	elif unlocked:
-		chest_material.albedo_color = Color(0.82, 0.62, 0.22, 1.0)
-	else:
-		chest_material.albedo_color = Color(0.30, 0.18, 0.08, 1.0)
-
-
+# The camp label reports the camp's own state only. Hold progress and the key
+# prompt belong to the chest, which draws its own label -- duplicating them here
+# is what used to force the camp to poll input every frame.
 func _update_label() -> void:
 	if label == null:
 		return
@@ -240,19 +219,8 @@ func _update_label() -> void:
 		label.text = camp_name + "\nChest opened"
 	elif not unlocked:
 		label.text = camp_name + "\nClear enemies: " + str(_remaining_enemy_count())
-	elif player_in_range == null:
-		label.text = camp_name + "\nChest unlocked"
 	else:
-		var percent := int((hold_progress / chest_open_hold_time) * 100.0)
-		label.text = camp_name + "\nHold " + DropPickupRulesService.action_binding_text(DropPickupRulesService.PICKUP_ACTION) + " to open: " + str(percent) + "%"
-
-
-func _remaining_enemy_count() -> int:
-	var count := 0
-	for enemy in enemies:
-		if enemy != null and is_instance_valid(enemy) and bool(enemy.get("alive")):
-			count += 1
-	return count
+		label.text = camp_name + "\nChest unlocked"
 
 
 func _make_material(color: Color, glowing: bool = false) -> StandardMaterial3D:

@@ -1,5 +1,14 @@
 # Flujo de combate
 
+## Escala de balance vigente
+
+La vertical slice usa daño base 10, vida del jugador 50 y enemigo estándar
+40 HP/10 daño. Movimiento y alcance conservan unidades de mundo. Gorilla usa
+una banda resistente (mínimo 70 HP/14 daño), mientras Lizard cambia vida por
+movilidad. Los valores, presupuestos de piezas y matriz reproducible viven en
+`docs/combat_balance.md`; cualquier cambio de escala debe actualizar esa
+matriz y `tools/headless_balance_matrix_check.gd`.
+
 Este documento describe combate del jugador, enemigos, proyectiles, stealth,
 danio, limb loss, huida y respuesta de AI.
 
@@ -974,3 +983,71 @@ En `TESTING ENVIRONMENT`:
   ahi todavia permite varios dummies. Pruebas: en `DUMMY TESTING ENVIRONMENT`,
   apretar `2` con el dummy vivo no debe spawnear nada; matarlo y apretar `2` debe
   traerlo de vuelta.
+
+## Giro de enemigos (2026-08-04)
+
+`Enemy._turn_toward` escribia `rotation.y` directamente, sin limite. Cualquier
+cambio de intencion -- el jugador pasando por detras, un nuevo destino de
+wander, un golpe desde otro angulo -- giraba el cuerpo media vuelta en un solo
+frame. Reportado desde juego como "se dan completamente la vuelta 180 grados,
+antinatural".
+
+Ahora el giro esta limitado por `turn_speed_degrees` (export, default 240 deg/s
+= media vuelta en 0.75 s). Detalles que importan:
+
+- El paso usa `get_physics_process_delta_time()`, asi que la velocidad de giro
+  no depende del framerate.
+- El giro toma siempre el camino corto: `wrapf(diff, -PI, PI)` evita que un
+  objetivo al otro lado de la costura +-PI de la vuelta larga.
+- `facing_direction` se toma de la rotacion REAL despues del paso, nunca del
+  objetivo. Vision (`_can_see_player`), backstab (`_is_player_behind`) y las
+  bocas de los proyectiles leen `facing_direction`, y tienen que coincidir con
+  lo que se ve en pantalla: un enemigo que todavia esta girando aun no te vio.
+- La punteria no cambia: los ataques a distancia disparan hacia una posicion
+  objetivo guardada, no a lo largo de `facing_direction`.
+- `turn_speed_degrees <= 0` restaura el giro instantaneo, por si alguna variante
+  lo necesita.
+- El regreso al spawn tambien dejo de snapear: se asienta en la orientacion de
+  spawn girando, y mantiene el estado `returning_to_spawn` hasta terminar
+  (si no, la rotacion se congelaria a medio giro).
+
+Bug relacionado corregido en la misma pasada: `detached_limb_bodies` conserva la
+clave de un limb despues de que su cuerpo fue liberado, y varias lecturas hacian
+`valor as Node3D` **antes** de comprobar `is_instance_valid`. Castear un objeto
+liberado es en si mismo un error ("Trying to cast a freed object"), y la IA de
+recuperacion lo hacia por frame: decenas de miles de errores por sesion. Todas
+las lecturas pasan ahora por `Enemy._valid_limb_body`, que valida sobre el valor
+crudo antes de castear.
+
+Verificado con `godot --headless --path . --script tools/headless_enemy_turn_check.gd`:
+giro de 180 grados en 0.733 s simulados (esperado ~0.75), costura +-PI por el
+camino corto, y todas las lecturas de un limb liberado sin error.
+
+### Agilidad por variante (2026-08-04)
+
+El giro dejo de ser un unico numero. `Enemy._get_effective_turn_speed_degrees()`
+resuelve, en el mismo estilo que `_get_effective_move_speed()`:
+
+| Variante | deg/s | Media vuelta | Intencion |
+| --- | ---: | ---: | --- |
+| Normal | 240 | 0.75 s | Referencia legible |
+| Gorilla | 140 | 1.29 s | Masa. Flanquearlo compra tiempo de verdad |
+| Lizard | 420 | 0.43 s | Movilidad. Dificil ponerse detras, a cambio de menos vida |
+| Arrastrandose | x0.45 | -- | Sin piernas se gira tan mal como se camina |
+
+Los tres son `@export`, asi que un enemigo concreto puede afinarse en escena sin
+tocar codigo. Sigue las mismas identidades que `docs/combat_balance.md` ya fija
+para Gorilla (masa/tanque) y Lizard (movilidad).
+
+### Escala cero y el error `det == 0` (2026-08-04)
+
+`_death_pop()` y la limpieza de miembros desprendidos animaban la escala hasta
+`Vector3.ZERO` exacto. Un `Basis` con un eje en cero tiene determinante cero, y
+cualquier cosa que invierta esa transformada -- fisica, la matematica de sockets
+del rig, un hijo leyendo `global_position` -- falla con
+`invert: Condition "det == 0" is true` desde `core/math/basis.cpp`. Cada muerte
+y cada miembro que expiraba producia una rafaga de esos errores.
+
+Ambos animan ahora hasta `Enemy.MIN_VISIBLE_SCALE` (0.01): visualmente
+indistinguible de cero, con determinante 1e-6. La colision ya se desactiva en
+`die()`, asi que el cuerpo diminuto no interactua con nada.

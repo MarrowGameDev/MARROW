@@ -3,6 +3,7 @@ extends Node3D
 const MAIN_MENU_PATH: String = "res://scenes/main_menu.tscn"
 const PLAYER_SCENE: PackedScene = preload("res://scenes/player.tscn")
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
+const CHEST_SCENE: PackedScene = preload("res://scenes/chest.tscn")
 
 # Human-reviewable evidence log for the P0 checks below. Written under
 # user:// (outside the repo) because it is per-session QA evidence, not
@@ -188,6 +189,49 @@ func _build_world() -> void:
 	_make_box("EnemyCoverBlockB", Vector3(4.5, 0.65, -8.0), Vector3(4.5, 1.3, 1.2), Color(0.42, 0.39, 0.33, 1.0))
 	_make_box("Ramp", Vector3(0.0, 0.48, -13.0), Vector3(5.5, 0.35, 7.0), Color(0.46, 0.40, 0.32, 1.0), Vector3(0.24, 0.0, 0.0))
 	_make_box("RigPosePlatform", Vector3(12.0, 0.08, -11.0), Vector3(7.0, 0.16, 7.0), Color(0.24, 0.42, 0.48, 1.0))
+	_build_test_chests()
+
+
+# One chest per lock mode, so the sandbox covers what the demo map cannot show
+# side by side: an open one, one gated on gear, and one that only a trial opens.
+# Deliberately no SaveCoordinator in this scene, so opening them cannot touch a
+# real save -- they reset every time the room is reloaded with R.
+func _build_test_chests() -> void:
+	var chests := Node3D.new()
+	chests.name = "TestChests"
+	add_child(chests)
+
+	_make_test_chest(chests, "TestChestOpen", Vector3(-5.0, 0.0, 3.0), {
+		"chest_id": "testing_open_chest",
+		"display_name": "Open Cache",
+		"loot_table_id": "field_cache",
+	})
+	# Direct-to-inventory, so the sandbox can check the other delivery mode
+	# without hunting pickups off the floor.
+	_make_test_chest(chests, "TestChestDirect", Vector3(-5.0, 0.0, 6.0), {
+		"chest_id": "testing_direct_chest",
+		"display_name": "Direct Cache",
+		"loot_table_id": "elder_cache",
+		"delivery_mode": LootChest.DeliveryMode.DIRECT_TO_INVENTORY,
+	})
+	# Gated on wearing an Arm Bone: the fastest way to confirm the lock tracks
+	# equip and unequip live.
+	_make_test_chest(chests, "TestChestGated", Vector3(-8.0, 0.0, 4.5), {
+		"chest_id": "testing_gated_chest",
+		"display_name": "Arm-Gated Cache",
+		"loot_table_id": "reach_cache",
+		"lock_mode": LootChest.LockMode.EQUIPPED_BONE,
+		"required_bone_id": "arm_bone",
+	})
+
+
+func _make_test_chest(parent: Node3D, node_name: String, pos: Vector3, properties: Dictionary) -> void:
+	var chest := CHEST_SCENE.instantiate()
+	chest.name = node_name
+	chest.position = pos
+	for key in properties:
+		chest.set(str(key), properties[key])
+	parent.add_child(chest)
 
 
 func _make_box(box_name: String, pos: Vector3, size: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> StaticBody3D:
@@ -343,26 +387,26 @@ func _apply_profile(enemy: Node, profile: String) -> void:
 	match profile:
 		"gorilla":
 			enemy.set("gorilla_profile_mode", "Always")
-			enemy.set("max_health", 8)
-			enemy.set("contact_damage", 2)
+			enemy.set("max_health", 70)
+			enemy.set("contact_damage", 14)
 			enemy.set("move_speed", 2.4)
 		"lizard":
 			enemy.set("lizard_profile_mode", "Always")
-			enemy.set("max_health", 4)
+			enemy.set("max_health", 40)
 			enemy.set("move_speed", 3.4)
 		"ranged":
 			enemy.set("ranged_attacker_enabled", true)
-			enemy.set("max_health", 3)
+			enemy.set("max_health", 32)
 			enemy.set("move_speed", 2.2)
 			enemy.set("ranged_attack_range", 18.0)
 		"dummy":
 			enemy.set("dummy_target_enabled", true)
-			enemy.set("max_health", 12)
+			enemy.set("max_health", 120)
 			enemy.set("move_speed", 0.0)
 			enemy.set("contact_damage", 0)
 			enemy.set("detection_range", 0.0)
 		_:
-			enemy.set("max_health", 3)
+			enemy.set("max_health", 40)
 			enemy.set("move_speed", 2.8)
 
 

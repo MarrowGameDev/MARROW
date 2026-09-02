@@ -6,13 +6,9 @@ const BUILD_SECTION := "builds"
 const INSTANCE_SECTION := "instances"
 const BUILD_SLOT_COUNT := 3
 
-const APPLY_ORDER := [
-	EquipmentRulesService.SLOT_TORSO,
-	EquipmentRulesService.SLOT_LEFT_ARM,
-	EquipmentRulesService.SLOT_RIGHT_ARM,
-	EquipmentRulesService.SLOT_LEFT_LEG,
-	EquipmentRulesService.SLOT_RIGHT_LEG,
-]
+# The slot order and the "wear exactly this set" routine belong to the
+# equipment component; builds and save restore are two callers of the same rule.
+const APPLY_ORDER := PlayerEquipmentComponent.APPLY_ORDER
 
 var owner_player: Node = null
 var equipment_component: PlayerEquipmentComponent = null
@@ -362,30 +358,11 @@ func _composition_for_state(state: Dictionary) -> Dictionary:
 
 
 func _apply_validated_state(target_state: Dictionary) -> void:
-	var current_state := equipment_component.get_equipment_state()
-	for slot in current_state.keys():
-		var slot_id := EquipmentRulesService.normalize_slot_id(str(slot))
-		if slot_id == "" or slot_id == EquipmentRulesService.SLOT_HEAD:
-			continue
-		if not target_state.has(slot_id):
-			equipment_component.unequip_slot(slot_id)
-
-	for slot_id in APPLY_ORDER:
-		var bone_id := str(target_state.get(slot_id, ""))
-		if bone_id == "":
-			continue
-		if equipment_component.get_equipped_bone_for_slot(slot_id) == bone_id:
-			continue
-		equipment_component.equip_bone(bone_id, slot_id)
+	equipment_component.apply_equipment_state(target_state)
 
 
 func _matches_equipment_state(target_state: Dictionary) -> bool:
-	for slot_id in APPLY_ORDER:
-		var expected := str(target_state.get(slot_id, ""))
-		var actual := equipment_component.get_equipped_bone_for_slot(slot_id)
-		if expected != actual:
-			return false
-	return true
+	return equipment_component.matches_equipment_state(target_state)
 
 
 func _sanitize_build_state(raw_state: Dictionary) -> Dictionary:

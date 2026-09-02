@@ -441,9 +441,9 @@ static func default_quality_multiplier(quality_id: String) -> float:
 		QUALITY_COMMON:
 			return 1.0
 		QUALITY_STRONG:
-			return 1.15
+			return 1.05
 		QUALITY_LEGENDARY:
-			return 1.5
+			return 1.10
 		_:
 			return 1.0
 

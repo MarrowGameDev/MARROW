@@ -13,11 +13,11 @@ const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 @export var sprint_multiplier: float = 1.55
 @export var jump_velocity: float = 8.5
 @export var base_attack_range: float = 2.0
-@export var base_attack_damage: int = 1
+@export var base_attack_damage: int = 10
 
 # Player survivability. Enemies deal contact_damage; invuln_time is a brief mercy
 # window after each hit so a crowd can't drain you in a single frame.
-@export var max_health: int = 1
+@export var max_health: int = 50
 @export var damage_invuln_time: float = 0.7
 @export var damage_knockback_strength: float = 5.0
 
@@ -76,7 +76,7 @@ const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 @export_group("Bow")
 @export var bow_enabled: bool = true
 @export var start_with_bow_equipped: bool = false
-@export var bow_damage: int = 1
+@export var bow_damage: int = 8
 @export var bow_cooldown: float = 0.75
 @export var bow_arrow_speed: float = 18.0
 @export var bow_arrow_gravity: float = 4.0
@@ -89,7 +89,7 @@ const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 @export var bow_min_charge_multiplier: float = 1.0
 @export var bow_max_charge_multiplier: float = 2.5
 @export_group("Finger Bones")
-@export var finger_bone_damage: int = 1
+@export var finger_bone_damage: int = 6
 @export var finger_bone_cooldown: float = 0.55
 @export var finger_bone_throw_speed: float = 12.0
 @export var finger_bone_throw_gravity: float = 8.0

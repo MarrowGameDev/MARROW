@@ -29,18 +29,18 @@ BONE_RULES = ROOT / "scripts" / "bone_rules_service.gd"
 BUILDS = ROOT / "scripts" / "player_equipment_builds_component.gd"
 
 PERCENT_LIMIT = 0.75
-FREE_WEIGHT = 3.0
-PENALTY_PER_WEIGHT = 0.06
-PENALTY_MAX = 0.30
+FREE_WEIGHT = 6.0
+PENALTY_PER_WEIGHT = 0.04
+PENALTY_MAX = 0.25
 
 # BoneQualityService.QUALITY_TABLE, by rank.
 QUALITY_RANK = {"frail": 0, "worn": 1, "normal": 2, "strong": 3, "pristine": 4}
 QUALITY_MULTIPLIER = {
-    "frail": 0.85,
-    "worn": 0.925,
+    "frail": 0.90,
+    "worn": 0.95,
     "normal": 1.0,
-    "strong": 1.075,
-    "pristine": 1.15,
+    "strong": 1.05,
+    "pristine": 1.10,
 }
 
 BONUS_KEYS = ("move_speed", "attack_range", "attack_damage", "max_health")
@@ -114,29 +114,41 @@ class Piece:
 def generated(source_profile: str, limb_key: str, quality: str = "normal") -> Piece:
     base_weight = {"body": 1.4, "head": 0.8, "right_leg": 1.1, "left_leg": 1.1}.get(limb_key, 1.0)
     bonus = {"move_speed": 0.0, "attack_range": 0.0, "attack_damage": 0, "max_health": 0}
-    if limb_key in ("right_arm", "left_arm"):
-        bonus["attack_range"], bonus["max_health"] = 0.8, 1
-    elif limb_key in ("right_leg", "left_leg"):
-        bonus["move_speed"], bonus["max_health"] = 0.8, 1
-    elif limb_key == "body":
-        bonus["max_health"] = 2
-    elif limb_key == "head":
-        bonus["attack_damage"] = 1
-
     percents = {k: 0.0 for k in MODIFIER_KEYS}
     if source_profile == "gorilla":
         base_weight *= 1.45
-        bonus["move_speed"] -= 0.4
-        bonus["attack_damage"] += 1
-        if limb_key == "body":
-            bonus["max_health"] += 1
-        percents.update(damage_percent=0.08, speed_percent=-0.06, health_percent=0.05, weight_percent=0.1)
+        if limb_key in ("right_arm", "left_arm"):
+            bonus.update(attack_range=0.25, attack_damage=3, max_health=2)
+            percents["damage_percent"] = 0.02
+        elif limb_key in ("right_leg", "left_leg"):
+            bonus.update(move_speed=-0.15, max_health=4)
+            percents["speed_percent"] = -0.02
+        elif limb_key == "body":
+            bonus.update(attack_damage=1, max_health=20)
+            percents.update(health_percent=0.02, weight_percent=0.05)
+        elif limb_key == "head":
+            bonus["attack_damage"] = 2
     elif source_profile == "lizard":
         base_weight *= 0.82
-        bonus["move_speed"] += 0.5
-        if limb_key == "head":
-            bonus["attack_range"] += 0.6
-        percents.update(damage_percent=-0.03, speed_percent=0.08, weight_percent=-0.08)
+        if limb_key in ("right_arm", "left_arm"):
+            bonus.update(move_speed=0.15, attack_range=0.55)
+        elif limb_key in ("right_leg", "left_leg"):
+            bonus["move_speed"] = 0.8
+            percents["speed_percent"] = 0.03
+        elif limb_key == "body":
+            bonus.update(move_speed=0.35, max_health=8)
+            percents.update(health_percent=-0.02, weight_percent=-0.04)
+        elif limb_key == "head":
+            bonus["attack_range"] = 0.6
+    else:
+        if limb_key in ("right_arm", "left_arm"):
+            bonus.update(attack_range=0.45, attack_damage=1)
+        elif limb_key in ("right_leg", "left_leg"):
+            bonus.update(move_speed=0.35, max_health=2)
+        elif limb_key == "body":
+            bonus["max_health"] = 12
+        elif limb_key == "head":
+            bonus["attack_damage"] = 2
 
     return Piece(
         bone_id=f"{source_profile}_{limb_key}_bone",
@@ -151,17 +163,17 @@ def generated(source_profile: str, limb_key: str, quality: str = "normal") -> Pi
 AUTHORED = {
     "arm_bone": Piece(
         "arm_bone", "starter_bones", "normal",
-        {"move_speed": 0.0, "attack_range": 2.5, "attack_damage": 0, "max_health": 1},
+        {"move_speed": 0.0, "attack_range": 0.35, "attack_damage": 0, "max_health": 2},
         {k: 0.0 for k in MODIFIER_KEYS}, 1.0,
     ),
     "leg_bone": Piece(
         "leg_bone", "starter_bones", "normal",
-        {"move_speed": 3.0, "attack_range": 0.0, "attack_damage": 0, "max_health": 1},
+        {"move_speed": 0.45, "attack_range": 0.0, "attack_damage": 0, "max_health": 2},
         {k: 0.0 for k in MODIFIER_KEYS}, 1.1,
     ),
     "torso_bone": Piece(
         "torso_bone", "core_body", "normal",
-        {"move_speed": 0.0, "attack_range": 0.0, "attack_damage": 0, "max_health": 2},
+        {"move_speed": 0.0, "attack_range": 0.0, "attack_damage": 0, "max_health": 10},
         {k: 0.0 for k in MODIFIER_KEYS}, 1.2,
     ),
     "head_bone": Piece(
@@ -276,14 +288,15 @@ def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
-def player_stats(state: dict[str, Piece], base_speed=6.0, base_reach=2.0, base_damage=1, base_health=3) -> dict:
+def player_stats(state: dict[str, Piece], base_speed=6.0, base_reach=2.0, base_damage=10, base_health=50) -> dict:
     synergy = evaluate(state)
 
     bonus = {k: 0.0 for k in BONUS_KEYS}
     for piece in state.values():
         multiplier = QUALITY_MULTIPLIER[piece.quality]
         for key in BONUS_KEYS:
-            bonus[key] += float(piece.bonus[key]) * multiplier
+            value = float(piece.bonus[key])
+            bonus[key] += value * multiplier if value > 0.0 else value
     for key in BONUS_KEYS:
         bonus[key] += synergy["bonus"][key]
 
@@ -364,7 +377,7 @@ def run_instruction_1() -> None:
     family = [e for e in four["active"] if e["category"] == "family"]
     check("4 gorilla pieces activate exactly one family tier", len(family) == 1, str(family))
     check("4-piece gorilla does not stack the 2-piece tier",
-          math.isclose(four["modifiers"]["damage_percent"], 0.05)
+          math.isclose(four["modifiers"]["damage_percent"], 0.06)
           and math.isclose(four["modifiers"]["speed_percent"], -0.03)
           and math.isclose(four["bonus"]["max_health"], 0.0),
           str(four["modifiers"]) + str(four["bonus"]))

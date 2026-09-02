@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LootTableDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot_table_definition.gd" id="1_loottable"]
+
+[resource]
+script = ExtResource("1_loottable")
+table_id = "starter_cache"
+display_name = "Starter Cache"
+description = "Bonefield Hub. The first limbs a player is meant to own, biased kind so an opening run is not decided by a bad roll."
+guaranteed_bone_ids = Array[String]([])
+entries = Array[String](["arm_bone", "leg_bone"])
+min_rolls = 1
+max_rolls = 2
+allow_duplicates = false
+quality_bias = 0.15
+difficulty_min = 1
+difficulty_max = 2

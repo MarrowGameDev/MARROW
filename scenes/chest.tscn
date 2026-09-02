@@ -1,0 +1,58 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/chest.gd" id="1_chest_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_chest_base"]
+size = Vector3(1.1, 0.7, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chest_base"]
+albedo_color = Color(0.3, 0.18, 0.08, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_chest_lid"]
+size = Vector3(1.2, 0.18, 0.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chest_lid"]
+albedo_color = Color(0.55, 0.38, 0.16, 1)
+roughness = 0.7
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_chest_interact"]
+radius = 1.5
+
+[node name="LootChest" type="Node3D"]
+script = ExtResource("1_chest_script")
+
+[node name="ChestBody" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+
+[node name="Base" type="MeshInstance3D" parent="ChestBody"]
+mesh = SubResource("BoxMesh_chest_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_chest_base")
+
+[node name="LidPivot" type="Node3D" parent="ChestBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, -0.4)
+
+[node name="Lid" type="MeshInstance3D" parent="ChestBody/LidPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0.4)
+mesh = SubResource("BoxMesh_chest_lid")
+surface_material_override/0 = SubResource("StandardMaterial3D_chest_lid")
+
+[node name="InteractArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="InteractShape" type="CollisionShape3D" parent="InteractArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("SphereShape3D_chest_interact")
+
+[node name="LootSpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 1.2)
+
+[node name="PromptLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+modulate = Color(1, 0.95, 0.25, 1)
+text = "Chest"
+font_size = 40
+outline_size = 8
+outline_modulate = Color(0.08, 0.07, 0.02, 1)
+billboard = 1

@@ -6,6 +6,9 @@ extends Area3D
 var collected: bool = false
 var player_in_range: Node3D = null
 var hold_progress: float = 0.0
+# See DropPickupRulesService.next_fresh_press_latch. A limb pickup appears the
+# instant a limb is torn off, which can easily happen while interact is held.
+var awaiting_fresh_press: bool = false
 var prompt_label: Label3D = null
 
 
@@ -23,6 +26,14 @@ func _process(delta: float) -> void:
 		return
 
 	var was_holding := Input.is_action_pressed(DropPickupRulesService.PICKUP_ACTION)
+
+	awaiting_fresh_press = DropPickupRulesService.next_fresh_press_latch(awaiting_fresh_press, was_holding)
+	if awaiting_fresh_press:
+		if hold_progress > 0.0:
+			hold_progress = 0.0
+			_update_prompt()
+		return
+
 	var next_progress := DropPickupRulesService.next_pickup_hold_progress(hold_progress, delta, was_holding)
 	if was_holding:
 		hold_progress = next_progress
@@ -48,6 +59,7 @@ func _on_body_entered(body: Node3D) -> void:
 	if body.has_method("collect_bone"):
 		player_in_range = body
 		hold_progress = 0.0
+		awaiting_fresh_press = DropPickupRulesService.interact_is_held()
 		body.call("enter_bone_pickup_range")
 		GameEvents.pickup_focus_changed.emit(self, bone_id, body, true)
 		_update_prompt()

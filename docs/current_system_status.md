@@ -57,8 +57,8 @@ refactor pass.
   `BoneDatabase.reset_cache()`/`reload_from_catalog()` refresh the cache.
 - Bone quality fields describe part quality/condition and balancing metadata;
   they are intentionally separate from loot rarity.
-- Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
-  `legendario`; UI can localize display text separately.
+- Canonical quality ids are `frail`, `worn`, `normal`, `strong` and
+  `pristine`; Spanish ids remain supported as legacy aliases.
 - Quality percentage modifiers now feed the deterministic player stat formula
   for damage, speed, health and equipped weight; drop tuning remains passive.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
@@ -72,11 +72,41 @@ refactor pass.
 - Bone weight fields now distinguish animation weight, physical weight,
   equipment load and inventory weight while keeping legacy `weight`. Equipped
   load can apply a capped movement-speed penalty through `BoneRulesService`.
-- Bone set/synergy fields can be summarized from equipped state through
-  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
-  applied to stats yet, and durability does not decrease at runtime.
+- Bone set/synergy fields are evaluated by `SynergyRulesService`; family
+  tiers, bilateral symmetry and High-Quality Assembly affect the same runtime
+  stats consumed by gameplay, Inventory and Builds. Durability still does not
+  decrease at runtime.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
+
+## Cofres y loot
+
+- `LootTableDefinition` es el `Resource` de una tabla autorada; las siete tablas
+  actuales viven en `data/loot_tables/`.
+- `LootTableService` es puro: decide QUE sale, nunca crea la pieza. El cofre
+  llama `BoneInstanceService.create_instance` con la calidad ya rodada.
+- `LootChest` (`scenes/chest.tscn`) es la escena reutilizable de contenedor, con
+  cuatro modos de bloqueo y dos de entrega.
+- `rarity_drop_weight` y `quality_drop_percent` dejaron de ser datos sin
+  consumidor: las tablas los usan. Los drops de enemigos siguen sin ponderar.
+- `BoneQualityService.roll_quality_id_biased` inclina la escalera de calidad;
+  un sesgo de 0 delega en `roll_quality_id()`, asi que los drops previos no
+  cambiaron.
+- `DemoEnemyCamp` compone un `LootChest` en vez de dibujar el suyo, y conserva
+  `reward_bone_id` como tabla inline de un item.
+- Detalle completo en `docs/chest_and_loot_flow.md`.
+
+## Persistencia
+
+- `SaveService` lee/escribe `user://marrow_save.json` y conoce el orden de
+  restauracion: instancias, inventario, equipamiento, mundo, RNG.
+- `SaveCoordinator` decide cuando se guarda (cofre abierto, trial superado,
+  cierre de ventana) y encuentra al jugador.
+- `BoneInstanceService.serialize()/restore()` existian sin llamador; este
+  sistema es su primer consumidor.
+- Los presets de build siguen en `user://equipment_builds.cfg` a proposito.
+- Las escenas de prueba no llevan `SaveCoordinator`, para no pisar una partida.
+- Detalle completo en `docs/save_flow.md`.
 
 ## Testing
 

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LootTableDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot_table_definition.gd" id="1_loottable"]
+
+[resource]
+script = ExtResource("1_loottable")
+table_id = "elder_cache"
+display_name = "Elder Marrow Cache"
+description = "Elder Marrow Gate, the end of the demo route. The only table that rolls three pieces and the only one with a strong quality tilt."
+guaranteed_bone_ids = Array[String]([])
+entries = Array[String](["gorilla_body_bone", "gorilla_right_arm_bone", "gorilla_left_arm_bone", "heavy_bone", "rib_bone"])
+min_rolls = 2
+max_rolls = 3
+allow_duplicates = false
+quality_bias = 0.35
+difficulty_min = 6
+difficulty_max = 10
