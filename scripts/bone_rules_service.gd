@@ -16,9 +16,9 @@ const PLAYER_STAT_MODIFIER_DEFAULTS := {
 	"load_speed_penalty": 0.0,
 }
 const PLAYER_STAT_PERCENT_LIMIT := 0.75
-const EQUIPMENT_FREE_WEIGHT := 3.0
-const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06
-const EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30
+const EQUIPMENT_FREE_WEIGHT := 6.0
+const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.04
+const EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.25
 const DURABILITY_CRACKED_THRESHOLD := 0.4
 const UNKNOWN_COLOR := Color(1.0, 0.94, 0.68, 1.0)
 
@@ -521,11 +521,21 @@ static func adjusted_player_bonus_for(bone_id: String) -> Dictionary:
 	var bonus := player_bonus_for(bone_id)
 	var multiplier := quality_multiplier_for(bone_id)
 	return {
-		"move_speed": float(bonus["move_speed"]) * multiplier,
-		"attack_range": float(bonus["attack_range"]) * multiplier,
-		"attack_damage": float(bonus["attack_damage"]) * multiplier,
-		"max_health": float(bonus["max_health"]) * multiplier,
+		"move_speed": _quality_adjusted_bonus(float(bonus["move_speed"]), multiplier),
+		"attack_range": _quality_adjusted_bonus(float(bonus["attack_range"]), multiplier),
+		"attack_damage": _quality_adjusted_bonus(float(bonus["attack_damage"]), multiplier),
+		"max_health": _quality_adjusted_bonus(float(bonus["max_health"]), multiplier),
 	}
+
+
+# Quality represents condition/potency: it scales a piece's advantages while
+# preserving authored tradeoff costs. A Pristine heavy torso grants more of
+# its positive budget, but never becomes slower merely because it rolled at a
+# higher quality. Frail pieces lose upside without escaping their downside.
+static func _quality_adjusted_bonus(value: float, multiplier: float) -> float:
+	if value > 0.0:
+		return value * multiplier
+	return value
 
 
 # Exact, fully decimal totals. This is the internal calculation layer: nothing

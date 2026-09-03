@@ -208,15 +208,15 @@ Todas las constantes viven en `scripts/bone_rules_service.gd`. No hay
 unidades fisicas reales (kg, etc.); son numeros de diseno adimensionales
 calibrados por prueba y error, igual que el resto del balance del proyecto.
 
-- `EQUIPMENT_FREE_WEIGHT := 3.0`: suma de `equipment_weight` (peso ya
+- `EQUIPMENT_FREE_WEIGHT := 6.0`: suma de `equipment_weight` (peso ya
   ajustado por calidad) que el jugador carga sin penalizacion. Mismas
   unidades que `weight`/`equipment_weight` en los `.tres` de hueso.
-- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06`: fraccion de
+- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.04`: fraccion de
   `move_speed` que se resta por cada unidad de `equipment_weight` que
-  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 5.0 de peso equipado con 3.0
-  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.06 = 0.12 (12%).
-- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30`: techo de la penalizacion de
-  velocidad (30%), sin importar cuanto peso adicional se equipe.
+  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 8.0 de peso equipado con 6.0
+  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.04 = 0.08 (8%).
+- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.25`: techo de la penalizacion de
+  velocidad (25%), sin importar cuanto peso adicional se equipe.
 - `PLAYER_STAT_PERCENT_LIMIT := 0.75`: techo/piso (+-75%) para la suma de
   `quality_damage_percent`, `quality_speed_percent`, `quality_health_percent`
   y `quality_weight_percent` acumulados por todas las piezas equipadas.
@@ -465,3 +465,17 @@ En `TESTING ENVIRONMENT`:
 - 2026-07-15: Guardar sobre un build no vacio y Aplicar un build ahora
   requieren una segunda pulsacion del mismo boton dentro de 4 segundos
   para confirmar (sin dialogo nativo, mismo estilo DIY del resto de la UI).
+- 2026-08-04: La rutina de "llevar puesto exactamente este set" salio de
+  `PlayerEquipmentBuildsComponent` y paso a
+  `PlayerEquipmentComponent.apply_equipment_state` / `matches_equipment_state`,
+  junto con `APPLY_ORDER`. Motivo: dejo de tener un solo consumidor. Los
+  presets de build y la restauracion de partida (`docs/save_flow.md`)
+  necesitan la misma regla, y mantener dos copias garantizaba que se
+  separaran. `_apply_validated_state` y `_matches_equipment_state` siguen
+  existiendo en el componente de builds como delegaciones de una linea, asi
+  que el contrato de rollback de `apply_build` no cambio. El orden torso
+  antes que extremidades sigue siendo obligatorio: `TORSO_REQUIRED_SLOTS` no
+  puede engancharse sin torso, y aplicar en orden de diccionario descartaria
+  todas las extremidades en silencio. Verificado con
+  `python -B tools/validate_inventory_build_presets.py` y los checks headless
+  de builds.

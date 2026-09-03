@@ -19,9 +19,9 @@ BONE_RULES = ROOT / "scripts" / "bone_rules_service.gd"
 PLAYER_STATS = ROOT / "scripts" / "player_stats_component.gd"
 
 PERCENT_LIMIT = 0.75
-FREE_WEIGHT = 3.0
-PENALTY_PER_WEIGHT = 0.06
-PENALTY_MAX = 0.30
+FREE_WEIGHT = 6.0
+PENALTY_PER_WEIGHT = 0.04
+PENALTY_MAX = 0.25
 
 
 @dataclass(frozen=True)
@@ -75,14 +75,14 @@ def calculate(case: Case) -> dict[str, float]:
     for bone in case.bones:
         if bone is None:
             continue
-        move_bonus += bone.move_speed_bonus * bone.quality_multiplier
-        range_bonus += bone.attack_range_bonus * bone.quality_multiplier
+        move_bonus += bone.move_speed_bonus * bone.quality_multiplier if bone.move_speed_bonus > 0 else bone.move_speed_bonus
+        range_bonus += bone.attack_range_bonus * bone.quality_multiplier if bone.attack_range_bonus > 0 else bone.attack_range_bonus
         # Sum as floats and round once after the loop (see
         # BoneRulesService.adjusted_player_bonus_for): rounding each bone's
         # bonus before summing would let per-bone fractions round up
         # independently and inflate the total as more pieces are equipped.
-        damage_bonus_float += bone.attack_damage_bonus * bone.quality_multiplier
-        health_bonus_float += bone.max_health_bonus * bone.quality_multiplier
+        damage_bonus_float += bone.attack_damage_bonus * bone.quality_multiplier if bone.attack_damage_bonus > 0 else bone.attack_damage_bonus
+        health_bonus_float += bone.max_health_bonus * bone.quality_multiplier if bone.max_health_bonus > 0 else bone.max_health_bonus
         damage_percent += bone.quality_damage_percent
         speed_percent += bone.quality_speed_percent
         health_percent += bone.quality_health_percent
@@ -166,7 +166,7 @@ CASES = [
             )
         ],
         expected={
-            "move_speed": 4.06125,
+            "move_speed": 4.275,
             "attack_range": 2.46,
             # Single rounding, at the end. The bone's bonus is 2 * 1.15 = 2.3;
             # keeping that decimal through the percentage gives
@@ -197,7 +197,7 @@ CASES = [
         ],
         expected={
             "equipment_weight": 3.5,
-            "load_speed_penalty": 0.03,
+            "load_speed_penalty": 0.0,
             "quality_speed_percent": -0.05,
         },
     ),
@@ -238,8 +238,8 @@ def check_static_contract(bone_rules: str, player_stats: str) -> list[str]:
     errors: list[str] = []
     required_rules = [
         "const PLAYER_STAT_MODIFIER_DEFAULTS",
-        "const EQUIPMENT_FREE_WEIGHT := 3.0",
-        "const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06",
+        "const EQUIPMENT_FREE_WEIGHT := 6.0",
+        "const EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.04",
         "static func adjusted_player_bonus_for",
         "quality_multiplier_for(bone_id)",
         "static func aggregate_player_stat_modifiers",

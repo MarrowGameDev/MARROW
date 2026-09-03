@@ -18,8 +18,8 @@ func _initialize() -> void:
 	# 2. multipliers stay inside the specified band.
 	for quality_id in BoneQualityService.QUALITY_ORDER:
 		var m: float = BoneQualityService.multiplier_for(str(quality_id))
-		if m < 0.85 - 0.0001 or m > 1.15 + 0.0001:
-			failures.append("%s multiplier %.4f outside 0.85..1.15" % [str(quality_id), m])
+		if m < 0.90 - 0.0001 or m > 1.10 + 0.0001:
+			failures.append("%s multiplier %.4f outside 0.90..1.10" % [str(quality_id), m])
 	print("multipliers: ", _multiplier_map())
 
 	# --- 1. Normal is clearly the most common ----------------------------
@@ -63,9 +63,9 @@ func _initialize() -> void:
 		if absf(float(frail_stats[key]) - float(pristine_stats[key])) > 0.0001:
 			moved = true
 		# effective = base * multiplier, exactly.
-		var expected_frail: float = float(base[key]) * 0.85
+		var expected_frail: float = float(base[key]) * 0.90
 		if absf(float(frail_stats[key]) - expected_frail) > 0.0001:
-			failures.append("frail %s = %.4f, expected base*0.85 = %.4f" % [key, float(frail_stats[key]), expected_frail])
+			failures.append("frail %s = %.4f, expected base*0.90 = %.4f" % [key, float(frail_stats[key]), expected_frail])
 	if not moved:
 		failures.append("frail and pristine produced identical stats")
 

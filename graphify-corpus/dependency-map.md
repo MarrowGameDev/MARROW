@@ -26,6 +26,7 @@
 - `scripts/bone_instance_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/bone_instance_service.gd` depends on `scripts/player_inventory_component.gd` because it references class PlayerInventoryComponent.
 - `scripts/bone_quality_service.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
+- `scripts/bone_quality_service.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/bone_quality_service.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/bone_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/bone_rules_service.gd` depends on `scripts/bone_definition.gd` because it references class BoneDefinition.
@@ -35,7 +36,15 @@
 - `scripts/bone_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/bone_rules_service.gd` depends on `scripts/synergy_rules_service.gd` because it references class SynergyRulesService.
 - `scripts/bone_trial_gate.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
-- `scripts/demo_enemy_camp.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
+- `scripts/chest.gd` depends on `scenes/bone.tscn` because it loads resource.
+- `scripts/chest.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
+- `scripts/chest.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/chest.gd` depends on `scripts/demo_enemy_camp.gd` because it references class DemoEnemyCamp.
+- `scripts/chest.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
+- `scripts/chest.gd` depends on `scripts/loot_table_definition.gd` because it references class LootTableDefinition.
+- `scripts/chest.gd` depends on `scripts/loot_table_service.gd` because it references class LootTableService.
+- `scripts/demo_enemy_camp.gd` depends on `scenes/chest.tscn` because it loads resource.
+- `scripts/demo_enemy_camp.gd` depends on `scripts/chest.gd` because it references class LootChest.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/drop_pickup_rules_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/enemy.gd` depends on `scenes/bone.tscn` because it loads resource.
@@ -50,12 +59,25 @@
 - `scripts/enemy.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
 - `scripts/enemy.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/enemy.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
+- `scripts/enemy.gd` depends on `scripts/save_service.gd` because it references class SaveService.
 - `scripts/equipment_rules_service.gd` depends on `scripts/bone_database.gd` because it references class BoneDatabase.
 - `scripts/equipment_rules_service.gd` depends on `scripts/bone_definition.gd` because it references class BoneDefinition.
 - `scripts/equipment_rules_service.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
 - `scripts/equipment_rules_service.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
 - `scripts/limb_bone_pickup.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/limb_bone_pickup.gd` depends on `scripts/drop_pickup_rules_service.gd` because it references class DropPickupRulesService.
+- `scripts/loot_table_definition.gd` depends on `scripts/bone_definition.gd` because it references class BoneDefinition.
+- `scripts/loot_table_definition.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
+- `scripts/loot_table_definition.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/loot_table_definition.gd` depends on `scripts/demo_enemy_camp.gd` because it references class DemoEnemyCamp.
+- `scripts/loot_table_definition.gd` depends on `scripts/loot_table_service.gd` because it references class LootTableService.
+- `scripts/loot_table_service.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
+- `scripts/loot_table_service.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
+- `scripts/loot_table_service.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/loot_table_service.gd` depends on `scripts/demo_enemy_camp.gd` because it references class DemoEnemyCamp.
+- `scripts/loot_table_service.gd` depends on `scripts/loot_table_definition.gd` because it references class LootTableDefinition.
+- `scripts/main_menu.gd` depends on `scripts/save_coordinator.gd` because it references class SaveCoordinator.
+- `scripts/main_menu.gd` depends on `scripts/save_service.gd` because it references class SaveService.
 - `scripts/player.gd` depends on `scenes/attack_hitbox.tscn` because it loads resource.
 - `scripts/player.gd` depends on `scripts/arrow_projectile.gd` because it loads resource.
 - `scripts/player.gd` depends on `scenes/bone.tscn` because it loads resource.
@@ -107,6 +129,12 @@
 - `scripts/rig/rig_test_player.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
 - `scripts/rig/rig_test_player.gd` depends on `scripts/rig/modular_skeleton_rig.gd` because it references class ModularSkeletonRig.
 - `scripts/rig/rig_test_player.gd` depends on `scripts/rig/procedural_player_animator.gd` because it references class ProceduralPlayerAnimator.
+- `scripts/save_coordinator.gd` depends on `scripts/save_service.gd` because it references class SaveService.
+- `scripts/save_service.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
+- `scripts/save_service.gd` depends on `scripts/chest.gd` because it references class LootChest.
+- `scripts/save_service.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/save_service.gd` depends on `scripts/loot_table_service.gd` because it references class LootTableService.
+- `scripts/save_service.gd` depends on `scripts/save_coordinator.gd` because it references class SaveCoordinator.
 - `scripts/synergy_rules_service.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
 - `scripts/synergy_rules_service.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
 - `scripts/synergy_rules_service.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
@@ -114,10 +142,13 @@
 - `scripts/synergy_rules_service.gd` depends on `scripts/player_equipment_component.gd` because it references class PlayerEquipmentComponent.
 - `scripts/testing_environment.gd` depends on `scenes/player.tscn` because it loads resource.
 - `scripts/testing_environment.gd` depends on `scenes/enemy.tscn` because it loads resource.
+- `scripts/testing_environment.gd` depends on `scenes/chest.tscn` because it loads resource.
 - `scripts/testing_environment.gd` depends on `scripts/bone_instance_service.gd` because it references class BoneInstanceService.
 - `scripts/testing_environment.gd` depends on `scripts/bone_quality_service.gd` because it references class BoneQualityService.
 - `scripts/testing_environment.gd` depends on `scripts/bone_rules_service.gd` because it references class BoneRulesService.
+- `scripts/testing_environment.gd` depends on `scripts/chest.gd` because it references class LootChest.
 - `scripts/testing_environment.gd` depends on `scripts/equipment_rules_service.gd` because it references class EquipmentRulesService.
+- `scripts/testing_environment.gd` depends on `scripts/save_coordinator.gd` because it references class SaveCoordinator.
 - `scripts/testing_environment.gd` depends on `scripts/synergy_rules_service.gd` because it references class SynergyRulesService.
 - `scripts/tutorial_island_builder.gd` depends on `scenes/enemy.tscn` because it loads resource.
 - `scripts/tutorial_island_builder.gd` depends on `scenes/bone.tscn` because it loads resource.
@@ -136,6 +167,7 @@
 - `scenes/attack_hitbox.tscn` uses script `scripts/attack_hitbox.gd`.
 - `scenes/bone.tscn` uses script `scripts/bone.gd`.
 - `scenes/bone_trial_gate.tscn` uses script `scripts/bone_trial_gate.gd`.
+- `scenes/chest.tscn` uses script `scripts/chest.gd`.
 - `scenes/dummy_testing_environment.tscn` uses script `scripts/testing_environment.gd`.
 - `scenes/enemy.tscn` uses script `scripts/enemy.gd`.
 - `scenes/enemy.tscn` uses script `scripts/rig/modular_skeleton_rig.gd`.
@@ -145,12 +177,14 @@
 - `scenes/main.tscn` uses script `scripts/arena_goal_manager.gd`.
 - `scenes/main.tscn` uses script `scripts/world_map_manager.gd`.
 - `scenes/main.tscn` uses script `scripts/tutorial_island_builder.gd`.
+- `scenes/main.tscn` uses script `scripts/save_coordinator.gd`.
 - `scenes/main.tscn` instantiates scene `scenes/player.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/enemy.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/bone_trial_gate.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/exit_portal.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/open_world_stage.tscn`.
 - `scenes/main.tscn` instantiates scene `scenes/guide_wisp.tscn`.
+- `scenes/main.tscn` instantiates scene `scenes/chest.tscn`.
 - `scenes/main_menu.tscn` uses script `scripts/main_menu.gd`.
 - `scenes/open_world_stage.tscn` uses script `scripts/open_world_stage.gd`.
 - `scenes/player.tscn` uses script `scripts/player.gd`.

@@ -69,11 +69,11 @@ Ids canonicos, multiplicador y probabilidad (fuente de verdad:
 
 | id | display | multiplicador | probabilidad | rank |
 | --- | --- | --- | --- | --- |
-| `frail` | Frail | 0.85 | 2.5 % | 0 |
-| `worn` | Worn | 0.925 | 12.5 % | 1 |
+| `frail` | Frail | 0.90 | 2.5 % | 0 |
+| `worn` | Worn | 0.95 | 12.5 % | 1 |
 | `normal` | Normal | 1.00 | 70 % | 2 |
-| `strong` | Strong | 1.075 | 12.5 % | 3 |
-| `pristine` | Pristine | 1.15 | 2.5 % | 4 |
+| `strong` | Strong | 1.05 | 12.5 % | 3 |
+| `pristine` | Pristine | 1.10 | 2.5 % | 4 |
 
 La columna de probabilidad suma exactamente 100. `tools/validate_bone_quality.py`
 lo verifica sin abrir Godot.
@@ -85,7 +85,10 @@ vacio normaliza a `normal`; nunca se sortea para datos legacy.
 
 Formula (en `BoneRulesService.adjusted_player_bonus_for`):
 
-    stat efectivo = stat base * multiplicador de calidad
+    stat positivo efectivo = stat base * multiplicador de calidad
+
+Los costes planos negativos se conservan sin multiplicar: una calidad mayor
+potencia la ventaja de la pieza, pero no vuelve mas severa su penalizacion.
 
 La calidad solo escala stats numericos reales (`move_speed`, `attack_range`,
 `attack_damage`, `max_health`). No toca slot, compatibilidad, ids, tags ni
@@ -172,18 +175,16 @@ automaticamente todavia.
 
 ## Alcance De Durabilidad, Mutacion Y Set/Sinergia
 
-Estas tres secciones (Durabilidad, Mutacion, Set Y Sinergia) son
-deliberadamente solo esquema de datos y helpers puros y deterministas en
-`BoneRulesService`. Nada de esto esta conectado a gameplay todavia:
+Durabilidad y mutacion siguen siendo esquema de datos y helpers puros. Los sets
+y sinergias ya estan conectados mediante `SynergyRulesService`:
 
 - La durabilidad no disminuye en runtime; no existe estado por copia.
 - Reparar no hace nada; `durability_repair_cost_for` solo calcula un numero.
-- Los sets/sinergias no aplican bonus a stats; `equipment_synergy_summary`
-  solo resume que hay repetido.
+- Los sets, simetrias y High-Quality Assembly aplican bonus pequeños a stats;
+  `equipment_synergy_summary` tambien resume la composicion para UI.
 - Las mutaciones no producen ningun efecto (visual, de rig, de IA o de
   combate).
-- Ninguna de las funciones nuevas de `BoneRulesService` para estos temas
-  tiene un llamador fuera de si misma o del validador que las prueba.
+- Durabilidad y mutacion aun no tienen consumidores de gameplay.
 
 Esto es intencional: el objetivo de este hito era preparar datos y reglas
 puras reutilizables, no implementar las mecanicas de juego. Ver

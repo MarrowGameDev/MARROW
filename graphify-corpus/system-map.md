@@ -48,11 +48,16 @@
 - `scripts/_rt6.gd`
 - `scripts/backstab_rules_service.gd`
 - `scripts/ballistics_service.gd`
+- `scripts/chest.gd`
 - `scripts/combat_targeting_service.gd`
 - `scripts/drop_pickup_rules_service.gd`
 - `scripts/game_events.gd`
+- `scripts/loot_table_definition.gd`
+- `scripts/loot_table_service.gd`
 - `scripts/main_menu.gd`
 - `scripts/player_stats_component.gd`
+- `scripts/save_coordinator.gd`
+- `scripts/save_service.gd`
 - `scripts/synergy_rules_service.gd`
 - `scripts/testing_environment.gd`
 
@@ -73,11 +78,12 @@
 - `scenes/attack_hitbox.tscn` composes `scripts/attack_hitbox.gd`.
 - `scenes/bone.tscn` composes `scripts/bone.gd`.
 - `scenes/bone_trial_gate.tscn` composes `scripts/bone_trial_gate.gd`.
+- `scenes/chest.tscn` composes `scripts/chest.gd`.
 - `scenes/dummy_testing_environment.tscn` composes `scripts/testing_environment.gd`.
 - `scenes/enemy.tscn` composes `scripts/enemy.gd`, `scripts/rig/modular_skeleton_rig.gd`, `scripts/rig/procedural_enemy_animator.gd`.
 - `scenes/exit_portal.tscn` composes `scripts/exit_portal.gd`.
 - `scenes/guide_wisp.tscn` composes `scripts/guide_wisp.gd`.
-- `scenes/main.tscn` composes `scripts/arena_goal_manager.gd`, `scripts/world_map_manager.gd`, `scripts/tutorial_island_builder.gd`.
+- `scenes/main.tscn` composes `scripts/arena_goal_manager.gd`, `scripts/world_map_manager.gd`, `scripts/tutorial_island_builder.gd`, `scripts/save_coordinator.gd`.
 - `scenes/main_menu.tscn` composes `scripts/main_menu.gd`.
 - `scenes/open_world_stage.tscn` composes `scripts/open_world_stage.gd`.
 - `scenes/player.tscn` composes `scripts/player.gd`, `scripts/rig/modular_skeleton_rig.gd`, `scripts/rig/procedural_player_animator.gd`, `scripts/player_camera_controller.gd`.

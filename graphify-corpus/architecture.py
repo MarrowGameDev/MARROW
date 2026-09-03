@@ -576,6 +576,10 @@ class BoneQualityService:
         """Relationship: references class BoneInstanceService."""
         return BoneInstanceService
 
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
     def depends_on_ModularSkeletonRig(self):
         """Relationship: references class ModularSkeletonRig."""
         return ModularSkeletonRig
@@ -634,6 +638,10 @@ class BoneTrialGate:
         """GDScript function: _ready() -> void"""
         pass
 
+    def gd_func_restore_completed_state(self):
+        """GDScript function: restore_completed_state(was_completed: bool) -> void"""
+        pass
+
     def gd_func__process(self):
         """GDScript function: _process(_delta: float) -> void"""
         pass
@@ -674,6 +682,189 @@ class BoneTrialGate:
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
 
+class LootChest:
+    """Godot script: scripts/chest.gd
+    class_name: LootChest
+    extends: Node3D
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/chest.gd'
+    godot_class_name = 'LootChest'
+    godot_extends = 'Node3D'
+    gameplay_system = 'Supporting gameplay'
+
+    def gd_func__ready(self):
+        """GDScript function: _ready() -> void"""
+        pass
+
+    def gd_func__process(self):
+        """GDScript function: _process(delta: float) -> void"""
+        pass
+
+    def gd_func_unlock(self):
+        """GDScript function: unlock() -> void"""
+        pass
+
+    def gd_func_lock(self):
+        """GDScript function: lock() -> void"""
+        pass
+
+    def gd_func_use_single_bone_reward(self):
+        """GDScript function: use_single_bone_reward(bone_id: String) -> void"""
+        pass
+
+    def gd_func_is_openable_source(self):
+        """GDScript function: is_openable_source() -> bool"""
+        pass
+
+    def gd_func_can_be_opened_now(self):
+        """GDScript function: can_be_opened_now() -> bool"""
+        pass
+
+    def gd_func_restore_state(self):
+        """GDScript function: restore_state(was_unlocked: bool, was_opened: bool) -> void"""
+        pass
+
+    def gd_func_open(self):
+        """GDScript function: open() -> Array[String]"""
+        pass
+
+    def gd_func__announce(self):
+        """GDScript function: _announce(instance_ids: Array[String]) -> void"""
+        pass
+
+    def gd_func__create_contents(self):
+        """GDScript function: _create_contents() -> Array[String]"""
+        pass
+
+    def gd_func__roll_loot(self):
+        """GDScript function: _roll_loot() -> Array[Dictionary]"""
+        pass
+
+    def gd_func__deliver(self):
+        """GDScript function: _deliver(instance_ids: Array[String]) -> void"""
+        pass
+
+    def gd_func__spawn_pickup(self):
+        """GDScript function: _spawn_pickup(instance_id: String, index: int, total: int) -> void"""
+        pass
+
+    def gd_func__spawn_position(self):
+        """GDScript function: _spawn_position(index: int, total: int) -> Vector3"""
+        pass
+
+    def gd_func__lock_is_satisfied(self):
+        """GDScript function: _lock_is_satisfied() -> bool"""
+        pass
+
+    def gd_func__player_has_required_bone(self):
+        """GDScript function: _player_has_required_bone() -> bool"""
+        pass
+
+    def gd_func__on_trial_completed(self):
+        """GDScript function: _on_trial_completed(trial_id: String, _trial_name: String) -> void"""
+        pass
+
+    def gd_func__on_body_entered(self):
+        """GDScript function: _on_body_entered(body: Node3D) -> void"""
+        pass
+
+    def gd_func__on_body_exited(self):
+        """GDScript function: _on_body_exited(body: Node3D) -> void"""
+        pass
+
+    def gd_func__update_processing(self):
+        """GDScript function: _update_processing() -> void"""
+        pass
+
+    def gd_func__reserve_interact_lock(self):
+        """GDScript function: _reserve_interact_lock() -> void"""
+        pass
+
+    def gd_func__release_interact_lock(self):
+        """GDScript function: _release_interact_lock() -> void"""
+        pass
+
+    def gd_func__prepare_materials(self):
+        """GDScript function: _prepare_materials() -> void"""
+        pass
+
+    def gd_func__own_material(self):
+        """GDScript function: _own_material(mesh: MeshInstance3D) -> StandardMaterial3D"""
+        pass
+
+    def gd_func__refresh_visuals(self):
+        """GDScript function: _refresh_visuals(animate: bool = true) -> void"""
+        pass
+
+    def gd_func__visual_state(self):
+        """GDScript function: _visual_state() -> int"""
+        pass
+
+    def gd_func__refresh_prompt(self):
+        """GDScript function: _refresh_prompt() -> void"""
+        pass
+
+    def gd_func__prompt_text(self):
+        """GDScript function: _prompt_text() -> String"""
+        pass
+
+    def gd_func__emit_state_changed(self):
+        """GDScript function: _emit_state_changed() -> void"""
+        pass
+
+    def gd_func__identity(self):
+        """GDScript function: _identity() -> String"""
+        pass
+
+    def uses_game_event_trial_completed(self):
+        """Uses GameEvents.trial_completed."""
+        pass
+
+    def uses_game_event_chest_opened(self):
+        """Uses GameEvents.chest_opened."""
+        pass
+
+    def uses_game_event_tutorial_hint_requested(self):
+        """Uses GameEvents.tutorial_hint_requested."""
+        pass
+
+    def uses_game_event_drop_spawned(self):
+        """Uses GameEvents.drop_spawned."""
+        pass
+
+    def uses_game_event_chest_state_changed(self):
+        """Uses GameEvents.chest_state_changed."""
+        pass
+
+    def depends_on_SceneBone(self):
+        """Relationship: loads resource."""
+        return SceneBone
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_DemoEnemyCamp(self):
+        """Relationship: references class DemoEnemyCamp."""
+        return DemoEnemyCamp
+
+    def depends_on_DropPickupRulesService(self):
+        """Relationship: references class DropPickupRulesService."""
+        return DropPickupRulesService
+
+    def depends_on_LootTableDefinition(self):
+        """Relationship: references class LootTableDefinition."""
+        return LootTableDefinition
+
+    def depends_on_LootTableService(self):
+        """Relationship: references class LootTableService."""
+        return LootTableService
+
 class CombatTargetingService:
     """Godot script: scripts/combat_targeting_service.gd
     class_name: CombatTargetingService
@@ -702,12 +893,16 @@ class DemoEnemyCamp:
         """GDScript function: _ready() -> void"""
         pass
 
+    def gd_func__process(self):
+        """GDScript function: _process(delta: float) -> void"""
+        pass
+
     def gd_func_register_enemy(self):
         """GDScript function: register_enemy(enemy: Node) -> void"""
         pass
 
-    def gd_func__process(self):
-        """GDScript function: _process(delta: float) -> void"""
+    def gd_func_refresh_state(self):
+        """GDScript function: refresh_state() -> void"""
         pass
 
     def gd_func__update_state(self):
@@ -718,52 +913,36 @@ class DemoEnemyCamp:
         """GDScript function: _on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void"""
         pass
 
+    def gd_func__on_chest_state_changed(self):
+        """GDScript function: _on_chest_state_changed(changed_chest: Node, _chest_id: String, chest_unlocked: bool, chest_opened: bool) -> void"""
+        pass
+
+    def gd_func__on_chest_opened(self):
+        """GDScript function: _on_chest_opened(opened_chest: Node, _chest_id: String, contents: Array, player: Node) -> void"""
+        pass
+
     def gd_func__emit_camp_state_changed(self):
         """GDScript function: _emit_camp_state_changed() -> void"""
         pass
 
-    def gd_func__open_chest(self):
-        """GDScript function: _open_chest() -> void"""
-        pass
-
-    def gd_func__on_chest_body_entered(self):
-        """GDScript function: _on_chest_body_entered(body: Node3D) -> void"""
-        pass
-
-    def gd_func__on_chest_body_exited(self):
-        """GDScript function: _on_chest_body_exited(body: Node3D) -> void"""
-        pass
-
-    def gd_func__reserve_player_interact_lock(self):
-        """GDScript function: _reserve_player_interact_lock() -> void"""
-        pass
-
-    def gd_func__release_player_interact_lock(self):
-        """GDScript function: _release_player_interact_lock() -> void"""
-        pass
-
-    def gd_func__build_visuals(self):
-        """GDScript function: _build_visuals() -> void"""
-        pass
-
-    def gd_func__build_campfire(self):
-        """GDScript function: _build_campfire() -> void"""
+    def gd_func__remaining_enemy_count(self):
+        """GDScript function: _remaining_enemy_count() -> int"""
         pass
 
     def gd_func__build_chest(self):
         """GDScript function: _build_chest() -> void"""
         pass
 
-    def gd_func__update_chest_visual(self):
-        """GDScript function: _update_chest_visual() -> void"""
+    def gd_func__build_campfire(self):
+        """GDScript function: _build_campfire() -> void"""
+        pass
+
+    def gd_func__build_label(self):
+        """GDScript function: _build_label() -> void"""
         pass
 
     def gd_func__update_label(self):
         """GDScript function: _update_label() -> void"""
-        pass
-
-    def gd_func__remaining_enemy_count(self):
-        """GDScript function: _remaining_enemy_count() -> int"""
         pass
 
     def gd_func__make_material(self):
@@ -774,17 +953,29 @@ class DemoEnemyCamp:
         """Uses GameEvents.enemy_defeated."""
         pass
 
-    def uses_game_event_camp_state_changed(self):
-        """Uses GameEvents.camp_state_changed."""
+    def uses_game_event_chest_opened(self):
+        """Uses GameEvents.chest_opened."""
+        pass
+
+    def uses_game_event_chest_state_changed(self):
+        """Uses GameEvents.chest_state_changed."""
         pass
 
     def uses_game_event_camp_chest_opened(self):
         """Uses GameEvents.camp_chest_opened."""
         pass
 
-    def depends_on_DropPickupRulesService(self):
-        """Relationship: references class DropPickupRulesService."""
-        return DropPickupRulesService
+    def uses_game_event_camp_state_changed(self):
+        """Uses GameEvents.camp_state_changed."""
+        pass
+
+    def depends_on_SceneChest(self):
+        """Relationship: loads resource."""
+        return SceneChest
+
+    def depends_on_LootChest(self):
+        """Relationship: references class LootChest."""
+        return LootChest
 
 class DropPickupRulesService:
     """Godot script: scripts/drop_pickup_rules_service.gd
@@ -1044,6 +1235,10 @@ class Enemy:
         """GDScript function: _get_recovering_limb_key() -> String"""
         pass
 
+    def gd_func__valid_limb_body(self):
+        """GDScript function: _valid_limb_body(limb_key: String) -> Node3D"""
+        pass
+
     def gd_func__is_detached_limb_body_valid(self):
         """GDScript function: _is_detached_limb_body_valid(limb_key: String) -> bool"""
         pass
@@ -1168,6 +1363,18 @@ class Enemy:
         """GDScript function: _update_crawl_state(force_refresh: bool = false) -> void"""
         pass
 
+    def gd_func_capture_save_state(self):
+        """GDScript function: capture_save_state() -> Dictionary"""
+        pass
+
+    def gd_func_restore_save_state(self):
+        """GDScript function: restore_save_state(data: Dictionary) -> void"""
+        pass
+
+    def gd_func__become_dead_silently(self):
+        """GDScript function: _become_dead_silently() -> void"""
+        pass
+
     def gd_func_die(self):
         """GDScript function: die() -> void"""
         pass
@@ -1262,6 +1469,10 @@ class Enemy:
 
     def gd_func__get_effective_move_speed(self):
         """GDScript function: _get_effective_move_speed() -> float"""
+        pass
+
+    def gd_func__get_effective_turn_speed_degrees(self):
+        """GDScript function: _get_effective_turn_speed_degrees() -> float"""
         pass
 
     def gd_func__setup_ranged_bow_visual(self):
@@ -1375,6 +1586,10 @@ class Enemy:
     def depends_on_ProceduralPlayerAnimator(self):
         """Relationship: references class ProceduralPlayerAnimator."""
         return ProceduralPlayerAnimator
+
+    def depends_on_SaveService(self):
+        """Relationship: references class SaveService."""
+        return SaveService
 
 class EnemyRockProjectile:
     """Godot script: scripts/enemy_rock_projectile.gd
@@ -1580,6 +1795,14 @@ class GameEvents:
         """Godot signal: camp_chest_opened(camp: Node, reward_bone_id: String, player: Node)"""
         pass
 
+    def signal_chest_state_changed(self):
+        """Godot signal: chest_state_changed(chest: Node, chest_id: String, unlocked: bool, opened: bool)"""
+        pass
+
+    def signal_chest_opened(self):
+        """Godot signal: chest_opened(chest: Node, chest_id: String, contents: Array, player: Node)"""
+        pass
+
 class GuideWisp:
     """Godot script: scripts/guide_wisp.gd
     class_name: none
@@ -1674,6 +1897,100 @@ class LimbBonePickup:
         """Relationship: references class DropPickupRulesService."""
         return DropPickupRulesService
 
+class LootTableDefinition:
+    """Godot script: scripts/loot_table_definition.gd
+    class_name: LootTableDefinition
+    extends: Resource
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/loot_table_definition.gd'
+    godot_class_name = 'LootTableDefinition'
+    godot_extends = 'Resource'
+    gameplay_system = 'Supporting gameplay'
+
+    def gd_func_matches_difficulty(self):
+        """GDScript function: matches_difficulty(difficulty: int) -> bool"""
+        pass
+
+    def gd_func_has_weight_override(self):
+        """GDScript function: has_weight_override(bone_id: String) -> bool"""
+        pass
+
+    def gd_func_weight_override_for(self):
+        """GDScript function: weight_override_for(bone_id: String) -> float"""
+        pass
+
+    def gd_func_roll_count_range(self):
+        """GDScript function: roll_count_range() -> Vector2i"""
+        pass
+
+    def gd_func_validation_errors(self):
+        """GDScript function: validation_errors() -> Array[String]"""
+        pass
+
+    def gd_func__bone_id_errors(self):
+        """GDScript function: _bone_id_errors(ids: Array[String], field_name: String) -> Array[String]"""
+        pass
+
+    def gd_func__resolved_weight(self):
+        """GDScript function: _resolved_weight(bone_id: String) -> float"""
+        pass
+
+    def gd_func__distinct_entry_count(self):
+        """GDScript function: _distinct_entry_count() -> int"""
+        pass
+
+    def depends_on_BoneDefinition(self):
+        """Relationship: references class BoneDefinition."""
+        return BoneDefinition
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_DemoEnemyCamp(self):
+        """Relationship: references class DemoEnemyCamp."""
+        return DemoEnemyCamp
+
+    def depends_on_LootTableService(self):
+        """Relationship: references class LootTableService."""
+        return LootTableService
+
+class LootTableService:
+    """Godot script: scripts/loot_table_service.gd
+    class_name: LootTableService
+    extends: unknown
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/loot_table_service.gd'
+    godot_class_name = 'LootTableService'
+    godot_extends = ''
+    gameplay_system = 'Supporting gameplay'
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_BoneQualityService(self):
+        """Relationship: references class BoneQualityService."""
+        return BoneQualityService
+
+    def depends_on_BoneRulesService(self):
+        """Relationship: references class BoneRulesService."""
+        return BoneRulesService
+
+    def depends_on_DemoEnemyCamp(self):
+        """Relationship: references class DemoEnemyCamp."""
+        return DemoEnemyCamp
+
+    def depends_on_LootTableDefinition(self):
+        """Relationship: references class LootTableDefinition."""
+        return LootTableDefinition
+
 class MainMenu:
     """Godot script: scripts/main_menu.gd
     class_name: none
@@ -1701,6 +2018,10 @@ class MainMenu:
         """GDScript function: _open_demo() -> void"""
         pass
 
+    def gd_func__continue_demo(self):
+        """GDScript function: _continue_demo() -> void"""
+        pass
+
     def gd_func__open_testing_environment(self):
         """GDScript function: _open_testing_environment() -> void"""
         pass
@@ -1708,6 +2029,14 @@ class MainMenu:
     def gd_func__open_dummy_testing_environment(self):
         """GDScript function: _open_dummy_testing_environment() -> void"""
         pass
+
+    def depends_on_SaveCoordinator(self):
+        """Relationship: references class SaveCoordinator."""
+        return SaveCoordinator
+
+    def depends_on_SaveService(self):
+        """Relationship: references class SaveService."""
+        return SaveService
 
 class OpenWorldStage:
     """Godot script: scripts/open_world_stage.gd
@@ -2664,6 +2993,14 @@ class PlayerEquipmentComponent:
         """GDScript function: get_equipment_state() -> Dictionary"""
         pass
 
+    def gd_func_apply_equipment_state(self):
+        """GDScript function: apply_equipment_state(target_state: Dictionary) -> void"""
+        pass
+
+    def gd_func_matches_equipment_state(self):
+        """GDScript function: matches_equipment_state(target_state: Dictionary) -> bool"""
+        pass
+
     def gd_func_get_swap_count(self):
         """GDScript function: get_swap_count() -> int"""
         pass
@@ -2785,6 +3122,10 @@ class PlayerInventoryComponent:
 
     def gd_func_remove_bone(self):
         """GDScript function: remove_bone(instance_id: String) -> bool"""
+        pass
+
+    def gd_func_restore_items(self):
+        """GDScript function: restore_items(items: Array) -> Dictionary"""
         pass
 
     def gd_func_equip_next_bone(self):
@@ -4329,6 +4670,132 @@ class RigTestPlayer:
         """Relationship: references class ProceduralPlayerAnimator."""
         return ProceduralPlayerAnimator
 
+class SaveCoordinator:
+    """Godot script: scripts/save_coordinator.gd
+    class_name: SaveCoordinator
+    extends: Node
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/save_coordinator.gd'
+    godot_class_name = 'SaveCoordinator'
+    godot_extends = 'Node'
+    gameplay_system = 'Supporting gameplay'
+
+    def gd_func__ready(self):
+        """GDScript function: _ready() -> void"""
+        pass
+
+    def gd_func__process(self):
+        """GDScript function: _process(delta: float) -> void"""
+        pass
+
+    def gd_func_save_game(self):
+        """GDScript function: save_game() -> bool"""
+        pass
+
+    def gd_func_load_game(self):
+        """GDScript function: load_game() -> Dictionary"""
+        pass
+
+    def gd_func_new_game(self):
+        """GDScript function: new_game() -> void"""
+        pass
+
+    def gd_func_autosave(self):
+        """GDScript function: autosave(reason: String) -> void"""
+        pass
+
+    def gd_func__on_enemy_defeated(self):
+        """GDScript function: _on_enemy_defeated(enemy: Node, _dropped_bone_id: String) -> void"""
+        pass
+
+    def gd_func__on_chest_opened(self):
+        """GDScript function: _on_chest_opened(_chest: Node, chest_id: String, _contents: Array, _player: Node) -> void"""
+        pass
+
+    def gd_func__on_trial_completed(self):
+        """GDScript function: _on_trial_completed(trial_id: String, _trial_name: String) -> void"""
+        pass
+
+    def gd_func__notification(self):
+        """GDScript function: _notification(what: int) -> void"""
+        pass
+
+    def gd_func__build_ui(self):
+        """GDScript function: _build_ui() -> void"""
+        pass
+
+    def gd_func__make_button(self):
+        """GDScript function: _make_button(text: String, callback: Callable) -> Button"""
+        pass
+
+    def gd_func__set_status(self):
+        """GDScript function: _set_status(text: String) -> void"""
+        pass
+
+    def gd_func__resolve_player(self):
+        """GDScript function: _resolve_player() -> Node"""
+        pass
+
+    def gd_func__resolve_world_root(self):
+        """GDScript function: _resolve_world_root() -> Node"""
+        pass
+
+    def gd_func__report_load(self):
+        """GDScript function: _report_load(report: Dictionary) -> void"""
+        pass
+
+    def uses_game_event_enemy_defeated(self):
+        """Uses GameEvents.enemy_defeated."""
+        pass
+
+    def uses_game_event_chest_opened(self):
+        """Uses GameEvents.chest_opened."""
+        pass
+
+    def uses_game_event_trial_completed(self):
+        """Uses GameEvents.trial_completed."""
+        pass
+
+    def depends_on_SaveService(self):
+        """Relationship: references class SaveService."""
+        return SaveService
+
+class SaveService:
+    """Godot script: scripts/save_service.gd
+    class_name: SaveService
+    extends: unknown
+    system: Supporting gameplay
+    """
+    source_file = 'scripts/save_service.gd'
+    godot_class_name = 'SaveService'
+    godot_extends = ''
+    gameplay_system = 'Supporting gameplay'
+
+    def uses_game_event_chest_state_changed(self):
+        """Uses GameEvents.chest_state_changed."""
+        pass
+
+    def depends_on_BoneInstanceService(self):
+        """Relationship: references class BoneInstanceService."""
+        return BoneInstanceService
+
+    def depends_on_LootChest(self):
+        """Relationship: references class LootChest."""
+        return LootChest
+
+    def depends_on_EquipmentRulesService(self):
+        """Relationship: references class EquipmentRulesService."""
+        return EquipmentRulesService
+
+    def depends_on_LootTableService(self):
+        """Relationship: references class LootTableService."""
+        return LootTableService
+
+    def depends_on_SaveCoordinator(self):
+        """Relationship: references class SaveCoordinator."""
+        return SaveCoordinator
+
 class SynergyRulesService:
     """Godot script: scripts/synergy_rules_service.gd
     class_name: SynergyRulesService
@@ -4381,6 +4848,14 @@ class TestingEnvironment:
 
     def gd_func__build_world(self):
         """GDScript function: _build_world() -> void"""
+        pass
+
+    def gd_func__build_test_chests(self):
+        """GDScript function: _build_test_chests() -> void"""
+        pass
+
+    def gd_func__make_test_chest(self):
+        """GDScript function: _make_test_chest(parent: Node3D, node_name: String, pos: Vector3, properties: Dictionary) -> void"""
         pass
 
     def gd_func__make_box(self):
@@ -4519,6 +4994,10 @@ class TestingEnvironment:
         """Relationship: loads resource."""
         return SceneEnemy
 
+    def depends_on_SceneChest(self):
+        """Relationship: loads resource."""
+        return SceneChest
+
     def depends_on_BoneInstanceService(self):
         """Relationship: references class BoneInstanceService."""
         return BoneInstanceService
@@ -4531,9 +5010,17 @@ class TestingEnvironment:
         """Relationship: references class BoneRulesService."""
         return BoneRulesService
 
+    def depends_on_LootChest(self):
+        """Relationship: references class LootChest."""
+        return LootChest
+
     def depends_on_EquipmentRulesService(self):
         """Relationship: references class EquipmentRulesService."""
         return EquipmentRulesService
+
+    def depends_on_SaveCoordinator(self):
+        """Relationship: references class SaveCoordinator."""
+        return SaveCoordinator
 
     def depends_on_SynergyRulesService(self):
         """Relationship: references class SynergyRulesService."""
@@ -4953,6 +5440,15 @@ class SceneBoneTrialGate:
         """Scene relationship: uses script."""
         return BoneTrialGate
 
+class SceneChest:
+    """Godot scene: scenes/chest.tscn"""
+    source_file = 'scenes/chest.tscn'
+    nodes = ['LootChest', 'ChestBody', 'Base', 'LidPivot', 'Lid', 'InteractArea', 'InteractShape', 'LootSpawnPoint', 'PromptLabel']
+
+    def contains_LootChest(self):
+        """Scene relationship: uses script."""
+        return LootChest
+
 class SceneDummyTestingEnvironment:
     """Godot scene: scenes/dummy_testing_environment.tscn"""
     source_file = 'scenes/dummy_testing_environment.tscn'
@@ -5007,7 +5503,7 @@ class SceneGuideWisp:
 class SceneMain:
     """Godot scene: scenes/main.tscn"""
     source_file = 'scenes/main.tscn'
-    nodes = ['Main', 'WorldEnvironment', 'DirectionalLight3D', 'Ground', 'MeshInstance3D', 'CollisionShape3D', 'Player', 'GuideWisp', 'ArenaGoalManager', 'WorldMapManager', 'DemoIslandBuilder', 'OpenWorldStages', 'BonefieldHub', 'FirstHuntField', 'ReachRidge', 'QuickrootRun', 'HeavyRuin', 'RibfenBonus', 'ElderMarrowGate', 'SightTestWalls', 'CenterHideWall', 'LeftHideWall', 'RightHideWall', 'EnemyCenter', 'EnemyLeft', 'EnemyRight', 'ArmTrialGate', 'LegTrialGate', 'HeavyTrialGate', 'EnemyBonus', 'ExitPortal']
+    nodes = ['Main', 'WorldEnvironment', 'DirectionalLight3D', 'Ground', 'MeshInstance3D', 'CollisionShape3D', 'Player', 'GuideWisp', 'ArenaGoalManager', 'WorldMapManager', 'DemoIslandBuilder', 'OpenWorldStages', 'BonefieldHub', 'FirstHuntField', 'ReachRidge', 'QuickrootRun', 'HeavyRuin', 'RibfenBonus', 'ElderMarrowGate', 'SightTestWalls', 'CenterHideWall', 'LeftHideWall', 'RightHideWall', 'EnemyCenter', 'EnemyLeft', 'EnemyRight', 'ArmTrialGate', 'LegTrialGate', 'HeavyTrialGate', 'EnemyBonus', 'ExitPortal', 'SaveCoordinator', 'WorldChests', 'HubChest', 'FirstHuntChest', 'ReachRidgeChest', 'QuickrootChest', 'HeavyRuinChest', 'RibfenChest', 'ElderMarrowChest', 'ArmTrialChest', 'LegTrialChest', 'HeavyTrialChest']
 
     def contains_ArenaGoalManager(self):
         """Scene relationship: uses script."""
@@ -5020,6 +5516,10 @@ class SceneMain:
     def contains_TutorialIslandBuilder(self):
         """Scene relationship: uses script."""
         return TutorialIslandBuilder
+
+    def contains_SaveCoordinator(self):
+        """Scene relationship: uses script."""
+        return SaveCoordinator
 
     def contains_ScenePlayer(self):
         """Scene relationship: instantiates scene."""
@@ -5044,6 +5544,10 @@ class SceneMain:
     def contains_SceneGuideWisp(self):
         """Scene relationship: instantiates scene."""
         return SceneGuideWisp
+
+    def contains_SceneChest(self):
+        """Scene relationship: instantiates scene."""
+        return SceneChest
 
 class SceneMainMenu:
     """Godot scene: scenes/main_menu.tscn"""

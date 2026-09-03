@@ -7,7 +7,7 @@ const ROCK_PROJECTILE_SCRIPT: Script = preload("res://scripts/enemy_rock_project
 const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.gd")
 
 # --- Combat / AI tuning (all editable per-enemy in the Inspector) -------------
-@export var max_health: int = 3
+@export var max_health: int = 40
 @export var move_speed: float = 3.0          # slower than the player, so you can kite
 @export var detection_range: float = 11.0    # how close before it starts chasing
 @export_range(20.0, 180.0, 1.0) var vision_angle_degrees: float = 90.0
@@ -15,9 +15,37 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var vision_check_interval: float = 0.15
 @export_range(6, 24, 1) var vision_cone_segments: int = 12
 @export var attack_range: float = 1.7        # how close before it can hit you
-@export var contact_damage: int = 1
+@export var contact_damage: int = 10
 @export var attack_cooldown: float = 1.1      # seconds between its hits
 @export var dummy_target_enabled: bool = false
+# Close enough to the spawn facing to call the return home finished. Anything
+# tighter can never be reached, because _turn_toward snaps the last fraction of
+# a step and floating point leaves a residue.
+const SPAWN_FACING_SETTLED_RADIANS := 0.02
+# Smallest scale a shrink-out animation may reach. Scaling a Node3D to exactly
+# zero makes its Basis singular, and anything that inverts that transform --
+# physics, the rig's socket maths, a child reading global_position -- fails with
+# "invert: Condition 'det == 0' is true" from core/math/basis.cpp. Every death
+# and every expiring limb produced a burst of those. At 0.01 the body is
+# visually gone and the determinant is still 1e-6, comfortably non-zero.
+const MIN_VISIBLE_SCALE := 0.01
+# Cap on how fast the body can rotate, in degrees per second, for a plain
+# enemy. 240 means a full half-turn takes 0.75s: brisk but readable. The old
+# behaviour was an instant snap. Zero or less restores it.
+#
+# Agility is part of what makes a variant feel different, so the profiles get
+# their own rates instead of sharing one. They follow the roles already set in
+# docs/combat_balance.md: Gorilla is mass, Lizard is mobility.
+@export var turn_speed_degrees: float = 240.0
+# Gorilla: heavy. 140 deg/s means a half-turn takes ~1.3s, so flanking one
+# actually buys you time.
+@export var gorilla_turn_speed_degrees: float = 140.0
+# Lizard: darting. 420 deg/s means a half-turn takes ~0.43s -- hard to get
+# behind, which is the trade for its lower health.
+@export var lizard_turn_speed_degrees: float = 420.0
+# A legless enemy drags itself around. Same multiplier idea as
+# crawl_speed_multiplier, applied to turning.
+@export_range(0.1, 1.0, 0.05) var crawl_turn_multiplier: float = 0.45
 @export var search_duration: float = 20.0
 @export var search_stop_distance: float = 0.75
 @export var search_turn_speed: float = 0.9
@@ -35,7 +63,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var ranged_attack_range: float = 13.0
 @export var ranged_attack_cooldown: float = 2.2
 @export var ranged_attack_windup: float = 0.35
-@export var ranged_arrow_damage: int = 1
+@export var ranged_arrow_damage: int = 8
 @export var ranged_arrow_speed: float = 13.0
 @export var ranged_arrow_gravity: float = 5.0
 @export_group("")
@@ -47,12 +75,12 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export_range(0.1, 1.0, 0.05) var crawl_speed_multiplier: float = 0.38
 @export_group("Gorilla Profile")
 @export_enum("Auto", "Always", "Never") var gorilla_profile_mode: String = "Auto"
-@export var gorilla_profile_min_health: int = 5
-@export var gorilla_profile_min_damage: int = 2
+@export var gorilla_profile_min_health: int = 70
+@export var gorilla_profile_min_damage: int = 14
 @export_range(0.3, 1.0, 0.05) var gorilla_move_speed_multiplier: float = 0.68
 @export_range(1.0, 2.5, 0.05) var gorilla_attack_cooldown_multiplier: float = 1.25
-@export var gorilla_health_bonus: int = 2
-@export var gorilla_damage_bonus: int = 1
+@export var gorilla_health_bonus: int = 30
+@export var gorilla_damage_bonus: int = 4
 @export var gorilla_attack_range_bonus: float = 0.25
 @export var gorilla_knockback_bonus: float = 1.5
 @export var gorilla_can_throw_rocks: bool = true
@@ -70,7 +98,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 # A heavy rock falls hard. This drives the descent AND the arc height, because the
 # solve raises the launch to keep the same hang time under stronger gravity.
 @export var gorilla_rock_gravity: float = 32.0
-@export var gorilla_rock_damage: int = 1
+@export var gorilla_rock_damage: int = 12
 @export_group("")
 @export_group("Lizard Profile")
 @export_enum("Auto", "Always", "Never") var lizard_profile_mode: String = "Never"
@@ -78,12 +106,12 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var lizard_sees_through_walls: bool = true
 @export var lizard_body_color: Color = Color(0.23, 0.78, 0.34, 1.0)
 @export_range(0.5, 1.8, 0.05) var lizard_move_speed_multiplier: float = 1.08
-@export_range(0.35, 1.0, 0.05) var lizard_health_multiplier: float = 0.85
+@export_range(0.35, 1.0, 0.05) var lizard_health_multiplier: float = 0.80
 @export var lizard_saliva_min_range: float = 2.2
 @export var lizard_saliva_range: float = 12.0
 @export var lizard_saliva_cooldown: float = 1.8
 @export var lizard_saliva_windup: float = 0.28
-@export var lizard_saliva_damage: int = 1
+@export var lizard_saliva_damage: int = 8
 @export var lizard_saliva_speed: float = 15.0
 @export var lizard_saliva_gravity: float = 1.5
 @export var lizard_wall_climb_probe_distance: float = 0.85
@@ -94,7 +122,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var bone_recovery_enabled: bool = true
 @export var bone_recovery_safe_delay: float = 10.0
 @export var bone_recovery_pickup_range: float = 1.15
-@export var bone_recovery_heal_per_part: int = 1
+@export var bone_recovery_heal_per_part: int = 8
 @export var bone_recovery_move_speed_multiplier: float = 0.65
 @export var bone_recovery_safe_range: float = 0.0
 @export var bone_recovery_part_lifetime: float = 45.0
@@ -111,7 +139,7 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export_range(0.0, 1.0, 0.05) var limb_pickup_drop_chance: float = 0.35
 @export_range(3, 8, 1) var target_limb_loss_steps: int = 5
 @export var guarantee_limb_pickup_on_death: bool = true
-@export var stealth_finish_max_health: int = 3
+@export var stealth_finish_max_health: int = 40
 @export var stealth_finish_range: float = 2.2
 @export_range(0.0, 1.0, 0.05) var stealth_behind_dot: float = 0.45
 @export var failed_stealth_damage_multiplier: int = 2
@@ -198,6 +226,10 @@ const HIT_COLOR: Color = Color(1, 0.95, 0.45, 1)
 func _ready() -> void:
 	# Groups let other scripts find this enemy without needing an exact node path.
 	add_to_group("enemies")
+	# "enemies" is the LIVE roster: die() leaves it so nothing counts a corpse
+	# as a threat. A save still has to enumerate the dead-but-present ones (a
+	# respawner waiting out its timer), so this second group is permanent.
+	add_to_group(SaveService.ENEMY_RECORD_GROUP)
 	spawn_transform = global_transform
 	spawn_scale = scale
 	spawn_facing_direction = _facing_from_rotation()
@@ -911,12 +943,39 @@ func _alert_nearby_allies(position: Vector3) -> void:
 
 
 # Face the enemy and its visual cone toward the active direction.
+# Turns toward `direction` at a bounded angular speed.
+#
+# This used to write rotation.y outright, so any change of intent -- the player
+# stepping behind, a new wander target, a hit from another angle -- spun the
+# body a full half-turn inside a single frame. A body cannot do that, and it
+# read as the enemy teleporting its facing.
+#
+# facing_direction is taken from the rotation AFTER the step, never from the
+# target. Vision (_can_see_player), backstab (_is_player_behind) and projectile
+# muzzles all read facing_direction, and they must agree with what is on screen:
+# an enemy that is still turning has not seen you yet. Aim is unaffected --
+# ranged attacks fire at a stored target position, not along facing_direction.
 func _turn_toward(direction: Vector3) -> void:
 	if direction.length() <= 0.01:
 		return
 
-	facing_direction = direction.normalized()
-	rotation.y = atan2(facing_direction.x, facing_direction.z)
+	var target_yaw: float = atan2(direction.x, direction.z)
+	var max_step: float = deg_to_rad(_get_effective_turn_speed_degrees()) * get_physics_process_delta_time()
+	rotation.y = _stepped_yaw(rotation.y, target_yaw, max_step)
+	facing_direction = _facing_from_rotation()
+
+
+# Shortest-path rotation toward `to`, moving at most `max_step` radians. wrapf
+# is what keeps a turn from taking the long way around when the angles straddle
+# +-PI. A max_step of 0 or less means "no limit", so a caller that genuinely
+# needs an instant facing can still ask for one.
+static func _stepped_yaw(from: float, to: float, max_step: float) -> float:
+	if max_step <= 0.0:
+		return to
+	var difference: float = wrapf(to - from, -PI, PI)
+	if absf(difference) <= max_step:
+		return to
+	return from + signf(difference) * max_step
 
 
 # Builds a flat triangular fan that previews the enemy's vision field.
@@ -993,9 +1052,14 @@ func _get_return_home_move() -> Vector3:
 	var to_spawn := spawn_transform.origin - global_position
 	to_spawn.y = 0.0
 	if to_spawn.length() <= return_home_stop_distance:
-		returning_to_spawn = false
-		rotation.y = spawn_transform.basis.get_euler().y
-		facing_direction = spawn_facing_direction
+		# Arrived. Settle into the spawn facing over time rather than snapping
+		# to it -- an enemy that walks home and then flips instantly is the
+		# same tell as a mid-chase snap. The returning state is held until the
+		# turn finishes, because nothing else would keep rotating it.
+		_turn_toward(spawn_facing_direction)
+		var remaining: float = absf(wrapf(spawn_transform.basis.get_euler().y - rotation.y, -PI, PI))
+		if remaining <= SPAWN_FACING_SETTLED_RADIANS:
+			returning_to_spawn = false
 		return Vector3.ZERO
 
 	var direction := to_spawn.normalized()
@@ -1089,8 +1153,8 @@ func _get_bone_recovery_move() -> Vector3:
 	if limb_key == "":
 		return Vector3.ZERO
 
-	var limb_body: Node3D = detached_limb_bodies.get(limb_key) as Node3D
-	if limb_body == null or not is_instance_valid(limb_body):
+	var limb_body: Node3D = _valid_limb_body(limb_key)
+	if limb_body == null:
 		_forget_detached_limb_body(limb_key)
 		return Vector3.ZERO
 
@@ -1119,10 +1183,10 @@ func _get_recovering_limb_key() -> String:
 		var key_string: String = _recovery_group_key(str(limb_key))
 		if key_string == "" or key_string != str(limb_key):
 			continue
-		if not _is_detached_limb_body_valid(key_string):
+		var limb_body: Node3D = _valid_limb_body(key_string)
+		if limb_body == null:
 			_forget_detached_limb_body(key_string)
 			continue
-		var limb_body: Node3D = detached_limb_bodies[key_string] as Node3D
 		var distance: float = global_position.distance_squared_to(limb_body.global_position)
 		if distance < best_distance:
 			best_distance = distance
@@ -1132,11 +1196,26 @@ func _get_recovering_limb_key() -> String:
 	return recovering_limb_key
 
 
-func _is_detached_limb_body_valid(limb_key: String) -> bool:
+# THE accessor for a detached limb piece. Every read of detached_limb_bodies
+# must go through here.
+#
+# A limb body is freed (recovered, or its enemy despawned) while its key is
+# still in the dictionary, and `freed_object as Node3D` is ITSELF an error --
+# "Trying to cast a freed object" -- so validity has to be tested on the raw
+# value, before any cast. Doing it the other way round meant the recovery AI
+# logged one error per frame per stale limb, tens of thousands of them in a
+# session, which is expensive enough to cause visible frame hitches.
+func _valid_limb_body(limb_key: String) -> Node3D:
 	if limb_key == "" or not detached_limb_bodies.has(limb_key):
-		return false
-	var limb_body: Node3D = detached_limb_bodies[limb_key] as Node3D
-	return limb_body != null and is_instance_valid(limb_body)
+		return null
+	var raw: Variant = detached_limb_bodies[limb_key]
+	if raw == null or not is_instance_valid(raw):
+		return null
+	return raw as Node3D
+
+
+func _is_detached_limb_body_valid(limb_key: String) -> bool:
+	return _valid_limb_body(limb_key) != null
 
 
 func _recover_detached_limb(limb_key: String) -> void:
@@ -1145,8 +1224,8 @@ func _recover_detached_limb(limb_key: String) -> void:
 		return
 
 	for key in _limb_recovery_group(limb_key):
-		var limb_body: Node3D = detached_limb_bodies.get(key) as Node3D
-		if limb_body != null and is_instance_valid(limb_body):
+		var limb_body: Node3D = _valid_limb_body(str(key))
+		if limb_body != null:
 			limb_body.queue_free()
 
 		_forget_detached_limb_body(key)
@@ -1182,8 +1261,8 @@ func _limb_recovery_group(limb_key: String) -> Array[String]:
 
 func _has_active_limb_pickup() -> bool:
 	for limb_key in detached_limb_bodies.keys():
-		var limb_body: Node = detached_limb_bodies[limb_key] as Node
-		if limb_body == null or not is_instance_valid(limb_body):
+		var limb_body: Node3D = _valid_limb_body(str(limb_key))
+		if limb_body == null:
 			continue
 		if limb_body.get_node_or_null("LimbBonePickup") != null:
 			return true
@@ -1497,7 +1576,7 @@ func _spawn_detached_limb_piece(limb_key: String, force_pickup: bool = false) ->
 			cleanup_delay = maxf(detached_limb_lifetime, bone_recovery_part_lifetime)
 		var cleanup := body.create_tween()
 		cleanup.tween_interval(cleanup_delay)
-		cleanup.tween_property(body, "scale", Vector3.ZERO, 0.25)
+		cleanup.tween_property(body, "scale", Vector3.ONE * MIN_VISIBLE_SCALE, 0.25)
 		cleanup.tween_callback(Callable(self, "_forget_detached_limb_body").bind(limb_key))
 		cleanup.tween_callback(Callable(body, "queue_free"))
 
@@ -1583,8 +1662,8 @@ func _set_lizard_torso_blocks_visible(is_visible: bool) -> void:
 
 func _restore_attached_limbs() -> void:
 	for limb_key in detached_limb_bodies.keys():
-		var limb_body: Node3D = detached_limb_bodies[limb_key] as Node3D
-		if limb_body != null and is_instance_valid(limb_body):
+		var limb_body: Node3D = _valid_limb_body(str(limb_key))
+		if limb_body != null:
 			limb_body.queue_free()
 	detached_limb_bodies.clear()
 	recovering_limb_key = ""
@@ -1611,6 +1690,86 @@ func _update_crawl_state(force_refresh: bool = false) -> void:
 		fleeing_timer = 0.0
 		attack_timer = maxf(attack_timer, 0.35)
 	_update_health_label()
+
+
+# --- persistence ----------------------------------------------------------
+# Enough to put the world back the way the player left it. Deliberately NOT
+# saved: detached limb debris, in-flight projectiles, AI timers and search
+# state. Those are momentary, and restoring them would freeze an enemy
+# mid-windup at a player who is no longer there.
+
+func capture_save_state() -> Dictionary:
+	return {
+		"alive": alive,
+		"health": health,
+		"position": [global_position.x, global_position.y, global_position.z],
+		"yaw": rotation.y,
+		# Changes the rig and whether the enemy crawls, so it is part of how the
+		# world LOOKS, not just how it behaves.
+		"detached_limbs": detached_limb_keys.duplicate(),
+	}
+
+
+# Silent by design. die() announces a kill: it emits enemy_defeated, drops
+# loot, tears off limbs and plays the death pop. Replaying any of that on load
+# would hand the player a second set of drops and re-fire every camp unlock.
+func restore_save_state(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+
+	var raw_position: Array = data.get("position", [])
+	if raw_position.size() == 3:
+		global_position = Vector3(float(raw_position[0]), float(raw_position[1]), float(raw_position[2]))
+	rotation.y = float(data.get("yaw", rotation.y))
+	facing_direction = _facing_from_rotation()
+
+	for raw_key in data.get("detached_limbs", []):
+		var limb_key := str(raw_key)
+		if not detached_limb_keys.has(limb_key):
+			detached_limb_keys.append(limb_key)
+		_set_rig_limb_visible(limb_key, false)
+	_update_crawl_state(false)
+
+	if bool(data.get("alive", true)):
+		health = clampi(int(data.get("health", max_health)), 1, max_health)
+		_update_health_label()
+		return
+
+	_become_dead_silently()
+
+
+func _become_dead_silently() -> void:
+	if not alive:
+		return
+
+	alive = false
+	health = 0
+	velocity = Vector3.ZERO
+	knockback_velocity = Vector3.ZERO
+	returning_to_spawn = false
+	search_timer = 0.0
+	search_look_time = 0.0
+	avoidance_timer = 0.0
+	avoidance_direction = Vector3.ZERO
+	ranged_attack_windup_timer = 0.0
+	rock_throw_windup_timer = 0.0
+	saliva_spit_windup_timer = 0.0
+	lizard_wall_climb_blend = 0.0
+	_cancel_held_rock()
+
+	remove_from_group("enemies")
+	_set_collision_enabled(false)
+	_set_player_visible(false)
+	_update_health_label()
+
+	# A respawner is only temporarily dead, so it goes back to waiting out its
+	# timer exactly as it would have. A non-respawner stays gone.
+	if respawn_enabled:
+		_hide_until_respawn()
+		_respawn_after_delay(_get_respawn_delay())
+	else:
+		visible = false
+		queue_free()
 
 
 func die() -> void:
@@ -1667,7 +1826,7 @@ func _death_pop() -> void:
 	_kill_scale_tween()
 	_scale_tween = create_tween()
 	_scale_tween.set_parallel(true)
-	_scale_tween.tween_property(self, "scale", Vector3.ZERO, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	_scale_tween.tween_property(self, "scale", Vector3.ONE * MIN_VISIBLE_SCALE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	_scale_tween.tween_property(self, "rotation:y", rotation.y + PI, 0.16)
 	await _scale_tween.finished
 
@@ -1946,6 +2105,24 @@ func _get_effective_move_speed() -> float:
 	if crawling_due_to_leg_loss:
 		return move_speed * crawl_speed_multiplier
 	return move_speed
+
+
+# Which turn rate this enemy is actually using right now. Mirrors
+# _get_effective_move_speed: profile first, then the crawl penalty on top.
+# A rate of 0 or less means "instant", and must stay 0 rather than be scaled --
+# multiplying it would still be 0, but reading it as a real rate would not.
+func _get_effective_turn_speed_degrees() -> float:
+	var base: float = turn_speed_degrees
+	if lizard_profile_active:
+		base = lizard_turn_speed_degrees
+	elif gorilla_profile_active:
+		base = gorilla_turn_speed_degrees
+
+	if base <= 0.0:
+		return 0.0
+	if crawling_due_to_leg_loss:
+		return base * crawl_turn_multiplier
+	return base
 
 
 func _setup_ranged_bow_visual() -> void:

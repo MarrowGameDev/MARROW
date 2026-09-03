@@ -13,11 +13,27 @@ var gate_material: StandardMaterial3D = null
 
 
 func _ready() -> void:
+	add_to_group("bone_trial_gates")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_prepare_material()
 	_update_appearance()
 	_update_label()
+
+
+# Restores "this trial was already passed" from a save. Silent by design: it
+# does NOT emit trial_completed, because that event means "the player just did
+# it" and anything listening for it (a trial-locked chest, a tutorial step)
+# would fire again on every load. Systems that persist across sessions restore
+# their own state from the save instead.
+func restore_completed_state(was_completed: bool) -> void:
+	if not was_completed or completed:
+		return
+
+	completed = true
+	monitoring = false
+	_update_label()
+	_set_gate_color(Color(0.35, 1.0, 0.35, 1.0))
 
 
 func _process(_delta: float) -> void:

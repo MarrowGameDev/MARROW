@@ -74,13 +74,13 @@ func _initialize() -> void:
 	families = _by_category(evaluation["active"], SynergyRulesService.CATEGORY_FAMILY)
 	if families.size() != 1 or int((families[0] as Dictionary)["tier"]) != 4:
 		failures.append("four pieces did not award exactly the 4-piece tier: %s" % str(families))
-	# 2-piece is +0.02 damage, 4-piece is +0.05. Stacking both would read
-	# 0.07; exactly 0.05 proves the 4-piece tier REPLACED the 2-piece one.
+	# 2-piece is +0.02 damage, 4-piece is +0.06. Stacking both would read
+	# 0.08; exactly 0.06 proves the 4-piece tier REPLACED the 2-piece one.
 	# Matching Arms cannot fire here: generated left/right limbs are distinct
 	# bone_ids, so the family tier is the only damage synergy in this state.
 	var damage_percent := float((evaluation["modifiers"] as Dictionary)["damage_percent"])
-	if not is_equal_approx(damage_percent, 0.05):
-		failures.append("expected exactly 0.05 damage_percent (4-piece tier alone), got %f" % damage_percent)
+	if not is_equal_approx(damage_percent, 0.06):
+		failures.append("expected exactly 0.06 damage_percent (4-piece tier alone), got %f" % damage_percent)
 	print("4 pieces -> active: ", _ids(evaluation["active"]))
 	print("         -> modifiers: ", evaluation["modifiers"])
 

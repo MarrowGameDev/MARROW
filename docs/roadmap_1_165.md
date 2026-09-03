@@ -1,7 +1,7 @@
 # Roadmap Tecnico 1-165
 
-Fecha base: 2026-07-15. Ultima actualizacion: 2026-07-16 (integracion de 9
-ramas de hito en `origin/develop`, ver `docs/roadmap_progress.md`).
+Fecha base: 2026-07-15. Ultima actualizacion: 2026-08-04 (cofres, tablas de
+loot y persistencia; ver `docs/roadmap_progress.md`).
 
 Este archivo es la fuente auditable del roadmap tecnico. Los estados son
 conservadores: un objetivo no se marca como cumplido si solo existe metadata,
@@ -69,7 +69,7 @@ Estados usados:
 | 43 | Inventario | Comparador de stats. | Integrado | 2026-07-16: panel de info compara hueso bajo cursor vs equipado en el mismo slot (deltas reales via `BoneRulesService.adjusted_player_bonus_for`); verificado headless: "vs equipped Torso Bone: Speed -1.7, Damage +2.3, HP +0.3". |
 | 44 | Inventario | Mostrar subidas y bajadas de stats. | Integrado | 2026-07-16: mismo cambio que 43; deltas con signo (+/-) por stat. |
 | 45 | Inventario | Filtro por slot. | Integrado | Preexistente a esta sesion; confirmado funcional por `EquipmentRulesService.inventory_filter_matches_bone` y las 6 tabs de la UI. |
-| 46 | Inventario | Filtro por rareza. | No iniciado | Pendiente; sin dato de rareza expuesto en filtro. |
+| 46 | Inventario | Filtro por rareza. | No iniciado | Pendiente en la UI. La rareza ya tiene consumidor real via tablas de loot (2026-08-04), pero el filtro de inventario sigue sin exponerla. |
 | 47 | Inventario | Filtro por peso. | No iniciado | Pendiente. |
 | 48 | Inventario | Filtro por dano. | No iniciado | Pendiente. |
 | 49 | Inventario | Filtro por defensa. | No iniciado | No aplica: el proyecto no tiene stat de defensa (ver fila 67). |
@@ -142,8 +142,8 @@ Estados usados:
 | 116 | Enemigos | Alertas grupales. | Parcial | Estado actual documentado; validar. |
 | 117 | Enemigos | Ruido. | Parcial | Documentado en combate; validar. |
 | 118 | Enemigos | Reaccion a muerte. | Parcial | Drops/eventos existentes; validar. |
-| 119 | Enemigos | Drop inteligente. | Parcial | Servicios existentes; ampliar. |
-| 120 | Enemigos | Claridad visual del drop. | Parcial | Pendiente UX. |
+| 119 | Enemigos | Drop inteligente. | Parcial | 2026-08-04: `LootTableService` da tiradas ponderadas por `rarity_drop_weight` para COFRES. Los drops de enemigos siguen eligiendo limb por `DropPickupRulesService`, sin peso de rareza. |
+| 120 | Enemigos | Claridad visual del drop. | Parcial | Pendiente UX. Los cofres con `SPAWN_PICKUPS` reutilizan el pickup existente y lo separan en anillo para que dos piezas no se solapen. |
 | 121 | Drops | Preservar slot canonico del drop. | Integrado | 2026-07-16: `DropPickupRulesService`/`EquipmentRulesService` ya usan los seis slots canonicos; `slot_for_bone` para huesos bilaterales ahora resuelve al primer lado libre en vez de forzar siempre el mismo lado (ver fila 43 del backlog original de equip-next). |
 | 122 | Drops | Preservar lado de origen cuando aplique. | No iniciado | Pendiente. |
 | 123 | Camara | Reproducir jitter. | Preparado | Validador diagnostico; runtime pendiente. |
@@ -179,9 +179,9 @@ Estados usados:
 | 153 | Objetivos | ArenaGoalManager narrativo. | Parcial | Manager existe; ampliar narrativa. |
 | 154 | Objetivos | Misiones. | Parcial | Tutorial/checklist existe; sistema formal pendiente. |
 | 155 | Objetivos | Tutoriales. | Parcial | Tutorial flow existe; validar runtime. |
-| 156 | Objetivos | Recompensas de arenas. | Parcial | Arena flow existe; validar. |
+| 156 | Objetivos | Recompensas de arenas. | Integrado | 2026-08-04: 10 cofres colocados en `main.tscn` (7 por region + 3 tras trial gates) mas 4 de camp; verificado headless con `tools/headless_world_chests_check.gd` (ids unicos, tablas resueltas, trials enlazados). |
 | 157 | Objetivos | Salida/portal de objetivo. | Parcial | Exit portal existe; validar. |
-| 158 | Objetivos | Registro de progreso de demo. | Parcial | ArenaGoalManager; persistencia pendiente. |
+| 158 | Objetivos | Registro de progreso de demo. | Integrado | 2026-08-04: `SaveService` + `SaveCoordinator` persisten instancias, inventario, equipamiento, cofres y trials en `user://marrow_save.json`; verificado headless con roundtrip de 84 piezas y stats identicos. |
 | 159 | Mantenimiento | Actualizar docs por cambio funcional. | Parcial | Politica existe; aplicar por PR. |
 | 160 | Mantenimiento | Ejecutar validadores por rama. | Parcial | Validadores existen; checklist por PR. |
 | 161 | Mantenimiento | Revisar caches por rama. | Preparado | Politica documentada. |

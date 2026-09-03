@@ -23,3 +23,8 @@ signal objective_updated(source: Node, objective_id: String, title: String, body
 signal tutorial_hint_requested(source: Node, hint_id: String, text: String, priority: int)
 signal camp_state_changed(camp: Node, unlocked: bool, opened: bool, remaining_enemies: int)
 signal camp_chest_opened(camp: Node, reward_bone_id: String, player: Node)
+# Containers. `contents` carries instance_ids, not bone_ids: by the time a chest
+# reports itself open the pieces already exist and have rolled their quality, so
+# a listener that wants to name or price them reads the real piece.
+signal chest_state_changed(chest: Node, chest_id: String, unlocked: bool, opened: bool)
+signal chest_opened(chest: Node, chest_id: String, contents: Array, player: Node)

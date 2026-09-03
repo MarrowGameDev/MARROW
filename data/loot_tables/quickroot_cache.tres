@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LootTableDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot_table_definition.gd" id="1_loottable"]
+
+[resource]
+script = ExtResource("1_loottable")
+table_id = "quickroot_cache"
+display_name = "Quickroot Cache"
+description = "Quickroot Run. Legs and the light lizard torso: everything here buys movement speed."
+guaranteed_bone_ids = Array[String](["leg_bone"])
+entries = Array[String](["normal_right_leg_bone", "normal_left_leg_bone", "lizard_right_leg_bone", "lizard_left_leg_bone", "lizard_body_bone"])
+min_rolls = 1
+max_rolls = 2
+allow_duplicates = false
+quality_bias = 0.05
+difficulty_min = 4
+difficulty_max = 5

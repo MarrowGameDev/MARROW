@@ -42,6 +42,25 @@
 - `CollisionShape3D`
 - `GateLabel`
 
+## scenes/chest.tscn
+
+### Attached Scripts
+- `scripts/chest.gd`
+
+### Instanced Scenes
+- none
+
+### Nodes
+- `LootChest`
+- `ChestBody`
+- `Base`
+- `LidPivot`
+- `Lid`
+- `InteractArea`
+- `InteractShape`
+- `LootSpawnPoint`
+- `PromptLabel`
+
 ## scenes/dummy_testing_environment.tscn
 
 ### Attached Scripts
@@ -121,6 +140,7 @@
 - `scripts/arena_goal_manager.gd`
 - `scripts/world_map_manager.gd`
 - `scripts/tutorial_island_builder.gd`
+- `scripts/save_coordinator.gd`
 
 ### Instanced Scenes
 - `scenes/player.tscn`
@@ -129,6 +149,7 @@
 - `scenes/exit_portal.tscn`
 - `scenes/open_world_stage.tscn`
 - `scenes/guide_wisp.tscn`
+- `scenes/chest.tscn`
 
 ### Nodes
 - `Main`
@@ -162,6 +183,18 @@
 - `HeavyTrialGate`
 - `EnemyBonus`
 - `ExitPortal`
+- `SaveCoordinator`
+- `WorldChests`
+- `HubChest`
+- `FirstHuntChest`
+- `ReachRidgeChest`
+- `QuickrootChest`
+- `HeavyRuinChest`
+- `RibfenChest`
+- `ElderMarrowChest`
+- `ArmTrialChest`
+- `LegTrialChest`
+- `HeavyTrialChest`
 
 ## scenes/main_menu.tscn
 

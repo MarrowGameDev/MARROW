@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" path="res://scenes/open_world_stage.tscn" id="7_open_world_stage"]
 [ext_resource type="PackedScene" path="res://scenes/guide_wisp.tscn" id="8_guide_wisp"]
 [ext_resource type="Script" uid="uid://c4f5w67u7swm4" path="res://scripts/tutorial_island_builder.gd" id="9_tutorial_island"]
+[ext_resource type="PackedScene" path="res://scenes/chest.tscn" id="10_chest"]
+[ext_resource type="Script" path="res://scripts/save_coordinator.gd" id="11_save_coordinator"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -207,3 +209,74 @@ dropped_bone_id = "rib_bone"
 
 [node name="ExitPortal" parent="." unique_id=1385022951 instance=ExtResource("5_exit_portal")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+
+[node name="SaveCoordinator" type="Node" parent="."]
+script = ExtResource("11_save_coordinator")
+
+[node name="WorldChests" type="Node3D" parent="."]
+
+[node name="HubChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 4)
+chest_id = "hub_chest"
+display_name = "Bonefield Cache"
+loot_table_id = "starter_cache"
+
+[node name="FirstHuntChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -6.5)
+chest_id = "first_hunt_chest"
+display_name = "Field Cache"
+loot_table_id = "field_cache"
+
+[node name="ReachRidgeChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, -6)
+chest_id = "reach_ridge_chest"
+display_name = "Reach Cache"
+loot_table_id = "reach_cache"
+
+[node name="QuickrootChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -6)
+chest_id = "quickroot_chest"
+display_name = "Quickroot Cache"
+loot_table_id = "quickroot_cache"
+
+[node name="HeavyRuinChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -22)
+chest_id = "heavy_ruin_chest"
+display_name = "Ruin Cache"
+loot_table_id = "heavy_cache"
+
+[node name="RibfenChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0, 6.5)
+chest_id = "ribfen_chest"
+display_name = "Ribfen Cache"
+loot_table_id = "ribfen_cache"
+
+[node name="ElderMarrowChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0, -23)
+chest_id = "elder_marrow_chest"
+display_name = "Elder Marrow Cache"
+loot_table_id = "elder_cache"
+
+[node name="ArmTrialChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11.5)
+chest_id = "arm_trial_chest"
+display_name = "Arm Trial Reward"
+loot_table_id = "reach_cache"
+lock_mode = 2
+required_trial_id = "arm_trial"
+
+[node name="LegTrialChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0, -12.5)
+chest_id = "leg_trial_chest"
+display_name = "Leg Trial Reward"
+loot_table_id = "quickroot_cache"
+lock_mode = 2
+required_trial_id = "leg_trial"
+
+[node name="HeavyTrialChest" parent="WorldChests" instance=ExtResource("10_chest")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, -12.5)
+chest_id = "heavy_trial_chest"
+display_name = "Heavy Trial Reward"
+loot_table_id = "heavy_cache"
+lock_mode = 2
+required_trial_id = "heavy_trial"

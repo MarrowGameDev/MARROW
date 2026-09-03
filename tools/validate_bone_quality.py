@@ -4,7 +4,7 @@
 Verifies without running Godot that:
   * the five canonical qualities exist,
   * their probabilities total exactly 100,
-  * every multiplier sits inside the authored 0.85..1.15 band,
+  * every multiplier sits inside the authored 0.90..1.10 band,
   * the ladder's ranks are unique and ordered with the multipliers,
   * every pre-rename Spanish id still maps onto a canonical id,
   * quality never leaks into categorical fields.
@@ -23,15 +23,15 @@ QUALITY_SERVICE = REPO_ROOT / "scripts" / "bone_quality_service.gd"
 INSTANCE_SERVICE = REPO_ROOT / "scripts" / "bone_instance_service.gd"
 
 EXPECTED = {
-    "frail": {"multiplier": 0.85, "probability": 2.5, "rank": 0},
-    "worn": {"multiplier": 0.925, "probability": 12.5, "rank": 1},
+    "frail": {"multiplier": 0.90, "probability": 2.5, "rank": 0},
+    "worn": {"multiplier": 0.95, "probability": 12.5, "rank": 1},
     "normal": {"multiplier": 1.0, "probability": 70.0, "rank": 2},
-    "strong": {"multiplier": 1.075, "probability": 12.5, "rank": 3},
-    "pristine": {"multiplier": 1.15, "probability": 2.5, "rank": 4},
+    "strong": {"multiplier": 1.05, "probability": 12.5, "rank": 3},
+    "pristine": {"multiplier": 1.10, "probability": 2.5, "rank": 4},
 }
 
-MULTIPLIER_MIN = 0.85
-MULTIPLIER_MAX = 1.15
+MULTIPLIER_MIN = 0.90
+MULTIPLIER_MAX = 1.10
 
 
 def parse_table(text: str) -> dict[str, dict[str, float]]:
