@@ -16,11 +16,18 @@ Exit code is 0 only when every check passed, so this is the single command CI
 runs on a pull request.
 
 Finding Godot: the engine is usually not on PATH on a developer machine. The
-runner looks, in order, at `--godot`, `$GODOT_BIN`, then the usual names on
-PATH. Set it once per machine instead of passing it every time:
+runner looks, in order, at `--godot`, the real environment, a `.env` file at the
+repository root, then the usual names on PATH.
 
-    Windows   setx GODOT_BIN "C:\\path\\to\\Godot_v4.7-stable_win64_console.exe"
-    Linux/mac export GODOT_BIN=/path/to/godot
+The `.env` is the one to reach for locally. It is per-machine and gitignored, so
+each developer points at their own install once and never thinks about it again
+-- no shell variable to re-export in every new terminal. Create it at the
+repository root with a single line:
+
+    GODOT_BIN=C:\\path\\to\\Godot_v4.7-stable_win64_console.exe
+
+A variable already exported in the shell wins over the file, which is how CI
+passes its own path without needing a .env at all.
 
 On Windows use the *console* build. The plain `.exe` detaches from the terminal
 and returns before the check has finished, so its exit code means nothing.
@@ -74,6 +81,37 @@ class Result:
     note: str = ""
 
 
+def load_dotenv() -> None:
+    """Read `.env` at the repository root into the environment.
+
+    Hand-rolled rather than pulled from python-dotenv: the whole feature is
+    twenty lines, and a check runner that cannot run until someone pip-installs
+    something is a check runner nobody runs.
+
+    A variable already present in the real environment is left alone, so an
+    explicit `set GODOT_BIN=...` before the command still wins over the file.
+    """
+    path = ROOT / ".env"
+    if not path.is_file():
+        return
+
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].lstrip()
+        key, separator, value = line.partition("=")
+        if not separator:
+            continue
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
 def discover() -> list[Check]:
     """Every check on disk, validators first because they are the fast ones.
 
@@ -100,15 +138,15 @@ def resolve_godot(explicit: str | None) -> tuple[str | None, str]:
     if from_env:
         resolved = shutil.which(from_env) or (from_env if Path(from_env).is_file() else None)
         if resolved is None:
-            return None, f"$GODOT_BIN points at {from_env}, which is not an executable"
-        return resolved, "$GODOT_BIN"
+            return None, f"GODOT_BIN points at {from_env}, which is not an executable"
+        return resolved, "GODOT_BIN"
 
     for candidate in GODOT_CANDIDATES:
         resolved = shutil.which(candidate)
         if resolved:
             return resolved, f"PATH ({candidate})"
 
-    return None, "not found in --godot, $GODOT_BIN or PATH"
+    return None, "not found in --godot, GODOT_BIN, .env or PATH"
 
 
 def command_for(check: Check, godot: str | None) -> list[str]:
@@ -170,6 +208,7 @@ def main() -> int:
     )
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help=f"seconds per check (default {DEFAULT_TIMEOUT})")
     args = parser.parse_args()
+    load_dotenv()
 
     checks = discover()
     if args.validators and not args.headless:
@@ -196,7 +235,7 @@ def main() -> int:
         message = f"Godot binary {how}."
         if not args.skip_missing_godot:
             print(f"ERROR: {message}", file=sys.stderr)
-            print("Set GODOT_BIN or pass --godot. See the header of this file.", file=sys.stderr)
+            print("Set GODOT_BIN in a .env at the repository root, or pass --godot.", file=sys.stderr)
             return 1
         print(f"WARNING: {message} Headless checks will be skipped.\n")
 

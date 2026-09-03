@@ -1,0 +1,83 @@
+name: Checks
+
+# Runs the whole verification suite -- 13 Python validators and 20 Godot
+# headless checks -- on every pull request. Until now the only workflow in this
+# repository rebuilt the architecture graph, so nothing automated ever exercised
+# the game's behaviour: the checks existed but only ran when someone typed each
+# one by hand, which in practice meant they did not run at all. The suite was
+# red for five weeks before anyone noticed.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+# A new push supersedes the run in flight for the same branch. Graph rebuilds
+# use their own group so the two workflows never cancel each other.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      GODOT_VERSION: 4.7-stable
+      GODOT_BUILD: Godot_v4.7-stable_linux.x86_64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The engine is a ~60 MB download that never changes for a given version,
+      # so it is cached on the version string rather than fetched every run.
+      - name: Restore cached Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl --fail --silent --show-error --location \
+            --output /tmp/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/${GODOT_BUILD}.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          chmod +x "$HOME/godot/${GODOT_BUILD}"
+
+      # run_all_checks.py reads GODOT_BIN from the real environment, which wins
+      # over the local .env developers use. No .env is needed here.
+      - name: Point the runner at Godot
+        run: echo "GODOT_BIN=$HOME/godot/${GODOT_BUILD}" >> "$GITHUB_ENV"
+
+      - name: Report versions
+        run: |
+          "$GODOT_BIN" --headless --version
+          python3 --version
+
+      # .godot/ is gitignored, so a fresh checkout has no import cache. Without
+      # this, any check that touches a scene referencing an imported asset fails
+      # on a missing .import file -- a failure that never reproduces locally,
+      # where the cache has existed since the project was first opened.
+      - name: Import project resources
+        run: |
+          "$GODOT_BIN" --headless --path . --import
+
+      - name: Run all checks
+        run: python3 tools/run_all_checks.py
