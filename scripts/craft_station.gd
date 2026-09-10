@@ -14,10 +14,13 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_transition: bool = true
 @export var camera_transition_time: float = 2.0   # matched to the ink -> hold -> void fx (~2.1s)
 @export var camera_return_time: float = 1.2       # leaving is a little snappier
-@export var camera_distance: float = 1.0       # METRES from the work surface (clutter can pull it closer)
-@export var camera_pitch_deg: float = 35.0     # elevation of the camera above the tabletop (lower = sees the cabinets)
-@export var camera_focus_height: float = 0.6   # where the tabletop is, as a fraction of the bench's height
-@export var camera_aim_height: float = 0.7     # where it LOOKS, as a fraction of the bench's height (higher = more shelves)
+## A high three-quarter view looking DOWN at the tools on the tabletop and the cabinets behind
+## them: the camera sits just above the bench's top line (the cabinets), a little in front of
+## its centre, and tilts down. Same pose from any approach.
+@export var camera_pitch_deg: float = 42.0        # how far the view tilts down from horizontal
+@export var camera_height: float = 0.45           # metres ABOVE the bench's top line (the cabinet tops)
+@export var camera_forward_offset: float = 0.6    # fraction of the bench depth in front of its centre (>0.5 = past the front edge)
+@export var camera_focus_height: float = 0.6      # where the tabletop is (fraction of bench height), for clearance
 ## Bench-local horizontal direction the camera sits toward. Fixed, so the landing pose is
 ## identical no matter where the hand's camera started. Flip Z if it lands behind the bench.
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
@@ -91,16 +94,18 @@ func _start_fx() -> void:
 ## Independent of where the hand's camera started, so it's always centred the same way.
 func bench_view_transform() -> Transform3D:
 	var bench_h: float = trigger_size.y / 1.6                       # trigger = bench bounds x1.6 tall
-	var focus: Vector3 = global_position + Vector3.UP * (bench_h * camera_focus_height)   # the tabletop
 	var front: Vector3 = global_transform.basis * camera_front
 	front.y = 0.0
 	front = front.normalized() if front.length() > 0.001 else Vector3.BACK
+	# bench depth along the front axis (trigger = bench bounds x1.5), measured in bench-local axes
+	var depth: float = (absf(camera_front.x) * trigger_size.x + absf(camera_front.z) * trigger_size.z) / 1.5
+	var tabletop: Vector3 = global_position + Vector3.UP * (bench_h * camera_focus_height)
+	# just above the cabinet line, a little in front of the centre, tilted down over tools + cabinets
+	var pos: Vector3 = global_position + front * (depth * camera_forward_offset) + Vector3.UP * (bench_h + camera_height)
+	pos = _clear_of_clutter(tabletop, pos)
 	var pitch: float = deg_to_rad(camera_pitch_deg)
-	var pos: Vector3 = focus + front * (camera_distance * cos(pitch)) + Vector3.UP * (camera_distance * sin(pitch))
-	pos = _clear_of_clutter(focus, pos)
-	# sit low by the tabletop but look a little higher, so the shelves behind it are in frame
-	var aim: Vector3 = global_position + Vector3.UP * (bench_h * camera_aim_height)
-	return Transform3D(Basis.looking_at(aim - pos, Vector3.UP), pos)
+	var dir: Vector3 = (-front * cos(pitch) + Vector3.DOWN * sin(pitch)).normalized()
+	return Transform3D(Basis.looking_at(dir, Vector3.UP), pos)
 
 
 ## If bench clutter sits between the tabletop and the ideal spot, stop just in front of it.
