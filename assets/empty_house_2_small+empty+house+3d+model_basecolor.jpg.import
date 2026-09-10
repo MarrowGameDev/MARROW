@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ihi8y8oixejb"
-path="res://.godot/imported/empty_house_2_small+empty+house+3d+model_basecolor.jpg-860f2c8691c06bc2aa346783881e27fc.ctex"
+path.s3tc="res://.godot/imported/empty_house_2_small+empty+house+3d+model_basecolor.jpg-860f2c8691c06bc2aa346783881e27fc.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f94c8467567cd0b20d3ab806f1fe1954"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/empty_house_2_small+empty+house+3d+model_basecolor.jpg"
-dest_files=["res://.godot/imported/empty_house_2_small+empty+house+3d+model_basecolor.jpg-860f2c8691c06bc2aa346783881e27fc.ctex"]
+dest_files=["res://.godot/imported/empty_house_2_small+empty+house+3d+model_basecolor.jpg-860f2c8691c06bc2aa346783881e27fc.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

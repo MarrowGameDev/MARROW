@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://igy230pf5rvo"
-path="res://.godot/imported/wood_pillar_long_long+wooden+pillar+3d+model_basecolor.jpg-4ab888e377b2ac6f60e9cd066f4025b6.ctex"
+path.s3tc="res://.godot/imported/wood_pillar_long_long+wooden+pillar+3d+model_basecolor.jpg-4ab888e377b2ac6f60e9cd066f4025b6.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ab1ae7de9e402c7a5f85891c8aa0f706"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/wood_pillar_long_long+wooden+pillar+3d+model_basecolor.jpg"
-dest_files=["res://.godot/imported/wood_pillar_long_long+wooden+pillar+3d+model_basecolor.jpg-4ab888e377b2ac6f60e9cd066f4025b6.ctex"]
+dest_files=["res://.godot/imported/wood_pillar_long_long+wooden+pillar+3d+model_basecolor.jpg-4ab888e377b2ac6f60e9cd066f4025b6.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

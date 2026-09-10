@@ -7,11 +7,26 @@
 [ext_resource type="PackedScene" uid="uid://d2un0d3a5hy1h" path="res://assets/weathered+wooden+crate+3d+model.fbx" id="5_crate_weathered"]
 [ext_resource type="PackedScene" uid="uid://dptva1ot4cidj" path="res://assets/puppets_group.glb" id="6_puppets"]
 [ext_resource type="PackedScene" uid="uid://bbcofilkaai05" path="res://assets/broken_marionettes.glb" id="8_eb6dy"]
+[ext_resource type="PackedScene" uid="uid://bkcas3h4tugyb" path="res://assets/puppets_group_3.glb" id="8_og1vs"]
+[ext_resource type="PackedScene" uid="uid://qdx2o5q6snnt" path="res://assets/wood_hanger_rod.glb" id="9_2wyq8"]
 [ext_resource type="PackedScene" uid="uid://cnre12a4x71b2" path="res://assets/empty_house.glb" id="11_eb6dy"]
+[ext_resource type="PackedScene" uid="uid://d3iji8287qutx" path="res://assets/wood_panel.glb" id="11_jkv2x"]
+[ext_resource type="PackedScene" uid="uid://c5mtrx8bqrlin" path="res://assets/wood_fence_panel.glb" id="12_jbj1t"]
 [ext_resource type="PackedScene" uid="uid://cdh0wqobvpwci" path="res://assets/wall_torch.glb" id="12_trceg"]
+[ext_resource type="PackedScene" uid="uid://dtoh6gdrqvubj" path="res://assets/marionette_hanging_best.glb" id="13_0ld40"]
 [ext_resource type="PackedScene" uid="uid://ruxo2pd1cgc" path="res://assets/stone_cottage.glb" id="13_jkv2x"]
+[ext_resource type="PackedScene" uid="uid://bjarw3aan8jdb" path="res://assets/marionette_hanging_rope.glb" id="14_gqmmt"]
 [ext_resource type="PackedScene" uid="uid://dky2xkph3bk27" path="res://assets/abandoned_stone_house.glb" id="14_jbj1t"]
 [ext_resource type="PackedScene" uid="uid://c5m3ke4w6446e" path="res://assets/stone_house.glb" id="15_muem4"]
+[ext_resource type="PackedScene" uid="uid://da6ros4i1kr5y" path="res://assets/marionette_pile_2.glb" id="15_yc10j"]
+[ext_resource type="PackedScene" uid="uid://cms2rkft64tos" path="res://assets/wood_pillar.glb" id="16_jscy8"]
+[ext_resource type="PackedScene" uid="uid://mbpqe4oucjaf" path="res://assets/empty_house_2.glb" id="17_pm3ni"]
+[ext_resource type="PackedScene" uid="uid://2sahj4yn22sc" path="res://assets/stone_cottage_empty.glb" id="18_y6deb"]
+[ext_resource type="PackedScene" uid="uid://bl10uce5xcw5x" path="res://assets/wood_pillar_long.glb" id="19_og1vs"]
+[ext_resource type="PackedScene" uid="uid://11dgp5rnebcb" path="res://assets/stone_floor_incomplete.glb" id="20_yc10j"]
+[ext_resource type="PackedScene" uid="uid://do6sdiheyk8ex" path="res://assets/puppets_group_2.glb" id="21_jscy8"]
+[ext_resource type="PackedScene" uid="uid://5sd4g7vbtc60" path="res://assets/marionette_prison.glb" id="26_vxglm"]
+[ext_resource type="PackedScene" uid="uid://b4cpiww7xewob" path="res://assets/marionette_prison_2.glb" id="27_2f3dj"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -21,13 +36,13 @@ ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.55
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
-size = Vector3(106, 0.15, 81)
+size = Vector3(106, 0.15, 156)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
 albedo_color = Color(0.44705883, 0.41960785, 0.35686275, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
-size = Vector3(100, 0.15, 100)
+size = Vector3(100, 0.15, 179)
 
 [node name="main" type="Node3D" unique_id=1406300441]
 
@@ -43,30 +58,19 @@ shadow_enabled = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=822212144]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -2.2351742e-08, 32.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, -2.2351742e-08, 53)
 mesh = SubResource("BoxMesh_ground")
 surface_material_override/0 = SubResource("StandardMaterial3D_ground")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=935072516]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 39.5)
 shape = SubResource("BoxShape3D_ground")
+
+[node name="wood_pillar" parent="Ground" unique_id=1109864693 instance=ExtResource("16_jscy8")]
+transform = Transform3D(-1.8795896e-07, -5.676, 0, 4.2999997, -2.4810583e-07, 0, 0, 0, 4.2999997, 14.57, 7.16, 46)
 
 [node name="Player" parent="." unique_id=936441821 instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
-
-[node name="PuppetWorkshop" parent="." unique_id=1438117777 instance=ExtResource("2_workshop")]
-transform = Transform3D(5.603222, 0, -4.5374, 0, 7.21, 0, 4.5374, 0, 5.603222, 3, -0.02, 0)
-
-[node name="WeatheredCrate" parent="PuppetWorkshop" unique_id=965546390 instance=ExtResource("5_crate_weathered")]
-transform = Transform3D(0.3686324, 0, 0.29851264, 0, 0.47434124, 0, -0.29851264, 0, 0.3686324, -0.6930022, 0.006934813, 0.02577582)
-
-[node name="WoodenCrate" parent="PuppetWorkshop" unique_id=48895333 instance=ExtResource("4_crate")]
-transform = Transform3D(0.24850392, 0, 0.023928195, 0, 0.24965326, 0, -0.023928195, 0, 0.24850392, 0.5930938, 0.22746187, -0.1072782)
-
-[node name="WoodenCrate2" parent="PuppetWorkshop/WoodenCrate" unique_id=1804280068 instance=ExtResource("4_crate")]
-transform = Transform3D(-3.6450313e-08, 0.833886, 0.5519371, -1.0000001, -4.3711395e-08, 0, 2.4125937e-08, -0.55193716, 0.83388597, -0.43977427, -0.40555564, 0.1911465)
-
-[node name="broken_marionettes" parent="PuppetWorkshop" unique_id=686615799 instance=ExtResource("8_eb6dy")]
-transform = Transform3D(0.65750223, 0, 0.5324348, 0, 0.8460472, 0, -0.5324348, 0, 0.65750223, -0.046278685, 0.0027739252, -0.49793056)
 
 [node name="MarionetteHanging" parent="." unique_id=448295887 instance=ExtResource("3_hanging")]
 transform = Transform3D(-5.265435, 0, -3.0400007, 0, 6.080001, 0, 3.0400007, 0, -5.265435, 0, 4.85, 4)
@@ -74,20 +78,104 @@ transform = Transform3D(-5.265435, 0, -3.0400007, 0, 6.080001, 0, 3.0400007, 0, 
 [node name="puppets_group" parent="." unique_id=855425155 instance=ExtResource("6_puppets")]
 transform = Transform3D(2.2465484, 0, 8.384235, 0, 8.679998, 0, -8.384235, 0, 2.2465484, -5, 0.46, 0)
 
-[node name="stone_cottage" parent="." unique_id=1501249138 instance=ExtResource("13_jkv2x")]
-transform = Transform3D(-1.5692391e-06, 0, 35.900005, 0, 35.900005, 0, -35.900005, 0, -1.5692391e-06, -31, 0, 49)
+[node name="abandoned house 2" parent="." unique_id=1501249138 instance=ExtResource("13_jkv2x")]
+transform = Transform3D(-9.291607, 0, 34.676743, 0, 35.900005, 0, -34.676743, 0, -9.291607, -25, 0, 49)
+
+[node name="wood_pillar_long2" parent="abandoned house 2" unique_id=1658209455 instance=ExtResource("19_og1vs")]
+transform = Transform3D(-0.04945678, 0, -0.18457519, 0, 0.19108634, 0, 0.18457519, 0, -0.04945678, -0.581, 0, 0.213)
+
+[node name="wall group 3" parent="abandoned house 2" unique_id=972018581 instance=ExtResource("12_jbj1t")]
+transform = Transform3D(-0.24215408, 0, 0.064884946, 0, 0.25069633, 0, -0.064884946, 0, -0.24215408, -0.42715013, 0, 0.087409854)
+
+[node name="puppets_group_3" parent="abandoned house 2" unique_id=2049455516 instance=ExtResource("8_og1vs")]
+transform = Transform3D(0.11838436, 0, -0.20504776, 0, 0.23676877, 0, 0.20504776, 0, 0.11838436, -0.42908192, 0, 0.20224333)
+
+[node name="wood_hanger_rod2" parent="abandoned house 2" unique_id=111003127 instance=ExtResource("9_2wyq8")]
+transform = Transform3D(0.017302668, 0, 0.06457441, 0, 0.066852346, 0, -0.06457441, 0, 0.017302668, -0.34115446, 0.17353758, 0.19696563)
+
+[node name="wood_hanger_rod" parent="abandoned house 2" unique_id=1316958762 instance=ExtResource("9_2wyq8")]
+transform = Transform3D(-0.08609922, 0, 0.023070224, 0, 0.089136474, 0, -0.023070224, 0, -0.08609922, -0.3880813, 0.167688, 0.12671608)
+
+[node name="roof group3" parent="abandoned house 2" unique_id=1727834318 instance=ExtResource("11_jkv2x")]
+transform = Transform3D(-0.05839649, 0.21051256, -0.056406677, 0, 0.058396492, 0.21793865, 0.21793863, 0.056406677, -0.015114125, -0.5833086, 0.19498605, 0.13208067)
 
 [node name="abandoned_stone_house" parent="." unique_id=2128801480 instance=ExtResource("14_jbj1t")]
-transform = Transform3D(-1.8588266e-06, 0, -42.524998, 0, 42.524998, 0, 42.524998, 0, -1.8588266e-06, 32, 0, 72)
+transform = Transform3D(-11.006281, 0, -41.075993, 0, 42.524998, 0, 41.075993, 0, -11.006281, 26, 0, 91)
 
-[node name="stone_house" parent="." unique_id=1093156791 instance=ExtResource("15_muem4")]
-transform = Transform3D(-9.536743e-07, 0, -46.2, 0, 46.2, 0, 46.2, 0, -9.536743e-07, 32.3, 0, 39.3)
+[node name="abandoned house" parent="." unique_id=1093156791 instance=ExtResource("15_muem4")]
+transform = Transform3D(-9.536743e-07, 0, -46.2, 0, 46.2, 0, 46.2, 0, -9.536743e-07, 33.3, 0, 57.3)
 
-[node name="empty_house" parent="." unique_id=1074355388 instance=ExtResource("11_eb6dy")]
+[node name="wood_pillar2" parent="abandoned house" unique_id=18379121 instance=ExtResource("16_jscy8")]
+transform = Transform3D(8.398062e-17, 2.536054e-09, 0.093073584, 0.093073584, -5.370256e-09, 0, 4.0683754e-09, 0.12285714, -1.9212523e-09, -0.04978347, 0.43636358, 0.40541112)
+
+[node name="wood_pillar3" parent="abandoned house" unique_id=869189508 instance=ExtResource("16_jscy8")]
+transform = Transform3D(8.398063e-17, 2.536054e-09, 0.093073584, 0.093073584, -5.370256e-09, 0, 4.0683754e-09, 0.12285714, -1.9212527e-09, 0.27489185, 0.37142855, 0.38376617)
+
+[node name="puppets_group_2" parent="abandoned house" unique_id=1655218277 instance=ExtResource("21_jscy8")]
+transform = Transform3D(0.15806058, 0, -0.0423522, 0, 0.16363637, 0, 0.0423522, 0, 0.15806058, -0.24458867, 0, 0.50432897)
+
+[node name="started house" parent="." unique_id=1074355388 instance=ExtResource("11_eb6dy")]
 transform = Transform3D(28.249954, -0.04437496, 0, 0.04930552, 25.424953, 0, 0, 0, 36.724995, -1, -0.69, 4)
 
-[node name="wall_torch" parent="." unique_id=393336610 instance=ExtResource("12_trceg")]
-transform = Transform3D(2.46, 0, 0, 0, 2.46, 0, 0, 0, 2.46, -7.26, 4, 12)
+[node name="wood_pillar" parent="started house" unique_id=503274264 instance=ExtResource("16_jscy8")]
+transform = Transform3D(0.15221214, -1.1612395e-11, -0.0002656606, -0.0002951785, -7.3926736e-09, -0.16912463, 0, 0.11708645, -5.118012e-09, -0.24700323, 0.49959493, 0.32675293)
 
-[node name="wall_torch2" parent="." unique_id=1214339897 instance=ExtResource("12_trceg")]
-transform = Transform3D(-2.46, 0, -2.1506003e-07, 0, 2.46, 0, 2.1506003e-07, 0, -2.46, 7.59, 4, 12)
+[node name="marionette_hanging_rope2" parent="started house/wood_pillar" unique_id=755204953 instance=ExtResource("14_gqmmt")]
+transform = Transform3D(-0.028977705, -2.5688196e-10, 1.1856928, -1.1856924, -5.1843763e-08, -0.028977701, 5.1828028e-08, -1.1860468, 1.3548398e-09, -0.06511617, 0.50930214, 1.3488377)
+
+[node name="marionette_hanging_rope" parent="started house" unique_id=1235069693 instance=ExtResource("14_gqmmt")]
+transform = Transform3D(0.04672479, 0.00031508587, -0.17437926, -9.0611386e-05, 0.20058972, 0.00033816622, 0.1341381, 0, 0.035942204, 0.3575865, 0.2659737, 0.3572499)
+
+[node name="wall_torch" parent="started house" unique_id=393336610 instance=ExtResource("12_trceg")]
+transform = Transform3D(0.08707952, 0.0001519826, 0, -0.00016886959, 0.09675504, 0, 0, 0, 0.066984355, -0.22130287, 0.18489361, 0.21783528)
+
+[node name="wall_torch2" parent="started house" unique_id=1214339897 instance=ExtResource("12_trceg")]
+transform = Transform3D(-0.08707952, 0.0001519826, -7.612733e-09, 0.00016886959, 0.09675504, 1.4763047e-11, 5.855958e-09, 0, -0.066984355, 0.3043601, 0.18387422, 0.21783528)
+
+[node name="marionette_hanging_best" parent="started house" unique_id=1539069630 instance=ExtResource("13_0ld40")]
+transform = Transform3D(0.20176962, 0.00035215484, 0, -0.0003912832, 0.22418852, 0, 0, 0, 0.15520765, 0.106607854, 0.26292056, 0.16337645)
+
+[node name="PuppetWorkshop" parent="started house" unique_id=1438117777 instance=ExtResource("2_workshop")]
+transform = Transform3D(0.19834384, 0.00044544495, -0.16061568, -0.00038463974, 0.28357878, 0.00031147513, 0.12355073, 0, 0.15257244, 0.1416341, 0.026077399, -0.108917646)
+
+[node name="WeatheredCrate" parent="started house/PuppetWorkshop" unique_id=965546390 instance=ExtResource("5_crate_weathered")]
+transform = Transform3D(0.3686324, 0, 0.29851264, 0, 0.47434124, 0, -0.29851264, 0, 0.3686324, -0.6930022, 0.006934813, 0.02577582)
+
+[node name="WoodenCrate" parent="started house/PuppetWorkshop" unique_id=48895333 instance=ExtResource("4_crate")]
+transform = Transform3D(0.24850392, 0, 0.023928195, 0, 0.24965326, 0, -0.023928195, 0, 0.24850392, 0.5930938, 0.22746187, -0.1072782)
+
+[node name="WoodenCrate2" parent="started house/PuppetWorkshop/WoodenCrate" unique_id=1804280068 instance=ExtResource("4_crate")]
+transform = Transform3D(-3.6450313e-08, 0.833886, 0.5519371, -1.0000001, -4.3711395e-08, 0, 2.4125937e-08, -0.55193716, 0.83388597, -0.43977427, -0.40555564, 0.1911465)
+
+[node name="broken_marionettes" parent="started house/PuppetWorkshop" unique_id=686615799 instance=ExtResource("8_eb6dy")]
+transform = Transform3D(0.65750223, 0, 0.5324348, 0, 0.8460472, 0, -0.5324348, 0, 0.65750223, -0.046278685, 0.0027739252, -0.49793056)
+
+[node name="marionette_pile_2" parent="." unique_id=1268099203 instance=ExtResource("15_yc10j")]
+transform = Transform3D(9.2, 0, 0, 0, 9.2, 0, 0, 0, 9.2, -9, 0, 20)
+
+[node name="empty_house_2" parent="." unique_id=162807441 instance=ExtResource("17_pm3ni")]
+transform = Transform3D(6.3669486, 0, 23.761772, 0, 24.599997, 0, -23.761772, 0, 6.3669486, -23, 0, 23)
+
+[node name="stone_cottage_empty" parent="." unique_id=95318756 instance=ExtResource("18_y6deb")]
+transform = Transform3D(6.289302, 0, -23.472, 0, 24.300001, 0, 23.472, 0, 6.289302, 21, 0, 25)
+
+[node name="wood_pillar_long" parent="." unique_id=1248647850 instance=ExtResource("19_og1vs")]
+transform = Transform3D(2.8096383, -12.169881, 0, 12.169881, 2.8096383, 0, 0, 0, 12.49, 3, -1.43, 47)
+
+[node name="stone_floor_incomplete" parent="." unique_id=1677965976 instance=ExtResource("20_yc10j")]
+transform = Transform3D(5, 0, 0, 0, -2.1855696e-07, 5, 0, -5, -2.1855696e-07, -5, 0, 36)
+
+[node name="stone_floor_incomplete2" parent="." unique_id=1800277299 instance=ExtResource("20_yc10j")]
+transform = Transform3D(-7.1525574e-07, 5, 2.1855696e-07, 8.8817825e-15, -2.1855695e-07, 5, 5, 7.1525574e-07, 2.8421713e-14, 5, 0, 33)
+
+[node name="stone_floor_incomplete3" parent="." unique_id=822084102 instance=ExtResource("20_yc10j")]
+transform = Transform3D(5.9624405e-08, -5, -2.1855695e-07, 0, -2.1855695e-07, 5, -5, -5.9624405e-08, -2.6062657e-15, 4, 0, 19)
+
+[node name="marionette_prison" parent="." unique_id=1136384999 instance=ExtResource("26_vxglm")]
+transform = Transform3D(-2.2220001, 0, -3.8486168, 0, 4.444, 0, 3.8486168, 0, -2.2220001, 11, 12.11, 69.98)
+
+[node name="marionette_prison_2" parent="." unique_id=1254135790 instance=ExtResource("27_2f3dj")]
+transform = Transform3D(0, 0, -5.9999995, 0, 6, 0, 5.9999995, 0, 0, 11.35, 13.12, 54.33)
+
+[node name="wood_hanger_rod" parent="." unique_id=1529034020 instance=ExtResource("9_2wyq8")]
+transform = Transform3D(-0.85410285, 0, 3.187555, 0, 3.2999997, 0, -3.187555, 0, -0.85410285, 13, 17.78, 54)
