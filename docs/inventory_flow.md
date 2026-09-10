@@ -18,8 +18,6 @@ modificar controles desde la seccion de settings.
   `collect_bone`, expone snapshots y emite cambios por eventos.
 - `scripts/player_inventory_ui.gd`: construye la pantalla de inventario, tabs,
   grid, detalles, settings, paper doll y preview 3D.
-- `scripts/player_equipment_builds_component.gd`: guarda y aplica presets de
-  equipamiento usando el estado real de `PlayerEquipmentComponent`.
 - `scripts/ui_bone_item.gd`: tile arrastrable de un hueso en el grid.
 - `scripts/ui_bone_slot.gd`: slot visual del paper doll.
 - `scripts/ui_inventory_empty_slot.gd`: zona para soltar items/equipamiento
@@ -71,37 +69,6 @@ modificar controles desde la seccion de settings.
 - Lee datos mediante metodos publicos del player.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
-- Cachea el snapshot de equipamiento ya aplicado con exito para evitar
-  recrear piezas del rig preview cuando llegan eventos redundantes (ver
-  `docs/inventory_flow.md` seccion de historial, 2026-07-15: el snapshot solo
-  se guarda despues de equipar cada pieza, no antes).
-- Muestra filtros por los seis slots canonicos de equipo: `head`, `torso`,
-  `left_arm`, `right_arm`, `left_leg` y `right_leg`.
-- Ordena los stacks visibles por slot corporal, rareza, calidad y nombre antes
-  de crear tiles.
-
-### Slots de inventario y equipamiento
-
-`EquipmentRulesService.CANONICAL_BODY_SLOTS` es la fuente de verdad para los
-slots de equipo que la UI debe mostrar. Los ids canonicos son:
-
-- `head`
-- `torso`
-- `left_arm`
-- `right_arm`
-- `left_leg`
-- `right_leg`
-
-`body` y `legs` son los unicos aliases legacy con datos reales hoy (verificado
-por grep en `data/bones/*.tres`); se normalizan en
-`EquipmentRulesService.normalize_slot_id`. La UI puede leer huesos viejos con
-esos slots, pero no debe crear nuevas categorias ni nuevo estado con esos ids,
-y no se deben agregar aliases especulativos sin un consumidor real. `body`
-sigue existiendo como socket del rig; `torso` es el slot de equipamiento.
-Un hueso legacy `legs` puede equiparse en `right_leg` o `left_leg` mediante
-drag/drop dirigido al slot visual, o mediante equipar-siguiente (tecla E),
-que ahora resuelve al primer lado libre en vez de forzar siempre
-`right_leg` (ver historial de cambios).
 
 ### Validacion estatica del preview
 
@@ -213,19 +180,8 @@ python -B tools/validate_inventory_stack_contract.py
   copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
   de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
   la ruta existente de `PlayerEquipmentComponent`.
-- Filtros: `All` muestra todos los huesos compatibles; las categorias de slot
-  usan `EquipmentRulesService.inventory_filter_matches_bone` para no duplicar
-  reglas entre UI y gameplay.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
-- Build presets: la pestaña de settings permite guardar y aplicar 3 builds de
-  equipamiento en `user://equipment_builds.cfg`. Cada build guarda slots
-  canonicos no-core; la cabeza fija no se reemplaza ni se guarda como pieza
-  aplicable.
-- Al aplicar un build, `PlayerEquipmentBuildsComponent` valida primero que las
-  copias necesarias existan en inventario, que los slots sean compatibles y que
-  cualquier extremidad venga acompanada de torso. La UI solo muestra el resultado
-  de esa validacion.
 - El tutorial de controles debe leer los bindings actuales con
   `DropPickupRulesService.action_binding_text`, para que el texto visible siga
   los cambios hechos en settings.
@@ -249,37 +205,6 @@ En `TESTING ENVIRONMENT`:
 7. Intentar equipar brazo/pierna sin torso y confirmar que se bloquea.
 8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
    solo las partes recuperadas.
-9. Arrastrar `arm_bone` a `Left Arm` y luego a `Right Arm`; debe aceptar ambos
-   lados si hay torso.
-10. Arrastrar `leg_bone` a `Left Leg` y luego a `Right Leg`; cada lado debe
-    mostrar solo su pierna correspondiente en jugador y preview.
-11. Cambiar filtros `Head`, `Torso`, `L. Arm`, `R. Arm`, `L. Leg` y `R. Leg`;
-    cada filtro debe mostrar solo piezas compatibles con ese slot.
-12. En Settings, guardar un build con torso + extremidades, cambiar piezas y
-    aplicar el build; debe restaurar los slots guardados si existen copias.
-13. Guardar un build que use el mismo `bone_id` en dos lados y confirmar que al
-    aplicarlo sin dos copias disponibles muestra error sin cambiar parcialmente
-    el equipamiento.
-
-### Pruebas manuales especificas del preview 3D (pendientes de ejecutar en editor)
-
-Godot esta disponible en este equipo (ver `docs/p0_runtime_validation_suite.md`
-para el procedimiento headless), pero estas pruebas requieren un humano
-observando el render y no se pueden confirmar solo con validadores de texto:
-
-1. Equipar una pieza y confirmar que el preview la muestra sin re-crear el
-   rig completo (sin parpadeo de todas las partes al equipar solo una).
-2. Desequipar esa pieza y confirmar que desaparece del preview.
-3. Abrir y cerrar el inventario varias veces seguidas con el mismo
-   equipamiento y confirmar que no hay parpadeo ni nodos duplicados (el
-   `sync_preview()` cacheado deberia omitir el re-render).
-4. Redimensionar la ventana o cambiar de resolucion (1280x720, 1366x768,
-   1920x1080, ultrawide) con el inventario abierto y confirmar que el
-   preview no queda en blanco ni con tamano cero.
-5. Si alguna pieza no aparece en el preview inmediatamente despues de
-   equipar, volver a abrir/cerrar el inventario y confirmar que aparece (el
-   fix de esta sesion depende de que sync_preview() reintente slots cuya
-   definicion no se resolvio en el primer intento).
 
 ## Historial de cambios
 
@@ -310,28 +235,6 @@ observando el render y no se pueden confirmar solo con validadores de texto:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
-- 2026-07-15: El preview 3D cachea el equipamiento ya renderizado y omite syncs
-  redundantes cuando `equipped` no cambio desde el ultimo `sync_preview()`.
-  Esto evita reconstruir las piezas del rig en cada apertura del inventario
-  cuando el equipamiento no cambio.
-- 2026-07-15 (correccion): la entrada anterior tambien agrego un
-  redimensionamiento manual de `SubViewport` en el layout responsive
-  (`_sync_preview_viewport_size()`), revirtiendo sin decirlo la decision del
-  2026-07-14 de arriba. Se elimino de nuevo: `inventory_preview_container`
-  usa `stretch = true`, por lo que `SubViewportContainer` ya redimensiona su
-  unico `SubViewport` hijo automaticamente cuando el container cambia de
-  tamano. No se encontro evidencia de un render con tamano cero causado por
-  esto; si aparece un bug concreto de tamano, investigar la causa raiz antes
-  de reintroducir un resize manual una tercera vez.
-- 2026-07-15 (correccion): `sync_preview()` marcaba el snapshot de
-  equipamiento como sincronizado ANTES de intentar equipar cada pieza en el
-  rig de preview. Si `BoneRulesService.definition_for(bone_id)` devolvia un
-  diccionario vacio para alguna pieza (definicion todavia no resuelta), esa
-  pieza quedaba cacheada como "ya renderizada" sin haberse dibujado nunca, y
-  llamadas posteriores a `sync_preview()` con el mismo equipamiento no
-  reintentaban esa pieza. Ahora el snapshot solo incluye los slots donde la
-  definicion se aplico con exito, y se asigna despues del loop de equipar,
-  no antes.
 - 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
   agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
   hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
@@ -344,135 +247,3 @@ observando el render y no se pueden confirmar solo con validadores de texto:
   settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
   reiniciar y confirmar que el binding persiste desde
   `user://control_settings.cfg`.
-- 2026-07-15: Se normalizo inventario/equipamiento a seis slots canonicos
-  (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`). Los slots
-  legacy siguen aceptandose como aliases de lectura, y la UI ahora filtra,
-  ordena y equipa por compatibilidad compartida desde `EquipmentRulesService`.
-- 2026-07-15: Se agregaron build presets de equipamiento con guardado local,
-  validacion de copias disponibles, compatibilidad de slots y aplicacion mediante
-  `PlayerEquipmentComponent`.
-- 2026-07-15: Se corrigio el equip-next para piernas (ver
-  `docs/equipment_flow.md` para el detalle completo del bug y el bug de
-  tipado que se encontro de paso), se removieron 7 aliases de slot legacy
-  sin datos reales, y se elimino un metodo de equipamiento sin llamadores.
-  Se agrego comparador con deltas de stats reales al pasar el mouse sobre
-  un hueso, y feedback verde/rojo en los slots del paper doll durante
-  drag and drop segun compatibilidad. El idioma visible de la UI ya era
-  consistente (ingles en toda la pantalla de inventario/settings); no se
-  cambio.
-
-Pruebas manuales pendientes para lo de arriba (Godot 4.7 disponible, ver
-`docs/p0_runtime_validation_suite.md`, pero esto requiere observar el
-render):
-1. Recoger dos `leg_bone` genericos, equipar-siguiente (`E` u la tecla
-   configurada) hasta que ambos esten puestos, y confirmar visualmente que
-   una pierna del rig es distinta del estado anterior a ambos lados (no
-   solo el diccionario de estado).
-2. Pasar el mouse sobre un hueso del mismo slot que uno ya equipado y
-   confirmar que aparece la linea "vs equipped ...".
-3. Arrastrar un hueso sobre un slot compatible e incompatible y confirmar
-   el color verde/rojo del borde; soltar fuera de cualquier slot y
-   confirmar que el borde vuelve a su color normal.
-
-- 2026-07-18 (correccion responsive): `_apply_paper_doll_responsive_layout`
-  escalaba cada `BoneSlotWidget` dos veces. `BoneSlotWidget.setup()` posiciona
-  sus hijos en offsets absolutos derivados del tamano 88x88 con el que se
-  construye y no se re-maqueta al cambiar de tamano, asi que `scale` es lo que
-  realmente redimensiona el slot. Al asignar ademas `size = 88 * doll_scale`,
-  el rect de *input* del control quedaba en `88 * doll_scale^2` mientras el
-  visual quedaba en `88 * doll_scale`. Como `doll_scale` esta clampeado a
-  0.55-1.75 y casi nunca vale exactamente 1.0, los blancos de drop de slots
-  vecinos se solapaban: a 1920x1080 y 2560x1080 los rects de brazo y pierna
-  se intersectaban, de modo que arrastrar un hueso podia equiparlo en el slot
-  equivocado. Ahora el rect del control queda en el tamano base (88x88) y solo
-  `scale` lo redimensiona.
-
-  Verificado con `tools/headless_inventory_check.gd` (Godot 4.7 headless), que
-  instancia el jugador real, recorre las 9 pestanas en 1280x720, 1366x768,
-  1920x1080, 2560x1080 y 1024x600, y afirma que el rect de input de cada slot
-  coincide con su visual y que ningun par de slots se solapa. El chequeo se
-  probo contra el codigo con el bug (falla, reportando los solapamientos
-  brazo/pierna) y contra el corregido (pasa).
-
-Pendiente de confirmacion visual humana: que el paper doll se vea centrado y
-sin recortes en cada resolucion (el chequeo headless valida geometria, no
-render).
-
-- 2026-07-18 (dimensiones y centrado): correcciones sobre lo reportado
-  visualmente (el paper doll no se veia centrado y los textos se pisaban).
-  Cuatro causas reales, todas verificadas por captura y no solo por lectura:
-
-  1. `BoneSlotWidget` y `BoneItemTile` maquetaban a offsets absolutos
-     derivados de un tamano de diseno fijo (82x80 y 96x86) y no se
-     re-maquetaban nunca. Ahora `BoneSlotWidget.resize()` re-posiciona todos
-     sus hijos para el tamano pedido, y el paper doll lo llama en cada pasada
-     responsive en lugar de usar `scale`. Esto elimina de raiz el doble
-     escalado corregido el 2026-07-18 anterior.
-  2. Los labels de nombre tenian `autowrap` pero altura fija. Godot no
-     recorta labels por defecto, asi que un nombre de dos lineas ("Enemy Left
-     Arm Bone") se dibujaba encima del caption del slot de abajo. Ahora las
-     bandas de texto se reservan por separado y los labels usan
-     `max_lines_visible` + `OVERRUN_TRIM_ELLIPSIS` + `clip_text`.
-  3. El doll vivia en un `MarginContainer` que lo estiraba a todo el panel
-     (medido: >1000 px de ancho contra una figura de ~500 px) mientras sus
-     hijos se posicionaban desde el origen del doll, dejando toda la holgura
-     a la derecha y abajo. Con `SIZE_SHRINK_CENTER` el contenedor lo
-     dimensiona a su minimo y lo centra por layout.
-  4. La pestana Builds no tenia layout responsive: previews de tamano fijo
-     que ademas absorbian la altura sobrante del card (custom_minimum_size es
-     solo un piso), empujando el resumen y los botones Save/Apply fuera del
-     panel a 1280x720. Ahora hay `_apply_builds_responsive_layout`, los
-     previews estan fijados con `SHRINK_CENTER`, el resumen esta limitado a 3
-     lineas con altura reservada, y los cards son mas anchos (hasta 340 px) y
-     quedan centrados verticalmente.
-
-  Ademas la grilla rellena `inventory_visible_rows` filas en vez de 4 fijas,
-  que era lo que dejaba una banda vacia bajo la ultima fila a 1080p.
-
-  Verificacion: `tools/headless_inventory_check.gd` (geometria: rect de input
-  == visual, sin solapes entre slots, bandas de texto disjuntas, doll centrado
-  dentro de su panel, en 1280x720 / 1366x768 / 1920x1080 / 2560x1080 /
-  1024x600) y `tools/screenshot_inventory.gd`, que renderiza la escena real y
-  guarda PNGs de Inventario y Builds a 1280x720 y 1920x1080 para inspeccion
-  visual. Este segundo tool existe porque la pasada anterior aprobo la
-  geometria mientras la pantalla seguia viendose mal: revisar solo numeros no
-  alcanzaba. Correr sin `--headless` (headless no tiene renderer).
-
-Pendiente: no se ejercito drag and drop real (equipar arrastrando) ni la
-navegacion con teclado; eso sigue requiriendo una sesion manual.
-
-- 2026-07-18 (centrado de extremidades): brazos y piernas subieron 48 unidades
-  de diseno (arms y 190 -> 142, legs y 286 -> 238) para que el bloque
-  brazos+piernas quede centrado con el frame del preview. El frame va de y 92 a
-  y 376 (centro 234); antes el bloque iba de 190 a 374 (centro 282), 48 abajo.
-  Ahora va de 142 a 326, centro 234 exacto. Cabeza y torso no se movieron.
-
-  De paso la geometria del paper doll pasa a constantes `PAPER_DOLL_*` con una
-  sola definicion. Antes las posiciones estaban escritas dos veces
-  (`_build_paper_doll` y la pasada responsive) y que esas dos copias se
-  desincronizaran es literalmente el bug que ya se documento arriba; ahora no
-  puede repetirse.
-
-  `tools/headless_inventory_check.gd` afirma el centrado: compara el centro
-  vertical del bloque brazos+piernas contra el centro del frame del preview en
-  las cinco resoluciones. Probado contra las posiciones viejas (falla en las 5,
-  desviacion de 30-61 px segun resolucion) y contra las nuevas (pasa).
-
-- 2026-07-18 (calidad en el ciclo de vida): la instancia conserva
-  `bone_id` + `quality_id` en inventario, equipar/desequipar, stacks, builds,
-  rollback y preview. `unequip_slot` solo borra el mapeo de slot, asi que la
-  pieza sigue en `bone_inventory` y vuelve siendo la misma instancia.
-  `PlayerStatsComponent.calculate` recibe el equipment state con instance_ids,
-  de modo que ya opera sobre stats efectivos.
-
-  Stack key = `bone_id | quality_id | mutacion | durabilidad`. La durabilidad
-  hoy es authored por tipo (no hay desgaste por pieza), pero entra en la clave
-  ahora para que agregar desgaste luego no pueda fusionar en silencio una
-  pieza intacta con una agrietada.
-
-  UI: filtro de calidad (All + las 5) y orden (Default / Quality: Lowest first
-  / Quality: Highest first), ambos combinables con el filtro corporal. Cada
-  tarjeta muestra la calidad como texto y un acento del color del tier. El
-  panel de detalles muestra nombre, slot, calidad, multiplicador,
-  `base -> efectivo` y la comparacion contra la pieza equipada, con efectivos
-  en ambos lados.

@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/rig/marionette_hand_character.gd" id="1_controller"]
+[ext_resource type="PackedScene" path="res://assets/marionette_hand/marionette_hand_player.glb" id="2_model"]
+
+[node name="MarionetteHandCharacter" type="Node3D"]
+script = ExtResource("1_controller")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-0.25, 0, 0, 0, 0.25, 0, 0, 0, -0.25, 0, -1.03, 0)

@@ -1,9 +1,9 @@
 # GDScript API Map
 
-## _rt6
+## _ch
 
-- Source file: `scripts/_rt6.gd`
-- Extends: `SceneTree`
+- Source file: `scripts/_ch.gd`
+- Extends: `Node3D`
 - System: Supporting gameplay
 
 ### Signals
@@ -13,20 +13,27 @@
 - none
 
 ### Constants
-- none
+- `OUT`
 
 ### Key Variables
-- `main`
-- `rig`
-- `rarm`
-- `arm_rot0`
-- `anim`
+- `_f`
+- `env`
+- `we`
+- `l`
+- `g`
+- `gm`
+- `c`
+- `ap`
+- `cam`
+- `f`
 
 ### Functions
-- `_initialize() -> void`
+- `_ready()`
+- `_ap(n)`
+- `_process(_d)`
 
 ### Resource Dependencies
-- `scenes/rig_test.tscn`
+- `assets/crab_head_character_optimized.glb`
 
 ### GameEvents Usage
 - none
@@ -35,8 +42,7 @@
 - none
 
 ### Node Path Lookups
-- `RigTestPlayer/VisualRoot/ModularSkeletonRig`
-- `RigTestPlayer/VisualRoot/ProceduralAnimator`
+- none
 
 ## arena_goal_manager
 
@@ -204,6 +210,60 @@
 - `CollisionShape3D`
 - `Visual`
 
+## attack_head
+
+- Source file: `scripts/attack_head.gd`
+- Extends: `Node3D`
+- System: Combat and enemies
+
+### Signals
+- none
+
+### Exported Tuning
+- `part_name`
+
+### Constants
+- `GLB`
+
+### Key Variables
+- `_model`
+- `skel`
+- `mi`
+- `arr`
+- `verts`
+- `bones`
+- `wts`
+- `skin`
+- `mats`
+- `b`
+- `sum`
+- `n`
+- `step`
+- `i`
+- `sk`
+- `per`
+- `w`
+- `r`
+
+### Functions
+- `_ready() -> void`
+- `_show_only(n: Node) -> void`
+- `_center_part() -> void`
+- `_find_skel(n: Node) -> Skeleton3D`
+- `_find_mesh(n: Node, want: String) -> MeshInstance3D`
+
+### Resource Dependencies
+- `assets/crab_head_character_optimized.glb`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## attack_hitbox
 
 - Source file: `scripts/attack_hitbox.gd`
@@ -284,40 +344,6 @@
 ### Node Path Lookups
 - `CollisionShape3D`
 
-## BackstabRulesService
-
-- Source file: `scripts/backstab_rules_service.gd`
-- Extends: `unknown`
-- System: Supporting gameplay
-
-### Signals
-- none
-
-### Exported Tuning
-- none
-
-### Constants
-- `MIN_BACKSTAB_VECTOR_LENGTH`
-
-### Key Variables
-- `to_attacker`
-- `flat_forward`
-
-### Functions
-- none
-
-### Resource Dependencies
-- none
-
-### GameEvents Usage
-- none
-
-### Input Actions
-- none
-
-### Node Path Lookups
-- none
-
 ## BallisticsService
 
 - Source file: `scripts/ballistics_service.gd`
@@ -350,6 +376,152 @@
 
 ### Functions
 - none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## body_dock
+
+- Source file: `scripts/body_dock.gd`
+- Extends: `StaticBody3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `character_scale`
+- `tint`
+- `enemy_tint`
+- `body_health`
+- `body_attack_range`
+- `body_attack_cd`
+- `body_attack_power`
+
+### Constants
+- `GLB`
+- `BODY_PARTS`
+
+### Key Variables
+- `_model`
+- `_grounded`
+- `_gframe`
+- `_base_y`
+- `_owner`
+- `_head_mi`
+- `_head_mat`
+- `_sentinel`
+- `ap`
+- `cs`
+- `cap`
+- `skel`
+- `arr`
+- `verts`
+- `bones`
+- `wts`
+- `skin`
+- `mats`
+- `b`
+- `gt`
+- `sum`
+- `n`
+- `min_y`
+- `step`
+- `i`
+- `sk`
+- `per`
+- `w`
+- `wpos`
+- `c`
+- `t`
+- `head_on`
+- `m`
+- `mi`
+- `bone_idx`
+- `xf`
+- `v`
+- `r`
+- `out`
+- `f`
+
+### Functions
+- `_ready() -> void`
+- `_process(_delta: float) -> void`
+- `is_free() -> bool`
+- `is_enemy_held() -> bool`
+- `has_reattached() -> bool`
+- `reattach() -> void`
+- `detach() -> void`
+- `reserve() -> void`
+- `reservation_active() -> bool`
+- `enemy_claim(by: Node = null) -> void`
+- `release() -> void`
+- `take_damage(amount: int, _from: Vector3 = Vector3.ZERO, _attacker: Node = null, _src: String = "") -> void`
+- `socket_world() -> Vector3`
+- `play_hit_flash() -> void`
+- `play_chomp() -> void`
+- `_apply_visibility(n: Node) -> void`
+- `_tint_head(col: Color) -> void`
+- `_untint_head() -> void`
+- `_ground_body() -> void`
+- `_skinned_min_y(mi: MeshInstance3D, skel: Skeleton3D) -> float`
+- `_find_skel(n: Node) -> Skeleton3D`
+- `_find_mesh(n: Node, want: String) -> MeshInstance3D`
+- `_all_meshes(n: Node) -> Array`
+- `_apply_tint(n: Node) -> void`
+- `_find_ap(n: Node) -> AnimationPlayer`
+
+### Resource Dependencies
+- `assets/crab_head_character_optimized.glb`
+
+### GameEvents Usage
+- `body_possessed`
+- `body_freed`
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## BodySentinel
+
+- Source file: `scripts/body_sentinel.gd`
+- Extends: `Node`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- none
+
+### Key Variables
+- `_body`
+- `_health`
+- `_atk_range`
+- `_atk_cd_max`
+- `_atk_power`
+- `_atk_cd`
+- `pl`
+- `to`
+
+### Functions
+- `setup(body: Node3D, health: int, atk_range: float, atk_cd: float, atk_power: int) -> void`
+- `take_hit(amount: int) -> void`
+- `_process(delta: float) -> void`
 
 ### Resource Dependencies
 - none
@@ -532,10 +704,6 @@
 - `slot`
 - `tags`
 - `description`
-- `durability_max`
-- `durability_start`
-- `durability_repair_cost`
-- `durability_tags`
 - `mutation_id`
 - `mutation_family`
 - `mutation_stage`
@@ -597,9 +765,6 @@
 - `MUTATION_CURSED`
 - `MUTATION_SPECIAL`
 - `MUTATION_HYBRID`
-- `DURABILITY_INTACT`
-- `DURABILITY_CRACKED`
-- `DURABILITY_BROKEN`
 
 ### Key Variables
 - `visual`
@@ -607,7 +772,6 @@
 - `definition`
 - `identity`
 - `quality_modifiers`
-- `durability`
 - `player_stats`
 - `mutation`
 - `attack_combo`
@@ -637,95 +801,6 @@
 ### Node Path Lookups
 - none
 
-## BoneInstanceService
-
-- Source file: `scripts/bone_instance_service.gd`
-- Extends: `unknown`
-- System: Inventory, equipment, and bones
-
-### Signals
-- none
-
-### Exported Tuning
-- none
-
-### Constants
-- `INSTANCE_PREFIX`
-
-### Key Variables
-- `resolved_quality`
-- `instance_id`
-- `record`
-- `bone_id`
-- `generated`
-- `data`
-- `raw`
-
-### Functions
-- none
-
-### Resource Dependencies
-- none
-
-### GameEvents Usage
-- none
-
-### Input Actions
-- none
-
-### Node Path Lookups
-- none
-
-## BoneQualityService
-
-- Source file: `scripts/bone_quality_service.gd`
-- Extends: `unknown`
-- System: Inventory, equipment, and bones
-
-### Signals
-- none
-
-### Exported Tuning
-- none
-
-### Constants
-- `QUALITY_FRAIL`
-- `QUALITY_WORN`
-- `QUALITY_NORMAL`
-- `QUALITY_STRONG`
-- `QUALITY_PRISTINE`
-- `QUALITY_TABLE`
-- `QUALITY_ORDER`
-- `LEGACY_QUALITY_ALIASES`
-- `QUALITY_VISUALS`
-
-### Key Variables
-- `roll`
-- `cumulative`
-- `total`
-- `profile`
-- `tint`
-- `base_color`
-- `tinted`
-- `saturation`
-- `luminance`
-- `emission_energy`
-
-### Functions
-- none
-
-### Resource Dependencies
-- none
-
-### GameEvents Usage
-- none
-
-### Input Actions
-- none
-
-### Node Path Lookups
-- none
-
 ## BoneRulesService
 
 - Source file: `scripts/bone_rules_service.gd`
@@ -740,56 +815,23 @@
 
 ### Constants
 - `PLAYER_BONUS_DEFAULTS`
-- `PLAYER_STAT_MODIFIER_DEFAULTS`
-- `PLAYER_STAT_PERCENT_LIMIT`
-- `EQUIPMENT_FREE_WEIGHT`
-- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT`
-- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX`
-- `DURABILITY_CRACKED_THRESHOLD`
 - `UNKNOWN_COLOR`
-- `AUTO_EQUIP_SLOT_ORDER`
 
 ### Key Variables
-- `bone_id`
 - `definition`
-- `full`
-- `replacements`
-- `base_name`
-- `slot_label`
-- `clean_name`
-- `clean_lower`
-- `slot_lower`
 - `color_value`
-- `maximum`
 - `value`
 - `tags`
-- `ratio`
-- `current`
 - `ids`
-- `set_counts`
-- `set_names`
-- `set_pieces`
-- `synergy_counts`
-- `tag_counts`
-- `mutation_counts`
-- `total_synergy_score`
-- `total_mutation_intensity`
-- `set_id`
-- `pieces`
-- `piece_key`
-- `clean_synergy_id`
-- `clean_tag`
-- `mutation_family`
 - `text`
 - `bonus`
 - `move_bonus`
 - `range_bonus`
 - `damage_bonus`
 - `health_bonus`
-- `multiplier`
-- `claimed`
-- `plan`
-- `worn`
+- `total`
+- `bone_id`
+- `keys`
 
 ### Functions
 - none
@@ -853,6 +895,134 @@
 ### Node Path Lookups
 - none
 
+## charge_arc
+
+- Source file: `scripts/charge_arc.gd`
+- Extends: `Control`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `arc_fraction`
+- `radius`
+- `thickness`
+
+### Constants
+- none
+
+### Key Variables
+- `ratio`
+- `nr`
+- `span`
+- `start`
+- `col`
+
+### Functions
+- `set_ratio(v: float) -> void`
+- `_draw() -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## cloth_verlet
+
+- Source file: `scripts/cloth_verlet.gd`
+- Extends: `Node`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `cloth_start`
+- `grid_x`
+- `grid_y`
+- `grid_z`
+- `gravity`
+- `stiffness`
+- `damping`
+- `iterations`
+- `max_offset`
+- `floor_y`
+- `floor_friction`
+
+### Constants
+- none
+
+### Key Variables
+- `_skel`
+- `_mi`
+- `_mesh`
+- `_rest`
+- `_out`
+- `_normals`
+- `_uvs`
+- `_tangents`
+- `_colors`
+- `_indices`
+- `_cloth`
+- `_cloth_fw`
+- `_corner`
+- `_cw`
+- `_grid_rest`
+- `_pos`
+- `_prev`
+- `_pin`
+- `_edges`
+- `_mat`
+- `_root`
+- `_ok`
+- `arr`
+- `verts`
+- `bones`
+- `wts`
+- `skin`
+- `mats`
+- `b`
+- `n`
+- `per`
+- `ylo`
+- `yhi`
+- `sk`
+- `w`
+- `span`
+- `mn`
+- `mx`
+- `t`
+- `fw`
+
+### Functions
+- `setup(root: Node) -> void`
+- `_build() -> void`
+- `_write_surface() -> void`
+- `_gk(x: int, y: int, z: int) -> int`
+- `_process(delta: float) -> void`
+- `_find_skel(n: Node) -> Skeleton3D`
+- `_find_mesh(n: Node, want: String) -> MeshInstance3D`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## CombatTargetingService
 
 - Source file: `scripts/combat_targeting_service.gd`
@@ -894,6 +1064,179 @@
 
 ### Node Path Lookups
 - none
+
+## crab_scuttle
+
+- Source file: `scripts/crab_scuttle.gd`
+- Extends: `CharacterBody3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `max_health`
+- `contact_damage`
+- `walk_speed`
+- `aggro_range`
+- `contact_range`
+- `wander_radius`
+- `turn_rate_deg`
+- `gravity`
+- `tint`
+
+### Constants
+- `WALK_SUBSTR`
+
+### Key Variables
+- `alive`
+- `health`
+- `_origin`
+- `_dir`
+- `_wander_off`
+- `_repath`
+- `_ap`
+- `_mats`
+- `_rng`
+- `clip`
+- `target`
+- `player`
+- `chasing`
+- `to_t`
+- `dir`
+- `xaxis`
+- `d`
+- `face`
+- `target_yaw`
+- `move`
+- `a`
+- `r`
+- `m`
+- `players`
+- `sources`
+- `merged`
+- `maxlen`
+- `src`
+- `ttype`
+- `t`
+- `time`
+- `val`
+- `lib`
+- `f`
+- `diff`
+
+### Functions
+- `_ready() -> void`
+- `_physics_process(delta: float) -> void`
+- `_pick_wander() -> void`
+- `take_damage(amount: int, _hit_from: Vector3 = Vector3.ZERO, _attacker: Node = null, _damage_source: String = "") -> void`
+- `die() -> void`
+- `_flash() -> void`
+- `_apply_tint(n: Node) -> void`
+- `_find_player() -> Node3D`
+- `_build_walk(ap: AnimationPlayer) -> String`
+- `_find_ap(n: Node) -> AnimationPlayer`
+- `_approach_angle(cur: float, target: float, max_step: float) -> float`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## creature_walk_test
+
+- Source file: `scripts/creature_walk_test.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `move_speed`
+- `sprint_multiplier`
+- `crouch_speed_mult`
+- `gravity`
+- `reattach_range`
+
+### Constants
+- none
+
+### Key Variables
+- `_head`
+- `_cam`
+- `_cam_ctrl`
+- `_charge_arc`
+- `_dock`
+- `_orbiting`
+- `_detaching`
+- `_reattached`
+- `_r_prev`
+- `_reattach_prompt`
+- `_hp_fill`
+- `_dmg_flash`
+- `env`
+- `we`
+- `l`
+- `gb`
+- `gm`
+- `mat`
+- `cs`
+- `pivot`
+- `arm`
+- `layer`
+- `hp_bg`
+- `r_now`
+- `r_pressed`
+- `iv`
+- `dir`
+- `sprinting`
+- `spd`
+- `gate`
+- `vp`
+- `show`
+- `ratio`
+- `t`
+- `vr`
+- `to`
+- `land`
+- `away`
+
+### Functions
+- `_ready() -> void`
+- `_physics_process(delta: float) -> void`
+- `_process(_delta: float) -> void`
+- `_on_player_health(_player: Node, hp: int, max_hp: int) -> void`
+- `_on_player_damaged(_player: Node, _amount: int, _source: Node) -> void`
+- `_on_player_died(_player: Node) -> void`
+- `_crab_to_dock() -> Vector3`
+- `_reattach() -> void`
+- `_detach() -> void`
+- `_on_detach_done() -> void`
+
+### Resource Dependencies
+- `scripts/player_camera_controller.gd`
+- `scripts/body_dock.gd`
+- `scripts/charge_arc.gd`
+
+### GameEvents Usage
+- `player_health_changed`
+- `player_damaged`
+- `player_died`
+
+### Input Actions
+- `move_left`
+- `sprint`
+
+### Node Path Lookups
+- `VisualRoot`
 
 ## DemoEnemyCamp
 
@@ -1125,7 +1468,6 @@
 - `stealth_finish_range`
 - `stealth_behind_dot`
 - `failed_stealth_damage_multiplier`
-- `stealth_execution_reaction_lock`
 - `respawn_enabled`
 - `near_respawn_delay`
 - `far_respawn_delay`
@@ -1212,17 +1554,10 @@
 - `_get_held_rock_world_position() -> Vector3`
 - `_get_rock_throw_socket() -> Node3D`
 - `can_be_stealth_finished_by(player: Node3D) -> bool`
-- `is_stealth_finish_lethal() -> bool`
 - `get_stealth_prompt_text() -> String`
 - `get_drop_display_name() -> String`
 - `_is_player_behind(player: Node3D) -> bool`
 - `try_stealth_finish(player: Node3D, player_damage: int, hit_from: Vector3) -> bool`
-- `apply_stealth_finish_impact(player: Node3D, player_damage: int, hit_from: Vector3) -> bool`
-- `finish_stealth_execution(player: Node3D) -> void`
-- `cancel_stealth_execution(player: Node3D) -> void`
-- `_begin_stealth_execution(player: Node3D, hit_from: Vector3) -> void`
-- `_clear_stealth_execution() -> void`
-- `_update_stealth_execution_hold() -> bool`
 - `_can_see_player(player: Node3D, to_player: Vector3, dist: float) -> bool`
 - `_can_hear_player(player: Node, dist: float) -> bool`
 - `_investigate_position(position: Vector3, duration: float) -> void`
@@ -1324,6 +1659,7 @@
 - none
 
 ### Node Path Lookups
+- `VisualRoot/AnimatedCharacter`
 - `LimbBonePickup`
 - `LizardTorsoFront`
 - `LizardTorsoRear`
@@ -1399,16 +1735,7 @@
 ### Constants
 - `UNKNOWN_COLOR`
 - `PLAYER_BONUS_DEFAULTS`
-- `SLOT_HEAD`
-- `SLOT_TORSO`
-- `SLOT_LEFT_ARM`
-- `SLOT_RIGHT_ARM`
-- `SLOT_LEFT_LEG`
-- `SLOT_RIGHT_LEG`
-- `CANONICAL_BODY_SLOTS`
-- `LEGACY_SLOT_ALIASES`
 - `SLOT_DISPLAY`
-- `INVENTORY_FILTER_GROUPS`
 - `SLOT_TO_SOCKETS`
 - `LIMB_TO_SLOT`
 - `LIMB_DISPLAY`
@@ -1416,22 +1743,7 @@
 - `SOURCE_COLOR`
 
 ### Key Variables
-- `slots`
-- `result`
-- `resolved_id`
 - `definition`
-- `raw_slot`
-- `normalized`
-- `clean_slot`
-- `index`
-- `compatible`
-- `normalized_filter`
-- `a_slot_index`
-- `b_slot_index`
-- `a_rarity`
-- `b_rarity`
-- `a_quality`
-- `b_quality`
 - `clean_source`
 - `parsed`
 - `source_profile`
@@ -1443,7 +1755,6 @@
 - `color`
 - `bonus`
 - `prefix`
-- `base`
 - `tags`
 - `equipment_weight`
 - `base_weight`
@@ -1524,6 +1835,10 @@
 - `drop_spawned(bone_id: String, pickup: Node, source: Node)`
 - `enemy_defeated(enemy: Node, dropped_bone_id: String)`
 - `player_died(player: Node)`
+- `player_health_changed(player: Node, hp: int, max_hp: int)`
+- `player_damaged(player: Node, amount: int, source: Node)`
+- `body_possessed(body: Node, by: Node)`
+- `body_freed(body: Node)`
 - `trial_completed(trial_id: String, trial_name: String)`
 - `exit_reached(player: Node)`
 - `stage_entered(stage: Node)`
@@ -1538,6 +1853,42 @@
 
 ### Constants
 - none
+
+### Key Variables
+- none
+
+### Functions
+- none
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## GameGroups
+
+- Source file: `scripts/game_groups.gd`
+- Extends: `RefCounted`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `PLAYER`
+- `ENEMIES`
+- `PLAYER_BODY`
+- `BODY_CLAIMANT`
 
 ### Key Variables
 - none
@@ -1603,6 +1954,629 @@
 
 ### Resource Dependencies
 - none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## head_only_controller
+
+- Source file: `scripts/head_only_controller.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- `hit_landed()`
+- `orbit_finished()`
+- `detach_finished()`
+
+### Exported Tuning
+- `character_scale`
+- `ground_offset`
+- `settle_percentile`
+- `visible_parts`
+- `run_speed`
+- `hop_height`
+- `hop_height_variation`
+- `hop_rate`
+- `rise_frac`
+- `lean_deg`
+- `fall_tilt_deg`
+- `jump_stretch`
+- `land_squash`
+- `hop_spring_frac`
+- `hop_synced_move`
+- `move_gate_floor`
+- `wobble_deg`
+- `idle_squash`
+- `body_idle_squash_frac`
+- `arm_react_gain`
+- `arm_swing_stiffness`
+- `arm_swing_damping`
+- `arm_swing_deg`
+- `arm_swing_dist`
+- `arm_swing_hand_deg`
+- `torso_tilt_scale`
+- `torso_bend_air_deg`
+- `torso_bend_land_deg`
+- `torso_bend_lower_frac`
+- `torso_bend_mid_frac`
+- `torso_bend_smooth`
+- `spine_head_stabilize`
+- `squash_node_frac`
+- `head_neck_close`
+- `reground_dur`
+- `reground_jump`
+- `run_hop_height`
+- `run_lean_deg`
+- `run_stretch`
+- `run_fall_tilt_deg`
+- `run_gate_floor`
+- `read_crouch_input`
+- `crouch_wobble_deg`
+- `crouch_bob_deg`
+- `crouch_lean_deg`
+- `crouch_sway`
+- `crouch_wobble_rate`
+- `crouch_jump_time`
+- `crouch_jump_leap`
+- `read_jump_input`
+- `jump_height`
+- `jump_duration`
+- `jump_anticipate`
+- `jump_recover`
+- `jump_crouch`
+- `jump_tilt_deg`
+- `jump_tilt_start`
+- `jump_rise_frac`
+- `jump_stretch_hold`
+- `jump_move_lean_deg`
+- `jump_move_boost`
+- `read_attack_input`
+- `attack_duration`
+- `attack_windup`
+- `attack_reach`
+- `attack_hop`
+- `attack_flip_height`
+- `attack_slam`
+- `attack_charge_lift`
+- `attack_coil`
+- `attack_load`
+- `attack_windup_tilt`
+- `attack_stretch`
+- `attack_chomp`
+- `attack_lean_deg`
+- `attack_forward_sign`
+- `attack_damage`
+- `attack_charge_time`
+- `attack_min_power`
+- `attack_hitstop`
+- `attack_impact_crush`
+- `attack_flip_turns`
+- `attack_style_count`
+- `combo_strike_time`
+- `combo_recover_time`
+- `combo_return_time`
+- `head_ground_clear`
+- `combo_leap`
+- `combo_return_leap`
+- `combo_max`
+- `reattach_jump_dist`
+- `head_walk_speed`
+- `head_walk_hop`
+- `head_walk_hop_rate`
+- `head_walk_stretch`
+- `head_walk_squash`
+- `head_walk_lean`
+- `head_catch_up_mult`
+- `attack_aim_range`
+- `attack_aim_cone_deg`
+- `attack_aim_turn`
+- `orbit_duration`
+- `orbit_turns`
+- `orbit_stretch`
+- `orbit_ref_speed`
+- `orbit_min_radius`
+- `orbit_settle_duration`
+- `orbit_recoil_dist`
+- `orbit_recoil_squash`
+- `orbit_recoil_wobbles`
+- `orbit_lean_deg`
+- `detach_duration`
+- `detach_jump`
+- `detach_turns`
+
+### Constants
+- `GLB`
+- `POSE_CLIP`
+
+### Key Variables
+- `_model`
+- `_ap`
+- `_body`
+- `_phase`
+- `_jt`
+- `_hop_amt`
+- `_hop_vary`
+- `_hop_h`
+- `_jump_active`
+- `_jump_t`
+- `_jump_from_y`
+- `_jump_from_pitch`
+- `_jump_from_scale`
+- `_jump_scale`
+- `_jump_no_stretch`
+- `_attack_active`
+- `_attack_t`
+- `_attack_from_y`
+- `_attack_from_pitch`
+- `_attack_from_scale`
+- `_attack_contact_flip`
+- `_attack_checked`
+- `_attack_hit`
+- `_attack_advance`
+- `_attack_target`
+- `_hitstop_t`
+- `_attack_buffered`
+- `_attack_style`
+- `_aim_target`
+- `_attack_head`
+- `_attack_detached`
+- `_datk`
+- `_datk_t`
+- `_datk_from`
+- `_datk_anchor`
+- `_head_pos`
+- `_walk_phase`
+- `_walk_body_spd`
+- `_combo`
+- `_datk_hit_done`
+
+### Functions
+- `_ready() -> void`
+- `_apply_visibility(n: Node) -> void`
+- `equip_part(part_name: String) -> bool`
+- `has_part(part_name: String) -> bool`
+- `part_socket_world(part_name: String) -> Vector3`
+- `_process(delta: float) -> void`
+- `set_move_intent(speed: float) -> void`
+- `move_gate() -> float`
+- `request_settle() -> void`
+- `settle_to_floor() -> void`
+- `_ground_head() -> void`
+- `_compute_head_h() -> float`
+- `_skinned_min_y(mi: MeshInstance3D, skel: Skeleton3D) -> float`
+- `_find_skel(n: Node) -> Skeleton3D`
+- `_find_mesh(n: Node, want: String) -> MeshInstance3D`
+- `_roll_hop_vary() -> void`
+- `set_crouch(on: bool) -> void`
+- `is_crouching() -> bool`
+- `_do_crouch(delta: float, moving: bool) -> void`
+- `is_crouch_crawling() -> bool`
+- `crouch_phase() -> float`
+- `crouch_trail_parts() -> Array`
+- `set_body_hidden(hidden: bool) -> void`
+- `_apply_crouch_vis(n: Node, crawl: bool) -> void`
+- `is_orbiting() -> bool`
+- `is_detaching() -> bool`
+- `trigger_detach(socket_world: Vector3) -> void`
+- `_do_detach(delta: float) -> void`
+- `trigger_orbit_return(center_world: Vector3, socket_world: Vector3, socket_yaw: float = 0.0) -> void`
+- `_do_orbit_return(delta: float) -> void`
+- `trigger_jump(scale_override: float = 0.0, no_stretch: bool = false) -> void`
+- `_do_jump(delta: float) -> void`
+- `is_charging() -> bool`
+- `charge_ratio() -> float`
+- `_begin_charge() -> void`
+- `_do_charge(delta: float) -> void`
+- `trigger_attack(charge: float = 1.0, skip_windup: bool = false) -> void`
+- `_apply_attack_rotation(ang: float) -> void`
+- `_attack_deform(f: float) -> Vector3`
+- `_do_attack(delta: float) -> void`
+- `is_attacking() -> bool`
+- `_find_aim_target() -> Node3D`
+- `_steer_to_aim(delta: float) -> void`
+- `_do_attack_detached(delta: float) -> void`
+- `_place_attack_head_spin(pos: Vector3, right: Vector3, fwd: Vector3, spin: float) -> void`
+- `_combo_spin_axis(fwd: Vector3, right: Vector3) -> Vector3`
+- `_ensure_attack_head() -> void`
+- `_try_hit_detached() -> void`
+- `_place_attack_head_face(pos: Vector3, dir: Vector3) -> void`
+- `_place_attack_head_walk(pos: Vector3, dir: Vector3, s: float, pitch: float) -> void`
+- `_end_detached_attack() -> void`
+- `_set_head_hidden(hidden: bool) -> void`
+- `_apply_head_vis(n: Node, hidden: bool) -> void`
+- `_attack_world_fwd() -> Vector3`
+- `_floor_y(from: Vector3) -> float`
+- `_raycast_target() -> Node`
+- `_do_spine_expr(delta: float) -> void`
+- `_set_squash(s: float) -> void`
+- `_cache_spine() -> void`
+- `_update_seg_flag() -> void`
+- `_cache_idle_arms() -> void`
+- `_do_idle_arms(delta: float, active: bool) -> void`
+- `_do_little_arms(delta: float) -> void`
+- `_find_ap(n: Node) -> AnimationPlayer`
+- `_find_body(n: Node) -> Node3D`
+
+### Resource Dependencies
+- `assets/crab_head_character_optimized.glb`
+- `scripts/attack_head.gd`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- `jump`
+- `attack`
+
+### Node Path Lookups
+- none
+
+## head_only_enemy
+
+- Source file: `scripts/head_only_enemy.gd`
+- Extends: `CharacterBody3D`
+- System: Combat and enemies
+
+### Signals
+- none
+
+### Exported Tuning
+- `health`
+- `move_speed`
+- `wander_radius`
+- `pause_min`
+- `pause_max`
+- `character_scale`
+- `tint`
+- `gravity`
+- `aggro_range`
+- `attack_range`
+- `chase_speed`
+- `attack_cooldown`
+- `attack_power`
+- `body_seek_range`
+- `takeover_dist`
+
+### Constants
+- `CONTROLLER`
+
+### Key Variables
+- `_ctrl`
+- `_head_mat`
+- `_alive`
+- `_home`
+- `_target`
+- `_pausing`
+- `_pause_t`
+- `_atk_cd`
+- `_dock`
+- `_seeking`
+- `_taking_over`
+- `cs`
+- `cap`
+- `vr`
+- `head`
+- `player`
+- `to_player`
+- `pdist`
+- `dir`
+- `spd`
+- `face`
+- `attacking`
+- `sock`
+- `to_body`
+- `ang`
+- `rad`
+- `to`
+- `gate`
+- `p`
+- `d`
+- `pl`
+- `pd`
+- `t`
+- `r`
+
+### Functions
+- `_ready() -> void`
+- `_tint_head() -> void`
+- `_physics_process(delta: float) -> void`
+- `_get_player() -> Node3D`
+- `_update_seek() -> void`
+- `_begin_takeover() -> void`
+- `_on_took_over() -> void`
+- `_stop_seeking() -> void`
+- `take_damage(amount: int, _from: Vector3 = Vector3.ZERO, _attacker: Node = null, _src: String = "") -> void`
+- `_flash() -> void`
+- `_die() -> void`
+- `_find_mesh(n: Node, want: String) -> MeshInstance3D`
+
+### Resource Dependencies
+- `scripts/head_only_controller.gd`
+
+### GameEvents Usage
+- `enemy_defeated`
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## head_torso_test
+
+- Source file: `scripts/head_torso_test.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `head_move_speed`
+- `body_move_speed`
+- `sprint_multiplier`
+- `gravity`
+- `pickup_range`
+- `assembly_jump_scale`
+- `scatter_speed`
+- `scatter_pop`
+
+### Constants
+- none
+
+### Key Variables
+- `move_speed`
+- `_ctrl`
+- `_cam_ctrl`
+- `_hud`
+- `_parts_total`
+- `_parts_got`
+- `_assembling`
+- `_crawling`
+- `_standing`
+- `_trail_parts`
+- `_asm_t`
+- `_asm_jump_at`
+- `_head_jumped`
+- `env`
+- `we`
+- `l`
+- `gb`
+- `gm`
+- `mat`
+- `cs`
+- `pivot`
+- `arm`
+- `cam`
+- `scatter`
+- `layer`
+- `d`
+- `p`
+- `crawling`
+- `crouching`
+- `to`
+- `shake`
+- `orbit`
+- `parts`
+- `n`
+- `brot`
+- `pn`
+- `tp`
+- `a`
+- `leader`
+- `t`
+
+### Functions
+- `_ready() -> void`
+- `_spawn_part(pn: String, pos: Vector3) -> void`
+- `_process(delta: float) -> void`
+- `_trigger_assembly(parts: Array) -> void`
+- `_on_assembled(_part_name: String) -> void`
+- `_start_crawl() -> void`
+- `_update_crawl(_delta: float) -> void`
+- `_end_crawl() -> void`
+- `_begin_standup() -> void`
+- `_update_standup() -> void`
+- `_on_body_complete() -> void`
+- `_update_hud() -> void`
+- `_physics_process(delta: float) -> void`
+
+### Resource Dependencies
+- `scripts/player_camera_controller.gd`
+- `scripts/training_dummy.gd`
+- `scripts/part_pickup.gd`
+- `scripts/trailing_part.gd`
+- `scripts/cloth_verlet.gd`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- `move_left`
+- `sprint`
+
+### Node Path Lookups
+- none
+
+## heavy_crab_enemy
+
+- Source file: `scripts/heavy_crab_enemy.gd`
+- Extends: `CharacterBody3D`
+- System: Combat and enemies
+
+### Signals
+- none
+
+### Exported Tuning
+- `character_scale`
+- `max_health`
+- `contact_damage`
+- `move_speed`
+- `aggro_range`
+- `contact_range`
+- `wander_radius`
+- `turn_rate_deg`
+- `gravity`
+- `facing_offset_deg`
+- `step_bob`
+- `step_rate`
+- `tint`
+
+### Constants
+- `GLB`
+- `IDLE_CLIP`
+
+### Key Variables
+- `alive`
+- `health`
+- `_origin`
+- `_wander_off`
+- `_repath`
+- `_model`
+- `_ap`
+- `_phase`
+- `_base_y`
+- `_grounded`
+- `_gframe`
+- `_mats`
+- `_rng`
+- `target`
+- `player`
+- `to_t`
+- `moving`
+- `dir`
+- `target_yaw`
+- `a`
+- `r`
+- `skel`
+- `min_y`
+- `mi`
+- `arr`
+- `verts`
+- `bones`
+- `wts`
+- `skin`
+- `mats`
+- `bone_idx`
+- `xf`
+- `v`
+- `sk`
+- `per`
+- `w`
+- `m`
+- `out`
+- `f`
+- `diff`
+
+### Functions
+- `_ready() -> void`
+- `_physics_process(delta: float) -> void`
+- `_pick_wander() -> void`
+- `take_damage(amount: int, _hit_from: Vector3 = Vector3.ZERO, _attacker: Node = null, _damage_source: String = "") -> void`
+- `die() -> void`
+- `_flash() -> void`
+- `_ground_model() -> void`
+- `_skinned_min_y(mi: MeshInstance3D, skel: Skeleton3D) -> float`
+- `_find_skel(n: Node) -> Skeleton3D`
+- `_apply_tint(n: Node) -> void`
+- `_all_meshes(n: Node) -> Array`
+- `_find_player() -> Node3D`
+- `_find_ap(n: Node) -> AnimationPlayer`
+- `_approach_angle(cur: float, target: float, max_step: float) -> float`
+
+### Resource Dependencies
+- `assets/heavy_crab.glb`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## heavy_crab_test
+
+- Source file: `scripts/heavy_crab_test.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- none
+
+### Key Variables
+- `env`
+- `we`
+- `l`
+- `gb`
+- `gm`
+- `mat`
+- `cs`
+- `crab`
+- `cam`
+
+### Functions
+- `_ready() -> void`
+
+### Resource Dependencies
+- `scenes/heavy_crab_enemy.tscn`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## inventory_preview_character
+
+- Source file: `scripts/inventory_preview_character.gd`
+- Extends: `Node3D`
+- System: Inventory, equipment, and bones
+
+### Signals
+- none
+
+### Exported Tuning
+- `preview_scale`
+- `preview_offset`
+
+### Constants
+- `CHARACTER`
+
+### Key Variables
+- `_model`
+- `_by_slot`
+- `model`
+- `slot`
+- `vis`
+- `n`
+- `out`
+
+### Functions
+- `_ready() -> void`
+- `sync(equipped_slots: Array) -> void`
+- `_slot_of(name: String) -> String`
+- `_meshes(n: Node) -> Array`
+
+### Resource Dependencies
+- `assets/main_character.glb`
 
 ### GameEvents Usage
 - none
@@ -1758,6 +2732,97 @@
 ### Node Path Lookups
 - none
 
+## part_pickup
+
+- Source file: `scripts/part_pickup.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- `assembled(part_name: String)`
+
+### Exported Tuning
+- `part_name`
+- `scale_factor`
+- `buried_y`
+- `lay_pitch`
+- `shake_dur`
+- `shake_amp`
+- `shake_rate`
+- `orbit_dur`
+- `orbit_turns`
+- `orbit_stretch`
+- `whirl_speed`
+
+### Constants
+- `GLB`
+
+### Key Variables
+- `_state`
+- `_ctrl`
+- `_model`
+- `_centered`
+- `_cframe`
+- `_t`
+- `_base_pos`
+- `_shake_dir`
+- `_shake_phase`
+- `_shake_phase2`
+- `_shake_rate_mul`
+- `_shake_rate_mul2`
+- `_r0`
+- `_a0`
+- `_lift0`
+- `a`
+- `f`
+- `amp`
+- `perp`
+- `sa`
+- `sb`
+- `center`
+- `off`
+- `e`
+- `socket`
+- `angle`
+- `radius`
+- `spiral`
+- `st`
+- `inv`
+- `m`
+- `skel`
+- `mi`
+- `arr`
+- `verts`
+- `bones`
+- `wts`
+- `skin`
+- `mats`
+- `b`
+
+### Functions
+- `_ready() -> void`
+- `begin_assembly(ctrl: Node) -> void`
+- `part() -> String`
+- `_process(delta: float) -> void`
+- `_rig_center() -> Vector3`
+- `_socket() -> Vector3`
+- `_show_only(n: Node) -> void`
+- `_center_part() -> void`
+- `_find_skel(n: Node) -> Skeleton3D`
+- `_find_mesh(n: Node, want: String) -> MeshInstance3D`
+
+### Resource Dependencies
+- `assets/crab_head_character_optimized.glb`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## player
 
 - Source file: `scripts/player.gd`
@@ -1771,6 +2836,10 @@
 - `base_move_speed`
 - `sprint_multiplier`
 - `jump_velocity`
+- `body_collision_radius`
+- `body_collision_height`
+- `body_collision_offset_y`
+- `show_body_hitbox`
 - `base_attack_range`
 - `base_attack_damage`
 - `max_health`
@@ -1796,9 +2865,6 @@
 - `detached_torso_ground_probe_height`
 - `detached_torso_ground_probe_depth`
 - `stealth_prompt_scan_range`
-- `backstab_execution_duration`
-- `backstab_execution_impact_time`
-- `backstab_execution_recovery_time`
 - `bow_enabled`
 - `start_with_bow_equipped`
 - `bow_damage`
@@ -1817,14 +2883,21 @@
 - `finger_bone_cooldown`
 - `finger_bone_throw_speed`
 - `finger_bone_throw_gravity`
+- `start_as_head`
+- `torso_pickup_offset`
+- `head_lunge_speed`
+- `head_lunge_duration`
 
 ### Constants
 - `ATTACK_HITBOX_SCENE`
 - `ARROW_PROJECTILE_SCRIPT`
-- `BONE_PICKUP_SCENE`
+- `TORSO_PICKUP_SCRIPT`
 - `COMBO_STEP_ARM_SWORD`
 
 ### Key Variables
+- `_torso_assembled`
+- `_lunge_timer`
+- `_lunge_velocity`
 - `move_speed`
 - `attack_range`
 - `attack_damage`
@@ -1832,9 +2905,7 @@
 - `inventory_ui`
 - `inventory_component`
 - `equipment_component`
-- `equipment_builds_component`
 - `stats_component`
-- `last_calculated_stats`
 - `nearby_bone_pickups`
 - `can_attack`
 - `can_shoot_bow`
@@ -1846,6 +2917,7 @@
 - `bow_equipped`
 - `bow_aiming`
 - `bow_charge_time`
+- `finger_aiming`
 - `aim_reticle_layer`
 - `aim_reticle_root`
 - `aim_reticle_dot`
@@ -1860,14 +2932,23 @@
 - `stealth_target`
 - `noise_timer`
 - `sprinting_this_frame`
-- `backstab_execution_target`
-- `backstab_execution_damage`
-- `backstab_execution_hit_from`
-- `backstab_execution_impact_timer`
-- `backstab_execution_recovery_timer`
+- `head_launch_target`
+- `head_launch_recovery_timer`
+- `head_detached_from_torso`
 
 ### Functions
 - `_ready() -> void`
+- `_set_body_collision_radius(v: float) -> void`
+- `_set_body_collision_height(v: float) -> void`
+- `_set_body_collision_offset_y(v: float) -> void`
+- `_set_show_body_hitbox(v: bool) -> void`
+- `_apply_body_collision() -> void`
+- `_spawn_torso_pickup_deferred() -> void`
+- `_spawn_torso_pickup() -> void`
+- `_on_bone_equipped(_bone_id: String, slot: String, who: Node) -> void`
+- `_on_bone_unequipped(_bone_id: String, slot: String, who: Node) -> void`
+- `_show_torso_body() -> void`
+- `_revert_to_head() -> void`
 - `_input(event: InputEvent) -> void`
 - `_physics_process(delta: float) -> void`
 - `_get_camera_relative_move_direction(input_vector: Vector2) -> Vector3`
@@ -1895,6 +2976,8 @@
 - `_force_head_only_single_visual() -> void`
 - `_try_bow_shot(charge_multiplier: float = 1.0, charge_ratio: float = 0.0) -> void`
 - `_start_bow_aim() -> void`
+- `_start_finger_aim() -> void`
+- `_release_finger_shot() -> void`
 - `_release_bow_shot() -> void`
 - `_cancel_bow_aim() -> void`
 - `_toggle_bow_equipped() -> void`
@@ -1904,15 +2987,6 @@
 - `_get_pointer_aim_point(start_position: Vector3, fallback_direction: Vector3) -> Vector3`
 - `_aim_direction_to(start_position: Vector3, aim_point: Vector3, fallback_direction: Vector3) -> Vector3`
 - `_try_stealth_finish() -> void`
-- `_start_backstab_execution(target: Node3D, damage: int, hit_from: Vector3) -> void`
-- `_update_backstab_execution(delta: float) -> void`
-- `_on_backstab_animator_impact() -> void`
-- `_apply_backstab_impact_once() -> void`
-- `_finish_backstab_execution() -> void`
-- `_cancel_backstab_execution() -> void`
-- `_clear_backstab_execution_state() -> void`
-- `_is_backstab_executing() -> bool`
-- `_face_backstab_target(target: Node3D) -> void`
 - `_next_combo_animation_step() -> int`
 - `_is_arm_sword_held() -> bool`
 - `_has_both_arms_equipped() -> bool`
@@ -1932,8 +3006,6 @@
 - `_apply_head_only_lunge_displacement(offset: Vector3) -> void`
 - `_update_camera_animation_follow_offset() -> void`
 - `collect_bone(bone_id: String) -> void`
-- `drop_bone_to_ground(bone_id: String) -> Dictionary`
-- `_droppable_copy_of(bone_id: String) -> String`
 - `get_equipped_bone_id() -> String`
 - `has_bone_equipped(bone_id: String) -> bool`
 - `get_run_stats() -> Dictionary`
@@ -1941,15 +3013,6 @@
 - `get_equipment_state() -> Dictionary`
 - `get_equipped_bone_for_slot(slot: String) -> String`
 - `get_inventory_stats_snapshot() -> Dictionary`
-- `save_equipment_build(index: int) -> Dictionary`
-- `apply_equipment_build(index: int) -> Dictionary`
-- `get_equipment_build_summaries() -> Array`
-- `get_equipment_build_report(index: int) -> Dictionary`
-- `auto_equip_best(criterion: String) -> Dictionary`
-- `get_equipment_build_indices() -> Array`
-- `create_equipment_build() -> int`
-- `delete_equipment_build(index: int) -> Dictionary`
-- `rename_equipment_build(index: int, new_name: String) -> Dictionary`
 - `take_player_damage(amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `take_player_body_part_damage(body_part: String, amount: int, from_position: Vector3 = Vector3.ZERO) -> void`
 - `has_body_part_hitboxes() -> bool`
@@ -1958,7 +3021,7 @@
 - `_die_player() -> void`
 - `_flash_player_damage() -> void`
 - `_equip_next_bone() -> void`
-- `equip_bone(bone_id: String, target_slot: String = "") -> void`
+- `equip_bone(bone_id: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `show_bone_info(bone_id: String) -> void`
 - `clear_bone_info() -> void`
@@ -1999,11 +3062,12 @@
 ### Resource Dependencies
 - `scenes/attack_hitbox.tscn`
 - `scripts/arrow_projectile.gd`
-- `scenes/bone.tscn`
+- `scripts/torso_pickup.gd`
 
 ### GameEvents Usage
 - `inventory_changed`
-- `drop_spawned`
+- `bone_equipped`
+- `bone_unequipped`
 - `player_died`
 - `inventory_open_changed`
 
@@ -2014,6 +3078,8 @@
 - `move_left`
 
 ### Node Path Lookups
+- `VisualRoot/AnimatedCharacter`
+- `CollisionShape3D`
 - `MeshInstance3D`
 - `DetachedTorsoPrompt`
 
@@ -2084,7 +3150,6 @@
 
 ### Functions
 - `_ready() -> void`
-- `_physics_process(delta: float) -> void`
 - `_process(delta: float) -> void`
 - `_unhandled_input(event: InputEvent) -> void`
 - `capture_mouse() -> void`
@@ -2099,121 +3164,6 @@
 - `_zoom(amount: float) -> void`
 - `_target_pivot_position() -> Vector3`
 - `_apply_orbit_rotation() -> void`
-
-### Resource Dependencies
-- none
-
-### GameEvents Usage
-- none
-
-### Input Actions
-- none
-
-### Node Path Lookups
-- none
-
-## PlayerEquipmentBuildsComponent
-
-- Source file: `scripts/player_equipment_builds_component.gd`
-- Extends: `Node`
-- System: Inventory, equipment, and bones
-
-### Signals
-- none
-
-### Exported Tuning
-- none
-
-### Constants
-- `BUILD_SETTINGS_PATH`
-- `BUILD_SECTION`
-- `INSTANCE_SECTION`
-- `BUILD_SLOT_COUNT`
-- `APPLY_ORDER`
-- `STAT_EPSILON`
-- `STATE_EMPTY`
-- `STATE_SAVED`
-- `STATE_EQUIPPED`
-- `STATE_MISSING`
-
-### Key Variables
-- `owner_player`
-- `equipment_component`
-- `builds`
-- `state`
-- `record`
-- `validation`
-- `target_state`
-- `resolved_state`
-- `previous_state`
-- `availability`
-- `missing`
-- `entry`
-- `slot_id`
-- `bone_id`
-- `has_limb`
-- `summaries`
-- `current`
-- `build_state`
-- `worn`
-- `snapshot`
-- `report`
-- `saved_counts`
-- `slot_quality`
-- `current_equipment`
-- `matches`
-- `build_stats`
-- `current_stats`
-- `comparison`
-- `delta`
-- `stats`
-- `stats_component`
-- `stored`
-- `counts`
-- `piece`
-- `quality_id`
-- `pairs`
-- `matched`
-- `current_state`
-- `expected`
-- `actual`
-
-### Functions
-- `setup(player: Node, equipment: PlayerEquipmentComponent) -> void`
-- `save_current_build(index: int) -> Dictionary`
-- `apply_build(index: int) -> Dictionary`
-- `validate_build_state(raw_state: Dictionary, inventory_items: Array) -> Dictionary`
-- `get_build_summaries() -> Array`
-- `matches_current_equipment(snapshot: Dictionary) -> bool`
-- `build_state_label(index: int) -> String`
-- `get_build_report(index: int) -> Dictionary`
-- `build_display_name(index: int) -> String`
-- `_stats_for_state(state: Dictionary) -> Dictionary`
-- `_true_base(property: String, fallback: float) -> float`
-- `_quality_counts_for(state: Dictionary) -> Dictionary`
-- `_effects_for_state(state: Dictionary) -> Array`
-- `_composition_for_state(state: Dictionary) -> Dictionary`
-- `_apply_validated_state(target_state: Dictionary) -> void`
-- `_matches_equipment_state(target_state: Dictionary) -> bool`
-- `_sanitize_build_state(raw_state: Dictionary) -> Dictionary`
-- `_bone_counts(items: Array) -> Dictionary`
-- `resolve_build_snapshot(raw_state: Dictionary, items: Variant = null) -> Dictionary`
-- `_with_current_head(build_state: Dictionary, current_equipment: Dictionary) -> Dictionary`
-- `_equipment_state_from_slots(slots: Dictionary) -> Dictionary`
-- `_resolve_build_to_instances(state: Dictionary) -> Dictionary`
-- `_inventory_items() -> Array`
-- `_load_builds() -> void`
-- `_ensure_minimum_builds() -> void`
-- `_as_record(raw: Dictionary, index: int) -> Dictionary`
-- `_save_builds() -> void`
-- `build_indices() -> Array`
-- `create_build() -> int`
-- `delete_build(index: int) -> Dictionary`
-- `rename_build(index: int, new_name: String) -> Dictionary`
-- `build_slots(index: int) -> Dictionary`
-- `_summary_for_state(state: Dictionary) -> String`
-- `_valid_index(index: int) -> bool`
-- `_result(ok: bool, message: String, state: Dictionary = {}) -> Dictionary`
 
 ### Resource Dependencies
 - none
@@ -2256,10 +3206,7 @@
 - `bone_id`
 - `socket`
 - `visual`
-- `normalized_target`
-- `compatible`
 - `rig_value`
-- `definition`
 - `mesh`
 - `material`
 - `raw_material`
@@ -2267,7 +3214,7 @@
 ### Functions
 - `setup(player: Node) -> void`
 - `equip_starting_core() -> void`
-- `equip_bone(bone_id: String, target_slot: String = "") -> void`
+- `equip_bone(bone_id: String) -> void`
 - `restore_detached_body(bone_id: String) -> void`
 - `unequip_slot(slot: String) -> void`
 - `get_equipped_bone_id() -> String`
@@ -2275,9 +3222,7 @@
 - `has_bone_equipped(bone_id: String) -> bool`
 - `get_equipment_state() -> Dictionary`
 - `get_swap_count() -> int`
-- `_equip_bone_in_slot(bone_id: String, force_core: bool = false, target_slot: String = "") -> bool`
-- `_slot_for_request(bone_id: String, target_slot: String = "") -> String`
-- `_first_open_compatible_slot(bone_id: String) -> String`
+- `_equip_bone_in_slot(bone_id: String, force_core: bool = false) -> bool`
 - `_can_equip_slot(slot: String, bone_id: String) -> bool`
 - `_emit_equipment_hint(hint_id: String, text: String) -> void`
 - `_clear_equipped_visual(slot: String) -> void`
@@ -2287,7 +3232,6 @@
 - `_notify_equipment_changed() -> void`
 - `_get_inventory_items() -> Array`
 - `_get_run_stats() -> Dictionary`
-- `_definition_for_slot(bone_id: String, slot: String) -> Dictionary`
 - `_tint_visual(visual: Node3D, color: Color) -> void`
 - `_tint_visual_mesh(visual: Node3D, mesh_name: String, color: Color) -> void`
 
@@ -2299,6 +3243,47 @@
 - `bone_unequipped`
 - `tutorial_hint_requested`
 - `inventory_changed`
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## player_health
+
+- Source file: `scripts/player_health.gd`
+- Extends: `CharacterBody3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `max_health`
+- `invuln_time`
+
+### Constants
+- none
+
+### Key Variables
+- `_hp`
+- `_invuln`
+
+### Functions
+- `_ready() -> void`
+- `_announce() -> void`
+- `_process(delta: float) -> void`
+- `take_damage(amount: int, _from: Vector3 = Vector3.ZERO, attacker: Node = null, _src: String = "") -> void`
+- `heal_full() -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- `player_health_changed`
+- `player_damaged`
+- `player_died`
 
 ### Input Actions
 - none
@@ -2326,15 +3311,11 @@
 - `equipment_component`
 - `bone_inventory`
 - `equip_cursor`
-- `instance_id`
-- `index`
 - `bone_id`
 
 ### Functions
 - `setup(player: Node, equipment: PlayerEquipmentComponent = null) -> void`
 - `collect_bone(bone_id: String) -> void`
-- `can_remove_bone(instance_id: String) -> bool`
-- `remove_bone(instance_id: String) -> bool`
 - `equip_next_bone() -> void`
 - `get_run_stats() -> Dictionary`
 - `get_inventory_items() -> Array`
@@ -2369,25 +3350,7 @@
 ### Constants
 - `INVENTORY_EMPTY_SLOT_SCRIPT`
 - `CONTROL_SETTINGS_PATH`
-- `INVENTORY_PREVIEW_BASE_SIZE`
-- `BUILD_PREVIEW_BASE_SIZE`
-- `INVENTORY_FILTER_OPTIONS`
-- `BUILD_REPORT_MAX_LINES`
-- `BUILD_DETAIL_PREVIEW_KEY`
-- `BUILD_TABLE_SLOTS`
-- `INVENTORY_SORT_OPTIONS`
-- `PAPER_DOLL_BASE_SIZE`
-- `PAPER_DOLL_SLOT_SIZE`
-- `PAPER_DOLL_FRAME_POSITION`
-- `PAPER_DOLL_FRAME_SIZE`
-- `PAPER_DOLL_PREVIEW_POSITION`
-- `PAPER_DOLL_RING_POSITION`
-- `PAPER_DOLL_RING_SIZE`
-- `PAPER_DOLL_SLOT_POSITIONS`
-- `PAPER_DOLL_WIDE_SLOT_SIZE`
-- `PAPER_DOLL_WIDE_SLOTS`
 - `CONTROL_BINDINGS`
-- `BUILD_PRESET_CONFIRM_WINDOW`
 
 ### Key Variables
 - `player`
@@ -2397,11 +3360,6 @@
 - `hover_info_label`
 - `inventory_status_label`
 - `inventory_category`
-- `selected_bone_id`
-- `dragging_bone_id`
-- `pinned_compare_a`
-- `pinned_compare_b`
-- `inventory_auto_equip_dropdown`
 - `inventory_tab_buttons`
 - `inventory_safe_area`
 - `inventory_panel`
@@ -2411,14 +3369,6 @@
 - `inventory_header`
 - `inventory_title_label`
 - `inventory_tabs_container`
-- `inventory_filter_dropdown`
-- `inventory_filter_label`
-- `inventory_quality_dropdown`
-- `inventory_quality_label`
-- `inventory_sort_dropdown`
-- `inventory_sort_label_control`
-- `inventory_quality_filter`
-- `inventory_sort_mode`
 - `inventory_body`
 - `inventory_left_panel`
 - `inventory_grid_panel`
@@ -2429,7 +3379,20 @@
 - `inventory_preview_area`
 - `inventory_preview_container`
 - `inventory_preview_viewport`
-- `inventory_preview_equipment_snapshot`
+- `inventory_details_panel`
+- `inventory_paper_doll`
+- `inventory_footer`
+- `settings_panel`
+- `settings_box_panel`
+- `settings_box_margin`
+- `settings_controls_list`
+- `settings_title_label`
+- `settings_status_label`
+- `settings_reset_button`
+- `control_rows`
+- `control_labels`
+- `control_buttons`
+- `rebinding_action`
 
 ### Functions
 - `setup(owner_player: Node) -> void`
@@ -2444,111 +3407,35 @@
 - `get_inventory_tile_size() -> Vector2`
 - `has_bone_equipped(bone_id: String) -> bool`
 - `equip_bone(bone_id: String) -> void`
-- `equip_bone_in_slot(bone_id: String, slot: String) -> void`
-- `_attempt_equip(bone_id: String, slot: String) -> void`
-- `_on_equipment_hint(source: Node, _hint_id: String, text: String, _priority: int) -> void`
 - `unequip_slot(slot: String) -> void`
-- `drop_bone(bone_id: String) -> void`
 - `get_equipped_bone_for_slot(slot: String) -> String`
-- `select_bone(bone_id: String) -> void`
-- `_refresh_selection_visuals() -> void`
-- `begin_bone_drag(bone_id: String) -> void`
-- `end_bone_drag() -> void`
-- `_slot_list_text(slots: Array[String]) -> String`
-- `compare_with_selected(bone_id: String) -> void`
-- `_pair_comparison_text(a: String, b: String) -> String`
 - `show_bone_info(bone_id: String) -> void`
-- `_base_vs_effective_text(bone_id: String) -> String`
-- `_format_number(value: float) -> String`
-- `_bone_comparison_text(bone_id: String) -> String`
-- `_synergy_preview_text(bone_id: String, slot: String) -> String`
 - `clear_bone_info() -> void`
 - `_build_inventory_ui() -> void`
 - `_build_right_inventory_panel() -> void`
 - `_build_inventory_blur_layer() -> ColorRect`
 - `_build_inventory_tabs(parent: VBoxContainer) -> void`
-- `_make_inventory_dropdown() -> OptionButton`
-- `_on_inventory_quality_selected(index: int) -> void`
-- `_on_inventory_sort_selected(index: int) -> void`
-- `_on_auto_equip_selected(index: int) -> void`
-- `_on_inventory_filter_selected(index: int) -> void`
 - `_add_inventory_tab(parent: HBoxContainer, category: String, text: String) -> void`
 - `_select_inventory_category(category: String) -> void`
 - `_refresh_inventory_tabs() -> void`
 - `_refresh_inventory_mode() -> void`
 - `_queue_inventory_responsive_layout() -> void`
 - `_apply_inventory_responsive_layout() -> void`
-- `_apply_builds_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void`
 - `_apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void`
 - `_apply_paper_doll_responsive_layout(doll_scale: float) -> void`
 - `_apply_footer_responsive_layout(content_width: int, very_compact: bool) -> void`
 - `_set_margin(container: MarginContainer, left: int, top: int, right: int, bottom: int) -> void`
 - `_build_settings_panel() -> ScrollContainer`
-- `_build_equipment_builds_tab() -> ScrollContainer`
-- `_build_builds_sidebar() -> Control`
-- `_build_builds_detail_panel() -> Control`
-- `_make_build_slot_card(slot_id: String, title: String) -> Control`
-- `_build_detail_card(parent: HBoxContainer, heading_text: String) -> VBoxContainer`
-- `_build_equipment_table() -> Control`
-- `_build_builds_action_row() -> Control`
-- `_style_badge(label: Label, text: String, base_color: Color) -> void`
-- `_build_build_preview(index: int) -> Control`
-- `_copy_player_head_model(rig: ModularSkeletonRig) -> void`
-- `_sync_all_build_previews() -> void`
-- `_sync_build_preview(index: int) -> void`
-- `_equip_bone_on_rig(rig: ModularSkeletonRig, slot_id: String, bone_id: String) -> void`
-- `_raw_build_state(index: int) -> Dictionary`
-- `_make_build_preset_button(text: String) -> Button`
-- `_save_equipment_build(index: int) -> void`
-- `_apply_equipment_build(index: int) -> void`
-- `_build_slot_is_empty(index: int) -> bool`
-- `_consume_or_arm_confirmation(action: String, index: int, button_text: String) -> bool`
-- `_on_build_preset_confirm_timeout(expected_key: String) -> void`
-- `_confirm_button_for(action: String) -> Button`
-- `_disarm_build_preset_confirmation() -> void`
-- `_on_new_build_pressed() -> void`
-- `_select_build(index: int) -> void`
-- `_on_save_current_pressed() -> void`
-- `_on_apply_pressed() -> void`
-- `_on_build_title_gui_input(event: InputEvent) -> void`
-- `_begin_title_rename() -> void`
-- `_cancel_title_rename() -> void`
-- `_on_rename_submitted(new_name: String) -> void`
-- `_on_delete_pressed() -> void`
-- `_first_build_index() -> int`
-- `_build_indices() -> Array`
-- `_build_name_for(index: int) -> String`
-- `_build_report_for(index: int) -> Dictionary`
-- `_refresh_builds_screen() -> void`
-- `_make_build_sidebar_card(index: int) -> Control`
-- `_build_parts_available(state: String, slots: Dictionary, missing: int) -> int`
-- `_make_new_build_card() -> Control`
-- `_build_state_color(state: String) -> Color`
-- `_apply_build_report_to_detail(report: Dictionary) -> void`
-- `_fill_slot_widgets(slot_id: String, entry: Dictionary, head_id: String) -> void`
-- `_make_stat_row(stat_name: String, value: float, delta: float) -> Control`
-- `_make_composition_row(quality_id: String, count: int) -> Control`
-- `_make_count_row(label_text: String, value_text: String) -> Control`
-- `_make_synergy_rows(entry_value: Variant) -> Control`
-- `_make_dim_row(text: String) -> Control`
-- `_clear_children(node: Node) -> void`
-- `_set_build_preset_status(text: String) -> void`
 - `_build_control_binding_row(action: String, label_text: String) -> Control`
 - `_add_footer_hint(parent: HBoxContainer, key_text: String, action_text: String) -> void`
 - `_make_rule() -> ColorRect`
 - `_make_inventory_style(bg: Color, border: Color, border_width: int = 1, radius: int = 0) -> StyleBoxFlat`
 - `_make_empty_inventory_slot() -> Control`
-- `_can_drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> bool`
-- `_drop_unequip_on_items_panel(_at_position: Vector2, data: Variant) -> void`
 - `_build_character_preview_panel() -> Control`
-- `_inventory_preview_base_size() -> Vector2`
 - `_build_preview_room(parent: Node3D) -> void`
 - `_make_preview_room_box(name: String, size: Vector3, position: Vector3, color: Color) -> MeshInstance3D`
 - `sync_preview() -> void`
-- `_preview_equipment_snapshot() -> Dictionary`
-- `_preview_snapshot_matches(next_snapshot: Dictionary) -> bool`
 - `_build_paper_doll() -> Control`
-- `_paper_doll_slot_size(slot_id: String) -> Vector2`
 - `_place_slot(doll: Control, slot: String, short_name: String, pos: Vector2, slot_size: Vector2) -> void`
 - `_begin_rebinding(action: String, button: Button) -> void`
 - `_cancel_rebinding() -> void`
@@ -2575,8 +3462,6 @@
 - `_set_default_control_mouse(action: String, button_index: int) -> void`
 - `rebuild_item_tiles() -> void`
 - `_bone_matches_inventory_category(bone_id: String) -> bool`
-- `_bone_matches_quality_filter(bone_id: String) -> bool`
-- `_compare_inventory_items(a: String, b: String) -> bool`
 - `update_inventory_ui() -> void`
 - `_bone_inventory() -> Array`
 - `_equipment_state() -> Dictionary`
@@ -2585,12 +3470,12 @@
 
 ### Resource Dependencies
 - `scripts/ui_inventory_empty_slot.gd`
+- `scripts/inventory_preview_character.gd`
 
 ### GameEvents Usage
 - `inventory_changed`
 - `bone_equipped`
 - `bone_unequipped`
-- `tutorial_hint_requested`
 
 ### Input Actions
 - none
@@ -2639,6 +3524,187 @@
 ### Node Path Lookups
 - none
 
+## AnimatedCharacter
+
+- Source file: `scripts/rig/animated_character.gd`
+- Extends: `Node3D`
+- System: Rig and animation
+
+### Signals
+- none
+
+### Exported Tuning
+- `character_scale`
+- `foot_offset_y`
+- `hide_sibling_rig`
+- `body_tint`
+- `start_as_head`
+- `head_only_y`
+- `head_torso_y`
+
+### Constants
+- `CHARACTER`
+
+### Key Variables
+- `_model`
+- `_skel`
+- `_ap`
+- `_body`
+- `_disabled`
+- `_head_meshes`
+- `_torso_meshes`
+- `_limb_meshes`
+- `model`
+- `clip`
+- `a`
+- `low`
+- `f`
+- `n`
+- `out`
+- `vr`
+- `m`
+- `p`
+
+### Functions
+- `_ready() -> void`
+- `trigger_jump() -> void`
+- `trigger_attack() -> void`
+- `set_aiming(_enabled: bool) -> void`
+- `skeleton() -> Skeleton3D`
+- `_play_once(names: Array) -> void`
+- `_native_clip(names: Array) -> String`
+- `_find_ap(n: Node) -> AnimationPlayer`
+- `_categorize_parts(model: Node) -> void`
+- `show_only_head() -> void`
+- `reveal_torso() -> void`
+- `show_all_parts() -> void`
+- `head_mesh_names() -> Array`
+- `torso_mesh_names() -> Array`
+- `_set_visible(meshes: Array, v: bool) -> void`
+- `_all_meshes(n: Node) -> Array`
+- `disable() -> void`
+- `is_disabled() -> bool`
+- `set_body_tint(c: Color) -> void`
+- `_hide_old_rig() -> void`
+- `_apply_tint(n: Node, c: Color) -> void`
+- `_find_body(n: Node) -> Node3D`
+- `_find_skeleton(n: Node) -> Skeleton3D`
+
+### Resource Dependencies
+- `assets/main_character.glb`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## creature_walker
+
+- Source file: `scripts/rig/creature_walker.gd`
+- Extends: `Node3D`
+- System: Rig and animation
+
+### Signals
+- none
+
+### Exported Tuning
+- `character_scale`
+- `run_speed`
+- `step_rate`
+- `stride_frac`
+- `lift_frac`
+- `forward_sign`
+- `knee_pole_sign`
+- `arm_swing_deg`
+- `body_bob`
+- `head_bob_deg`
+- `head_sway_deg`
+
+### Constants
+- `GLB`
+- `SKEL_PATH`
+- `IDLE_CLIP`
+- `L_ARM`
+- `R_ARM`
+- `L_HAND`
+- `R_HAND`
+- `NECK`
+- `IDLE_STRIP`
+
+### Key Variables
+- `_model`
+- `_skel`
+- `_ap`
+- `_body`
+- `_phase`
+- `_speed`
+- `_base_y`
+- `_leg_l`
+- `_leg_r`
+- `_up`
+- `_side`
+- `_forward`
+- `_stride`
+- `_step_h`
+- `_idx`
+- `_restg`
+- `_restgp`
+- `_pivot_l_arm`
+- `_pivot_r_arm`
+- `_neck_pivot`
+- `_upper_clip`
+- `hip_l`
+- `hip_r`
+- `ank_l`
+- `ank_r`
+- `leg_len`
+- `b`
+- `p`
+- `src`
+- `copy`
+- `colon`
+- `bone`
+- `lib_name`
+- `lib`
+- `ui`
+- `li`
+- `ii`
+- `fi`
+- `upper_rg`
+- `lower_rg`
+
+### Functions
+- `_ready() -> void`
+- `_build_upper_idle() -> void`
+- `_make_leg(upper: String, lower: String, ikbone: String, foot: String) -> Dictionary`
+- `_process(delta: float) -> void`
+- `_apply_gait(amt: float) -> void`
+- `_drive_leg(leg: Dictionary, phase: float, amt: float) -> void`
+- `_solve_knee(h: Vector3, t: Vector3, l1: float, l2: float, pole: Vector3) -> Array`
+- `_aim(rest_global: Transform3D, rest_dir: Vector3, new_dir: Vector3, parent_global: Transform3D, new_origin: Vector3) -> Transform3D`
+- `_set_pose(idx: int, local: Transform3D) -> void`
+- `_rotate_about(b: int, pivot: Vector3, axis: Vector3, angle: float) -> void`
+- `_rotate_about_basis(b: int, pivot: Vector3, rot: Basis) -> void`
+- `_rest_origin(name: String) -> Vector3`
+- `_find_ap(n: Node) -> AnimationPlayer`
+- `_find_body(n: Node) -> Node3D`
+
+### Resource Dependencies
+- `assets/crab_head_character_optimized.glb`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
 ## ModularSkeletonRig
 
 - Source file: `scripts/rig/modular_skeleton_rig.gd`
@@ -2663,6 +3729,7 @@
 - `show_socket_markers`
 - `socket_marker_radius`
 - `socket_marker_color`
+- `body_hitbox_scale`
 - `show_torso`
 - `show_head`
 - `use_rigged_limbs`
@@ -2744,7 +3811,6 @@
 - `has_equipped_slot(slot_id: String) -> bool`
 - `_make_limb(socket_key: String, color: Color, extra_scale: Vector3) -> MeshInstance3D`
 - `_get_head_model_mesh() -> Mesh`
-- `_apply_quality_visual(node: Node, bone_id: String) -> void`
 - `equip_bone(bone_id: String, bone_def: Dictionary) -> void`
 - `unequip_slot(slot_id: String) -> void`
 - `get_equipped_bone_defs() -> Array`
@@ -2759,6 +3825,7 @@
 - `_apply_equipped_body_hitbox(socket_key: String, explicit_size: Vector3, scale_value: Vector3, extra_offset: Vector3, rotation_value: Vector3) -> void`
 - `_apply_body_hitbox(socket_key: String, size_value: Vector3, offset_value: Vector3, rotation_value: Vector3) -> void`
 - `_apply_body_hitbox_shape(socket_key: String, size_value: Vector3, offset_value: Vector3, rotation_value: Vector3) -> void`
+- `_set_body_hitbox_scale(v: float) -> void`
 - `_refresh_body_hitbox_shapes() -> void`
 - `_enemy_adjusted_hitbox_size(socket_key: String, size_value: Vector3) -> Vector3`
 - `_refresh_body_hitbox_enabled() -> void`
@@ -2791,505 +3858,177 @@
 ### Node Path Lookups
 - `LizardTail`
 
-## ProceduralEnemyAnimator
+## rock
 
-- Source file: `scripts/rig/procedural_enemy_animator.gd`
-- Extends: `ProceduralPlayerAnimator`
-- System: Combat and enemies
-
-### Signals
-- none
-
-### Exported Tuning
-- none
-
-### Constants
-- none
-
-### Key Variables
-- none
-
-### Functions
-- `_ready() -> void`
-
-### Resource Dependencies
-- none
-
-### GameEvents Usage
-- none
-
-### Input Actions
-- none
-
-### Node Path Lookups
-- none
-
-## ProceduralPlayerAnimator
-
-- Source file: `scripts/rig/procedural_player_animator.gd`
-- Extends: `Node3D`
-- System: Rig and animation
-
-### Signals
-- `attack_impact_reached()`
-
-### Exported Tuning
-- `rig`
-- `turn_target`
-- `player_body_progression_enabled`
-- `walk_cycle_speed`
-- `body_bob_amount`
-- `body_sway_amount`
-- `torso_lean_amount`
-- `arm_swing_amount`
-- `leg_swing_amount`
-- `turn_smoothing`
-- `idle_breath_amount`
-- `speed_smoothing`
-- `heavy_weight_swing_slowdown`
-- `crawl_mode`
-- `crawl_body_drop`
-- `crawl_body_pitch`
-- `crawl_pull_amount`
-- `crawl_arm_drop`
-- `crawl_head_lift`
-- `crawl_forward_offset`
-- `crawl_arm_reach`
-- `crawl_leg_tuck`
-- `crawl_shoulder_roll`
-- `lizard_torso_flex_amount`
-- `lizard_wall_climb_lift`
-- `lizard_wall_climb_pitch`
-- `lizard_wall_climb_head_lift`
-- `lizard_wall_climb_limb_reach`
-- `head_only_hop_amount`
-- `head_only_roll_amount`
-- `head_only_roll_radius`
-- `head_only_roll_speed_scale`
-- `head_only_ground_socket_y`
-- `torso_spring_hop_amount`
-- `torso_spring_compress_amount`
-- `torso_spring_forward_offset`
-- `torso_spring_tilt_amount`
-- `torso_spring_ground_socket_y`
-- `torso_spring_head_offset`
-- `torso_spring_head_pop_amount`
-- `torso_spring_head_pop_delay`
-- `joint_bend_base`
-- `joint_bend_swing`
-- `wobble_enabled`
-- `wobble_rotation`
-- `wobble_slide`
-- `wobble_speed`
-- `env_reaction_enabled`
-- `slope_influence`
-- `object_lean`
-- `object_range`
-- `env_smoothing`
-- `attack_overlay_duration`
-- `attack_overlay_blend_speed`
-- `attack_windup_portion`
-- `attack_strike_portion`
-- `attack_strike_hold`
-- `attack_anticipation`
-- `attack_overlap_arm`
-- `attack_overlap_elbow`
-- `attack_elbow_whip`
-- `attack_arm_forward`
-- `attack_torso_twist`
-- `attack_lunge`
-- `head_only_attack_duration`
-- `head_only_attack_charge_portion`
-- `head_only_attack_lunge`
-- `head_only_attack_arc`
-- `head_only_attack_charge_squash`
-- `head_only_attack_roll`
-- `head_only_attack_release_portion`
-- `head_only_attack_roll_damping`
-- `head_only_hit_recoil_duration`
-- `head_only_hit_recoil_hold`
-- `head_only_hit_recoil_arc`
-- `head_only_hit_recoil_lift`
-- `head_only_hit_recoil_horizontal_push`
-- `head_only_hit_recoil_roll`
-- `head_only_hit_recoil_settle`
-- `torso_head_attack_duration`
-- `torso_head_attack_charge_portion`
-- `torso_head_attack_lunge`
-- `torso_head_attack_arc`
-- `torso_head_attack_coil`
-- `torso_head_attack_recoil_duration`
-- `torso_head_attack_recoil_arc`
-- `torso_head_attack_recoil_pullback`
-- `torso_head_attack_roll`
-- `detached_head_landing_duration`
-- `detached_head_landing_bounce`
-- `detached_head_landing_roll`
-- `detached_head_mode_blend_duration`
-- `detached_head_reattach_tornado_duration`
-- `detached_head_reattach_tornado_radius`
-- `detached_head_reattach_tornado_turns`
-- `detached_head_reattach_tornado_lift`
-- `detached_head_reattach_finish_blend_duration`
-- `arm_sword_swing`
-- `arm_sword_torso_twist`
-- `arm_sword_lunge`
-- `arm_sword_blade_pitch`
-- `arm_sword_swing_count`
-- `arm_sword_hold_speed`
-- `arm_sword_hold_timeout`
-- `backstab_club_raise`
-- `backstab_club_slam`
-- `backstab_club_slam_sharpness`
-- `backstab_club_torso_windup`
-- `backstab_club_torso_slam`
-- `backstab_club_pitch_raised`
-- `backstab_club_pitch_impact`
-- `combo_left_arm_forward`
-- `combo_finisher_arm_forward`
-- `combo_finisher_torso_twist`
-- `combo_finisher_lunge`
-- `demo_settle_time`
-- `waist_bend_lean`
-- `waist_bend_step`
-- `waist_bend_breath`
-- `waist_bend_limit`
-- `waist_response`
-- `aim_overlay_blend_speed`
-- `aim_right_arm_forward`
-- `aim_left_arm_forward`
-- `aim_right_arm_draw`
-- `aim_left_arm_brace`
-- `aim_torso_lean`
-- `aim_head_dip`
-- `foot_placement_enabled`
-- `foot_raycast_up`
-- `foot_raycast_down`
-- `foot_lift`
-- `foot_smoothing`
-- `foot_align_to_normal`
-- `stealth_ready_arm_raise`
-- `stealth_ready_crouch`
-- `stealth_ready_body_drop`
-- `stealth_ready_leg_bend`
-- `stealth_ready_head_dip`
-- `stealth_ready_blend_speed`
-
-### Constants
-- `COMBO_STEP_ARM_SWORD`
-- `ANIMATED_KEYS`
-- `FOOT_KEYS`
-- `WAIST_CARRIED`
-
-### Key Variables
-- `_arm_sword_swings`
-- `_arm_sword_hold`
-- `_arm_sword_idle_timer`
-- `walk_time`
-- `_time`
-- `speed_ratio`
-- `total_equipped_weight`
-- `_attack_timer`
-- `_attack_blend`
-- `_attack_duration_current`
-- `_attack_combo_step`
-- `_attack_impact_signaled`
-- `_is_stealth_finish_attack`
-- `_is_stealth_finish_lethal`
-- `_head_only_attack_contacted`
-- `_head_only_attack_landed`
-- `_head_only_base_world_offset`
-- `_head_only_attack_world_offset`
-- `_head_only_attack_direction`
-- `_head_only_last_facing_direction`
-- `_head_only_hit_recoil_timer`
-- `_head_only_hit_recoil_start_offset`
-- `_head_only_hit_recoil_end_offset`
-- `_head_only_hit_recoil_start_local_position`
-- `_head_only_hit_recoil_end_local_position`
-- `_torso_head_attack_contacted`
-- `_torso_head_attack_landed`
-- `_torso_head_attack_world_offset`
-- `_torso_head_attack_direction`
-- `_torso_head_recoil_timer`
-- `_torso_head_recoil_start_local_position`
-- `_torso_head_recoil_end_local_position`
-- `_torso_head_socket_local_position`
-- `_torso_head_socket_offset`
-- `_torso_head_miss_detach_requested`
-- `_torso_head_detach_world_offset`
-- `_torso_head_miss_fall_active`
-- `_torso_head_miss_fall_timer`
-- `_torso_head_miss_fall_start_position`
-- `_torso_head_miss_fall_start_rotation`
-
-### Functions
-- `update_from_player(delta: float, velocity: Vector3, max_speed: float, facing_direction: Vector3, equipped_defs: Array) -> void`
-- `_waist_target_angle() -> float`
-- `_animate_waist(delta: float) -> void`
-- `_apply_waist_carry(angle: float) -> void`
-- `trigger_demo_attack_procedural() -> void`
-- `trigger_demo_attack_tween() -> void`
-- `_update_demo_procedural(delta: float) -> void`
-- `_apply_demo_pose() -> void`
-- `_demo_keyframes() -> Dictionary`
-- `_demo_charge_time() -> float`
-- `_demo_air_time() -> float`
-- `_demo_begin() -> Node3D`
-- `_demo_local_forward() -> Vector3`
-- `set_demo_target_world_position(world_position: Vector3) -> void`
-- `_demo_stop() -> void`
-- `_demo_on_tween_finished() -> void`
-- `_ease_out_sine(t: float) -> float`
-- `_ease_out_quad(t: float) -> float`
-- `_ease_in_quad(t: float) -> float`
-- `_ease_in_out_sine(t: float) -> float`
-- `is_head_launch_attack_busy() -> bool`
-- `set_head_launch_attack_aim(direction: Vector3, valid: bool) -> void`
-- `_head_launch_aim_or(fallback: Vector3) -> Vector3`
-- `_update_head_launch_attack_aim() -> void`
-- `trigger_attack(combo_step: int = 0, allow_head_launch: bool = true) -> void`
-- `trigger_stealth_finish_attack(lethal: bool = true) -> void`
-- `_capture_torso_head_miss_body_hold_transform() -> void`
-- `set_aiming(enabled: bool) -> void`
-- `set_stealth_ready(enabled: bool) -> void`
-- `_update_stealth_ready_overlay(delta: float) -> void`
-- `_apply_stealth_ready_overlay() -> void`
-- `confirm_head_only_attack_contact() -> void`
-- `get_head_only_attack_forward_offset() -> float`
-- `get_head_only_attack_world_offset() -> Vector3`
-- `get_head_launch_attack_world_offset() -> Vector3`
-- `has_head_only_body_catch_up_request() -> bool`
-- `consume_head_only_body_catch_up_offset() -> Vector3`
-- `has_torso_head_miss_detach_request() -> bool`
-- `consume_torso_head_miss_detach_offset() -> Vector3`
-- `get_torso_head_miss_detach_body_transform() -> Transform3D`
-- `enter_detached_head_state(start_local_position: Vector3 = Vector3.ZERO, use_start_position: bool = false) -> void`
-- `start_detached_head_reattach_tornado(body_world_position: Vector3, target_world_position: Vector3, body_world_rotation: Vector3 = Vector3.ZERO) -> void`
-- `set_detached_head_reattach_tornado_progress(progress: float, body_world_position: Vector3, target_world_position: Vector3, body_world_rotation: Vector3 = Vector3.ZERO) -> void`
-- `cancel_detached_head_reattach_tornado_to_ground() -> void`
-- `play_detached_head_reattach_finish_blend() -> void`
-- `get_detached_head_reattach_tornado_duration() -> float`
-- `get_stable_body_attach_local_position() -> Vector3`
-- `_update_head_only_facing_direction(facing_direction: Vector3) -> void`
-- `_world_horizontal_offset_to_local(world_offset: Vector3) -> Vector3`
-- `_world_rotation_to_rig_local(world_rotation: Vector3) -> Vector3`
-- `_capture_head_only_recoil_start_local_position() -> Vector3`
-- `_capture_socket_local_position(socket_key: String) -> Vector3`
-- `_capture_socket_local_rotation(socket_key: String) -> Vector3`
-- `_capture_socket_local_scale(socket_key: String) -> Vector3`
-- `_get_head_only_grounded_local_position() -> Vector3`
-- `set_crawl_mode(enabled: bool) -> void`
-- `set_lizard_wall_climb_blend(blend: float) -> void`
-- `set_player_body_progression_enabled(enabled: bool) -> void`
-- `_capture_rest() -> void`
-- `_get_rest_pos(key: String) -> Vector3`
-- `_get_rest_rot(key: String) -> Vector3`
-- `_calculate_weight(equipped_defs: Array) -> float`
-- `_update_torso_head_socket_offset(equipped_defs: Array) -> void`
-- `_as_vector3(value: Variant, fallback: Vector3) -> Vector3`
-- `_animate_body() -> void`
-- `_is_head_only() -> bool`
-- `_head_only_attack_airborne() -> bool`
-- `_is_torso_spring_only() -> bool`
-- `_is_slot_equipped(slot: String) -> bool`
-- `_has_any_arm_equipped() -> bool`
-- `_torso_head_launch_available() -> bool`
-- `_animate_head_only(sway: float, breath: float) -> void`
-- `_apply_detached_head_reattach_tornado(head: Node3D) -> void`
-- `_apply_detached_head_reattach_finish_blend(_body: Node3D, head: Node3D) -> void`
-- `_animate_torso_spring(sway: float, breath: float) -> void`
-- `_anchor_socket_to_body(key: String, body: Node3D) -> void`
-- `_animate_limbs() -> void`
-- `_animate_crawl_body() -> void`
-- `_animate_crawl_limbs() -> void`
-- `_apply_lizard_wall_climb_limb_pose() -> void`
-- `_animate_lizard_torso_blocks(sway: float, breath: float, base_pitch: float) -> void`
-- `_swing(key: String, angle: float) -> void`
-- `_animate_joints() -> void`
-- `_joint_phase(key: String) -> float`
-- `_animate_wobble() -> void`
-- `_wobble_phase(key: String) -> float`
-- `_update_aim_overlay(delta: float) -> void`
-- `_apply_aim_overlay() -> void`
-- `_update_attack_overlay(delta: float) -> void`
-- `_apply_attack_overlay() -> void`
-- `_combo_step_for_equipped_arms() -> int`
-- `_attack_pose_strength() -> float`
-- `_attack_strike_curve(phase: float) -> float`
-- `_attack_phase() -> float`
-- `_apply_head_only_attack_pose() -> void`
-- `_apply_head_only_hit_recoil_pose(head: Node3D) -> void`
-- `_apply_torso_head_attack_pose() -> void`
-- `_apply_torso_head_miss_fall_pose(body: Node3D, head: Node3D) -> void`
-- `_apply_torso_head_miss_body_hold_pose(body: Node3D) -> void`
-- `_future_head_only_ground_position() -> Vector3`
-- `_apply_torso_head_recoil_pose(body: Node3D, head: Node3D) -> void`
-- `_attack_strength_lagged(lag: float) -> float`
-- `_whip_elbow(joint_key: String, strength: float) -> void`
-- `_apply_right_combo_pose(strength: float) -> void`
-- `_apply_left_combo_pose(strength: float) -> void`
-- `_apply_arm_sword_pose(strength: float) -> void`
-- `is_arm_sword_held() -> bool`
-- `note_arm_sword_swing() -> void`
-- `_update_arm_sword(delta: float) -> void`
-- `_both_arms_equipped() -> bool`
-- `_right_hand_rig_position() -> Vector3`
-- `_apply_backstab_club_pose(strength: float) -> void`
-- `_backstab_slam_t() -> float`
-- `_apply_finisher_combo_pose(strength: float) -> void`
-- `_animate_feet(delta: float) -> void`
-- `_place_foot(space: PhysicsDirectSpaceState3D, key: String, delta: float) -> void`
-- `_find_body() -> Node3D`
-- `_animate_facing(delta: float, facing_direction: Vector3) -> void`
-
-### Resource Dependencies
-- none
-
-### GameEvents Usage
-- none
-
-### Input Actions
-- none
-
-### Node Path Lookups
-- `LizardTorsoFront`
-- `LizardTorsoRear`
-
-## rig_test_player
-
-- Source file: `scripts/rig/rig_test_player.gd`
-- Extends: `CharacterBody3D`
-- System: Rig and animation
-
-### Signals
-- none
-
-### Exported Tuning
-- `move_speed`
-- `gravity`
-
-### Constants
-- `DEMO_TARGET_ORBIT_RADIUS`
-- `DEMO_TARGET_ORBIT_SPEED`
-- `DEMO_TARGET_HEIGHT`
-- `DEMO_TARGET_SIZE`
-
-### Key Variables
-- `facing_direction`
-- `equipped_ids`
-- `_equip_cycle`
-- `_equip_index`
-- `_demo_target_marker`
-- `_demo_target_time`
-- `input_vector`
-- `direction`
-- `method`
-- `marker`
-- `mesh`
-- `sphere`
-- `material`
-- `angle`
-- `offset`
-- `bone_id`
-
-### Functions
-- `_ready() -> void`
-- `_physics_process(delta: float) -> void`
-- `_trigger_animation_demo(use_tween: bool) -> void`
-- `_ensure_demo_target() -> void`
-- `_update_demo_target(delta: float) -> void`
-- `_cycle_equip() -> void`
-
-### Resource Dependencies
-- none
-
-### GameEvents Usage
-- none
-
-### Input Actions
-- `equip`
-- `attack`
-- `anim_demo_procedural`
-- `anim_demo_tween`
-- `move_left`
-
-### Node Path Lookups
-- none
-
-## SynergyRulesService
-
-- Source file: `scripts/synergy_rules_service.gd`
-- Extends: `unknown`
+- Source file: `scripts/rock.gd`
+- Extends: `StaticBody3D`
 - System: Supporting gameplay
 
 ### Signals
 - none
 
 ### Exported Tuning
-- none
+- `mesh_index`
+- `give_collision`
+- `target_width`
 
 ### Constants
-- `BONUS_DEFAULTS`
-- `MODIFIER_DEFAULTS`
-- `CATEGORY_FAMILY`
-- `CATEGORY_SYMMETRY`
-- `CATEGORY_QUALITY`
-- `PAIR_ARMS`
-- `PAIR_LEGS`
-- `TIER_NONE`
-- `STAT_DISPLAY`
-- `EXCLUDED_SET_IDS`
-- `MAX_EQUIPPABLE_PIECES`
-- `HIGH_QUALITY_MIN_RANK`
-- `FAMILY_RULES`
-- `SYMMETRY_RULES`
-- `QUALITY_RULES`
+- `CLUSTER`
 
 ### Key Variables
-- `result`
-- `counts`
-- `clean_set_id`
-- `pairs`
-- `clean_pair_key`
-- `symmetry_rule`
-- `rank_counts`
-- `quality_rule`
-- `matching`
-- `summary`
-- `raw`
-- `composition`
-- `count`
-- `piece`
-- `rank`
-- `total`
-- `tiers`
-- `cumulative`
-- `label`
-- `best`
-- `best_pieces`
-- `tier`
-- `needed`
-- `effects`
-- `bonus`
-- `payload_bonus`
-- `flat_value`
-- `modifiers`
-- `payload_modifiers`
-- `percent_value`
-- `active`
-- `percent`
 - `parts`
-- `effect`
-- `current_active`
-- `candidate_active`
-- `current_keys`
-- `candidate_keys`
-- `activated`
-- `broken`
+- `idx`
+- `p`
+- `mesh`
+- `mi`
+- `aabb`
+- `center`
+- `d`
+- `cs`
+- `box`
+- `inst`
+- `m`
+- `out`
 
 ### Functions
+- `_ready() -> void`
+- `_parts() -> Array`
+- `_find_meshes(n: Node) -> Array`
+
+### Resource Dependencies
+- `assets/rock_boulders.glb`
+
+### GameEvents Usage
 - none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## target_box
+
+- Source file: `scripts/target_box.gd`
+- Extends: `StaticBody3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `health`
+- `box_size`
+- `tint`
+
+### Constants
+- none
+
+### Key Variables
+- `_mat`
+- `_alive`
+- `mesh`
+- `bm`
+- `cs`
+- `bs`
+- `t`
+
+### Functions
+- `_ready() -> void`
+- `take_damage(amount: int, _from: Vector3 = Vector3.ZERO, _attacker: Node = null, _src: String = "") -> void`
+- `_flash() -> void`
+- `_die() -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## BeachCliffTerrain
+
+- Source file: `scripts/terrain/beach_cliff_terrain.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `regenerate`
+- `width`
+- `depth`
+- `resolution`
+- `water_level`
+- `shore_z`
+- `beach_top`
+- `cliff_start_z`
+- `cliff_end_z`
+- `cliff_height`
+- `coast_wobble`
+- `noise_seed`
+- `noise_frequency`
+- `noise_amplitude`
+- `wet_sand`
+- `dry_sand`
+- `rock`
+- `grass`
+- `add_water`
+- `water_color`
+
+### Constants
+- none
+
+### Key Variables
+- `_noise`
+- `res`
+- `n`
+- `eps`
+- `verts`
+- `normals`
+- `uvs`
+- `colors`
+- `x`
+- `z`
+- `y`
+- `hx`
+- `hz`
+- `nrm`
+- `idx`
+- `indices`
+- `a`
+- `b`
+- `c`
+- `d`
+- `arr`
+- `mesh`
+- `mi`
+- `mat`
+- `body`
+- `col`
+- `wm`
+- `pm`
+- `wmat`
+- `shift`
+- `s_z`
+- `c0`
+- `c1`
+- `h`
+- `t`
+- `amp`
+
+### Functions
+- `_ready() -> void`
+- `_set_regenerate(v: bool) -> void`
+- `build() -> void`
+- `_height(x: float, z: float) -> float`
+- `_color(y: float, slope: float) -> Color`
 
 ### Resource Dependencies
 - none
@@ -3322,9 +4061,6 @@
 - `MAIN_MENU_PATH`
 - `PLAYER_SCENE`
 - `ENEMY_SCENE`
-- `VALIDATION_LOG_PATH`
-- `OVERLAY_PANEL_WIDTH`
-- `P0_VALIDATION_GUIDES`
 - `NORMAL_LIMB_BONES`
 - `EXTRA_TESTING_BONES`
 
@@ -3335,13 +4071,6 @@
 - `spawn_cursor`
 - `enemy_serial`
 - `status_label`
-- `validation_guide_index`
-- `notes_edit`
-- `notes_editing`
-- `observed_notes`
-- `validation_log`
-- `overlay_mode`
-- `testing_panel`
 - `environment`
 - `env`
 - `sun`
@@ -3360,15 +4089,7 @@
 - `canvas`
 - `panel`
 - `margin`
-- `content`
 - `alive_count`
-- `scene_tag`
-- `stats_component`
-- `state`
-- `base_speed`
-- `base_reach`
-- `base_damage`
-- `base_health`
 
 ### Functions
 - `_ready() -> void`
@@ -3392,19 +4113,6 @@
 - `_on_enemy_defeated(_enemy: Node, _dropped_bone_id: String) -> void`
 - `_build_ui() -> void`
 - `_update_status() -> void`
-- `_print_stat_breakdown() -> void`
-- `_cycle_overlay_mode() -> void`
-- `_apply_overlay_mode() -> void`
-- `_cycle_validation_guide(direction: int) -> void`
-- `_current_validation_guide_text() -> String`
-- `_begin_notes_editing() -> void`
-- `_cancel_notes_editing() -> void`
-- `_on_notes_submitted(text: String) -> void`
-- `_runtime_evidence_snapshot() -> Dictionary`
-- `_log_validation_result(result: String) -> void`
-- `_append_log_entry_to_file(entry: Dictionary) -> void`
-- `_count_validation_results(result: String) -> int`
-- `_validation_log_summary_text() -> String`
 
 ### Resource Dependencies
 - `scenes/player.tscn`
@@ -3418,6 +4126,272 @@
 
 ### Node Path Lookups
 - `EnemySpawnPoints`
+
+## torso_pickup
+
+- Source file: `scripts/torso_pickup.gd`
+- Extends: `Area3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `body_scale`
+- `bury_depth`
+- `tilt_deg`
+- `loose_bone_count`
+
+### Constants
+- `CHARACTER`
+
+### Key Variables
+- `_model`
+- `_collected`
+- `_rng`
+- `model`
+- `ribs`
+- `n`
+- `is_torso`
+- `col`
+- `sh`
+- `count`
+- `src`
+- `a`
+- `center`
+- `cont`
+- `ang`
+- `dist`
+- `dup`
+- `space`
+- `q`
+- `hit`
+- `out`
+
+### Functions
+- `_ready() -> void`
+- `_scatter_loose_bones(ribs: Array) -> void`
+- `_snap_to_ground() -> void`
+- `_on_body_entered(body: Node) -> void`
+- `_meshes(n: Node) -> Array`
+
+### Resource Dependencies
+- `assets/main_character.glb`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## trailing_part
+
+- Source file: `scripts/trailing_part.gd`
+- Extends: `Node3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `part_name`
+- `scale_factor`
+- `follow_dist`
+- `roll_radius`
+- `ground_y`
+- `tumble_frac`
+- `gravity`
+- `return_lift`
+- `scatter_drag`
+
+### Constants
+- `GLB`
+
+### Key Variables
+- `_model`
+- `_tumble_axis`
+- `_tumble_dir`
+- `_grounded`
+- `_vel_y`
+- `_scatter_vel`
+- `_vis`
+- `_low_pts`
+- `_measured`
+- `_from`
+- `_from_rot`
+- `rest_y`
+- `fp`
+- `target`
+- `to`
+- `d`
+- `dir`
+- `move`
+- `spin`
+- `axis`
+- `gp`
+- `e`
+- `p`
+- `q`
+- `b`
+- `lowest`
+- `skel`
+- `mi`
+- `arr`
+- `verts`
+- `bones`
+- `wts`
+- `skin`
+- `mats`
+- `gi`
+- `st`
+- `step`
+- `i`
+- `sk`
+- `per`
+
+### Functions
+- `_ready() -> void`
+- `part() -> String`
+- `follow(leader_pos: Vector3, delta: float) -> void`
+- `face_body(q: Quaternion) -> void`
+- `launch_scatter(horiz: Vector3, pop: float) -> void`
+- `begin_return() -> void`
+- `return_to(target: Vector3, target_rot: Quaternion, t: float) -> void`
+- `_rest_y() -> float`
+- `_vis_mesh() -> MeshInstance3D`
+- `_measure_extent() -> void`
+- `_show_only(n: Node) -> void`
+- `_center_part() -> void`
+- `_find_skel(n: Node) -> Skeleton3D`
+- `_find_mesh(n: Node, want: String) -> MeshInstance3D`
+
+### Resource Dependencies
+- `assets/crab_head_character_optimized.glb`
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## training_dummy
+
+- Source file: `scripts/training_dummy.gd`
+- Extends: `StaticBody3D`
+- System: Supporting gameplay
+
+### Signals
+- none
+
+### Exported Tuning
+- `height`
+- `radius`
+- `knock_deg`
+- `stiffness`
+- `damping`
+- `full_damage`
+
+### Constants
+- `BASE`
+- `HIT`
+
+### Key Variables
+- `_pivot`
+- `_mat`
+- `_tilt`
+- `_tilt_vel`
+- `_flash`
+- `_hits`
+- `col`
+- `cap`
+- `mi`
+- `cm`
+- `away`
+- `mag`
+
+### Functions
+- `_ready() -> void`
+- `take_damage(amount: int, from_pos: Vector3, _source: Object = null) -> void`
+- `hits() -> int`
+- `_process(delta: float) -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- none
+
+## TuningMenuUI
+
+- Source file: `scripts/tuning_menu_ui.gd`
+- Extends: `CanvasLayer`
+- System: UI and guidance
+
+### Signals
+- none
+
+### Exported Tuning
+- none
+
+### Constants
+- `TOGGLE_KEY`
+
+### Key Variables
+- `_player`
+- `_animator`
+- `_panel`
+- `_rows`
+- `_defaults`
+- `_was_mouse_captured`
+- `key_event`
+- `stats`
+- `slider`
+- `label`
+- `style`
+- `box`
+- `title`
+- `reset`
+- `hint`
+- `name_label`
+- `row`
+- `value_label`
+
+### Functions
+- `_ready() -> void`
+- `_unhandled_input(event: InputEvent) -> void`
+- `set_open(open: bool) -> void`
+- `_current_value(id: String) -> float`
+- `_apply_value(id: String, value: float) -> void`
+- `_capture_defaults() -> void`
+- `_reset_defaults() -> void`
+- `_refresh_all() -> void`
+- `_update_value_label(id: String, value: float) -> void`
+- `_build_ui() -> void`
+- `_add_row(parent: VBoxContainer, id: String, text: String, min_v: float, max_v: float, step: float) -> void`
+
+### Resource Dependencies
+- none
+
+### GameEvents Usage
+- none
+
+### Input Actions
+- none
+
+### Node Path Lookups
+- `VisualRoot/ProceduralAnimator`
 
 ## tutorial_island_builder
 
@@ -3550,50 +4524,24 @@
 - `_label`
 - `_slot_label`
 - `_stack_label`
-- `_stack_badge`
-- `_frame`
-- `_selected`
-- `_favorite_label`
-- `_lock_label`
 - `tile_size`
 - `requested_size`
-- `pad`
-- `min_side`
-- `inner_width`
-- `name_height`
-- `slot_height`
-- `art_top`
-- `art_height`
+- `x_scale`
+- `y_scale`
 - `frame`
-- `lock_style`
 - `top_rule`
-- `quality_id`
-- `pip_count`
-- `pip_size`
-- `pip_gap`
-- `pip_total`
-- `pip_y`
-- `pip`
-- `art_centre`
-- `art_span`
 - `glow`
 - `core`
-- `badge_size`
-- `caption_width`
 - `slot_text`
-- `side`
-- `mouse`
-- `background`
+- `wrap`
+- `rect`
+- `style`
 
 ### Functions
 - `setup(id: String, player_ref: Node, quantity: int = 1) -> void`
-- `_place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void`
-- `_gui_input(event: InputEvent) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
-- `set_selected(value: bool) -> void`
-- `_repaint() -> void`
 - `_get_drag_data(_at_position: Vector2) -> Variant`
 - `_make_preview() -> Control`
 - `_make_tile_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat`
@@ -3634,47 +4582,27 @@
 - `_box`
 - `_label`
 - `_slot_label`
-- `_diamond_back`
 - `_slot_size`
-- `_frame`
-- `_unequip_button`
-- `_highlighted`
-- `_drag_state`
-- `pad`
-- `min_side`
-- `inner_width`
-- `top_height`
-- `bottom_height`
-- `art_top`
-- `art_height`
-- `button_side`
-- `side`
+- `x_scale`
+- `y_scale`
+- `min_scale`
+- `frame`
+- `diamond_back`
 - `bone_id`
-- `border`
-- `background`
-- `width`
-- `alpha`
-- `style`
 - `wrap`
 - `rect`
 - `preview_size`
+- `style`
 - `equipped_value`
 - `equipped`
 
 ### Functions
-- `resize(target_size: Vector2) -> void`
-- `_place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void`
 - `_on_mouse_entered() -> void`
 - `_on_mouse_exited() -> void`
 - `refresh() -> void`
-- `_on_unequip_pressed() -> void`
-- `set_highlighted(value: bool) -> void`
-- `set_drag_state(state: String) -> void`
-- `_repaint() -> void`
 - `_get_drag_data(_at_position: Vector2) -> Variant`
 - `_can_drop_data(_at_position: Vector2, data: Variant) -> bool`
 - `_drop_data(_at_position: Vector2, data: Variant) -> void`
-- `_notification(what: int) -> void`
 - `_gui_input(event: InputEvent) -> void`
 - `_make_slot_style(bg: Color, border: Color, border_width: int) -> StyleBoxFlat`
 - `_equipped_bone_id() -> String`
@@ -3710,6 +4638,8 @@
 - `inventory_owner`
 - `slot_size`
 - `frame`
+- `diamond`
+- `diamond_inner`
 - `drop`
 - `style`
 

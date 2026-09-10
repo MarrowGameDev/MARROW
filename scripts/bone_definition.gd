@@ -8,15 +8,11 @@ extends Resource
 # progress.
 
 const DEFAULT_COLOR := Color(1.0, 0.94, 0.68, 1.0)
-# Canonical quality ids. The rules, multipliers and probabilities live in
-# BoneQualityService, which also maps the pre-rename Spanish ids
-# (chatarra/fragil/comun/fuerte/legendario) onto these by rank, so older
-# authored data keeps resolving to the same rung of the ladder.
-const QUALITY_SCRAP := BoneQualityService.QUALITY_FRAIL
-const QUALITY_FRAGILE := BoneQualityService.QUALITY_WORN
-const QUALITY_COMMON := BoneQualityService.QUALITY_NORMAL
-const QUALITY_STRONG := BoneQualityService.QUALITY_STRONG
-const QUALITY_LEGENDARY := BoneQualityService.QUALITY_PRISTINE
+const QUALITY_SCRAP := "chatarra"
+const QUALITY_FRAGILE := "fragil"
+const QUALITY_COMMON := "comun"
+const QUALITY_STRONG := "fuerte"
+const QUALITY_LEGENDARY := "legendario"
 const RARITY_COMMON := "comun"
 const RARITY_CORRUPT := "corrupto"
 const RARITY_CURSED := "maldito"
@@ -27,9 +23,6 @@ const MUTATION_CORRUPT := "corrupto"
 const MUTATION_CURSED := "maldito"
 const MUTATION_SPECIAL := "especial"
 const MUTATION_HYBRID := "hibrido"
-const DURABILITY_INTACT := "intact"
-const DURABILITY_CRACKED := "cracked"
-const DURABILITY_BROKEN := "broken"
 
 @export_group("Identity")
 @export var bone_id: String = ""
@@ -52,12 +45,6 @@ const DURABILITY_BROKEN := "broken"
 @export var slot: String = ""
 @export var tags: Array[String] = []
 @export_multiline var description: String = ""
-
-@export_group("Durability")
-@export var durability_max: int = 100
-@export var durability_start: int = 100
-@export var durability_repair_cost: int = 1
-@export var durability_tags: Array[String] = []
 
 @export_group("Mutation")
 @export var mutation_id: String = ""
@@ -163,12 +150,6 @@ func to_clean_dictionary() -> Dictionary:
 			"drop_percent": quality_drop_percent,
 			"weight_percent": quality_weight_percent,
 		},
-		"durability": {
-			"max": durability_max,
-			"start": durability_start,
-			"repair_cost": durability_repair_cost,
-			"tags": durability_tags.duplicate(),
-		},
 		"player_stats": {
 			"move_speed": player_move_speed,
 			"attack_range": player_attack_range,
@@ -232,10 +213,6 @@ func to_legacy_dictionary() -> Dictionary:
 		"rarity_rank": rarity_rank,
 		"rarity_color": rarity_color,
 		"rarity_drop_weight": rarity_drop_weight,
-		"durability_max": durability_max,
-		"durability_start": durability_start,
-		"durability_repair_cost": durability_repair_cost,
-		"durability_tags": durability_tags.duplicate(),
 		"mutation_id": mutation_id,
 		"mutation_family": mutation_family,
 		"mutation_stage": mutation_stage,
@@ -304,7 +281,6 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 
 	var identity: Dictionary = _dictionary(clean, "identity")
 	var quality_modifiers: Dictionary = _dictionary(clean, "quality_modifiers")
-	var durability: Dictionary = _dictionary(clean, "durability")
 	var player_stats: Dictionary = _dictionary(clean, "player_stats")
 	var mutation: Dictionary = _dictionary(clean, "mutation")
 	var attack_combo: Dictionary = _dictionary(clean, "attack_combo")
@@ -332,11 +308,6 @@ static func from_clean_dictionary(id: String, clean: Dictionary) -> BoneDefiniti
 	definition.slot = str(identity.get("slot", definition.slot))
 	definition.tags = _string_array(identity.get("tags", []))
 	definition.description = str(identity.get("description", definition.description))
-
-	definition.durability_max = int(durability.get("max", identity.get("durability_max", definition.durability_max)))
-	definition.durability_start = int(durability.get("start", identity.get("durability_start", definition.durability_start)))
-	definition.durability_repair_cost = int(durability.get("repair_cost", identity.get("durability_repair_cost", definition.durability_repair_cost)))
-	definition.durability_tags = _string_array(durability.get("tags", identity.get("durability_tags", [])))
 
 	definition.mutation_id = str(mutation.get("id", definition.mutation_id))
 	definition.mutation_family = str(mutation.get("family", definition.mutation_family))

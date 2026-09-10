@@ -3,15 +3,29 @@ extends CharacterBody3D
 # Tier 1D: the short-lived, visible attack box we spawn in front of the player.
 const ATTACK_HITBOX_SCENE: PackedScene = preload("res://scenes/attack_hitbox.tscn")
 const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.gd")
-# Same pickup scene enemy deaths drop; player drop-to-ground reuses it so a
-# dropped piece behaves exactly like any other bone lying in the world.
-const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 
 # These are the player's normal stats before any bones are equipped.
 # The @export tag means you can tune these values in the Godot editor later.
-@export var base_move_speed: float = 6.0
+# 6.0 was proportionally absurd for a 0.92 m skeleton (a human walks 1.4 m/s at
+# twice the height) and forced the foot IK into its scurry zone at all times —
+# the legs can only express a 0.32 m stride, so speed IS foot speed. 2.6 puts
+# normal movement where the leap gait reads: ~0.19 s strides, full chest cycle.
+# (Author-directed 2026-07-16: "if needed, have the overall walking speed lower".)
+@export var base_move_speed: float = 3.2
 @export var sprint_multiplier: float = 1.55
 @export var jump_velocity: float = 8.5
+@export_group("Player hitbox")
+# The player's OWN body collision capsule (its physical hitbox — walls, ground,
+# and whole-body hits). Tune live in the Inspector; the shape rebuilds on change.
+# Defaults are sized/lowered for the HEAD state so the hitbox hugs the skull on
+# the ground instead of a tall capsule. offset_y + radius keep the capsule BOTTOM
+# where it was, so the body's rest height and the head grounding don't shift.
+@export var body_collision_radius: float = 0.24: set = _set_body_collision_radius
+@export var body_collision_height: float = 0.48: set = _set_body_collision_height
+@export var body_collision_offset_y: float = -0.56: set = _set_body_collision_offset_y
+# Draw the capsule as a translucent shape so you can SEE the player hitbox in-game.
+@export var show_body_hitbox: bool = false: set = _set_show_body_hitbox
+@export_group("")
 @export var base_attack_range: float = 2.0
 @export var base_attack_damage: int = 1
 
@@ -68,11 +82,6 @@ const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 @export var detached_torso_ground_probe_height: float = 2.0
 @export var detached_torso_ground_probe_depth: float = 5.0
 @export var stealth_prompt_scan_range: float = 3.0
-@export_group("Backstab Execution")
-@export var backstab_execution_duration: float = 0.75
-@export var backstab_execution_impact_time: float = 0.36
-@export var backstab_execution_recovery_time: float = 0.20
-@export_group("")
 @export_group("Bow")
 @export var bow_enabled: bool = true
 @export var start_with_bow_equipped: bool = false
@@ -93,7 +102,22 @@ const BONE_PICKUP_SCENE: PackedScene = preload("res://scenes/bone.tscn")
 @export var finger_bone_cooldown: float = 0.55
 @export var finger_bone_throw_speed: float = 12.0
 @export var finger_bone_throw_gravity: float = 8.0
+@export_group("Assembly")
+# Start the run as just a head; the torso (ribs+spine+hips) lies on the floor as
+# a pickup that assembles onto the head when collected.
+@export var start_as_head: bool = true
+@export var torso_pickup_offset: Vector3 = Vector3(0, 0, 2.5)
 @export_group("")
+
+const TORSO_PICKUP_SCRIPT: Script = preload("res://scripts/torso_pickup.gd")
+var _torso_assembled: bool = false
+# Slim head-launch: in head/torso-only mode an attack darts the whole skeleton (and
+# its visible skull) at the target for a short beat, then normal movement resumes.
+# The follow-hitbox does the damage; this is just the visible lunge.
+@export var head_lunge_speed: float = 7.5
+@export var head_lunge_duration: float = 0.18
+var _lunge_timer: float = 0.0
+var _lunge_velocity: Vector3 = Vector3.ZERO
 
 # These are the active stats the movement and attack code actually use.
 # They start from the base stats, then equipped bones can modify them.
@@ -106,12 +130,7 @@ var inventory_open: bool = false
 var inventory_ui: PlayerInventoryUI = null
 var inventory_component: PlayerInventoryComponent = null
 var equipment_component: PlayerEquipmentComponent = null
-var equipment_builds_component: PlayerEquipmentBuildsComponent = null
 var stats_component: PlayerStatsComponent = null
-# Full dictionary from the last stats_component.calculate() call, kept so
-# get_inventory_stats_snapshot() can expose load/quality fields without
-# recomputing equipment stats on every UI refresh.
-var last_calculated_stats: Dictionary = {}
 
 # This counts nearby world interactions that use the Interact action.
 # When it is above 0, that action is reserved for the world prompt.
@@ -130,6 +149,9 @@ var bow_visual: Node3D = null
 var bow_equipped: bool = false
 var bow_aiming: bool = false
 var bow_charge_time: float = 0.0
+# Finger-shooting: when NO bow is equipped, hold the ranged input to raise the
+# arm and aim, release to fire the finger bone. The finger regrows instantly.
+var finger_aiming: bool = false
 var aim_reticle_layer: CanvasLayer = null
 var aim_reticle_root: Control = null
 var aim_reticle_dot: ColorRect = null
@@ -146,21 +168,6 @@ var stealth_prompt_label: Label
 var stealth_target: Node3D = null
 var noise_timer: float = 0.0
 var sprinting_this_frame: bool = false
-var backstab_execution_target: Node3D = null
-var backstab_execution_damage: int = 0
-var backstab_execution_hit_from: Vector3 = Vector3.ZERO
-var backstab_execution_impact_timer: float = 0.0
-var backstab_execution_recovery_timer: float = 0.0
-var backstab_execution_damage_applied: bool = false
-# Tracks "a backstab is in progress" independently of
-# backstab_execution_target: GDScript's `== null` / `!= null` compare a
-# freed Object reference AS IF it were null (not just is_instance_valid()),
-# so once the target is queue_free()'d mid-execution (an instant-kill
-# ambush cleaning up its corpse before the recovery window ends), a plain
-# `backstab_execution_target != null` check silently starts reporting
-# false while cleanup never runs, leaving can_attack stuck false forever.
-# This plain bool has no such quirk.
-var backstab_execution_in_progress: bool = false
 
 # Enemy the current head-launch attack is aimed at, if any.
 var head_launch_target: Node3D = null
@@ -182,7 +189,13 @@ var detached_camera_offset_carry_timer: float = 0.0
 @onready var socket_body: Node3D = $SocketBody
 @onready var visual_root: Node3D = $VisualRoot
 @onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
-@onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
+# The procedural animator is gone. Kept as a null so the old head-launch guards
+# (`if animator != null and animator.has_method(...)`) simply no-op instead of
+# needing every call site torn out. The head-launch is now a slim bespoke lunge.
+var animator = null
+# Clip-driven marionette hand visual. The name is kept as `retargeted_body` so
+# existing jump, aim, and equipment call sites remain compatible.
+@onready var retargeted_body: Node = get_node_or_null("VisualRoot/AnimatedCharacter")
 @onready var camera_controller: PlayerCameraController = $CameraPivot
 
 
@@ -208,9 +221,6 @@ func _ready() -> void:
 	inventory_component = PlayerInventoryComponent.new()
 	add_child(inventory_component)
 	inventory_component.setup(self, equipment_component)
-	equipment_builds_component = PlayerEquipmentBuildsComponent.new()
-	add_child(equipment_builds_component)
-	equipment_builds_component.setup(self, equipment_component)
 	_recalculate_stats()
 	if start_with_bow_equipped:
 		_set_bow_equipped(true)
@@ -225,6 +235,130 @@ func _ready() -> void:
 		GameEvents.inventory_changed.emit(self, inventory_component.get_inventory_items(), inventory_component.get_run_stats())
 	_setup_procedural_character()
 	_update_mouse_mode()
+	_apply_body_collision()
+	# The torso appears only when the "body" slot is actually equipped (not on pickup).
+	GameEvents.bone_equipped.connect(_on_bone_equipped)
+	GameEvents.bone_unequipped.connect(_on_bone_unequipped)
+	if start_as_head and retargeted_body != null:
+		# Start showing only the skull; the torso is a floor pickup.
+		retargeted_body.show_only_head()
+		_spawn_torso_pickup_deferred()
+
+
+# Drop the torso (ribs+spine+hips) on the floor in front of the start position.
+# Rebuild the player's collision capsule from the exported size (duplicated so a
+# shared sub-resource isn't mutated).
+func _set_body_collision_radius(v: float) -> void:
+	body_collision_radius = maxf(v, 0.05)
+	if is_inside_tree():
+		_apply_body_collision()
+
+
+func _set_body_collision_height(v: float) -> void:
+	body_collision_height = maxf(v, 0.1)
+	if is_inside_tree():
+		_apply_body_collision()
+
+
+func _set_body_collision_offset_y(v: float) -> void:
+	body_collision_offset_y = v
+	if is_inside_tree():
+		_apply_body_collision()
+
+
+func _set_show_body_hitbox(v: bool) -> void:
+	show_body_hitbox = v
+	if is_inside_tree():
+		_apply_body_collision()
+
+
+func _apply_body_collision() -> void:
+	var cs := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if cs == null:
+		return
+	var cap := cs.shape as CapsuleShape3D
+	if cap == null:
+		return
+	var dup := cap.duplicate() as CapsuleShape3D
+	dup.radius = body_collision_radius
+	dup.height = maxf(body_collision_height, body_collision_radius * 2.0)
+	cs.shape = dup
+	cs.position.y = body_collision_offset_y
+	# Mirror the shape onto the (normally hidden) capsule mesh so it can be shown.
+	var mi := get_node_or_null("MeshInstance3D") as MeshInstance3D
+	if mi != null:
+		var cm := mi.mesh as CapsuleMesh
+		if cm == null:
+			cm = CapsuleMesh.new()
+			mi.mesh = cm
+		cm.radius = dup.radius
+		cm.height = dup.height
+		mi.position.y = body_collision_offset_y
+		mi.visible = show_body_hitbox
+		if show_body_hitbox and mi.material_override == null:
+			var m := StandardMaterial3D.new()
+			m.albedo_color = Color(0.2, 0.9, 1.0, 0.28)
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mi.material_override = m
+
+
+# The spawn system repositions the player AFTER _ready (from origin to its real
+# arena spot), so wait a beat before dropping the torso — otherwise it lands at the
+# old origin (out in the sea) 35 m from where the player actually starts.
+func _spawn_torso_pickup_deferred() -> void:
+	await get_tree().create_timer(0.4).timeout
+	_spawn_torso_pickup()
+
+
+func _spawn_torso_pickup() -> void:
+	if _torso_assembled:
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var pickup: Node3D = TORSO_PICKUP_SCRIPT.new()
+	scene.add_child(pickup)
+	pickup.global_position = global_position + global_transform.basis * torso_pickup_offset
+
+
+# Called by the torso pickup when the head walks into it.
+# The body ("torso_bone") was actually equipped -> show the head+torso on the new
+# character and grow the hitbox. Unequipping reverts to the rolling head.
+func _on_bone_equipped(_bone_id: String, slot: String, who: Node) -> void:
+	if who == self and slot == "body":
+		_show_torso_body()
+
+
+func _on_bone_unequipped(_bone_id: String, slot: String, who: Node) -> void:
+	if who == self and slot == "body":
+		_revert_to_head()
+
+
+func _show_torso_body() -> void:
+	if _torso_assembled:
+		return
+	_torso_assembled = true
+	# Show the assembled head+torso body on the clip-driven character.
+	if retargeted_body != null:
+		retargeted_body.show_only_head()
+		retargeted_body.reveal_torso()
+	# Grow the hitbox to cover the standing head+torso.
+	body_collision_radius = 0.34
+	body_collision_height = 1.2
+	body_collision_offset_y = -0.1
+
+
+func _revert_to_head() -> void:
+	if not _torso_assembled:
+		return
+	_torso_assembled = false
+	if retargeted_body != null:
+		retargeted_body.show_only_head()
+	body_collision_radius = 0.24
+	body_collision_height = 0.48
+	body_collision_offset_y = -0.56
 
 
 func _input(event: InputEvent) -> void:
@@ -238,45 +372,32 @@ func _physics_process(delta: float) -> void:
 
 	# The inventory toggle and equipping work even while paused, so you can open
 	# the inventory, study your build, and rearrange it with the game frozen.
-	if inventory_open and Input.is_action_just_pressed("ui_cancel") and not is_dead and not _is_backstab_executing():
+	if inventory_open and Input.is_action_just_pressed("ui_cancel") and not is_dead:
 		_toggle_inventory()
-	elif _input_just_pressed("inventory") and not is_dead and not _is_backstab_executing():
+	elif _input_just_pressed("inventory") and not is_dead:
 		_toggle_inventory()
 
 	if inventory_open and Input.is_action_just_pressed("ui_focus_next") and not Input.is_action_just_pressed("inventory") and not is_dead:
 		if inventory_ui != null:
 			inventory_ui.cycle_category()
 
-	if _input_just_pressed("equip") and not is_dead and not _is_backstab_executing():
+	if _input_just_pressed("equip") and not is_dead:
 		_equip_next_bone()
 
 	# While the inventory is open (paused) or the player is dead, stop here:
-	# no movement, no attacking. Cancel any active backstab BEFORE this
-	# early return, not after: _update_backstab_execution() never runs
-	# past this point, so its own is_dead guard was unreachable dead code
-	# and a player killed mid-backstab (e.g. by a second enemy) left the
-	# target's stealth_execution_player set forever, freezing that
-	# enemy's AI permanently. This still lets a live enemy update its own
-	# hold animation for one extra frame after death via
-	# cancel_stealth_execution's cleanup, same as the existing target-
-	# invalid/is_dead branches inside _update_backstab_execution.
+	# no movement, no attacking.
 	if get_tree().paused or is_dead:
-		if _is_backstab_executing():
-			_cancel_backstab_execution()
 		_cancel_bow_aim()
 		_set_stealth_prompt("")
 		return
 
 	if _update_detached_torso_reattach(delta):
 		pass
-	elif _is_backstab_executing():
-		_set_stealth_prompt("Executing stealth finish...")
 	else:
 		_update_stealth_finish_prompt()
-	_update_backstab_execution(delta)
-	if _input_just_pressed("stealth_finish") and not detached_torso_reattaching and not _is_backstab_executing():
+	if _input_just_pressed("stealth_finish") and not detached_torso_reattaching:
 		_try_stealth_finish()
-	if _input_just_pressed("toggle_bow") and not detached_torso_reattaching and not _is_backstab_executing():
+	if _input_just_pressed("toggle_bow") and not detached_torso_reattaching:
 		_toggle_bow_equipped()
 	_update_head_launch_recovery(delta)
 	if bow_aiming:
@@ -295,22 +416,23 @@ func _physics_process(delta: float) -> void:
 	if detached_camera_offset_carry_timer > 0.0:
 		detached_camera_offset_carry_timer = maxf(detached_camera_offset_carry_timer - delta, 0.0)
 
-	# inventory_open gate: attack reads the raw action, so without it every
-	# click on the inventory UI (selecting a tile, starting a drag) also swings
-	# in the world behind the menu.
-	if _input_just_pressed("attack") and not inventory_open and not detached_torso_reattaching and not _is_backstab_executing():
+	if _input_just_pressed("attack") and not detached_torso_reattaching:
 		if bow_equipped:
 			_start_bow_aim()
 		else:
 			_try_attack()
-	if _input_just_released("attack") and bow_aiming and not detached_torso_reattaching and not _is_backstab_executing():
+	if _input_just_released("attack") and bow_aiming and not detached_torso_reattaching:
 		_release_bow_shot()
-	if _input_just_pressed("ranged_attack") and not bow_equipped and not detached_torso_reattaching and not _is_backstab_executing():
-		_try_bow_shot()
+	if _input_just_pressed("ranged_attack") and not bow_equipped and not detached_torso_reattaching:
+		_start_finger_aim()
+	if _input_just_released("ranged_attack") and finger_aiming and not detached_torso_reattaching:
+		_release_finger_shot()
 
 	# Space gives the player a clean hop. The floor check prevents air-jumping.
-	if _input_just_pressed("jump") and is_on_floor() and not _is_backstab_executing():
+	if _input_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
+		if retargeted_body != null:
+			retargeted_body.trigger_jump()
 
 	# If the player is in the air, build up downward speed over time.
 	# delta means "how much time passed since the last physics frame."
@@ -322,7 +444,7 @@ func _physics_process(delta: float) -> void:
 	# Input.get_vector reads four named input actions from project.godot.
 	# W makes the y value negative, S makes it positive, A makes x negative, and D makes x positive.
 	var input_vector := _get_move_input_vector()
-	if detached_torso_reattaching or _is_head_only_attack_locking_movement() or _is_backstab_executing():
+	if detached_torso_reattaching or _is_head_only_attack_locking_movement():
 		input_vector = Vector2.ZERO
 
 	var direction := _get_camera_relative_move_direction(input_vector)
@@ -334,7 +456,9 @@ func _physics_process(delta: float) -> void:
 
 	# Tier 1D: remember the last direction we actually moved, so an attack while
 	# standing still still swings the way we were last heading.
-	if bow_aiming:
+	if bow_aiming or finger_aiming:
+		# Face the aim while aiming so you can strafe/backpedal (this is what makes
+		# the backward-walk read while aiming).
 		var aim_forward: Vector3 = _get_camera_forward_direction()
 		aim_forward.y = 0.0
 		if aim_forward.length() > 0.01:
@@ -356,9 +480,17 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * current_move_speed + damage_knockback.x
 	velocity.z = direction.z * current_move_speed + damage_knockback.z
 
+	# Slim head-launch lunge: while it's running, the body darts at the target and
+	# steering input is ignored, so the skull's dive reads cleanly.
+	if _lunge_timer > 0.0:
+		_lunge_timer = maxf(0.0, _lunge_timer - delta)
+		velocity.x = _lunge_velocity.x + damage_knockback.x
+		velocity.z = _lunge_velocity.z + damage_knockback.z
+
 	# move_and_slide moves the body, checks collisions, and slides along walls/floors instead of passing through them.
 	move_and_slide()
-	_update_procedural_animation(delta, current_move_speed)
+	if retargeted_body != null and retargeted_body.has_method("update_from_player"):
+		retargeted_body.call("update_from_player", delta, velocity, sprinting_this_frame, is_on_floor())
 
 
 func _get_camera_relative_move_direction(input_vector: Vector2) -> Vector3:
@@ -408,8 +540,6 @@ func _try_attack() -> void:
 	# Respect the cooldown so holding or mashing left click does not blur the test.
 	if not can_attack:
 		return
-	if _is_backstab_executing():
-		return
 	# Head-launch jumps outlast attack_cooldown, so they get their own gate: the
 	# previous jump must finish and recover before another can start.
 	if _head_launch_attack_input_blocked():
@@ -425,6 +555,8 @@ func _try_attack() -> void:
 	var combo_step: int = _next_combo_animation_step()
 	if animator != null:
 		animator.trigger_attack(combo_step)
+	if retargeted_body != null:
+		retargeted_body.trigger_attack()   # plays the swipe clip on the character
 
 	# Aim the swing in the direction the player last moved.
 	var forward := current_move_direction
@@ -457,6 +589,12 @@ func _try_attack() -> void:
 		hitbox.follow_height = head_only_attack_hitbox_height
 	if hitbox.has_signal("hit_confirmed"):
 		hitbox.hit_confirmed.connect(_on_attack_hit_confirmed)
+
+	# Slim head-launch: dart the whole skeleton (skull included) at the target for a
+	# short beat. The follow-hitbox above lands the hit; this is the visible dive.
+	if head_launch_attack:
+		_lunge_velocity = forward * head_lunge_speed
+		_lunge_timer = head_lunge_duration
 
 	# Add it to the world (not as a child of the player) so it stays where it was
 	# swung and cleans itself up after its brief lifetime.
@@ -680,8 +818,36 @@ func _start_bow_aim() -> void:
 	_update_aim_reticle_ui()
 	if animator != null and animator.has_method("set_aiming"):
 		animator.set_aiming(true)
+	if retargeted_body != null:
+		retargeted_body.set_aiming(true)
 	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
 		camera_controller.set_aim_zoom(true, bow_aim_zoom_distance)
+
+
+# Finger shooting (no bow): raise the arm and aim, then release to fire the finger.
+func _start_finger_aim() -> void:
+	if not bow_enabled or not can_shoot_bow or _head_launch_attack_input_blocked():
+		return
+	finger_aiming = true
+	if retargeted_body != null:
+		retargeted_body.set_aiming(true)
+	if animator != null and animator.has_method("set_aiming"):
+		animator.set_aiming(true)
+	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
+		camera_controller.set_aim_zoom(true, bow_aim_zoom_distance)
+
+
+func _release_finger_shot() -> void:
+	if not finger_aiming:
+		return
+	finger_aiming = false
+	if retargeted_body != null:
+		retargeted_body.set_aiming(false)
+	if animator != null and animator.has_method("set_aiming"):
+		animator.set_aiming(false)
+	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
+		camera_controller.set_aim_zoom(false)
+	_try_bow_shot()   # no-bow path fires the finger-bone projectile
 
 
 func _release_bow_shot() -> void:
@@ -703,6 +869,8 @@ func _cancel_bow_aim() -> void:
 	_set_aim_reticle_visible(false)
 	if animator != null and animator.has_method("set_aiming"):
 		animator.set_aiming(false)
+	if retargeted_body != null:
+		retargeted_body.set_aiming(false)
 	if camera_controller != null and camera_controller.has_method("set_aim_zoom"):
 		camera_controller.set_aim_zoom(false)
 
@@ -808,149 +976,24 @@ func _try_stealth_finish() -> void:
 		return
 	if not can_attack:
 		return
-	if _is_backstab_executing():
-		return
 	if _head_launch_attack_input_blocked():
 		return
 	if not stealth_target.has_method("try_stealth_finish"):
 		return
 
 	can_attack = false
-	_cancel_bow_aim()
 	noise_timer = maxf(noise_timer, 0.35)
-	_face_backstab_target(stealth_target)
 	if animator != null:
-		# A LETHAL finish (target under its execution threshold) plays the
-		# arm-tear club smash; a plain ambush that only deals damage keeps
-		# the quicker finisher pose. The enemy owns the threshold --
-		# is_stealth_finish_lethal() -- so prompt text, damage branch and
-		# animation always agree on which kind this is.
-		var lethal_finish := true
-		if stealth_target.has_method("is_stealth_finish_lethal"):
-			lethal_finish = bool(stealth_target.call("is_stealth_finish_lethal"))
-		animator.trigger_stealth_finish_attack(lethal_finish)
+		# Feedback only: the finisher must not throw the head off the body.
+		animator.trigger_attack(3, false)
 	_flash_player_attack()
 	var finished := bool(stealth_target.call("try_stealth_finish", self, attack_damage, global_position))
 	if not finished:
 		stealth_target = null
-		can_attack = true
-		return
-	_start_backstab_execution(stealth_target, attack_damage, global_position)
 	_set_stealth_prompt("")
 
-func _start_backstab_execution(target: Node3D, damage: int, hit_from: Vector3) -> void:
-	backstab_execution_target = target
-	backstab_execution_damage = damage
-	backstab_execution_hit_from = hit_from
-	backstab_execution_impact_timer = clampf(backstab_execution_impact_time, 0.0, maxf(backstab_execution_duration, 0.01))
-	backstab_execution_recovery_timer = maxf(backstab_execution_duration + backstab_execution_recovery_time, attack_cooldown)
-	backstab_execution_damage_applied = false
-	backstab_execution_in_progress = true
-	if animator != null and not animator.attack_impact_reached.is_connected(_on_backstab_animator_impact):
-		animator.attack_impact_reached.connect(_on_backstab_animator_impact)
-
-
-func _update_backstab_execution(delta: float) -> void:
-	# Gate on backstab_execution_in_progress, NOT on the target reference:
-	# GDScript's `== null` / `!= null` treat a freed Object as equal to
-	# null, not just is_instance_valid(). Once the target is queue_free()'d
-	# mid-execution (an instant-kill ambush cleaning up its corpse before
-	# the recovery window ends), a check against the reference itself
-	# would return early here on every subsequent frame and never reach
-	# the cleanup below, leaving can_attack stuck false forever.
-	if not backstab_execution_in_progress:
-		return
-	if backstab_execution_target == null or not is_instance_valid(backstab_execution_target):
-		_cancel_backstab_execution()
-		return
-	if is_dead:
-		_cancel_backstab_execution()
-		return
-
-	_face_backstab_target(backstab_execution_target)
-	backstab_execution_impact_timer = maxf(backstab_execution_impact_timer - delta, 0.0)
-	backstab_execution_recovery_timer = maxf(backstab_execution_recovery_timer - delta, 0.0)
-
-	# Fallback only: normally _on_backstab_animator_impact() (connected to
-	# ProceduralPlayerAnimator.attack_impact_reached in
-	# _start_backstab_execution) applies damage in sync with the strike
-	# pose. This timer exists so damage still lands even if the animator
-	# is missing, the signal never fires for some reason, or the finisher
-	# pose's strike phase somehow lands after backstab_execution_impact_time.
-	if backstab_execution_impact_timer <= 0.0:
-		_apply_backstab_impact_once()
-
-	if backstab_execution_recovery_timer <= 0.0:
-		_finish_backstab_execution()
-
-
-func _on_backstab_animator_impact() -> void:
-	_apply_backstab_impact_once()
-
-
-func _apply_backstab_impact_once() -> void:
-	if backstab_execution_damage_applied:
-		return
-	if backstab_execution_target == null or not is_instance_valid(backstab_execution_target):
-		return
-	backstab_execution_damage_applied = true
-	if backstab_execution_target.has_method("apply_stealth_finish_impact"):
-		backstab_execution_target.call(
-			"apply_stealth_finish_impact",
-			self,
-			backstab_execution_damage,
-			backstab_execution_hit_from
-		)
-	elif backstab_execution_target.has_method("take_damage"):
-		backstab_execution_target.call("take_damage", backstab_execution_damage, backstab_execution_hit_from, self, "backstab")
-
-
-func _finish_backstab_execution() -> void:
-	if backstab_execution_target != null and is_instance_valid(backstab_execution_target):
-		if backstab_execution_target.has_method("finish_stealth_execution"):
-			backstab_execution_target.call("finish_stealth_execution", self)
-	_clear_backstab_execution_state()
+	await get_tree().create_timer(attack_cooldown).timeout
 	can_attack = true
-
-
-func _cancel_backstab_execution() -> void:
-	if backstab_execution_target != null and is_instance_valid(backstab_execution_target):
-		if backstab_execution_target.has_method("cancel_stealth_execution"):
-			backstab_execution_target.call("cancel_stealth_execution", self)
-	_clear_backstab_execution_state()
-	can_attack = true
-
-
-func _clear_backstab_execution_state() -> void:
-	backstab_execution_target = null
-	backstab_execution_damage = 0
-	backstab_execution_hit_from = Vector3.ZERO
-	backstab_execution_impact_timer = 0.0
-	backstab_execution_recovery_timer = 0.0
-	backstab_execution_damage_applied = false
-	backstab_execution_in_progress = false
-	if animator != null and animator.attack_impact_reached.is_connected(_on_backstab_animator_impact):
-		animator.attack_impact_reached.disconnect(_on_backstab_animator_impact)
-
-
-# Reads the plain backstab_execution_in_progress bool rather than the
-# target reference: every call site in this file (inventory, equip,
-# attack, jump, movement gating) reads this function, and GDScript
-# compares a freed Object as equal to null, so checking the reference
-# itself would silently misreport "not executing" the instant the target
-# is queue_free()'d mid-execution.
-func _is_backstab_executing() -> bool:
-	return backstab_execution_in_progress
-
-
-func _face_backstab_target(target: Node3D) -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	var to_target := target.global_position - global_position
-	to_target.y = 0.0
-	if to_target.length() <= 0.01:
-		return
-	last_facing_direction = to_target.normalized()
 
 
 # right arm -> left arm -> both -> tear the left arm off and swing it.
@@ -1016,13 +1059,9 @@ func _flash_player_attack() -> void:
 
 
 func _setup_procedural_character() -> void:
-	if animator == null or rig == null:
+	# The procedural animator is gone; only the rig's equipment/hitbox wiring stays.
+	if rig == null:
 		return
-
-	animator.rig = rig
-	animator.turn_target = visual_root
-	if animator.has_method("set_player_body_progression_enabled"):
-		animator.set_player_body_progression_enabled(true)
 	if rig.has_method("set_body_hitbox_owner"):
 		rig.set_body_hitbox_owner(self)
 
@@ -1249,55 +1288,6 @@ func collect_bone(bone_id: String) -> void:
 		inventory_component.collect_bone(bone_id)
 
 
-# Drops a carried piece onto the ground as a pickup (right-click on an
-# inventory tile). The piece keeps its instance identity -- quality and marks
-# travel with it, so picking it back up recovers exactly the same bone.
-# Returns {"ok": bool, "message": String}; the inventory UI shows the message
-# either way, so a refusal (locked, in use) is never silent.
-func drop_bone_to_ground(bone_id: String) -> Dictionary:
-	if inventory_component == null:
-		return {"ok": false, "message": "No inventory."}
-	var instance_id := _droppable_copy_of(bone_id)
-	if instance_id == "":
-		return {"ok": false, "message": "That piece is worn right now. Unequip it before dropping."}
-	if not inventory_component.can_remove_bone(instance_id):
-		return {"ok": false, "message": BoneRulesService.display_name_with_slot(instance_id) + " is locked. Press L to unlock it before dropping."}
-	if not inventory_component.remove_bone(instance_id):
-		return {"ok": false, "message": "That piece is no longer in the inventory."}
-
-	var pickup := BONE_PICKUP_SCENE.instantiate()
-	get_parent().add_child(pickup)
-	var pickup_node := pickup as Node3D
-	if pickup_node != null:
-		var forward := -global_transform.basis.z
-		forward.y = 0.0
-		forward = forward.normalized() if forward.length() > 0.01 else Vector3.FORWARD
-		var spot := global_position + forward * 1.2
-		# Same ground height enemy drops use, so the pickup never spawns
-		# floating or buried on sloped test terrain.
-		pickup_node.global_position = Vector3(spot.x, 0.05, spot.z)
-	if pickup.has_method("set_bone_id"):
-		pickup.call("set_bone_id", instance_id)
-	GameEvents.drop_spawned.emit(instance_id, pickup, self)
-	print("Dropped ", BoneRulesService.display_name_with_slot(instance_id))
-	return {"ok": true, "message": "Dropped " + BoneRulesService.display_name_with_slot(instance_id) + ". Walk over it and hold the pickup key to take it back."}
-
-
-# The tile the player right-clicked shows one REPRESENTATIVE of a stack, and
-# that representative can be the copy currently worn. Never drop a worn piece
-# out from under the player: prefer the clicked instance if it is free,
-# otherwise any identical carried copy that is not equipped.
-func _droppable_copy_of(bone_id: String) -> String:
-	if not has_bone_equipped(bone_id):
-		return bone_id if get_inventory_items().has(bone_id) else ""
-	var key := BoneInstanceService.stack_key_for(bone_id)
-	for item in get_inventory_items():
-		var id := str(item)
-		if id != bone_id and not has_bone_equipped(id) and BoneInstanceService.stack_key_for(id) == key:
-			return id
-	return ""
-
-
 # Kept so arena objects can still detect "this body is the player." With multi-slot
 # equipping, trials should use has_bone_equipped() instead of a single active id.
 func get_equipped_bone_id() -> String:
@@ -1337,93 +1327,13 @@ func get_equipped_bone_for_slot(slot: String) -> String:
 
 
 func get_inventory_stats_snapshot() -> Dictionary:
-	# BoneRulesService.player_stats_with_equipment computes load/quality
-	# fields on every recalculation but nothing previously read them past
-	# PlayerStatsComponent.calculate(); expose the cached result here so any
-	# consumer (inventory UI, HUD, future tooltips) can show that context
-	# without recomputing equipment stats.
 	return {
 		"move_speed": move_speed,
 		"attack_range": attack_range,
 		"attack_damage": attack_damage,
 		"health": health,
 		"max_health": max_health,
-		"equipment_weight": float(last_calculated_stats.get("equipment_weight", 0.0)),
-		"inventory_weight": float(last_calculated_stats.get("inventory_weight", 0.0)),
-		"load_speed_penalty": float(last_calculated_stats.get("load_speed_penalty", 0.0)),
-		"quality_damage_percent": float(last_calculated_stats.get("quality_damage_percent", 0.0)),
-		"quality_speed_percent": float(last_calculated_stats.get("quality_speed_percent", 0.0)),
-		"quality_health_percent": float(last_calculated_stats.get("quality_health_percent", 0.0)),
-		"quality_weight_percent": float(last_calculated_stats.get("quality_weight_percent", 0.0)),
 	}
-
-
-func save_equipment_build(index: int) -> Dictionary:
-	if equipment_builds_component == null:
-		return {"ok": false, "message": "Equipment builds are not ready."}
-	return equipment_builds_component.save_current_build(index)
-
-
-func apply_equipment_build(index: int) -> Dictionary:
-	if equipment_builds_component == null:
-		return {"ok": false, "message": "Equipment builds are not ready."}
-	return equipment_builds_component.apply_build(index)
-
-
-func get_equipment_build_summaries() -> Array:
-	if equipment_builds_component == null:
-		return []
-	return equipment_builds_component.get_build_summaries()
-
-
-func get_equipment_build_report(index: int) -> Dictionary:
-	if equipment_builds_component == null:
-		return {}
-	return equipment_builds_component.get_build_report(index)
-
-
-# Equips the best carried piece per slot for one criterion (or "balanced").
-# The plan is computed pure in BoneRulesService; this only applies it in the
-# torso-first order the equipment rules require.
-func auto_equip_best(criterion: String) -> Dictionary:
-	var plan: Dictionary = BoneRulesService.plan_best_equipment(get_inventory_items(), criterion, get_equipment_state())
-	var changed := 0
-	for slot_id in BoneRulesService.AUTO_EQUIP_SLOT_ORDER:
-		var piece := str(plan.get(slot_id, ""))
-		if piece == "" or get_equipped_bone_for_slot(str(slot_id)) == piece:
-			continue
-		equip_bone(piece, str(slot_id))
-		if get_equipped_bone_for_slot(str(slot_id)) == piece:
-			changed += 1
-	var labels := {"attack_damage": "Damage", "max_health": "Health", "move_speed": "Speed", "attack_range": "Reach", "balanced": "Balanced"}
-	return {
-		"equipped": changed,
-		"message": "Auto-equip (%s): %d piece(s) changed." % [str(labels.get(criterion, criterion)), changed],
-	}
-
-
-func get_equipment_build_indices() -> Array:
-	if equipment_builds_component == null:
-		return []
-	return equipment_builds_component.build_indices()
-
-
-func create_equipment_build() -> int:
-	if equipment_builds_component == null:
-		return 1
-	return equipment_builds_component.create_build()
-
-
-func delete_equipment_build(index: int) -> Dictionary:
-	if equipment_builds_component == null:
-		return {"ok": false, "message": "Equipment builds are not ready."}
-	return equipment_builds_component.delete_build(index)
-
-
-func rename_equipment_build(index: int, new_name: String) -> Dictionary:
-	if equipment_builds_component == null:
-		return {"ok": false, "message": "Equipment builds are not ready."}
-	return equipment_builds_component.rename_build(index, new_name)
 
 
 # Enemies call this when they land a contact hit on the player.
@@ -1505,9 +1415,9 @@ func _equip_next_bone() -> void:
 		inventory_component.equip_next_bone()
 
 
-func equip_bone(bone_id: String, target_slot: String = "") -> void:
+func equip_bone(bone_id: String) -> void:
 	if equipment_component != null:
-		equipment_component.equip_bone(bone_id, target_slot)
+		equipment_component.equip_bone(bone_id)
 
 
 func unequip_slot(slot: String) -> void:
@@ -1558,7 +1468,6 @@ func _recalculate_stats() -> void:
 		return
 	var equipment_state: Dictionary = get_equipment_state()
 	var calculated_stats: Dictionary = stats_component.calculate(equipment_state, health, max_health)
-	last_calculated_stats = calculated_stats
 	move_speed = float(calculated_stats["move_speed"])
 	attack_range = float(calculated_stats["attack_range"])
 	attack_damage = int(calculated_stats["attack_damage"])
@@ -1574,10 +1483,6 @@ func _recalculate_stats() -> void:
 
 func _update_stealth_finish_prompt() -> void:
 	stealth_target = _find_stealth_target()
-	# The rig telegraphs availability: same condition as the prompt itself,
-	# refreshed every frame from one place so stance and text cannot disagree.
-	if animator != null and animator.has_method("set_stealth_ready"):
-		animator.set_stealth_ready(stealth_target != null and not is_dead and not _is_backstab_executing())
 	if stealth_target == null:
 		_set_stealth_prompt("")
 		return

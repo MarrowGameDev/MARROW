@@ -8,46 +8,12 @@ const PLAYER_BONUS_DEFAULTS := {
 	"max_health": 0,
 }
 
-const SLOT_HEAD := "head"
-const SLOT_TORSO := "torso"
-const SLOT_LEFT_ARM := "left_arm"
-const SLOT_RIGHT_ARM := "right_arm"
-const SLOT_LEFT_LEG := "left_leg"
-const SLOT_RIGHT_LEG := "right_leg"
-const CANONICAL_BODY_SLOTS := [
-	SLOT_HEAD,
-	SLOT_TORSO,
-	SLOT_LEFT_ARM,
-	SLOT_RIGHT_ARM,
-	SLOT_LEFT_LEG,
-	SLOT_RIGHT_LEG,
-]
-# Only aliases with a real consumer in data/bones/*.tres or generated bone
-# definitions belong here. "body" and "legs" are the raw slot values still
-# authored in existing .tres files; "ribs"/"ribcage"/"chest"/"arm_left"/
-# "arm_right"/"leg_left"/"leg_right" were removed because no data file or
-# script ever produces them (verified: grep -rn for each across scripts/,
-# data/, docs/ found zero matches outside this map itself).
-const LEGACY_SLOT_ALIASES := {
-	"body": "torso",
-	"legs": "right_leg",
-}
 const SLOT_DISPLAY := {
-	"head": "Head",
-	"torso": "Torso",
-	"left_arm": "Left Arm",
 	"right_arm": "Right Arm",
-	"left_leg": "Left Leg",
-	"right_leg": "Right Leg",
-}
-# Grouped filters for the inventory dropdown, which offers Arms and Legs rather
-# than one entry per side. These belong to the FILTER vocabulary only and are
-# never equipment slot ids -- hence the prefix. A bare "legs" key would be
-# actively wrong here: LEGACY_SLOT_ALIASES already maps "legs" to right_leg, so
-# normalize_slot_id would quietly turn a both-legs filter into a right-leg one.
-const INVENTORY_FILTER_GROUPS := {
-	"group_arms": [SLOT_LEFT_ARM, SLOT_RIGHT_ARM],
-	"group_legs": [SLOT_LEFT_LEG, SLOT_RIGHT_LEG],
+	"left_arm": "Left Arm",
+	"legs": "Legs",
+	"body": "Body",
+	"head": "Head",
 }
 
 # Which SOCKETS a slot paints. The *_lower keys are the split forearms/shins, and
@@ -64,18 +30,17 @@ const INVENTORY_FILTER_GROUPS := {
 const SLOT_TO_SOCKETS := {
 	"right_arm": ["right_arm", "right_arm_lower"],
 	"left_arm": ["left_arm", "left_arm_lower"],
-	"right_leg": ["right_leg", "right_leg_lower", "right_foot"],
-	"left_leg": ["left_leg", "left_leg_lower", "left_foot"],
-	"torso": ["body", "body_lower"],
+	"legs": ["left_leg", "right_leg", "left_leg_lower", "right_leg_lower", "left_foot", "right_foot"],
+	"body": ["body", "body_lower"],
 	"head": ["head"],
 }
 
 const LIMB_TO_SLOT := {
 	"right_arm": "right_arm",
 	"left_arm": "left_arm",
-	"right_leg": "right_leg",
-	"left_leg": "left_leg",
-	"body": "torso",
+	"right_leg": "legs",
+	"left_leg": "legs",
+	"body": "body",
 	"head": "head",
 }
 
@@ -102,118 +67,31 @@ const SOURCE_COLOR := {
 
 
 static func slot_for_bone(bone_id: String) -> String:
-	var slots := compatible_slots_for_bone(bone_id)
-	if not slots.is_empty():
-		return slots[0]
-	return ""
-
-
-static func compatible_slots_for_bone(bone_id: String) -> Array[String]:
-	# Build the result via an explicitly declared Array[String] and
-	# .append(), not array literals/casts: a plain `[a, b]` literal (or
-	# `[a, b] as Array[String]`) built inside this function does not
-	# reliably carry Array[String] runtime typing across a static-function
-	# call from another class, which raised "Trying to assign an array of
-	# type Array to a variable of type Array[String]" for every caller
-	# outside this file that assigned the return value to a typed local.
-	var result: Array[String] = []
-	# Resolving here covers slot_for_bone, can_equip_bone_in_slot and
-	# inventory_filter_matches_bone, which all funnel through this function.
-	var resolved_id := BoneInstanceService.bone_id_of(bone_id)
-	var definition: Dictionary = BoneDatabase.get_def(resolved_id)
+	var definition: Dictionary = BoneDatabase.get_def(bone_id)
 	if definition.is_empty():
-		definition = generated_limb_definition_for(resolved_id)
-	if definition.is_empty():
-		return result
-
-	var raw_slot := str(definition.get("slot", ""))
-	if raw_slot == "legs":
-		result.append(SLOT_RIGHT_LEG)
-		result.append(SLOT_LEFT_LEG)
-		return result
-	if not definition.has("limb_key") and raw_slot == SLOT_RIGHT_ARM:
-		result.append(SLOT_RIGHT_ARM)
-		result.append(SLOT_LEFT_ARM)
-		return result
-
-	var normalized := normalize_slot_id(raw_slot)
-	if normalized != "":
-		result.append(normalized)
-	return result
-
-
-static func can_equip_bone_in_slot(bone_id: String, slot_id: String) -> bool:
-	return compatible_slots_for_bone(bone_id).has(normalize_slot_id(slot_id))
-
-
-static func normalize_slot_id(slot_id: String) -> String:
-	var clean_slot := slot_id.strip_edges()
-	if SLOT_DISPLAY.has(clean_slot):
-		return clean_slot
-	return str(LEGACY_SLOT_ALIASES.get(clean_slot, ""))
+		definition = generated_limb_definition_for(bone_id)
+	return str(definition.get("slot", ""))
 
 
 static func slot_display_name(slot_id: String) -> String:
-	return str(SLOT_DISPLAY.get(normalize_slot_id(slot_id), ""))
+	return str(SLOT_DISPLAY.get(slot_id, ""))
 
 
 static func socket_keys_for_slot(slot_id: String) -> Array:
-	return SLOT_TO_SOCKETS.get(normalize_slot_id(slot_id), [])
-
-
-static func slot_sort_index(slot_id: String) -> int:
-	var normalized := normalize_slot_id(slot_id)
-	var index := CANONICAL_BODY_SLOTS.find(normalized)
-	return index if index >= 0 else CANONICAL_BODY_SLOTS.size()
-
-
-static func inventory_filter_matches_bone(filter_slot: String, bone_id: String) -> bool:
-	# Group filters are checked before normalising: normalize_slot_id does not
-	# know these keys and would return "" for them, matching every bone.
-	if INVENTORY_FILTER_GROUPS.has(filter_slot):
-		var compatible: Array[String] = compatible_slots_for_bone(bone_id)
-		for grouped_slot in INVENTORY_FILTER_GROUPS[filter_slot]:
-			if compatible.has(grouped_slot):
-				return true
-		return false
-	var normalized_filter := normalize_slot_id(filter_slot)
-	if normalized_filter == "":
-		return true
-	return compatible_slots_for_bone(bone_id).has(normalized_filter)
-
-
-static func compare_bones_for_inventory(a: String, b: String) -> bool:
-	var a_slot_index := slot_sort_index(slot_for_bone(a))
-	var b_slot_index := slot_sort_index(slot_for_bone(b))
-	if a_slot_index != b_slot_index:
-		return a_slot_index < b_slot_index
-
-	var a_rarity := _definition_rank(a, "rarity_rank")
-	var b_rarity := _definition_rank(b, "rarity_rank")
-	if a_rarity != b_rarity:
-		return a_rarity > b_rarity
-
-	var a_quality := _definition_rank(a, "quality_rank")
-	var b_quality := _definition_rank(b, "quality_rank")
-	if a_quality != b_quality:
-		return a_quality > b_quality
-
-	return _definition_display_name(a).nocasecmp_to(_definition_display_name(b)) < 0
+	return SLOT_TO_SOCKETS.get(slot_id, [])
 
 
 static func primary_limb_keys_for_slot(slot_id: String) -> Array[String]:
-	match normalize_slot_id(slot_id):
-		SLOT_RIGHT_ARM:
-			return ["right_arm"]
-		SLOT_LEFT_ARM:
-			return ["left_arm"]
-		SLOT_RIGHT_LEG:
-			return ["right_leg"]
-		SLOT_LEFT_LEG:
-			return ["left_leg"]
-		SLOT_TORSO:
+	match slot_id:
+		"right_arm":
+			return ["right_arm", "left_arm"]
+		"left_arm":
+			return ["left_arm", "right_arm"]
+		"legs":
+			return ["right_leg", "left_leg"]
+		"body":
 			return ["body"]
-		SLOT_HEAD:
+		"head":
 			return ["head"]
 		_:
 			return []
@@ -229,9 +107,8 @@ static func pickup_bone_id_for_limb(limb_key: String, source_profile: String = "
 	return clean_source + "_" + limb_key + "_bone"
 
 
-static func generated_limb_definition_for(raw_id: String) -> Dictionary:
-	# Accepts an instance_id as well as a bone_id; see BoneInstanceService.
-	var parsed: Dictionary = _parse_generated_limb_bone_id(BoneInstanceService.bone_id_of(raw_id))
+static func generated_limb_definition_for(bone_id: String) -> Dictionary:
+	var parsed: Dictionary = _parse_generated_limb_bone_id(bone_id)
 	if parsed.is_empty():
 		return {}
 
@@ -264,10 +141,6 @@ static func generated_limb_definition_for(raw_id: String) -> Dictionary:
 		"rarity_rank": _generated_limb_rarity_rank(source_profile),
 		"rarity_color": _generated_limb_rarity_color(source_profile),
 		"rarity_drop_weight": _generated_limb_rarity_drop_weight(source_profile),
-		"durability_max": _generated_limb_durability_max(source_profile, limb_key),
-		"durability_start": _generated_limb_durability_start(source_profile, limb_key),
-		"durability_repair_cost": _generated_limb_durability_repair_cost(source_profile, limb_key),
-		"durability_tags": _generated_limb_durability_tags(source_profile, limb_key),
 		"mutation_id": _generated_limb_mutation_id(source_profile, limb_key),
 		"mutation_family": _generated_limb_mutation_family(source_profile),
 		"mutation_stage": _generated_limb_mutation_stage(source_profile),
@@ -332,22 +205,6 @@ static func _parse_generated_limb_bone_id(bone_id: String) -> Dictionary:
 				"limb": limb_key,
 			}
 	return {}
-
-
-static func _definition_for_sort(bone_id: String) -> Dictionary:
-	var definition: Dictionary = BoneDatabase.get_def(bone_id)
-	if not definition.is_empty():
-		return definition
-	return generated_limb_definition_for(bone_id)
-
-
-static func _definition_rank(bone_id: String, key: String) -> int:
-	return int(_definition_for_sort(bone_id).get(key, 0))
-
-
-static func _definition_display_name(bone_id: String) -> String:
-	var definition := _definition_for_sort(bone_id)
-	return str(definition.get("display_name", bone_id))
 
 
 static func _generated_limb_quality(source_profile: String) -> String:
@@ -442,51 +299,6 @@ static func _generated_limb_rarity_color(source_profile: String) -> Color:
 
 static func _generated_limb_rarity_drop_weight(source_profile: String) -> float:
 	return BoneDefinition.default_rarity_drop_weight(_generated_limb_rarity(source_profile))
-
-
-static func _generated_limb_durability_max(source_profile: String, limb_key: String) -> int:
-	var base := 80
-	match limb_key:
-		"body":
-			base = 120
-		"head":
-			base = 100
-		"right_leg", "left_leg":
-			base = 85
-
-	match source_profile:
-		"gorilla":
-			return roundi(float(base) * 1.25)
-		"lizard":
-			return roundi(float(base) * 0.85)
-		_:
-			return base
-
-
-static func _generated_limb_durability_start(source_profile: String, limb_key: String) -> int:
-	return _generated_limb_durability_max(source_profile, limb_key)
-
-
-static func _generated_limb_durability_repair_cost(source_profile: String, limb_key: String) -> int:
-	match source_profile:
-		"gorilla":
-			return 3
-		"lizard":
-			return 1
-		_:
-			return 2 if limb_key == "body" else 1
-
-
-static func _generated_limb_durability_tags(source_profile: String, limb_key: String) -> Array[String]:
-	var tags: Array[String] = [limb_key]
-	match source_profile:
-		"gorilla":
-			tags.append("reinforced")
-		"lizard":
-			tags.append("fragile")
-	if limb_key == "body" or limb_key == "head":
-		tags.append("core")
-	return tags
 
 
 static func _generated_limb_mutation_id(source_profile: String, limb_key: String) -> String:

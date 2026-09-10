@@ -195,6 +195,13 @@ const ENEMY_HITBOX_ACCURACY_SCALE := {
 @export var socket_marker_radius := 0.035
 @export var socket_marker_color := Color(1.0, 0.25, 0.85, 1.0)
 
+@export_group("Hurtboxes")
+# Live-tunable multiplier on every body-part hurtbox size (the volumes that TAKE
+# damage: head, body, arms, legs, feet). Change it in the Inspector — even on the
+# running scene via the remote tree — and all hurtboxes resize immediately. Turn on
+# Debug > Visible Collision Shapes to see them.
+@export var body_hitbox_scale := 1.0: set = _set_body_hitbox_scale
+
 @export_group("")
 # Show/hide body parts. Used for the "limbs only" placeholder while a real rigged
 # skeleton is being made in Blender — leave the torso/head out, keep arms + legs.
@@ -592,11 +599,6 @@ func _set_mesh_visibility_recursive(root: Node, is_visible: bool) -> void:
 
 
 func has_equipped_slot(slot_id: String) -> bool:
-	if slot_id == "legs":
-		return equipped_ids.has(EquipmentRulesService.SLOT_RIGHT_LEG) or equipped_ids.has(EquipmentRulesService.SLOT_LEFT_LEG)
-	var normalized := EquipmentRulesService.normalize_slot_id(slot_id)
-	if normalized != "":
-		return equipped_ids.has(normalized)
 	return equipped_ids.has(slot_id)
 
 
@@ -660,26 +662,8 @@ func _get_head_model_mesh() -> Mesh:
 
 # Equip a bone: swap the target socket(s) grey limb for a bone-colored, bone-scaled
 # part. bone_def comes from BoneRulesService.definition_for(bone_id).
-# Tints every mesh of a freshly built limb by its piece's quality.
-#
-# Only touches material_override, which _make_limb created for THIS part a
-# moment ago, so no shared or imported material is ever mutated -- two pieces
-# built from the same base look different without affecting each other. A head
-# kept on its imported material has no override and is skipped untouched.
-func _apply_quality_visual(node: Node, bone_id: String) -> void:
-	var mesh_instance := node as MeshInstance3D
-	if mesh_instance != null:
-		var material := mesh_instance.material_override as StandardMaterial3D
-		if material != null:
-			BoneQualityService.apply_instance_to_material(material, bone_id)
-	for child in node.get_children():
-		_apply_quality_visual(child, bone_id)
-
-
 func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
-	var slot_id := EquipmentRulesService.normalize_slot_id(str(bone_def.get("slot", "")))
-	if slot_id == "":
-		slot_id = str(bone_def.get("slot", ""))
+	var slot_id: String = bone_def.get("slot", "")
 	var socket_keys: Array = EquipmentRulesService.socket_keys_for_slot(slot_id)
 	if socket_keys.is_empty():
 		push_warning("ModularSkeletonRig: no sockets for slot '" + slot_id + "'")
@@ -705,9 +689,6 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 			base_visuals[key].visible = false
 
 		var part := _make_limb(key, color, vis_scale)
-		# Step 2 of the visual stack: the base material is already on the part,
-		# so quality tints it in place. Runs once per equip, never per frame.
-		_apply_quality_visual(part, bone_id)
 		# Per-bone corrections on top of the natural hang offset. Both ADD rather
 		# than assign: grey boxes leave _make_limb at rotation zero so the result is
 		# unchanged for them, but the head model arrives already rotated by
@@ -726,9 +707,6 @@ func equip_bone(bone_id: String, bone_def: Dictionary) -> void:
 
 
 func unequip_slot(slot_id: String) -> void:
-	var normalized_slot := EquipmentRulesService.normalize_slot_id(slot_id)
-	if normalized_slot != "":
-		slot_id = normalized_slot
 	if equipped_parts.has(slot_id):
 		for part in equipped_parts[slot_id]:
 			if is_instance_valid(part):
@@ -748,9 +726,8 @@ func unequip_slot(slot_id: String) -> void:
 func get_equipped_bone_defs() -> Array:
 	var defs: Array = []
 	for slot_id in equipped_ids:
-		var def := BoneRulesService.definition_for(equipped_ids[slot_id]).duplicate(true)
+		var def := BoneRulesService.definition_for(equipped_ids[slot_id])
 		if not def.is_empty():
-			def["slot"] = "body" if str(slot_id) == EquipmentRulesService.SLOT_TORSO else str(slot_id)
 			defs.append(def)
 	return defs
 
@@ -765,7 +742,7 @@ func _refresh_body_progression_visibility() -> void:
 		if visual == null:
 			continue
 		visual.visible = _base_socket_should_show(socket_key)
-	if has_equipped_slot("head") and not has_equipped_slot("body"):
+	if equipped_ids.has("head") and not equipped_ids.has("body"):
 		set_head_only_visual_guard(true)
 	_refresh_body_hitbox_enabled()
 
@@ -776,26 +753,26 @@ func _base_socket_should_show(socket_key: String) -> bool:
 	if socket_key == "head":
 		return true
 	if socket_key == "body" or socket_key == "body_lower":
-		return has_equipped_slot("body")
+		return equipped_ids.has("body")
 	# The lower halves follow their upper: without these branches they fall through
 	# to `return true` below and, with body progression on, an unearned forearm or
 	# shin renders on its own while the upper half is correctly hidden.
 	if socket_key == "right_arm" or socket_key == "right_arm_lower":
-		return has_equipped_slot("right_arm")
+		return equipped_ids.has("right_arm")
 	if socket_key == "left_arm" or socket_key == "left_arm_lower":
-		return has_equipped_slot("left_arm")
-	if socket_key == "right_leg" or socket_key == "right_leg_lower" or socket_key == "right_foot":
-		return has_equipped_slot("right_leg")
-	if socket_key == "left_leg" or socket_key == "left_leg_lower" or socket_key == "left_foot":
-		return has_equipped_slot("left_leg")
+		return equipped_ids.has("left_arm")
+	if (
+		socket_key == "right_leg" or socket_key == "left_leg"
+		or socket_key == "right_leg_lower" or socket_key == "left_leg_lower"
+		or socket_key == "right_foot" or socket_key == "left_foot"
+	):
+		return equipped_ids.has("legs")
 	return true
 
 
 func _socket_is_equipped(socket_key: String) -> bool:
-	if socket_key == "right_foot":
-		return has_equipped_slot("right_leg")
-	if socket_key == "left_foot":
-		return has_equipped_slot("left_leg")
+	if socket_key == "right_foot" or socket_key == "left_foot":
+		return equipped_ids.has("legs")
 	for slot_id in equipped_ids:
 		if EquipmentRulesService.socket_keys_for_slot(str(slot_id)).has(socket_key):
 			return true
@@ -890,9 +867,17 @@ func _apply_body_hitbox_shape(socket_key: String, size_value: Vector3, offset_va
 		box = BoxShape3D.new()
 		shape_node.shape = box
 
-	box.size = _positive_vector3(_enemy_adjusted_hitbox_size(socket_key, size_value), MIN_HITBOX_SIZE)
+	box.size = _positive_vector3(_enemy_adjusted_hitbox_size(socket_key, size_value) * body_hitbox_scale, MIN_HITBOX_SIZE)
 	shape_node.position = offset_value
 	shape_node.rotation = rotation_value
+
+
+# Re-apply every hurtbox at the new scale (works live via the remote inspector).
+func _set_body_hitbox_scale(v: float) -> void:
+	body_hitbox_scale = maxf(v, 0.05)
+	for socket_key in body_hitbox_configs:
+		var cfg: Dictionary = body_hitbox_configs[socket_key]
+		_apply_body_hitbox_shape(str(socket_key), cfg["size"], cfg["offset"], cfg["rotation"])
 
 
 func _refresh_body_hitbox_shapes() -> void:

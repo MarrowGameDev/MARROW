@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- main square -->
+    <path d="M28 18 H172
+             M182 28 V172
+             M172 182 H28
+             M18 172 V28" />
+    <!-- corner diamonds -->
+    <path d="M18 18 L28 8 L38 18 L28 28 Z"/>
+    <path d="M172 18 L182 8 L192 18 L182 28 Z"/>
+    <path d="M18 182 L28 172 L38 182 L28 192 Z"/>
+    <path d="M172 182 L182 172 L192 182 L182 192 Z"/>
+    <!-- short corner connectors -->
+    <path d="M28 28 H38 M28 28 V38
+             M172 28 H162 M172 28 V38
+             M28 172 H38 M28 172 V162
+             M172 172 H162 M172 172 V162"/>
+    <!-- center sparkle -->
+    <path d="M100 84
+             C104 94 108 98 118 102
+             C108 106 104 110 100 120
+             C96 110 92 106 82 102
+             C92 98 96 94 100 84 Z"/>
+  </g>
+</svg>

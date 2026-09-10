@@ -1,14 +1,17 @@
 [gd_scene format=3 uid="uid://dcbkbuks2hqc6"]
 
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
-[ext_resource type="PackedScene" path="res://scenes/enemy.tscn" id="2_enemy"]
-[ext_resource type="Script" uid="uid://ccq8ks03chql6" path="res://scripts/arena_goal_manager.gd" id="3_goal_manager"]
-[ext_resource type="PackedScene" path="res://scenes/bone_trial_gate.tscn" id="4_trial_gate"]
-[ext_resource type="PackedScene" path="res://scenes/exit_portal.tscn" id="5_exit_portal"]
-[ext_resource type="Script" uid="uid://ifhxnyqjqy1o" path="res://scripts/world_map_manager.gd" id="6_world_map_manager"]
-[ext_resource type="PackedScene" path="res://scenes/open_world_stage.tscn" id="7_open_world_stage"]
-[ext_resource type="PackedScene" path="res://scenes/guide_wisp.tscn" id="8_guide_wisp"]
-[ext_resource type="Script" uid="uid://c4f5w67u7swm4" path="res://scripts/tutorial_island_builder.gd" id="9_tutorial_island"]
+[ext_resource type="PackedScene" uid="uid://bdlcrnmw01fyd" path="res://assets/puppet_workshop.glb" id="2_workshop"]
+[ext_resource type="PackedScene" uid="uid://dc5djywugsgvy" path="res://assets/marionette_hanging.glb" id="3_hanging"]
+[ext_resource type="PackedScene" uid="uid://b5x4qo6l4jvwi" path="res://assets/wooden+crate+3d+model.fbx" id="4_crate"]
+[ext_resource type="PackedScene" uid="uid://d2un0d3a5hy1h" path="res://assets/weathered+wooden+crate+3d+model.fbx" id="5_crate_weathered"]
+[ext_resource type="PackedScene" uid="uid://dptva1ot4cidj" path="res://assets/puppets_group.glb" id="6_puppets"]
+[ext_resource type="PackedScene" uid="uid://bbcofilkaai05" path="res://assets/broken_marionettes.glb" id="8_eb6dy"]
+[ext_resource type="PackedScene" uid="uid://cnre12a4x71b2" path="res://assets/empty_house.glb" id="11_eb6dy"]
+[ext_resource type="PackedScene" uid="uid://cdh0wqobvpwci" path="res://assets/wall_torch.glb" id="12_trceg"]
+[ext_resource type="PackedScene" uid="uid://ruxo2pd1cgc" path="res://assets/stone_cottage.glb" id="13_jkv2x"]
+[ext_resource type="PackedScene" uid="uid://dky2xkph3bk27" path="res://assets/abandoned_stone_house.glb" id="14_jbj1t"]
+[ext_resource type="PackedScene" uid="uid://c5m3ke4w6446e" path="res://assets/stone_house.glb" id="15_muem4"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -18,192 +21,73 @@ ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.55
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
-size = Vector3(100, 0.15, 100)
+size = Vector3(106, 0.15, 81)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
-albedo_color = Color(0.28, 0.45, 0.32, 1)
+albedo_color = Color(0.44705883, 0.41960785, 0.35686275, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
 size = Vector3(100, 0.15, 100)
 
-[sub_resource type="BoxMesh" id="BoxMesh_sight_wall"]
+[node name="main" type="Node3D" unique_id=1406300441]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sight_wall"]
-albedo_color = Color(0.42, 0.45, 0.5, 1)
-roughness = 0.9
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_sight_wall"]
-
-[node name="Main" type="Node3D" unique_id=176242980]
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1079248362]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1658759965]
 environment = SubResource("Environment_main")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1629783351]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1400901996]
 transform = Transform3D(0.86602527, 0.3535535, -0.35355362, 0, 0.7071069, 0.70710665, 0.50000024, -0.6123722, 0.61237246, 0, 0, 0)
 light_energy = 2.5
 shadow_enabled = true
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=2060205752]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=2057089493]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1755857429]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.001005888, 0.003558278, -0.0018453598)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=822212144]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -2.2351742e-08, 32.5)
 mesh = SubResource("BoxMesh_ground")
 surface_material_override/0 = SubResource("StandardMaterial3D_ground")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=104640575]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=935072516]
 shape = SubResource("BoxShape3D_ground")
 
-[node name="Player" parent="." unique_id=1066279563 instance=ExtResource("1_player")]
+[node name="Player" parent="." unique_id=936441821 instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
 
-[node name="GuideWisp" parent="." unique_id=1534095449 instance=ExtResource("8_guide_wisp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 1.8, 1.8)
+[node name="PuppetWorkshop" parent="." unique_id=1438117777 instance=ExtResource("2_workshop")]
+transform = Transform3D(5.603222, 0, -4.5374, 0, 7.21, 0, 4.5374, 0, 5.603222, 3, -0.02, 0)
 
-[node name="ArenaGoalManager" type="Node" parent="." unique_id=1133262589]
-script = ExtResource("3_goal_manager")
+[node name="WeatheredCrate" parent="PuppetWorkshop" unique_id=965546390 instance=ExtResource("5_crate_weathered")]
+transform = Transform3D(0.3686324, 0, 0.29851264, 0, 0.47434124, 0, -0.29851264, 0, 0.3686324, -0.6930022, 0.006934813, 0.02577582)
 
-[node name="WorldMapManager" type="Node" parent="." unique_id=1259539521]
-script = ExtResource("6_world_map_manager")
+[node name="WoodenCrate" parent="PuppetWorkshop" unique_id=48895333 instance=ExtResource("4_crate")]
+transform = Transform3D(0.24850392, 0, 0.023928195, 0, 0.24965326, 0, -0.023928195, 0, 0.24850392, 0.5930938, 0.22746187, -0.1072782)
 
-[node name="DemoIslandBuilder" type="Node3D" parent="." unique_id=947004487]
-script = ExtResource("9_tutorial_island")
+[node name="WoodenCrate2" parent="PuppetWorkshop/WoodenCrate" unique_id=1804280068 instance=ExtResource("4_crate")]
+transform = Transform3D(-3.6450313e-08, 0.833886, 0.5519371, -1.0000001, -4.3711395e-08, 0, 2.4125937e-08, -0.55193716, 0.83388597, -0.43977427, -0.40555564, 0.1911465)
 
-[node name="OpenWorldStages" type="Node3D" parent="." unique_id=287229087]
+[node name="broken_marionettes" parent="PuppetWorkshop" unique_id=686615799 instance=ExtResource("8_eb6dy")]
+transform = Transform3D(0.65750223, 0, 0.5324348, 0, 0.8460472, 0, -0.5324348, 0, 0.65750223, -0.046278685, 0.0027739252, -0.49793056)
 
-[node name="BonefieldHub" parent="OpenWorldStages" unique_id=2024678571 instance=ExtResource("7_open_world_stage")]
-stage_id = "bonefield_hub"
-stage_name = "Bonefield Hub"
-recommended_bone = "Any"
-description = "Safe center. Learn movement, combat, and bone swapping."
-stage_color = Color(0.34, 0.62, 0.38, 1)
-trigger_size = Vector3(18, 4, 18)
+[node name="MarionetteHanging" parent="." unique_id=448295887 instance=ExtResource("3_hanging")]
+transform = Transform3D(-5.265435, 0, -3.0400007, 0, 6.080001, 0, 3.0400007, 0, -5.265435, 0, 4.85, 4)
 
-[node name="FirstHuntField" parent="OpenWorldStages" unique_id=2064457474 instance=ExtResource("7_open_world_stage")]
-transform = Transform3D(1.35, 0, 0, 0, 1, 0, 0, 0, 1.1, 0, 0, -5.5)
-stage_id = "first_hunt_field"
-stage_name = "First Hunt Field"
-difficulty = 2
-recommended_bone = "Any"
-description = "Starter enemies drop the first build bones."
-stage_color = Color(0.78, 0.58, 0.25, 1)
-trigger_size = Vector3(20, 4, 16)
+[node name="puppets_group" parent="." unique_id=855425155 instance=ExtResource("6_puppets")]
+transform = Transform3D(2.2465484, 0, 8.384235, 0, 8.679998, 0, -8.384235, 0, 2.2465484, -5, 0.46, 0)
 
-[node name="ReachRidge" parent="OpenWorldStages" unique_id=797892736 instance=ExtResource("7_open_world_stage")]
-transform = Transform3D(1.15, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, -8)
-stage_id = "reach_ridge"
-stage_name = "Reach Ridge"
-difficulty = 3
-recommended_bone = "Arm Bone"
-description = "Wide gaps and reach checks. Built for longer attacks."
-stage_color = Color(1, 0.82, 0.18, 1)
-trigger_size = Vector3(16, 4, 14)
+[node name="stone_cottage" parent="." unique_id=1501249138 instance=ExtResource("13_jkv2x")]
+transform = Transform3D(-1.5692391e-06, 0, 35.900005, 0, 35.900005, 0, -35.900005, 0, -1.5692391e-06, -31, 0, 49)
 
-[node name="QuickrootRun" parent="OpenWorldStages" unique_id=1323974375 instance=ExtResource("7_open_world_stage")]
-transform = Transform3D(1.4, 0, 0, 0, 1, 0, 0, 0, 0.75, -18, 0, -8)
-stage_id = "quickroot_run"
-stage_name = "Quickroot Run"
-difficulty = 4
-recommended_bone = "Leg Bone"
-description = "Long paths and speed challenges. Movement matters here."
-stage_color = Color(0.25, 0.95, 0.55, 1)
-trigger_size = Vector3(20, 4, 12)
+[node name="abandoned_stone_house" parent="." unique_id=2128801480 instance=ExtResource("14_jbj1t")]
+transform = Transform3D(-1.8588266e-06, 0, -42.524998, 0, 42.524998, 0, 42.524998, 0, -1.8588266e-06, 32, 0, 72)
 
-[node name="HeavyRuin" parent="OpenWorldStages" unique_id=1549897183 instance=ExtResource("7_open_world_stage")]
-transform = Transform3D(1.2, 0, 0, 0, 1, 0, 0, 0, 1.2, 0, 0, -22)
-stage_id = "heavy_ruin"
-stage_name = "Heavy Ruin"
-difficulty = 5
-recommended_bone = "Heavy Bone"
-description = "Harder enemies and breakable-style gates. Power matters here."
-stage_color = Color(0.65, 0.35, 1, 1)
-trigger_size = Vector3(17, 4, 17)
+[node name="stone_house" parent="." unique_id=1093156791 instance=ExtResource("15_muem4")]
+transform = Transform3D(-9.536743e-07, 0, -46.2, 0, 46.2, 0, 46.2, 0, -9.536743e-07, 32.3, 0, 39.3)
 
-[node name="RibfenBonus" parent="OpenWorldStages" unique_id=1916156361 instance=ExtResource("7_open_world_stage")]
-transform = Transform3D(0.95, 0, 0, 0, 1, 0, 0, 0, 0.95, -13, 0, 5)
-stage_id = "ribfen_bonus"
-stage_name = "Ribfen Bonus"
-difficulty = 4
-recommended_bone = "Hybrid"
-description = "Optional side-stage for the Rib Bone."
-stage_color = Color(0.35, 0.85, 0.95, 1)
-trigger_size = Vector3(13, 4, 13)
+[node name="empty_house" parent="." unique_id=1074355388 instance=ExtResource("11_eb6dy")]
+transform = Transform3D(28.249954, -0.04437496, 0, 0.04930552, 25.424953, 0, 0, 0, 36.724995, -1, -0.69, 4)
 
-[node name="ElderMarrowGate" parent="OpenWorldStages" unique_id=1796842863 instance=ExtResource("7_open_world_stage")]
-transform = Transform3D(1.6, 0, 0, 0, 1, 0, 0, 0, 1.1, 22, 0, -25)
-stage_id = "elder_marrow_gate"
-stage_name = "Elder Marrow Gate"
-difficulty = 7
-recommended_bone = "All bones"
-description = "Future high-difficulty stage. Locked in design, open for grey-boxing."
-stage_color = Color(0.85, 0.22, 0.22, 1)
-trigger_size = Vector3(22, 4, 16)
+[node name="wall_torch" parent="." unique_id=393336610 instance=ExtResource("12_trceg")]
+transform = Transform3D(2.46, 0, 0, 0, 2.46, 0, 0, 0, 2.46, -7.26, 4, 12)
 
-[node name="SightTestWalls" type="Node3D" parent="." unique_id=780601626]
-
-[node name="CenterHideWall" type="StaticBody3D" parent="SightTestWalls" unique_id=804110685]
-transform = Transform3D(5.5, 0, 0, 0, 2.7, 0, 0, 0, 0.35, 0, 1.25, -2.25)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="SightTestWalls/CenterHideWall" unique_id=2128956337]
-mesh = SubResource("BoxMesh_sight_wall")
-surface_material_override/0 = SubResource("StandardMaterial3D_sight_wall")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="SightTestWalls/CenterHideWall" unique_id=667043251]
-shape = SubResource("BoxShape3D_sight_wall")
-
-[node name="LeftHideWall" type="StaticBody3D" parent="SightTestWalls" unique_id=960188956]
-transform = Transform3D(0.35, 0, 0, 0, 2.7, 0, 0, 0, 3.6, -2.95, 1.25, -4.1)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="SightTestWalls/LeftHideWall" unique_id=652120355]
-mesh = SubResource("BoxMesh_sight_wall")
-surface_material_override/0 = SubResource("StandardMaterial3D_sight_wall")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="SightTestWalls/LeftHideWall" unique_id=912017625]
-shape = SubResource("BoxShape3D_sight_wall")
-
-[node name="RightHideWall" type="StaticBody3D" parent="SightTestWalls" unique_id=1043541319]
-transform = Transform3D(0.35, 0, 0, 0, 2.7, 0, 0, 0, 3.6, 2.95, 1.25, -4.1)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="SightTestWalls/RightHideWall" unique_id=968117913]
-mesh = SubResource("BoxMesh_sight_wall")
-surface_material_override/0 = SubResource("StandardMaterial3D_sight_wall")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="SightTestWalls/RightHideWall" unique_id=727370906]
-shape = SubResource("BoxShape3D_sight_wall")
-
-[node name="EnemyCenter" parent="." unique_id=1151469934 instance=ExtResource("2_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -4)
-dropped_bone_id = "arm_bone"
-
-[node name="EnemyLeft" parent="." unique_id=255865978 instance=ExtResource("2_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.6, -6)
-dropped_bone_id = "leg_bone"
-
-[node name="EnemyRight" parent="." unique_id=851534073 instance=ExtResource("2_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.6, -6)
-dropped_bone_id = "heavy_bone"
-
-[node name="ArmTrialGate" parent="." unique_id=1504883278 instance=ExtResource("4_trial_gate")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.5)
-trial_id = "arm_trial"
-trial_name = "Arm Trial"
-
-[node name="LegTrialGate" parent="." unique_id=1985209370 instance=ExtResource("4_trial_gate")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0, -10.5)
-trial_id = "leg_trial"
-trial_name = "Leg Trial"
-required_bone_id = "leg_bone"
-
-[node name="HeavyTrialGate" parent="." unique_id=1930947214 instance=ExtResource("4_trial_gate")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, -10.5)
-trial_id = "heavy_trial"
-trial_name = "Heavy Trial"
-required_bone_id = "heavy_bone"
-
-[node name="EnemyBonus" parent="." unique_id=1120281399 instance=ExtResource("2_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 2.5)
-dropped_bone_id = "rib_bone"
-
-[node name="ExitPortal" parent="." unique_id=1385022951 instance=ExtResource("5_exit_portal")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+[node name="wall_torch2" parent="." unique_id=1214339897 instance=ExtResource("12_trceg")]
+transform = Transform3D(-2.46, 0, -2.1506003e-07, 0, 2.46, 0, 2.1506003e-07, 0, -2.46, 7.59, 4, 12)

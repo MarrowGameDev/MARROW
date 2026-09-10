@@ -39,10 +39,10 @@ CASES = [
         expected_groups=[("arm_bone", 2)],
     ),
     Case(
-        name="canonical body-slot order overrides pickup order",
+        name="category order keeps first visible id order",
         inventory=["leg_bone", "arm_bone", "leg_bone"],
         equipped={},
-        expected_groups=[("arm_bone", 1), ("leg_bone", 2)],
+        expected_groups=[("leg_bone", 2), ("arm_bone", 1)],
     ),
     Case(
         name="all equipped copies hide the stack",
@@ -86,37 +86,17 @@ def visible_stack_groups(inventory: list[str], equipment_state: dict[str, str]) 
             visible_counts[bone_id] = 0
         visible_counts[bone_id] += 1
 
-    visible_order.sort(key=inventory_sort_key)
     return [(bone_id, visible_counts[bone_id]) for bone_id in visible_order]
-
-
-def inventory_sort_key(bone_id: str) -> tuple[int, str]:
-    slots = {
-        "head_bone": 0,
-        "rib_bone": 1,
-        "body_bone": 1,
-        "arm_bone": 3,
-        "dummy_bone": 3,
-        "leg_bone": 5,
-    }
-    return (slots.get(bone_id, 99), bone_id)
 
 
 def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
     errors: list[str] = []
     required_inventory_fragments = [
-        # Stacks are keyed by BoneInstanceService.stack_key_for (type +
-        # quality + mutation), not by bone_id: a Frail and a Pristine arm are
-        # the same type but must not pile into one tile, because they roll
-        # different effective stats. Each group keeps a representative
-        # instance_id so a unit dragged out of a stack is a real piece.
-        "var counts_by_key: Dictionary = {}",
-        "var representative_by_key: Dictionary = {}",
+        "var visible_counts: Dictionary = {}",
         "var visible_order: Array[String] = []",
-        "var key := BoneInstanceService.stack_key_for(id)",
-        'visible_order.sort_custom(Callable(self, "_compare_inventory_items"))',
-        "counts_by_key[key] = int(counts_by_key[key]) + 1",
-        "tile.setup(id, self, int(counts_by_id.get(id, 1)))",
+        "visible_order.append(id)",
+        "visible_counts[id] = int(visible_counts[id]) + 1",
+        "tile.setup(id, self, int(visible_counts.get(id, 1)))",
     ]
     for fragment in required_inventory_fragments:
         if fragment not in inventory_ui:
@@ -126,11 +106,8 @@ def check_static_contract(inventory_ui: str, item_tile: str) -> list[str]:
         "var stack_count: int = 1",
         "func setup(id: String, player_ref: Node, quantity: int = 1) -> void:",
         "stack_count = maxi(1, quantity)",
-        # The count text is now unconditional and the CHIP carries the
-        # visibility, so a single-copy tile shows no badge at all rather than
-        # an empty label. Both halves are pinned so neither can drift away.
-        '_stack_label.text = "x" + str(stack_count)',
-        "_stack_badge.visible = stack_count > 1",
+        '_stack_label.text = "x" + str(stack_count) if stack_count > 1 else ""',
+        "_stack_label.visible = stack_count > 1",
         'return {"bone_id": bone_id, "source": "item"}',
     ]
     for fragment in required_tile_fragments:

@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://uqbxslc8eolk"]
+
+[ext_resource type="Script" uid="uid://cs42eq2gnxi1v" path="res://scripts/creature_walk_test.gd" id="1_root"]
+[ext_resource type="Script" uid="uid://dktq1jsfpyr53" path="res://scripts/head_only_controller.gd" id="2_head"]
+[ext_resource type="Script" uid="uid://t16i3vqj0fd6" path="res://scripts/head_only_enemy.gd" id="3_enemy"]
+[ext_resource type="Script" uid="uid://mupv7655mrny" path="res://scripts/player_health.gd" id="4_hp"]
+
+[sub_resource type="CapsuleShape3D" id="Cap"]
+radius = 0.4
+height = 1.0
+
+[node name="HeadOnlyTest" type="Node3D" unique_id=1790599274]
+script = ExtResource("1_root")
+
+[node name="Crab" type="CharacterBody3D" parent="." unique_id=1743738232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+script = ExtResource("4_hp")
+
+[node name="Col" type="CollisionShape3D" parent="Crab" unique_id=844263952]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("Cap")
+
+[node name="VisualRoot" type="Node3D" parent="Crab" unique_id=1281950467]
+
+[node name="HeadOnlyController" type="Node3D" parent="Crab/VisualRoot" unique_id=313407062]
+script = ExtResource("2_head")
+
+[node name="Enemy" type="CharacterBody3D" parent="." unique_id=925967754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 3)
+script = ExtResource("3_enemy")
+
+[node name="Enemy2" type="CharacterBody3D" parent="." unique_id=659266539]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.5, 4)
+script = ExtResource("3_enemy")
+
+[node name="Enemy3" type="CharacterBody3D" parent="." unique_id=1133817221]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 4)
+script = ExtResource("3_enemy")

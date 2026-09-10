@@ -11,16 +11,6 @@ var stack_count: int = 1
 var _label: Label = null
 var _slot_label: Label = null
 var _stack_label: Label = null
-var _stack_badge: PanelContainer = null
-var _frame: PanelContainer = null
-var _selected: bool = false
-var _favorite_label: Label = null
-var _lock_label: Label = null
-
-const _BORDER_IDLE := Color(0.87, 0.63, 0.19, 0.78)
-const _BORDER_SELECTED := Color(0.0, 0.60, 0.62, 1.0)
-const _BG_IDLE := Color(1.0, 1.0, 1.0, 0.58)
-const _BG_SELECTED := Color(0.86, 0.98, 0.98, 0.92)
 
 
 # Called right after .new() to fill in the tile's look and data.
@@ -33,165 +23,74 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 		var requested_size: Variant = player.call("get_inventory_tile_size")
 		if typeof(requested_size) == TYPE_VECTOR2:
 			tile_size = requested_size
-	tile_size = Vector2(maxf(32.0, tile_size.x), maxf(32.0, tile_size.y))
+	var x_scale := tile_size.x / 96.0
+	var y_scale := tile_size.y / 86.0
 	custom_minimum_size = tile_size
-	size = tile_size
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	# Bands are measured from the tile's real size instead of scaling a fixed
-	# 96x86 design, so the name and the slot caption keep their own room at
-	# every resolution rather than drawing over each other.
-	var pad: float = maxf(3.0, tile_size.y * 0.05)
-	var min_side: float = minf(tile_size.x, tile_size.y)
-	var inner_width: float = maxf(8.0, tile_size.x - (pad * 2.0))
-	var name_height: float = maxf(16.0, tile_size.y * 0.26)
-	var slot_height: float = maxf(10.0, tile_size.y * 0.15)
-	var art_top: float = pad + maxf(2.0, tile_size.y * 0.06)
-	var art_height: float = maxf(8.0, tile_size.y - name_height - slot_height - art_top - pad)
-
 	var frame := PanelContainer.new()
-	_frame = frame
 	frame.position = Vector2(0, 0)
 	frame.size = tile_size
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_theme_stylebox_override("panel", _make_tile_style(_BG_IDLE, _BORDER_IDLE, 1))
+	frame.add_theme_stylebox_override("panel", _make_tile_style(Color(1.0, 1.0, 1.0, 0.58), Color(0.87, 0.63, 0.19, 0.78), 1))
 	add_child(frame)
 
-	# Full name is always reachable on hover even though the card shows the
-	# abbreviated one.
-	tooltip_text = BoneRulesService.display_name_with_slot(id)
-
-	# Per-piece marks in the top-left corner: star = favourite, L = locked.
-	# Text glyphs, not colour alone, so they survive any palette.
-	_favorite_label = Label.new()
-	_favorite_label.text = "\u2605"
-	_favorite_label.position = Vector2(pad, pad * 0.5)
-	_favorite_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.16), 11, 16))
-	_favorite_label.add_theme_color_override("font_color", Color(0.85, 0.62, 0.05, 1.0))
-	_favorite_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_favorite_label.visible = false
-	add_child(_favorite_label)
-
-	_lock_label = Label.new()
-	_lock_label.text = "L"
-	_lock_label.position = Vector2(pad + min_side * 0.17, pad * 0.5)
-	_lock_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.12), 9, 13))
-	_lock_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.90, 1.0))
-	var lock_style := StyleBoxFlat.new()
-	lock_style.bg_color = Color(0.35, 0.30, 0.24, 0.95)
-	lock_style.content_margin_left = 4
-	lock_style.content_margin_right = 4
-	_lock_label.add_theme_stylebox_override("normal", lock_style)
-	_lock_label.tooltip_text = "Locked: cannot be dropped or destroyed"
-	_lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_lock_label.visible = false
-	add_child(_lock_label)
-
-	# The top rule doubles as the quality accent: it is the one always-visible
-	# mark of a piece's tier, so a Pristine and a Frail arm never look alike
-	# even before reading the label.
 	var top_rule := ColorRect.new()
-	top_rule.color = BoneQualityService.color_for(BoneInstanceService.quality_id_of(id))
-	top_rule.position = Vector2(pad + inner_width * 0.10, pad + maxf(1.0, tile_size.y * 0.03))
-	top_rule.size = Vector2(inner_width * 0.80, maxf(2.0, tile_size.y * 0.035))
+	top_rule.color = Color(0.87, 0.63, 0.19, 0.36)
+	top_rule.position = Vector2(12.0 * x_scale, 10.0 * y_scale)
+	top_rule.size = Vector2(72.0 * x_scale, 1)
 	top_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_rule)
-
-	# Non-colour quality indicator: one pip per rung of the ladder, so Frail
-	# (1) through Pristine (5) are countable. The accent bar and the tier name
-	# already carry the same information -- this third channel is what makes
-	# the tiers distinguishable without relying on colour at all.
-	var quality_id := BoneInstanceService.quality_id_of(id)
-	var pip_count: int = BoneQualityService.rank_for(quality_id) + 1
-	var pip_size: float = clampf(min_side * 0.055, 3.0, 6.0)
-	var pip_gap: float = pip_size * 0.7
-	var pip_total: float = float(pip_count) * pip_size + float(pip_count - 1) * pip_gap
-	var pip_y: float = pad + maxf(1.0, tile_size.y * 0.03) + maxf(2.0, tile_size.y * 0.035) + pip_size * 0.6
-	for i in range(pip_count):
-		var pip := ColorRect.new()
-		pip.color = BoneQualityService.color_for(quality_id)
-		pip.size = Vector2(pip_size, pip_size)
-		pip.position = Vector2(tile_size.x * 0.5 - pip_total * 0.5 + float(i) * (pip_size + pip_gap), pip_y)
-		pip.rotation = PI / 4.0
-		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(pip)
-
-	var art_centre := Vector2(tile_size.x * 0.5, art_top + art_height * 0.5)
-	var art_span: float = minf(inner_width, art_height)
 
 	# The colored square (matches the bone's color).
 	var glow := ColorRect.new()
 	glow.color = BoneRulesService.color_for(id).lightened(0.18)
+	glow.position = Vector2(31.0 * x_scale, 17.0 * y_scale)
+	glow.size = Vector2(34.0 * x_scale, 34.0 * y_scale)
 	glow.rotation = PI / 4.0
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(glow)
-	_place_diamond(glow, art_centre, art_span * 0.92)
 
 	var core := ColorRect.new()
 	core.color = BoneRulesService.color_for(id)
+	core.position = Vector2(35.0 * x_scale, 21.0 * y_scale)
+	core.size = Vector2(26.0 * x_scale, 26.0 * y_scale)
 	core.rotation = PI / 4.0
 	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(core)
-	_place_diamond(core, art_centre, art_span * 0.70)
-
-	# Stack count sits in the BOTTOM-RIGHT corner as a filled chip. It used to
-	# be pale text floating over the artwork, where it competed with the
-	# diamond and was easy to miss; a chip reads as a count at a glance.
-	var badge_size := Vector2(maxf(20.0, inner_width * 0.30), maxf(14.0, tile_size.y * 0.17))
-	_stack_badge = PanelContainer.new()
-	_stack_badge.size = badge_size
-	_stack_badge.position = Vector2(tile_size.x - pad - badge_size.x, tile_size.y - pad - badge_size.y)
-	_stack_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stack_badge.add_theme_stylebox_override("panel", _make_tile_style(Color(0.05, 0.35, 0.38, 0.92), Color(0.99, 0.97, 0.90, 0.55), 1))
-	add_child(_stack_badge)
 
 	_stack_label = Label.new()
-	_stack_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.13), 9, 15))
-	_stack_label.add_theme_color_override("font_color", Color(0.99, 0.97, 0.90, 1.0))
+	_stack_label.position = Vector2(57.0 * x_scale, 17.0 * y_scale)
+	_stack_label.size = Vector2(30.0 * x_scale, 16.0 * y_scale)
+	_stack_label.add_theme_font_size_override("font_size", maxi(9, int(10.0 * minf(x_scale, y_scale))))
+	_stack_label.add_theme_color_override("font_color", Color(0.96, 0.91, 0.72, 1.0))
 	_stack_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_stack_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_stack_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stack_badge.add_child(_stack_label)
+	add_child(_stack_label)
 
 	# The bone name under it.
 	_label = Label.new()
-	_label.position = Vector2(pad, tile_size.y - slot_height - name_height - pad * 0.5)
-	_label.size = Vector2(inner_width, name_height)
-	_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.125), 9, 15))
+	_label.position = Vector2(5.0 * x_scale, 50.0 * y_scale)
+	_label.size = Vector2(86.0 * x_scale, 22.0 * y_scale)
+	_label.add_theme_font_size_override("font_size", maxi(10, int(10.0 * minf(x_scale, y_scale))))
 	_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 1.0))
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	# A name like "Enemy Left Arm Bone" wraps to more lines than the band is
-	# tall; labels do not clip by default, so without this cap the overflow
-	# drew straight over the slot caption below.
-	_label.max_lines_visible = 2
-	_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_label.clip_text = true
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_label)
 
-	# The badge occupies the bottom-right corner, so the slot caption gives up
-	# that width instead of drawing underneath it.
-	var caption_width: float = inner_width
-	if stack_count > 1:
-		caption_width = maxf(24.0, inner_width - badge_size.x - 4.0)
 	_slot_label = Label.new()
-	_slot_label.position = Vector2(pad, tile_size.y - slot_height - pad * 0.5)
-	_slot_label.size = Vector2(caption_width, slot_height)
-	# Quality as text next to the slot, so the accent colour is never the only
-	# way to tell tiers apart.
+	_slot_label.position = Vector2(5.0 * x_scale, 72.0 * y_scale)
+	_slot_label.size = Vector2(86.0 * x_scale, 12.0 * y_scale)
 	var slot_text := EquipmentRulesService.slot_display_name(EquipmentRulesService.slot_for_bone(id))
 	if slot_text == "":
 		slot_text = "Piece"
-	_slot_label.text = "%s  ·  %s" % [BoneQualityService.display_name_for(BoneInstanceService.quality_id_of(id)), slot_text]
-	_slot_label.add_theme_font_size_override("font_size", clampi(int(min_side * 0.10), 8, 13))
+	_slot_label.text = slot_text
+	_slot_label.add_theme_font_size_override("font_size", maxi(8, int(8.0 * minf(x_scale, y_scale))))
 	_slot_label.add_theme_color_override("font_color", Color(0.44, 0.32, 0.12, 0.95))
 	_slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_slot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_slot_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_slot_label.clip_text = true
 	_slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_slot_label)
 	refresh()
@@ -199,55 +98,6 @@ func setup(id: String, player_ref: Node, quantity: int = 1) -> void:
 	# Hovering shows this bone's stats in the inventory's info area.
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
-
-
-# A ColorRect rotated 45 degrees turns about its own origin, so its visual
-# centre lands at position + (0, side * sqrt(2) / 2). Solve for the position
-# that puts that centre exactly where we want it.
-func _place_diamond(rect: ColorRect, centre: Vector2, bounding_side: float) -> void:
-	var side: float = maxf(2.0, bounding_side / sqrt(2.0))
-	rect.size = Vector2(side, side)
-	rect.position = centre - Vector2(0.0, side * sqrt(2.0) * 0.5)
-
-
-func _gui_input(event: InputEvent) -> void:
-	# Right-click drops this piece on the ground. Locked pieces refuse (the
-	# details panel says why); the worn copy of a stack is never the one
-	# dropped. Mirrors right-click on a slot, which unequips.
-	#
-	# DEFERRED, never direct: the drop rebuilds the grid, which frees this
-	# tile while the viewport is still dispatching this very event. A freed
-	# target mid-dispatch makes the viewport re-deliver the event to whatever
-	# new tile the rebuild placed under the cursor -- one click was observed
-	# dropping three different bones in a cascade. accept_event() plus
-	# call_deferred moves the rebuild after the dispatch ends.
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		accept_event()
-		if player != null and player.has_method("drop_bone"):
-			player.call_deferred("drop_bone", bone_id)
-		return
-	# Left press selects; Godot only turns a press into a drag past its move
-	# threshold, so none of these interfere with dragging the card to a slot.
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var mouse := event as InputEventMouseButton
-		# Double-click equips outright: the everyday action skips the
-		# select-then-drag ritual. The equip rules still decide the slot and
-		# can refuse (no torso yet, incompatible), exactly as a drag would.
-		# Deferred for the same freed-mid-dispatch reason as the drop above:
-		# equipping filters this tile's copy out of the grid.
-		if mouse.double_click:
-			accept_event()
-			if player != null and player.has_method("equip_bone"):
-				player.call_deferred("equip_bone", bone_id)
-			return
-		# Shift+click pins a head-to-head comparison against the SELECTED
-		# piece instead of moving the selection.
-		if mouse.shift_pressed:
-			if player != null and player.has_method("compare_with_selected"):
-				player.call("compare_with_selected", bone_id)
-			return
-		if player != null and player.has_method("select_bone"):
-			player.call("select_bone", bone_id)
 
 
 func _on_mouse_entered() -> void:
@@ -265,56 +115,15 @@ func _on_mouse_exited() -> void:
 func refresh() -> void:
 	if _label == null:
 		return
-	# Abbreviated on the card; the full name lives in the tooltip and in the
-	# details panel, so nothing is lost to the shortening.
-	_label.text = BoneRulesService.short_display_name(bone_id)
-	tooltip_text = BoneRulesService.display_name_with_slot(bone_id)
+	_label.text = BoneRulesService.display_name_with_slot(bone_id)
 	if _stack_label != null:
-		_stack_label.text = "x" + str(stack_count)
-	if _stack_badge != null:
-		_stack_badge.visible = stack_count > 1
-	if _favorite_label != null:
-		_favorite_label.visible = BoneInstanceService.is_favorite(bone_id)
-	if _lock_label != null:
-		_lock_label.visible = BoneInstanceService.is_locked(bone_id)
-
-
-# Painted by PlayerInventoryUI when the player picks a card.
-func set_selected(value: bool) -> void:
-	if _selected == value:
-		return
-	_selected = value
-	_repaint()
-
-
-func _repaint() -> void:
-	if _frame == null:
-		return
-	var background := _BG_SELECTED if _selected else _BG_IDLE
-	# Quality-tinted border, blended toward the panel's own accent so it stays
-	# part of the parchment rather than five clashing outlines. Selection still
-	# wins: knowing what you picked matters more than the tier.
-	var quality_border: Color = _BORDER_IDLE.lerp(
-		BoneQualityService.color_for(BoneInstanceService.quality_id_of(bone_id)), 0.55
-	)
-	quality_border.a = _BORDER_IDLE.a
-	var border := _BORDER_SELECTED if _selected else quality_border
-	# A selected card carries a heavier border plus a glow, so it is legible
-	# as "the one I picked" even next to identically coloured siblings.
-	var width: int = 3 if _selected else 1
-	var style := _make_tile_style(background, border, width)
-	if _selected:
-		style.shadow_color = Color(0.0, 0.78, 0.78, 0.45)
-		style.shadow_size = 8
-		style.shadow_offset = Vector2.ZERO
-	_frame.add_theme_stylebox_override("panel", style)
+		_stack_label.text = "x" + str(stack_count) if stack_count > 1 else ""
+		_stack_label.visible = stack_count > 1
 
 
 # Godot calls this when a drag begins on the tile. Returning data starts the drag.
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	set_drag_preview(_make_preview())
-	if player != null and player.has_method("begin_bone_drag"):
-		player.call("begin_bone_drag", bone_id)
 	return {"bone_id": bone_id, "source": "item"}
 
 

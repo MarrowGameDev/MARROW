@@ -4,11 +4,6 @@ const MAIN_MENU_PATH: String = "res://scenes/main_menu.tscn"
 const PLAYER_SCENE: PackedScene = preload("res://scenes/player.tscn")
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
 
-# Human-reviewable evidence log for the P0 checks below. Written under
-# user:// (outside the repo) because it is per-session QA evidence, not
-# source. See docs/p0_runtime_validation_suite.md for how to retrieve it.
-const VALIDATION_LOG_PATH: String = "user://p0_validation_log.txt"
-
 @export var spawn_player_on_ready: bool = true
 @export var spawn_initial_enemies: bool = true
 @export var keep_enemy_respawn_disabled: bool = true
@@ -20,75 +15,6 @@ var live_enemies: Array[Node] = []
 var spawn_cursor: int = 0
 var enemy_serial: int = 0
 var status_label: Label = null
-var validation_guide_index: int = 0
-
-var notes_edit: LineEdit = null
-var notes_editing: bool = false
-var observed_notes: String = ""
-var validation_log: Array[Dictionary] = []
-
-# The guide panel is wide enough to sit on top of the inventory and the paper
-# doll, which makes it impossible to check UI work in these scenes. H cycles it
-# through the three states below instead of only on/off, so the scene keeps a
-# small always-visible reminder of how to bring the full text back.
-enum OverlayMode {FULL, COMPACT, HIDDEN}
-const OVERLAY_PANEL_WIDTH: float = 460.0
-var overlay_mode: int = OverlayMode.FULL
-var testing_panel: PanelContainer = null
-
-
-const P0_VALIDATION_GUIDES: Array[Dictionary] = [
-	{
-		"title": "Movement, camera, and jitter",
-		"setup": "Use the walls, ramp, and open ground with the player in normal control.",
-		"steps": [
-			"Walk, sprint, stop, jump, and rotate the camera near tall and short walls.",
-			"Open and close inventory, then repeat movement and camera rotation.",
-			"Attack while moving and while idle, watching the body and camera follow.",
-		],
-		"expected": "No persistent camera/body jitter, no teleport, no stuck mouse capture, and control returns after inventory.",
-	},
-	{
-		"title": "Inventory, equipment, and preview",
-		"setup": "Open inventory with the seeded normal limbs and extra comparison bones.",
-		"steps": [
-			"Equip torso, arms, and legs, then deselect or unequip one piece at a time.",
-			"Confirm duplicate bones remain counted and equipped copies are hidden from carried tiles.",
-			"Watch the preview viewport while equipping and reopening inventory.",
-		],
-		"expected": "The preview stays isolated, reflects equipped parts, and does not duplicate nodes after reopen.",
-	},
-	{
-		"title": "Pickups, drops, and enemy profiles",
-		"setup": "Spawn normal, gorilla, lizard, ranged, and dummy enemies with number keys.",
-		"steps": [
-			"Defeat or damage each profile enough to observe drops or limb reactions.",
-			"Collect available drops and confirm inventory updates without reopening.",
-			"Remove latest enemy with Backspace and respawn to confirm scene recovery.",
-		],
-		"expected": "Drops stay slot-aware, pickups do not duplicate unexpectedly, and removed enemies do not leave stale UI state.",
-	},
-	{
-		"title": "Backstab runtime geometry",
-		"setup": "Use a dummy or normal enemy and approach from front, sides, and behind.",
-		"steps": [
-			"Try stealth finish from the front and both lateral angles.",
-			"Rotate or respawn enemies at different markers and repeat behind checks.",
-			"Confirm regular attack still works when stealth finish is unavailable.",
-		],
-		"expected": "Front and side attempts fail, behind succeeds, and no duplicate damage or stuck enemy state appears.",
-	},
-	{
-		"title": "Rig and body progression",
-		"setup": "Use seeded body parts and the RigPosePlatform area.",
-		"steps": [
-			"Observe head-only, torso, arms, and legs progression while equipping pieces.",
-			"Move, jump, crawl if available, and attack after each equipment stage.",
-			"Compare the world rig with the inventory preview state.",
-		],
-		"expected": "Sockets match equipped state, left/right parts are not swapped, and animation remains stable.",
-	},
-]
 
 
 func _ready() -> void:
@@ -112,27 +38,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_ESCAPE:
-				if notes_editing:
-					_cancel_notes_editing()
-				else:
-					get_tree().change_scene_to_file(MAIN_MENU_PATH)
-			KEY_B:
-				# Same guard as H/O: typing a "b" into the notes field must
-				# not fire the breakdown.
-				if not notes_editing:
-					_print_stat_breakdown()
-			KEY_H:
-				# Guarded so typing an "h" into the observed-result field does
-				# not also collapse the panel out from under the caret.
-				if not notes_editing:
-					_cycle_overlay_mode()
-			KEY_O:
-				if not notes_editing:
-					_begin_notes_editing()
-			KEY_P:
-				_log_validation_result("PASS")
-			KEY_F:
-				_log_validation_result("FAIL")
+				get_tree().change_scene_to_file(MAIN_MENU_PATH)
 			KEY_1:
 				if not dummy_only_mode:
 					_spawn_enemy_at_next_marker("normal")
@@ -144,7 +50,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_3:
 				if not dummy_only_mode:
 					_spawn_enemy_at_next_marker("lizard")
-			KEY_4:
+			# KEY_4 = tuning menu (TuningMenuUI); KEY_6 = locomotion walk demo
+			# (LocomotionDemoLauncher autoload) — so ranged spawn lives on 7.
+			KEY_7:
 				if not dummy_only_mode:
 					_spawn_enemy_at_next_marker("ranged")
 			KEY_5:
@@ -156,10 +64,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				_remove_latest_enemy()
 			KEY_R:
 				get_tree().reload_current_scene()
-			KEY_F1:
-				_cycle_validation_guide(1)
-			KEY_F2:
-				_cycle_validation_guide(-1)
 
 
 func _build_world() -> void:
@@ -423,39 +327,20 @@ func _build_ui() -> void:
 	var panel := PanelContainer.new()
 	panel.name = "TestingPanel"
 	panel.position = Vector2(20.0, 20.0)
-	panel.custom_minimum_size = Vector2(OVERLAY_PANEL_WIDTH, 0.0)
-	# This guide sits on layer 20, ABOVE the inventory (layer 5). With the
-	# default STOP filter it swallowed every click and drag over the left half
-	# of the screen -- exactly where the item grid lives -- so the whole
-	# overlay must be click-through. Only the notes LineEdit keeps input.
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	testing_panel = panel
+	panel.custom_minimum_size = Vector2(460.0, 0.0)
 	canvas.add_child(panel)
 
 	var margin := MarginContainer.new()
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_right", 12)
 	margin.add_theme_constant_override("margin_bottom", 10)
 	panel.add_child(margin)
 
-	var content := VBoxContainer.new()
-	content.name = "TestingPanelContent"
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_child(content)
-
 	status_label = Label.new()
 	status_label.name = "TestingStatusLabel"
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(status_label)
-
-	notes_edit = LineEdit.new()
-	notes_edit.name = "P0NotesEdit"
-	notes_edit.placeholder_text = "Observed result, then Enter to save (Esc to cancel)"
-	notes_edit.visible = false
-	notes_edit.text_submitted.connect(_on_notes_submitted)
-	content.add_child(notes_edit)
+	margin.add_child(status_label)
 
 
 func _update_status() -> void:
@@ -466,11 +351,6 @@ func _update_status() -> void:
 	for enemy in live_enemies:
 		if enemy != null and is_instance_valid(enemy) and bool(enemy.get("alive")):
 			alive_count += 1
-
-	if overlay_mode == OverlayMode.COMPACT:
-		var scene_tag: String = "DUMMY" if dummy_only_mode else "TEST"
-		status_label.text = "%s  |  Enemies: %d  |  H: expand" % [scene_tag, alive_count]
-		return
 
 	if dummy_only_mode:
 		status_label.text = "DUMMY TESTING ENVIRONMENT\n"
@@ -485,263 +365,6 @@ func _update_status() -> void:
 		else:
 			status_label.text += "2 or 5: respawn dummy target\n"
 	else:
-		status_label.text += "1 Normal   2 Gorilla   3 Lizard   4 Ranged   5 Dummy\n"
-	status_label.text += "F1/F2: cycle P0 validation guide\n"
-	status_label.text += "O: type observed result   P: log PASS   F: log FAIL\n"
-	status_label.text += "Backspace: remove latest enemy   R: reset scene   Esc: menu\n"
-	status_label.text += "H: shrink/hide this panel (cycles full -> compact -> hidden)\n"
-	status_label.text += "B: print the exact stat breakdown (full decimals) to the console\n"
+		status_label.text += "1 Normal   2 Gorilla   3 Lizard   7 Ranged   5 Dummy\n"
+	status_label.text += "4: tuning menu   6: walk demo   8: locomotion lab   9: combat lab   Backspace: remove latest enemy   R: reset scene   Esc: menu\n"
 	status_label.text += "Edit EnemySpawnPoints in this scene to add/remove default enemy positions."
-	status_label.text += "\n\n" + _current_validation_guide_text()
-	status_label.text += "\n\n" + _validation_log_summary_text()
-
-
-# Dumps every step of the stat formula with full decimals, so a number the HUD
-# shows rounded (HP 10) can be checked by hand: each piece's exact
-# contribution, the set/synergy flat and percentage parts, the aggregates, and
-# the official final value next to a reconstruction of the arithmetic. If the
-# reconstruction ever disagrees with the official column, this printout and
-# the formula have drifted apart -- which is itself worth seeing, so both are
-# printed instead of hiding one.
-func _print_stat_breakdown() -> void:
-	if player == null:
-		print("No player to break down.")
-		return
-	var stats_component: Variant = player.get("stats_component")
-	if stats_component == null:
-		print("No stats component on the player.")
-		return
-	var state: Dictionary = player.call("get_equipment_state")
-
-	var base_speed := float(stats_component.get("base_move_speed"))
-	var base_reach := float(stats_component.get("base_attack_range"))
-	var base_damage := int(stats_component.get("base_attack_damage"))
-	var base_health := int(stats_component.get("base_max_health"))
-
-	print("\n=== STAT BREAKDOWN (exact decimals) ===")
-	print("bases: speed %.4f  reach %.4f  damage %d  health %d" % [base_speed, base_reach, base_damage, base_health])
-	print("-- pieces (effective = base x quality multiplier):")
-	for slot_id in state:
-		var piece := str(state[slot_id])
-		if piece == "":
-			continue
-		var quality_id := BoneInstanceService.quality_id_of(piece)
-		var effective: Dictionary = BoneRulesService.adjusted_player_bonus_for(piece)
-		print("  %-10s %-24s %-9s x%.3f | speed %+.4f  reach %+.4f  damage %+.4f  health %+.4f" % [
-			str(slot_id), BoneRulesService.display_name_with_slot(piece), quality_id,
-			BoneQualityService.multiplier_for(quality_id),
-			float(effective["move_speed"]), float(effective["attack_range"]),
-			float(effective["attack_damage"]), float(effective["max_health"])])
-
-	var synergy: Dictionary = SynergyRulesService.evaluate(state)
-	print("-- sets & synergies:")
-	if (synergy["active"] as Array).is_empty():
-		print("  (none active)")
-	for entry in synergy["active"]:
-		print("  ", SynergyRulesService.summary_line_for(entry))
-	var synergy_bonus: Dictionary = synergy["bonus"]
-	print("  flat from sets: speed %+.4f  reach %+.4f  damage %+.4f  health %+.4f" % [
-		float(synergy_bonus["move_speed"]), float(synergy_bonus["attack_range"]),
-		float(synergy_bonus["attack_damage"]), float(synergy_bonus["max_health"])])
-
-	var exact: Dictionary = BoneRulesService.aggregate_player_bonuses_exact(state)
-	var mods: Dictionary = BoneRulesService.aggregate_player_stat_modifiers(state)
-	print("-- aggregates (pieces + set flats, no rounding):")
-	print("  bonus: speed %+.4f  reach %+.4f  damage %+.4f  health %+.4f" % [
-		float(exact["move_speed"]), float(exact["attack_range"]),
-		float(exact["attack_damage"]), float(exact["max_health"])])
-	print("  percents (clamped): damage %+.4f  speed %+.4f  health %+.4f  weight %+.4f" % [
-		float(mods["damage_percent"]), float(mods["speed_percent"]),
-		float(mods["health_percent"]), float(mods["weight_percent"])])
-	print("  equipment weight %.4f  ->  load speed penalty %.4f" % [
-		float(mods["equipment_weight"]), float(mods["load_speed_penalty"])])
-
-	var official: Dictionary = BoneRulesService.player_stats_with_equipment(
-		base_speed, base_reach, base_damage, base_health, state)
-	var health_pre := (float(base_health) + float(exact["max_health"])) * maxf(0.1, 1.0 + float(mods["health_percent"]))
-	var damage_pre := (float(base_damage) + float(exact["attack_damage"])) * maxf(0.1, 1.0 + float(mods["damage_percent"]))
-	var speed_multiplier := maxf(0.1, (1.0 + float(mods["speed_percent"])) * (1.0 - float(mods["load_speed_penalty"])))
-	var speed_pre := maxf(0.0, (base_speed + float(exact["move_speed"])) * speed_multiplier)
-	print("-- finals (reconstruction | official):")
-	print("  health: (%d %+.4f) x %.4f = %.4f -> roundi %d | official %d" % [
-		base_health, float(exact["max_health"]), 1.0 + float(mods["health_percent"]),
-		health_pre, maxi(1, roundi(health_pre)), int(official["max_health"])])
-	print("  damage: (%d %+.4f) x %.4f = %.4f -> roundi %d | official %d" % [
-		base_damage, float(exact["attack_damage"]), 1.0 + float(mods["damage_percent"]),
-		damage_pre, maxi(0, roundi(damage_pre)), int(official["attack_damage"])])
-	print("  speed : (%.4f %+.4f) x %.4f = %.4f | official %.4f" % [
-		base_speed, float(exact["move_speed"]), speed_multiplier, speed_pre, float(official["move_speed"])])
-	print("  reach : %.4f %+.4f = %.4f | official %.4f" % [
-		base_reach, float(exact["attack_range"]), base_reach + float(exact["attack_range"]), float(official["attack_range"])])
-	print("  player live: HP %s/%s  damage %s  speed %.4f" % [
-		str(player.get("health")), str(player.get("max_health")),
-		str(player.get("attack_damage")), float(player.get("move_speed"))])
-	print("=== END BREAKDOWN ===\n")
-
-
-func _cycle_overlay_mode() -> void:
-	overlay_mode = (overlay_mode + 1) % OverlayMode.size()
-	_apply_overlay_mode()
-
-
-func _apply_overlay_mode() -> void:
-	if testing_panel != null:
-		testing_panel.visible = overlay_mode != OverlayMode.HIDDEN
-		# The panel is a PanelContainer with a 460px floor, so without
-		# clearing that floor the compact state would still block the same
-		# width of screen it does when expanded.
-		var width: float = OVERLAY_PANEL_WIDTH if overlay_mode == OverlayMode.FULL else 0.0
-		testing_panel.custom_minimum_size = Vector2(width, 0.0)
-	if status_label != null:
-		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if overlay_mode == OverlayMode.FULL else TextServer.AUTOWRAP_OFF
-		# Smaller type in the collapsed state: the point is to get out of the
-		# way of the UI being tested, not to stay legible from across the room.
-		if overlay_mode == OverlayMode.COMPACT:
-			status_label.add_theme_font_size_override("font_size", 13)
-		else:
-			status_label.remove_theme_font_size_override("font_size")
-	_update_status()
-	# A Control keeps whatever size it was last given, so the panel would stay
-	# as tall as the expanded text until something shrank it. Reset only after
-	# _update_status() has written the shorter text, otherwise it snaps back to
-	# the old minimum. Deferred as well because the Label's minimum size is
-	# recomputed during layout, not on assignment.
-	if testing_panel != null:
-		testing_panel.reset_size()
-		testing_panel.call_deferred("reset_size")
-
-
-func _cycle_validation_guide(direction: int) -> void:
-	if P0_VALIDATION_GUIDES.is_empty():
-		return
-	validation_guide_index = posmod(validation_guide_index + direction, P0_VALIDATION_GUIDES.size())
-	_update_status()
-
-
-func _current_validation_guide_text() -> String:
-	if P0_VALIDATION_GUIDES.is_empty():
-		return "P0 validation guide: no sections configured."
-
-	var guide: Dictionary = P0_VALIDATION_GUIDES[validation_guide_index]
-	var text := "P0 CHECK " + str(validation_guide_index + 1) + "/" + str(P0_VALIDATION_GUIDES.size()) + ": "
-	text += str(guide.get("title", "Unnamed")) + "\n"
-	text += "Setup: " + str(guide.get("setup", "n/a")) + "\n"
-	text += "Steps:\n"
-	var steps: Array = guide.get("steps", [])
-	for i in range(steps.size()):
-		text += "  " + str(i + 1) + ". " + str(steps[i]) + "\n"
-	text += "Expected: " + str(guide.get("expected", "n/a")) + "\n"
-	text += "Record: scene, resolution, enabled systems, observed result, and console errors."
-	return text
-
-
-func _begin_notes_editing() -> void:
-	# The notes field lives inside the panel, so typing into it while the panel
-	# is hidden would mean typing into something invisible. Restore the panel
-	# first; the recording flow always wins over the collapsed state.
-	if overlay_mode == OverlayMode.HIDDEN:
-		overlay_mode = OverlayMode.FULL
-		_apply_overlay_mode()
-	notes_editing = true
-	notes_edit.text = observed_notes
-	notes_edit.visible = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	notes_edit.grab_focus()
-
-
-func _cancel_notes_editing() -> void:
-	notes_editing = false
-	notes_edit.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-
-func _on_notes_submitted(text: String) -> void:
-	observed_notes = text
-	notes_editing = false
-	notes_edit.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	_update_status()
-
-
-# Objective, machine-collected facts at the moment PASS/FAIL is logged. This
-# is not a substitute for the tester's own observation; it is the evidence
-# that accompanies it (AGENTS.md: "No afirmar que algo fue probado si solo se
-# inspecciono el codigo").
-func _runtime_evidence_snapshot() -> Dictionary:
-	var enemy_names: Array[String] = []
-	var alive_count: int = 0
-	for enemy in live_enemies:
-		if enemy == null or not is_instance_valid(enemy):
-			continue
-		enemy_names.append(str(enemy.name))
-		if bool(enemy.get("alive")):
-			alive_count += 1
-
-	var snapshot: Dictionary = {
-		"fps": Engine.get_frames_per_second(),
-		"physics_ticks_per_second": Engine.physics_ticks_per_second,
-		"mouse_mode": Input.mouse_mode,
-		"dummy_only_mode": dummy_only_mode,
-		"enemies_alive": alive_count,
-		"enemies_tracked": enemy_names,
-	}
-	if player != null and is_instance_valid(player):
-		snapshot["player_position"] = str(player.global_position)
-		snapshot["player_is_dead"] = player.get("is_dead")
-		if player.has_method("get_equipment_state"):
-			snapshot["player_equipment"] = player.call("get_equipment_state")
-	return snapshot
-
-
-func _log_validation_result(result: String) -> void:
-	if P0_VALIDATION_GUIDES.is_empty():
-		return
-	var guide: Dictionary = P0_VALIDATION_GUIDES[validation_guide_index]
-	var entry: Dictionary = {
-		"timestamp": Time.get_datetime_string_from_system(),
-		"guide_index": validation_guide_index + 1,
-		"title": str(guide.get("title", "Unnamed")),
-		"result": result,
-		"observed": observed_notes if not observed_notes.is_empty() else "(no notes typed with O)",
-		"evidence": _runtime_evidence_snapshot(),
-	}
-	validation_log.append(entry)
-	_append_log_entry_to_file(entry)
-	observed_notes = ""
-	_update_status()
-
-
-func _append_log_entry_to_file(entry: Dictionary) -> void:
-	var mode := FileAccess.READ_WRITE if FileAccess.file_exists(VALIDATION_LOG_PATH) else FileAccess.WRITE
-	var file := FileAccess.open(VALIDATION_LOG_PATH, mode)
-	if file == null:
-		push_warning("P0 validation log: could not open " + VALIDATION_LOG_PATH)
-		return
-	if mode == FileAccess.READ_WRITE:
-		file.seek_end()
-	file.store_line(
-		"=== " + str(entry.get("timestamp")) + " | P0 CHECK " + str(entry.get("guide_index"))
-		+ " | " + str(entry.get("title")) + " | " + str(entry.get("result")) + " ==="
-	)
-	file.store_line("Observed: " + str(entry.get("observed")))
-	file.store_line("Evidence: " + JSON.stringify(entry.get("evidence", {})))
-	file.store_line("")
-	file.close()
-
-
-func _count_validation_results(result: String) -> int:
-	var count: int = 0
-	for entry in validation_log:
-		if str(entry.get("result", "")) == result:
-			count += 1
-	return count
-
-
-func _validation_log_summary_text() -> String:
-	var text := "Session log: " + str(_count_validation_results("PASS")) + " PASS / "
-	text += str(_count_validation_results("FAIL")) + " FAIL (saved to " + VALIDATION_LOG_PATH + ")"
-	if not validation_log.is_empty():
-		var last: Dictionary = validation_log[validation_log.size() - 1]
-		text += "\nLast: CHECK " + str(last.get("guide_index")) + " " + str(last.get("result"))
-		text += " at " + str(last.get("timestamp"))
-	return text

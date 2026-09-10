@@ -21,7 +21,7 @@ const DEFINITIONS := {
 	"head_bone": {
 		"identity": {
 			"display_name": "Core Head",
-			"quality": "normal",
+			"quality": "comun",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -66,7 +66,7 @@ const DEFINITIONS := {
 	"torso_bone": {
 		"identity": {
 			"display_name": "Torso Bone",
-			"quality": "normal",
+			"quality": "comun",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -118,7 +118,7 @@ const DEFINITIONS := {
 	"arm_bone": {
 		"identity": {
 			"display_name": "Arm Bone",
-			"quality": "normal",
+			"quality": "comun",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -178,7 +178,7 @@ const DEFINITIONS := {
 	"leg_bone": {
 		"identity": {
 			"display_name": "Leg Bone",
-			"quality": "normal",
+			"quality": "comun",
 			"quality_rank": 2,
 			"quality_score": 1.0,
 			"quality_multiplier": 1.0,
@@ -225,7 +225,9 @@ const DEFINITIONS := {
 			"score": 0.15,
 		},
 		"player_stats": {
-			"move_speed": 3.0,
+			# Speed bonuses are proportional to base_move_speed (6.0 originally,
+			# now 1.4 for the leap gait) — kept at the +50%-of-base the design had.
+			"move_speed": 0.7,
 			"max_health": 1,
 		},
 		"enemy_stats": {
@@ -238,7 +240,7 @@ const DEFINITIONS := {
 	"heavy_bone": {
 		"identity": {
 			"display_name": "Heavy Bone",
-			"quality": "strong",
+			"quality": "fuerte",
 			"quality_rank": 3,
 			"quality_score": 1.3,
 			"quality_multiplier": 1.15,
@@ -287,7 +289,7 @@ const DEFINITIONS := {
 			"score": 0.25,
 		},
 		"player_stats": {
-			"move_speed": -1.5,
+			"move_speed": -0.35,  # rescaled with base_move_speed 6.0 -> 1.4
 			"attack_damage": 2,
 			"max_health": 2,
 		},
@@ -303,7 +305,7 @@ const DEFINITIONS := {
 	"dummy_bone": {
 		"identity": {
 			"display_name": "Training Bone",
-			"quality": "frail",
+			"quality": "chatarra",
 			"quality_rank": 0,
 			"quality_score": 0.75,
 			"quality_multiplier": 0.9,
@@ -356,7 +358,7 @@ const DEFINITIONS := {
 	"rib_bone": {
 		"identity": {
 			"display_name": "Rib Bone",
-			"quality": "strong",
+			"quality": "fuerte",
 			"quality_rank": 3,
 			"quality_score": 1.3,
 			"quality_multiplier": 1.12,
@@ -376,7 +378,7 @@ const DEFINITIONS := {
 			"description": "A bit of everything: some extra reach and speed.",
 		},
 		"player_stats": {
-			"move_speed": 1.5,
+			"move_speed": 0.35,  # rescaled with base_move_speed 6.0 -> 1.4
 			"attack_range": 1.0,
 			"max_health": 1,
 		},

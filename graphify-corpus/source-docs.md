@@ -64,16 +64,6 @@ toggle_bow={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":49,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
 ]
 }
-anim_demo_procedural={
-"deadzone": 0.5,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":50,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
-]
-}
-anim_demo_tween={
-"deadzone": 0.5,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":51,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
-]
-}
 jump={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":32,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
@@ -309,93 +299,21 @@ Campos principales:
 - `bone_id`: id estable, por ejemplo `arm_bone`.
 - `display_name`: nombre visible.
 - `color`: color fisico del hueso.
-- `slot`: slot de equipamiento canonico (`head`, `torso`, `left_arm`,
-  `right_arm`, `left_leg`, `right_leg`) o alias legacy aceptado durante
-  migracion (`body`, `legs` -- los unicos dos que aparecen realmente en
-  `data/bones/*.tres` hoy; no agregar aliases especulativos sin un
-  consumidor real).
+- `slot`: slot de equipamiento (`right_arm`, `left_arm`, `body`, `legs`,
+  `head`).
 - `tags`: tags generales.
 - `description`: texto visible para UI.
-
-`EquipmentRulesService.normalize_slot_id` convierte aliases legacy a los ids
-canonicos que usa el runtime. Los Resources viejos pueden seguir declarando
-`body` o `legs`, pero los sistemas nuevos deben guardar y comparar slots
-canonicos. `body` es un socket del rig; `torso` es el slot de equipamiento.
 
 ## Calidad
 
 Calidad describe condicion o potencia de la pieza. No es rareza de loot.
 
-La calidad pertenece a la PIEZA INDIVIDUAL, no al tipo de hueso. Se sortea una
-sola vez, cuando la pieza se crea (drop, recompensa, pieza nueva), y no se
-vuelve a sortear al recoger, equipar, abrir inventario, aplicar builds ni
-refrescar el preview.
-
-Ids canonicos, multiplicador y probabilidad (fuente de verdad:
-`scripts/bone_quality_service.gd`, tabla `QUALITY_TABLE`):
-
-| id | display | multiplicador | probabilidad | rank |
-| --- | --- | --- | --- | --- |
-| `frail` | Frail | 0.85 | 2.5 % | 0 |
-| `worn` | Worn | 0.925 | 12.5 % | 1 |
-| `normal` | Normal | 1.00 | 70 % | 2 |
-| `strong` | Strong | 1.075 | 12.5 % | 3 |
-| `pristine` | Pristine | 1.15 | 2.5 % | 4 |
-
-La columna de probabilidad suma exactamente 100. `tools/validate_bone_quality.py`
-lo verifica sin abrir Godot.
-
-Ids previos al rename (espanol) siguen aceptados como alias legacy y mapean por
-rank: `chatarra`->`frail`, `fragil`->`worn`, `comun`->`normal`,
-`fuerte`->`strong`, `legendario`->`pristine`. Cualquier valor desconocido o
-vacio normaliza a `normal`; nunca se sortea para datos legacy.
-
-Formula (en `BoneRulesService.adjusted_player_bonus_for`):
-
-    stat efectivo = stat base * multiplicador de calidad
-
-La calidad solo escala stats numericos reales (`move_speed`, `attack_range`,
-`attack_damage`, `max_health`). No toca slot, compatibilidad, ids, tags ni
-ningun otro valor categorico. Calidad, rareza, mutacion y durabilidad siguen
-siendo campos separados con vocabularios separados.
-
-## Identidad De Pieza (instancias)
-
-`scripts/bone_instance_service.gd` da identidad por pieza:
-
-- `bone_id` nombra un TIPO (`arm_bone`).
-- `instance_id` nombra una PIEZA concreta (`bone#7`) y es la fuente de verdad
-  de su calidad.
-- El instance_id no codifica nada: nunca `arm_bone_strong`. Identidad,
-  definicion y calidad quedan separadas.
-- El multiplicador no se guarda en la instancia; solo `quality_id`. El numero
-  sale de la tabla, asi que retunear la tabla retunea todas las piezas
-  existentes.
-- Ruta de compatibilidad explicita: un String que no es instancia se resuelve a
-  su calidad authored (o `normal` si no tiene) y jamas se sortea, para que los
-  Strings existentes no cambien de significado en silencio.
-
-La resolucion vive en un solo punto por capa: `BoneDatabase._type_id`,
-`BoneRulesService.definition_for` y
-`EquipmentRulesService.compatible_slots_for_bone` /
-`generated_limb_definition_for`. Por eso cualquier API que aceptaba un
-`bone_id` acepta ahora un `instance_id` sin cambios en el llamador.
-
-Los builds guardan el `instance_id` exacto por slot, pero REQUIEREN solo el
-tipo. `resolve_build_snapshot` resuelve en dos pasadas: primero la instancia
-exacta guardada si aun la llevas (por eso un build recien guardado coincide con
-el equipo actual sin deltas fantasma), y si esa pieza ya no esta, la MEJOR
-calidad disponible del mismo `bone_id` (`frail < worn < normal < strong <
-pristine`), marcando el slot como `substituted` -- la sustitucion se muestra,
-nunca es silenciosa. Exigir la instancia exacta dejaba todo build en "Missing
-parts" para siempre, porque el inventario no persiste entre sesiones. Si un
-tipo ocupa dos slots se toman dos piezas distintas. Solo cuenta como faltante
-un tipo del que no llevas ninguna copia; en ese caso el build no muestra stats,
-no puede aplicarse y jamas sustituye por otro tipo.
-
-Los stacks agrupan por `bone_id + quality_id + mutacion`
-(`BoneInstanceService.stack_key_for`), no solo por `bone_id`: apilar dos brazos
-de calidad distinta ocultaria que tienen stats efectivos distintos.
+Ids canonicos:
+- `chatarra`
+- `fragil`
+- `comun`
+- `fuerte`
+- `legendario`
 
 Campos:
 - `quality`
@@ -410,11 +328,7 @@ Campos:
 - `quality_weight_percent`
 
 Los porcentajes son metadata pasiva. No se aplican automaticamente a combate,
-drops o inventario hasta que exista una regla dedicada. En equipamiento,
-`BoneRulesService.player_stats_with_equipment()` ya consume
-`quality_multiplier`, `quality_damage_percent`, `quality_speed_percent`,
-`quality_health_percent` y `quality_weight_percent` para calcular stats finales
-del jugador de forma determinista.
+drops, inventario o equipamiento hasta que exista una regla dedicada.
 
 ## Rareza
 
@@ -437,43 +351,6 @@ Campos:
 `rarity_drop_weight` esta listo para tablas ponderadas, pero no cambia drops
 automaticamente todavia.
 
-## Alcance De Durabilidad, Mutacion Y Set/Sinergia
-
-Estas tres secciones (Durabilidad, Mutacion, Set Y Sinergia) son
-deliberadamente solo esquema de datos y helpers puros y deterministas en
-`BoneRulesService`. Nada de esto esta conectado a gameplay todavia:
-
-- La durabilidad no disminuye en runtime; no existe estado por copia.
-- Reparar no hace nada; `durability_repair_cost_for` solo calcula un numero.
-- Los sets/sinergias no aplican bonus a stats; `equipment_synergy_summary`
-  solo resume que hay repetido.
-- Las mutaciones no producen ningun efecto (visual, de rig, de IA o de
-  combate).
-- Ninguna de las funciones nuevas de `BoneRulesService` para estos temas
-  tiene un llamador fuera de si misma o del validador que las prueba.
-
-Esto es intencional: el objetivo de este hito era preparar datos y reglas
-puras reutilizables, no implementar las mecanicas de juego. Ver
-`docs/roadmap_1_165.md` objetivos 70-75, marcados "No iniciado".
-
-## Durabilidad
-
-Durabilidad describe resistencia authorable de la pieza, no el estado persistido
-de una copia concreta del inventario.
-
-Campos:
-- `durability_max`: capacidad maxima de la pieza.
-- `durability_start`: durabilidad inicial al crear o dropear la pieza.
-- `durability_repair_cost`: coste relativo para reparar esa pieza.
-- `durability_tags`: tags para futuras reglas de reparacion, rotura o UI.
-
-`BoneRulesService.durability_profile_for(bone_id, current_durability)` calcula
-un perfil determinista con `current`, `max`, `ratio`, `state`, `repair_cost` y
-`tags`. Los estados canonicos son `intact`, `cracked` y `broken`.
-
-El Resource no debe guardar el desgaste runtime de cada copia. Ese estado debe
-vivir luego en inventario/save y consultar estas reglas compartidas.
-
 ## Mutacion
 
 Mutacion describe variantes visuales, biologicas o de comportamiento que una
@@ -495,9 +372,6 @@ Campos:
 
 Mutacion no debe modificar rig, AI o combate por si sola. Debe haber una regla
 documentada que lea estos campos.
-
-`BoneRulesService.mutation_profile_for(bone_id)` centraliza id, familia, etapa,
-intensidad y tags para que UI, drops o combate futuro no dupliquen lecturas.
 
 ## Ataque Y Combo
 
@@ -537,11 +411,6 @@ Campos:
 Estos campos son metadata pasiva para futuras reglas de combinacion. No aplican
 bonuses automaticamente.
 
-`BoneRulesService.synergy_profile_for(bone_id)` entrega la metadata de una pieza
-y `equipment_synergy_summary(equipment_state)` resume piezas equipadas por set,
-synergy id, tags y familias de mutacion. Un set o synergy id queda activo cuando
-aparece al menos dos veces. El resumen no aplica bonuses por si mismo.
-
 ## Stats Del Jugador
 
 Campos limpios:
@@ -559,18 +428,6 @@ Campos legacy equivalentes:
 El inicio del juego usa `head_bone` como pieza fija y `max_health` base bajo.
 `torso_bone`, brazos y piernas pueden aumentar `max_health`; al subir el maximo,
 `PlayerStatsComponent` recupera esa diferencia de vida.
-
-Formula activa:
-- Los bonuses directos (`player_move_speed`, `player_attack_range`,
-  `player_attack_damage`, `player_max_health`) se escalan primero con
-  `quality_multiplier`.
-- `quality_damage_percent`, `quality_speed_percent` y
-  `quality_health_percent` se acumulan y se aplican al resultado base + bonus.
-- `quality_weight_percent` ajusta `equipment_weight` e `inventory_weight` por
-  pieza.
-- Si el peso equipado total supera el umbral libre, se aplica una penalizacion
-  suave y acotada sobre la velocidad de movimiento.
-- `quality_drop_percent` sigue reservado para reglas futuras de drops.
 
 ## Stats De Enemigos
 
@@ -682,8 +539,6 @@ un punto de disparo consistente desde el centro de pantalla.
 - Cambia a aim zoom.
 - Aplica `set_animation_follow_offset` para seguir offsets visuales horizontales
   de animacion sin mover verticalmente la camara.
-- Actualiza follow y offsets de animacion en `_physics_process`, sincronizado
-  con `Player._physics_process`.
 - Expone `get_flat_forward`, `get_flat_right`.
 - Expone `get_center_aim_point`.
 
@@ -720,10 +575,9 @@ un punto de disparo consistente desde el centro de pantalla.
 3. Ese offset ya viene en mundo horizontal e incluye tanto el salto actual como
    la posicion adelantada acumulada por golpes anteriores.
 4. `Player` lo entrega a la camara con Y en cero.
-5. `PlayerCameraController.set_animation_follow_offset` actualiza el objetivo.
-6. `PlayerCameraController._physics_process` suaviza ese offset y mueve el
-   pivot de camara en el mismo reloj de fisica que el player.
-7. La camara sigue solo la distancia horizontal del salto; el arco vertical se
+5. `PlayerCameraController.set_animation_follow_offset` suaviza ese offset en
+   el pivot de camara.
+6. La camara sigue solo la distancia horizontal del salto; el arco vertical se
    queda en la animacion del socket de cabeza.
 
 ## Flujo de mouse
@@ -764,15 +618,8 @@ En `TESTING ENVIRONMENT`:
 
 ## Diagnostico de jitter
 
-La causa runtime del jitter debe confirmarse en Godot, pero el contrato estatico
-mostraba una fuente concreta de desincronizacion: `Player._physics_process`
-mueve con `move_and_slide`, actualiza el rig procedural y entrega el offset de
-animacion, mientras `PlayerCameraController` aplicaba el follow suavizado en
-`_process`. Esa mezcla de relojes podia muestrear el target entre ticks de
-fisica y producir vibracion visible, especialmente durante offsets de cabeza o
-cerca de colisiones.
-
-Antes de tocar `Player`, `PlayerCameraController` o el rig procedural, correr:
+El bug de jitter/vibracion no tiene causa confirmada. Antes de tocar
+`Player`, `PlayerCameraController` o el rig procedural, correr:
 
 ```bash
 python -B tools/validate_jitter_update_contract.py
@@ -780,81 +627,22 @@ python -B tools/validate_jitter_update_contract.py
 
 Ese validador es estatico y read-only. Confirma el contrato actual de update:
 `Player._physics_process` mueve con `move_and_slide`, luego llama
-`ProceduralPlayerAnimator.update_from_player`, despues entrega offsets
-horizontales de animacion a `PlayerCameraController.set_animation_follow_offset`,
-y finalmente la camara suaviza follow y offset en `_physics_process`. El zoom
-del `SpringArm3D` permanece en `_process` porque no mueve el target del player.
+`ProceduralPlayerAnimator.update_from_player`, y despues entrega offsets
+horizontales de animacion a `PlayerCameraController.set_animation_follow_offset`.
+Tambien marca como hipotesis a aislar que la camara suaviza follow en `_process`
+mientras el jugador se mueve en fisica.
 
 Para reproducir manualmente en `TESTING ENVIRONMENT`:
 
-1. Probar idle, caminar, sprintar, saltar y caer con camara activa.
-2. Repetir rozando paredes y esquinas para confirmar collision del SpringArm.
-3. Acercar y alejar con rueda para confirmar que el zoom sigue suave.
-4. Repetir abriendo/cerrando inventario para confirmar que el bloqueo de look no
+1. Probar idle, caminar, sprintar, saltar y rozar paredes con camara activa.
+2. Repetir abriendo/cerrando inventario para confirmar que el bloqueo de look no
    introduce vibracion.
-5. Comparar head-only, torso-only y cuerpo completo.
-6. Repetir ataques de head launch y reattach de torso, anotando si el jitter
+3. Comparar head-only, torso-only y cuerpo completo.
+4. Repetir ataques de head launch y reattach de torso, anotando si el jitter
    aparece durante el offset de animacion o despues de volver a cero.
-7. Comparar smoothing normal contra smoothing bajo/casi apagado desde el
-   inspector.
-8. Comparar rig procedural habilitado contra deshabilitado temporalmente desde
-   la escena de prueba.
-9. Probar la misma ruta con FPS estable y FPS bajo si el editor lo permite.
-10. Confirmar que no existe doble interpolacion: el pivot de camara se mueve en
-    `_physics_process`, mientras `_process` solo ajusta `SpringArm3D.spring_length`.
-
-## Comportamiento Esperado Sobre 60 FPS Y Physics Interpolation
-
-`project.godot` no sobreescribe `physics/common/physics_ticks_per_second`
-(el default de Godot 4 es 60) ni `physics/common/physics_interpolation`
-(el default es `false`, apagado). Con el follow de camara en
-`_physics_process`, esto implica:
-
-- A 60 FPS o menos, el pivot de camara se actualiza en el mismo tick de
-  fisica que el movimiento del jugador. No deberia haber diferencia visible
-  respecto al comportamiento anterior en `_process` para ese caso, salvo la
-  correccion de orden ya descrita en "Diagnostico de jitter".
-- Por encima de 60 FPS (monitor con mas Hz que la tasa de fisica), el motor
-  sigue corriendo `_physics_process` a 60 Hz. El pivot de camara ahora se
-  mueve en pasos discretos de fisica en vez de interpolar cada frame de
-  render, lo que puede sentirse menos fluido que un follow en `_process`
-  puro, aunque evita el desfase de un tick contra el movimiento del jugador
-  que motivo este fix. Este es el trade-off estandar documentado por Godot
-  para mover camara en `_physics_process`.
-- `physics_interpolation = true` es la herramienta que Godot ofrece
-  especificamente para ese caso (interpola la posicion visual entre ticks de
-  fisica sin mover la logica de gameplay a `_process`). No se activo en esta
-  rama: es un cambio de configuracion de proyecto con superficie mas amplia
-  que este fix puntual (afecta todo nodo con `top_level`/fisica, no solo la
-  camara), y activarlo sin poder probarlo con FPS alto en este equipo seria
-  especulativo. Queda como candidato a evaluar en una rama separada si el
-  jitter persiste en runtime por encima de 60 FPS.
-
-## Escrituras Directas De global_position (Examinadas, No Modificadas)
-
-`tools/validate_jitter_update_contract.py` senala dos escrituras directas a
-`global_position` en `scripts/player.gd` como sospechosas de jitter porque
-evitan `move_and_slide()`. Se examinaron sin corregirlas especulativamente,
-ya que ninguna es parte del movimiento normal por frame:
-
-- `player.gd:1331` (`_detach_head_from_torso_after_miss`): teleport de una
-  sola vez cuando el torso se separa de la cabeza. Ya tiene compensacion de
-  camara: fija `detached_camera_offset_carry` y
-  `detached_camera_offset_carry_timer = 0.16`, que
-  `_update_camera_animation_follow_offset` (`player.gd:1069-1071`) usa para
-  interpolar `animation_offset` hacia el offset del salto durante 0.16s en
-  vez de que la camara salte de golpe con el jugador.
-- `player.gd:1556` (`_align_player_body_pose_to_detached_torso_marker`,
-  llamada una sola vez desde `_finish_reattach_head_to_detached_torso` al
-  completar el reattach): tambien es un teleport de una sola vez, pero **no**
-  se encontro ningun mecanismo equivalente de `*_carry` que compense la
-  camara para este caso. Es asimetrico respecto al detach.
-
-Esto es una observacion, no un fix: no se toco ninguna de las dos escrituras
-en esta rama. Si el jitter reportado ocurre especificamente al completar un
-reattach de torso, el paso 6 de "Diagnostico de jitter" arriba ya pide
-anotar ese momento por separado; la ausencia de compensacion en el reattach
-es el sospechoso principal a revisar primero si esa prueba lo confirma.
+5. Aislar en una escena temporal deshabilitando solo camara follow, luego solo
+   offset de animacion, y luego solo rig procedural.
+6. Aplicar un fix solo cuando una de esas pruebas reproduzca y elimine la causa.
 
 ## Historial de cambios
 
@@ -865,21 +653,6 @@ es el sospechoso principal a revisar primero si esa prueba lo confirma.
   se usa para acompanar el ataque de cabeza sin copiar su salto vertical.
 - 2026-07-15: Se agrego diagnostico estatico de contrato de update para jitter,
   sin modificar runtime ni confirmar todavia la causa.
-- 2026-07-15: Se sincronizo el follow de camara y el offset horizontal de
-  animacion con `_physics_process`; runtime queda pendiente de validacion en
-  Godot.
-- 2026-07-15: Se documento el comportamiento esperado sobre 60 FPS y la
-  relacion con `physics_interpolation` (no activado, candidato a rama
-  separada). Se examinaron las dos escrituras directas de `global_position`
-  senaladas por el validador (`player.gd:1331` y `:1556`, ambas teleports de
-  un solo evento del mecanismo de detach/reattach de torso, no movimiento
-  por frame) sin modificarlas: la de detach ya compensa la camara con
-  `detached_camera_offset_carry`; la de reattach no tiene compensacion
-  equivalente, lo cual queda registrado como sospechoso a revisar si el
-  jitter runtime se confirma en ese momento especifico. Godot 4.7 esta
-  disponible en este equipo (ver `docs/p0_runtime_validation_suite.md`),
-  pero confirmar o descartar el jitter en si requiere un humano jugando la
-  escena; no se afirma aqui que el jitter haya quedado resuelto.
 
 ## docs/change_documentation_policy.md
 
@@ -951,8 +724,6 @@ perdida de limbs, crawling, drops y reacciones de AI.
 - `scripts/combat_targeting_service.gd`: reglas puras de auto-target para
   ataques head-launch (head-only y torso-only). No accede a la escena: recibe
   posiciones candidatas y devuelve el indice del mejor objetivo.
-- `scripts/backstab_rules_service.gd`: regla pura de cono trasero para stealth
-  finish/backstab. Recibe posicion, facing y threshold; no accede a la escena.
 - `scripts/ballistics_service.gd`: regla pura de lanzamiento para proyectiles con
   gravedad (saliva, flecha enemiga, roca de gorilla). Recibe posiciones y tuning,
   devuelve la velocidad de lanzamiento. Ver "Solve balistico compartido".
@@ -1265,75 +1036,11 @@ compromete al jugador en el lugar mientras dura la animacion.
 ## Flujo stealth
 
 1. `Player` busca target con `can_be_stealth_finished_by`.
-2. El enemigo valida distancia y delega el cono trasero en
-   `BackstabRulesService.is_attacker_behind_target()`.
+2. El enemigo valida distancia y que el player este detras.
 3. UI muestra `get_stealth_prompt_text`.
 4. Al presionar stealth:
-   - `Player` bloquea ataques, inventario/equip y movimiento normal durante la
-     ejecucion corta.
-   - `Player` dispara la pose de finisher con `animator.trigger_stealth_finish_attack()`
-     (ver "Animacion y sincronizacion de impacto" abajo).
-   - `Enemy.try_stealth_finish` solo inicia la ejecucion; no aplica dano todavia.
-     `_begin_stealth_execution` NO gira al enemigo hacia el jugador.
-   - El impacto se aplica una sola vez, disparado por
-     `ProceduralPlayerAnimator.attack_impact_reached` (o por
-     `backstab_execution_impact_timer` como respaldo si la senal no llega).
-   - `Enemy.apply_stealth_finish_impact` resuelve muerte o ambush y evita un
-     segundo impacto con `stealth_execution_impact_applied`.
-   - `finish_stealth_execution` o `cancel_stealth_execution` limpian el estado y
-     restauran control/IA.
-
-### Correcciones 2026-07-16
-
-- **Freeze si el jugador moria o el juego se pausaba durante un backstab**:
-  `_update_backstab_execution` nunca se volvia a llamar tras el `return`
-  temprano de `paused or is_dead` en `_physics_process`, asi que
-  `cancel_stealth_execution` jamas se disparaba y el enemigo objetivo quedaba
-  con `stealth_execution_player` seteado para siempre (IA congelada, imposible
-  de volver a backstabear). Se movio la cancelacion antes de ese `return`.
-- **Segundo freeze relacionado, mas sutil**: incluso con lo anterior corregido,
-  si el enemigo objetivo se liberaba (`queue_free`) durante la ejecucion (por
-  ejemplo, un ambush letal cuyo cadaver se limpia antes de que termine la
-  ventana de recovery), `_is_backstab_executing()` (`backstab_execution_target
-  != null`) empezaba a devolver `false` de golpe -- GDScript compara un Object
-  liberado como igual a `null`, no solo `is_instance_valid()` lo detecta -- y
-  `_update_backstab_execution` retornaba en su primera linea sin llegar nunca
-  a la limpieza. Resultado: `can_attack` quedaba en `false` para siempre; el
-  jugador no podia volver a atacar. Se agrego `backstab_execution_in_progress`
-  (bool plano, sin el problema de comparacion) como la fuente de verdad de
-  "hay un backstab en curso", separada de la validez de la referencia al
-  objetivo.
-- **La victima ya no gira para mirar a su atacante**: `_begin_stealth_execution`
-  y `_update_stealth_execution_hold` llamaban `_turn_toward` cada frame durante
-  toda la ejecucion, dando pistas visuales que contradicen un stealth kill.
-  Se eliminaron ambas llamadas.
-- **Direccion global coherente**: `Enemy._facing_from_rotation()` mezclaba
-  `rotation.y` (local al padre) con `global_position` (global) en el calculo
-  del cono trasero. Ahora usa `global_transform.basis.z`, el equivalente
-  global exacto de la misma formula, correcto incluso si el enemigo queda
-  parentado bajo un nodo rotado.
-- **Reaccion del enemigo**: ya existia via `apply_stealth_finish_impact` ->
-  `take_hit()` (flash + punch scale) en el caso de ambush sobrevivido, o
-  `die()` en el caso letal. No se agrego nada nuevo aqui; se confirmo que
-  funciona.
-
-### Animacion y sincronizacion de impacto
-
-Antes, `trigger_attack(3, false)` no garantizaba la pose de finisher: con
-exactamente un brazo equipado (un estado muy comun antes de completar el
-equipo), `_combo_step_for_equipped_arms()` en
-`ProceduralPlayerAnimator` sobreescribia el paso de combo 3 a 1 o 2,
-cayendo silenciosamente al swing generico de un brazo en vez de la pose de
-finisher (giro de torso + lunge + inclinacion de cabeza). Se agrego
-`trigger_stealth_finish_attack()`, que fuerza esa pose de finisher via un
-flag (`_is_stealth_finish_attack`) sin importar que este equipado.
-
-El impacto se sincroniza ahora con una senal real del animador,
-`attack_impact_reached`, emitida una vez por ataque cuando la fase del
-ataque cruza `attack_windup_portion` (el momento en que el golpe realmente
-"conecta", no el timer fijo adivinado antes). `backstab_execution_impact_timer`
-sigue existiendo como respaldo (si el animador es null o la senal no llega
-por alguna razon), pero ya no es el disparador principal.
+   - Si enemy health <= threshold, muere.
+   - Si tiene demasiada vida, recibe dano extra y responde atacando/buscando.
 
 ### Validacion geometrica de backstab
 
@@ -1343,44 +1050,12 @@ Antes de cambiar la regla de stealth finish, ejecutar:
 python tools/validate_backstab_geometry.py
 ```
 
-El arnes reproduce la formula de `BackstabRulesService` sin abrir Godot y
-comprueba que `Enemy._is_player_behind()` delegue en ese servicio. Cubre frente,
-detras, laterales, enemigos rotados, angulos del cono trasero y posiciones con
-offset vertical. Esta validacion es estatica; la confirmacion visual/runtime de
-que `facing_direction` coincide con el frente real del enemigo debe hacerse en
-`TESTING ENVIRONMENT`. A diferencia de antes, los chequeos de contrato
-(`verify_backstab_service_shape`, `verify_enemy_uses_backstab_service`,
-`verify_backstab_execution_contract`) ahora SI afectan el exit code -- antes
-solo imprimian `WARNING` y el script podia salir 0 aunque se vaciara por
-completo `BackstabRulesService`. Verificado adversarialmente: revertir el fix
-de freeze o reintroducir el giro hacia el atacante hace fallar el validador.
-
-### Evidencia runtime (Godot 4.7 headless, 2026-07-16)
-
-Verificado con una escena de prueba temporal (jugador + enemigo real,
-eliminada tras el uso), no solo con el validador estatico:
-
-- Backstab exitoso letal: deteccion "detras" correcta con geometria rotada,
-  ejecucion completa, dano aplicado (enemigo murio), limpieza correcta
-  (`can_attack` vuelve a `true`, estado de ejecucion vuelve a vacio).
-- Objetivo invalido a mitad de ejecucion (el enemigo se libera tras morir):
-  confirmado que ya NO deja `can_attack` bloqueado para siempre (bug
-  encontrado y corregido en esta misma sesion, ver arriba).
-- Muerte del jugador a mitad de un backstab (por un segundo enemigo):
-  confirmado que el enemigo objetivo queda con `stealth_execution_player ==
-  null` (no congelado) despues de la muerte.
-- Senal `attack_impact_reached` del animador: confirmada disparando durante
-  la animacion, antes de que la ejecucion termine.
-
-Pendiente de prueba manual en editor (no cubierto por la escena headless, que
-no simula input de teclado/mouse ni observacion visual humana):
-
-- Pausa real (abrir inventario) a mitad de un backstab -- el codigo usa la
-  MISMA rama de fix que la muerte, pero no se ejecuto ese camino especifico.
-- Confirmacion visual de que la pose de finisher se ve distinta a un swing
-  normal, y que la reaccion del enemigo (flash/punch scale o death-pop) se
-  lee bien en pantalla.
-- Camara durante la ejecucion (no se toco codigo de camara en esta rama).
+El arnes reproduce la formula actual de `Enemy._is_player_behind()` sin abrir
+Godot. Cubre frente, detras, laterales, enemigos rotados, angulos del cono
+trasero y posiciones con offset vertical. Esta validacion es estatica; la
+confirmacion visual/runtime de que `facing_direction` coincide con el frente
+real del enemigo debe hacerse en `TESTING ENVIRONMENT` antes de una correccion
+funcional.
 
 ## Flujo de dano enemigo
 
@@ -1882,13 +1557,6 @@ En `TESTING ENVIRONMENT`:
   sin lock. Enemigos no afectados. Pruebas: en `DUMMY TESTING ENVIRONMENT`, como
   cabeza, click derecho no debe moverte ni congelarte; click izquierdo si debe
   embestir.
-- 2026-07-15: `scripts/player.gd`, `scripts/enemy.gd`,
-  `scripts/backstab_rules_service.gd` — stealth finish ahora separa deteccion,
-  inicio de ejecucion, momento de impacto y limpieza. `Player` bloquea ataque,
-  inventario/equip, salto y movimiento durante una ventana corta; `Enemy` pausa
-  IA/ataques mientras `stealth_execution_player` esta activo. El dano se aplica
-  desde `apply_stealth_finish_impact` una sola vez y queda pendiente validarlo en
-  runtime con las guias P0 de `TESTING ENVIRONMENT`.
 - 2026-07-15: `scripts/testing_environment.gd` — en `dummy_only_mode` el dummy
   ahora se respawnea con `2` en vez de `1` (`1` ya no hace nada ahi; en el
   `TESTING ENVIRONMENT` normal `2` sigue siendo gorilla). Nuevo `_try_spawn_dummy()`
@@ -1964,22 +1632,17 @@ refactor pass.
   they are intentionally separate from loot rarity.
 - Canonical quality ids are `chatarra`, `fragil`, `comun`, `fuerte` and
   `legendario`; UI can localize display text separately.
-- Quality percentage modifiers now feed the deterministic player stat formula
-  for damage, speed, health and equipped weight; drop tuning remains passive.
+- Quality percentage modifiers are stored as passive metadata for damage, speed,
+  health, drop and weight tuning; no automatic formula consumes them yet.
 - Canonical rarity ids are `comun`, `corrupto`, `maldito`, `especial` and
   `legendario`; canonical mutation families are empty, `corrupto`, `maldito`,
   `especial` and `hibrido`.
-- Bone durability fields define authoring defaults for max durability, starting
-  durability, repair cost and durability tags. Runtime wear is not stored on the
-  Resource.
 - Bone attack/combo fields are present as passive metadata for future combat
   chains; current attacks still come from the existing player/enemy combat code.
 - Bone weight fields now distinguish animation weight, physical weight,
-  equipment load and inventory weight while keeping legacy `weight`. Equipped
-  load can apply a capped movement-speed penalty through `BoneRulesService`.
-- Bone set/synergy fields can be summarized from equipped state through
-  `BoneRulesService.equipment_synergy_summary`; no automatic set bonuses are
-  applied to stats yet, and durability does not decrease at runtime.
+  equipment load and inventory weight while keeping legacy `weight`.
+- Bone set/synergy fields are present as passive metadata; no automatic set
+  bonuses are active yet.
 - Gameplay consumers should still use `BoneRulesService`, `EquipmentRulesService`
   or `BoneDatabase`, not `BoneDefinition` or `BoneDataCatalog` directly.
 
@@ -1987,9 +1650,6 @@ refactor pass.
 
 - `scenes/testing_environment.tscn` is the unified sandbox for camera, enemies,
   movement, animation, rig, drops, and equipment checks.
-- The testing environment status panel includes P0 validation guide sections
-  that can be cycled with F1/F2 for jitter, inventory/preview, pickups/drops,
-  backstab runtime geometry, and rig progression checks.
 - TESTING ENVIRONMENT can spawn a passive dummy target with `5`; it stays still,
   does not attack, and keeps normal damage/limb-loss reactions active.
 - `scenes/dummy_testing_environment.tscn` is a separate passive-target room that
@@ -2189,8 +1849,6 @@ dependan directamente del componente.
 ## Scripts y escenas principales
 
 - `scripts/player_equipment_component.gd`: estado real de equipo por slot.
-- `scripts/player_equipment_builds_component.gd`: presets guardables de
-  equipamiento que delegan aplicacion real en `PlayerEquipmentComponent`.
 - `scripts/player_stats_component.gd`: calculo de stats finales del jugador.
 - `scripts/equipment_rules_service.gd`: reglas de slots, sockets, ids generados
   por limbs y escalas visuales.
@@ -2213,13 +1871,9 @@ dependan directamente del componente.
 
 ## Flujo de equipar
 
-1. La UI o el input de equip next llama `player.equip_bone(bone_id)`. Si el
-   usuario suelta una pieza sobre un slot especifico, la UI pasa tambien
-   `target_slot`.
+1. La UI o el input de equip next llama `player.equip_bone(bone_id)`.
 2. `Player` delega a `PlayerEquipmentComponent.equip_bone`.
-3. El componente resuelve compatibilidad con
-   `EquipmentRulesService.compatible_slots_for_bone` y normaliza el slot con
-   `EquipmentRulesService.normalize_slot_id`.
+3. El componente pregunta el slot con `EquipmentRulesService.slot_for_bone`.
 4. Si el hueso ya esta equipado en ese slot, no hace nada.
 5. Si hay `ModularSkeletonRig`, el componente llama `rig.equip_bone`.
 6. Se incrementa `equip_swaps`.
@@ -2238,45 +1892,16 @@ dependan directamente del componente.
 6. Emite `inventory_changed`.
 7. Emite `bone_unequipped`.
 
-## Flujo de build presets
-
-1. La UI llama `player.save_equipment_build(index)` para capturar el equipo
-   actual no-core.
-2. `PlayerEquipmentBuildsComponent` normaliza slots, omite la cabeza fija y
-   guarda el build en `user://equipment_builds.cfg`.
-3. La UI llama `player.apply_equipment_build(index)`.
-4. El componente valida inventario disponible, slots compatibles y torso
-   requerido antes de tocar el equipo.
-5. Si la validacion falla, no aplica cambios parciales y devuelve un mensaje
-   para la UI.
-6. Si la validacion pasa, desequipa slots no presentes en el build y equipa en
-   orden estable: torso, brazos, piernas.
-7. `PlayerEquipmentComponent` recalcula stats, actualiza rig y emite eventos por
-   la ruta normal.
-
 ## Reglas de slots
 
 El punto central es `EquipmentRulesService`.
 
 Slots principales:
-- `head`
-- `torso`
-- `left_arm`
 - `right_arm`
-- `left_leg`
-- `right_leg`
-
-Aliases legacy aceptados (solo los que tienen consumidor real en
-`data/bones/*.tres`; no agregar aliases especulativos):
-- `body` -> `torso`
-- `legs` -> compatible con `right_leg` y `left_leg` (equip-next resuelve al
-  primer lado libre via `PlayerEquipmentComponent._first_open_compatible_slot`;
-  `normalize_slot_id("legs")` sigue devolviendo `right_leg` como valor unico
-  por defecto para contextos que necesitan un solo id, como display/orden)
-
-`torso` es el slot de equipamiento. `body` sigue siendo un socket del rig y un
-valor legacy en datos viejos. No se debe mezclar socket del rig, slot de equipo
-y parte corporal sin pasar por `EquipmentRulesService`.
+- `left_arm`
+- `legs`
+- `body`
+- `head`
 
 Los huesos generados por limbs usan ids como:
 - `normal_right_arm_bone`
@@ -2319,8 +1944,7 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - El jugador inicia con `head_bone` equipado como nucleo fijo.
   - La cabeza no se puede reemplazar ni desequipar; si se rompe, el jugador
     muere.
-  - El torso (`torso`, alias legacy `body`) debe equiparse antes de brazos o
-    piernas.
+  - El torso (`body`) debe equiparse antes de brazos o piernas.
   - Si el torso se quita, las extremidades se desacoplan primero.
   - Brazos y piernas no tienen orden obligatorio entre si una vez equipado el
     torso.
@@ -2333,9 +1957,6 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   - este documento
 - Si un hueso cambia visualmente el cuerpo, la preview del inventario debe
   mostrarlo tambien.
-- Las piezas legacy hechas a mano pueden seguir declarando `body` o `legs`
-  durante la migracion. El runtime debe normalizarlas antes de guardar estado
-  de equipamiento, pintar el rig o validar drops.
 - Al editar datos de huesos hechos a mano, cambiar el `.tres` correspondiente
   en `data/bones/`. Solo tocar `BoneDataCatalog` si se agrega un id nuevo o se
   necesita fallback; solo tocar `BoneDatabase` si cambia la compatibilidad.
@@ -2344,30 +1965,24 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
   el diccionario plano que el rig, stats y slots ya esperan.
 - Los campos de calidad (`quality_rank`, `quality_score`,
   `quality_multiplier`, `quality_color`) viajan por el mismo diccionario plano.
-  `BoneRulesService.player_stats_with_equipment()` aplica `quality_multiplier`
-  sobre los bonuses directos del jugador antes de agregarlos al resultado final.
+  No aplicar `quality_multiplier` a stats automaticamente hasta que una regla de
+  balance lo defina explicitamente.
 - Los modificadores porcentuales por calidad (`quality_damage_percent`,
   `quality_speed_percent`, `quality_health_percent`, `quality_drop_percent`,
-  `quality_weight_percent`) son metadata granular. Damage, speed, health y
-  weight ya alimentan la formula determinista de stats; drop sigue pasivo hasta
-  que una regla de drops lo consuma.
+  `quality_weight_percent`) son metadata granular. Pueden alimentar balance
+  futuro, pero equipamiento no los aplica automaticamente todavia.
 - Las calidades canonicas son ids en minuscula y sin acentos para datos:
   `chatarra`, `fragil`, `comun`, `fuerte`, `legendario`. Si UI necesita
   acentos o traduccion, debe mapearlos al presentar texto, no cambiar el id.
 - Las rarezas canonicas son `comun`, `corrupto`, `maldito`, `especial` y
   `legendario`. Las familias de mutacion canonicas actuales son vacio,
   `corrupto`, `maldito`, `especial` e `hibrido`.
-- Los campos de durabilidad (`durability_max`, `durability_start`,
-  `durability_repair_cost`, `durability_tags`) describen resistencia y coste de
-  reparacion por tipo de pieza. `BoneRulesService` calcula perfiles y estados,
-  pero equipar una pieza no desgasta ni repara automaticamente todavia.
 - Rareza y mutacion siguen siendo metadata pasiva hasta que una regla de drops,
   rig o combate las consuma explicitamente.
 - Los campos de mutacion (`mutation_id`, `mutation_family`, `mutation_stage`,
   `mutation_intensity`, `mutation_tags`) describen transformaciones potenciales
   de una pieza. No deben cambiar rig/stats automaticamente hasta que exista una
-  regla de equipamiento que los consuma. `mutation_profile_for` centraliza su
-  lectura para futuros consumidores.
+  regla de equipamiento que los consuma.
 - Los campos de ataque/combo (`attack_type`, `attack_tags`, `combo_family`,
   `combo_step`, `combo_window`, `combo_tags`, `combo_finisher`) describen como
   una pieza podria participar en cadenas de combate. Actualmente solo alimentan
@@ -2376,86 +1991,10 @@ assets primero y solo usa sus diccionarios internos como fallback temporal.
 - Los campos de peso (`weight`, `weight_class`, `physical_weight`,
   `equipment_weight`, `inventory_weight`) separan respuesta fisica, carga al
   equipar e impacto de inventario. `weight` queda como campo legacy para la
-  animacion procedural actual. `equipment_weight` contribuye a una penalizacion
-  suave de velocidad cuando la carga equipada supera el umbral libre.
-
-### Unidades Y Formula De Peso/Calidad (`BoneRulesService`)
-
-Todas las constantes viven en `scripts/bone_rules_service.gd`. No hay
-unidades fisicas reales (kg, etc.); son numeros de diseno adimensionales
-calibrados por prueba y error, igual que el resto del balance del proyecto.
-
-- `EQUIPMENT_FREE_WEIGHT := 3.0`: suma de `equipment_weight` (peso ya
-  ajustado por calidad) que el jugador carga sin penalizacion. Mismas
-  unidades que `weight`/`equipment_weight` en los `.tres` de hueso.
-- `EQUIPMENT_LOAD_SPEED_PENALTY_PER_WEIGHT := 0.06`: fraccion de
-  `move_speed` que se resta por cada unidad de `equipment_weight` que
-  excede `EQUIPMENT_FREE_WEIGHT`. Ejemplo: 5.0 de peso equipado con 3.0
-  libres deja 2.0 sobre el umbral, penalizacion = 2.0 * 0.06 = 0.12 (12%).
-- `EQUIPMENT_LOAD_SPEED_PENALTY_MAX := 0.30`: techo de la penalizacion de
-  velocidad (30%), sin importar cuanto peso adicional se equipe.
-- `PLAYER_STAT_PERCENT_LIMIT := 0.75`: techo/piso (+-75%) para la suma de
-  `quality_damage_percent`, `quality_speed_percent`, `quality_health_percent`
-  y `quality_weight_percent` acumulados por todas las piezas equipadas.
-- Orden de aplicacion en `player_stats_with_equipment()`: 1) sumar bonuses
-  planos (`move_speed_bonus`, etc.) ajustados por `quality_multiplier` por
-  pieza; 2) sumar y limitar los porcentajes de calidad; 3) calcular la
-  penalizacion de carga desde `equipment_weight` total; 4) aplicar
-  `(1 + porcentaje) * (1 - penalizacion_de_carga)` sobre velocidad, y
-  `(1 + porcentaje)` sobre dano/vida.
-- `attack_damage` y `max_health` se redondean una sola vez, despues de sumar
-  los bonuses de todas las piezas equipadas como floats. Redondear cada
-  pieza por separado antes de sumar inflaria el total con mas piezas
-  equipadas incluso si la suma real no cambia (ver comentario en
-  `adjusted_player_bonus_for`).
+  animacion procedural actual.
 - Los campos de set/sinergia (`set_id`, `set_name`, `set_piece_key`,
   `set_tags`, `synergy_ids`, `synergy_tags`, `synergy_score`) permiten detectar
-  combinaciones de piezas. `equipment_synergy_summary` cuenta sets e ids
-  repetidos; `SynergyRulesService.evaluate` convierte esos conteos en bonuses
-  reales y ya esta cableado a los stats (ver seccion siguiente).
-
-## Sets y sinergias
-
-`scripts/synergy_rules_service.gd` es la unica fuente de reglas. Recibe el
-estado de equipo (`{slot_id: instance_id}`) y devuelve `bonus` (planos),
-`modifiers` (porcentajes) y `active` (lista lista para UI).
-
-- **Familia** = `set_id`. Es el unico campo presente tanto en huesos autorados
-  como en limbs generados. `core_body`, `training_bones`, `power_bones` e
-  `hybrid_bones` estan excluidos (`EXCLUDED_SET_IDS`) por ser degenerados o no
-  alcanzar 2 piezas.
-- Escalones de 2 y 4 piezas, **excluyentes**: cuatro piezas otorgan solo el
-  escalon de 4. Una regla que quiera acumular declara `"cumulative": true`.
-- No existe escalon de 6: la cabeza esta fijada a `head_bone`, asi que solo hay
-  cinco slots equipables (`MAX_EQUIPPABLE_PIECES`).
-- Pares simetricos (`Matching Arms`, `Matching Legs`) se detectan por mismo
-  `bone_id` en los dos lados; la calidad no interviene.
-- `High-Quality Assembly` cuenta piezas con rank >= 3 (`Strong`, `Pristine`)
-  usando el rank canonico de `BoneQualityService`, nunca `quality_multiplier`.
-  La cabeza fija cuenta solo si su propia calidad rodada califica.
-
-Integracion: exactamente dos puntos, ambos en `BoneRulesService`.
-
-- `aggregate_player_bonuses_exact` suma `bonus` despues del bucle por pieza y
-  sin multiplicador de calidad (un bonus de set no pertenece a ninguna pieza).
-- `aggregate_player_stat_modifiers` suma `modifiers` **antes** de los `clampf`,
-  de modo que `PLAYER_STAT_PERCENT_LIMIT` (+/-0.75) sigue siendo el unico techo.
-  El `weight_percent` de sinergia escala el peso ya ensamblado y por lo tanto
-  alimenta la penalizacion de carga.
-
-El sistema es **sin estado**: `evaluate` es una funcion pura del equipo actual.
-No hay efectos guardados ni eventos que apliquen bonuses por separado, asi que
-desequipar una pieza elimina su efecto en el siguiente recalculo y recalcular N
-veces no duplica nada. No agregar cache ni señales a este servicio.
-
-Consumidores: `PlayerStatsComponent` (via `player_stats_with_equipment`),
-`PlayerEquipmentBuildsComponent.get_build_report` (`effects`,
-`current_effects`, `composition`, `effects_partial`) y `player_inventory_ui.gd`
-(Active Effects, Build Composition, y el preview "Would activate / Would break"
-del panel de comparacion). La UI nunca evalua condiciones por su cuenta.
-- Build presets no son una segunda fuente de estado. Solo persisten una
-  intencion de equipamiento y deben revalidarse contra inventario y reglas
-  actuales cada vez que se aplican.
+  combinaciones de piezas. No aplican bonuses automaticamente todavia.
 - `head_bone` y `torso_bone` son piezas de progresion inicial. `head_bone` no
   entra al inventario normal; `torso_bone` aparece como pickup starter en el
   demo.
@@ -2520,22 +2059,10 @@ En `TESTING ENVIRONMENT`:
 2. Confirmar que la cabeza inicial ya esta equipada y no se puede reemplazar.
 3. Equipar torso.
 4. Equipar huesos de brazo y piernas.
-5. Confirmar que `Left Arm`, `Right Arm`, `Left Leg` y `Right Leg` cambian solo
-   el lado correspondiente.
+5. Confirmar que el cuerpo del jugador cambia.
 6. Confirmar que el preview cambia igual que el jugador.
 7. Desequipar con right click o drag hacia zona vacia si aplica.
 8. Confirmar que stats en UI cambian.
-9. Guardar un build en Settings, modificar equipo y aplicar el build guardado.
-10. Intentar aplicar un build que necesita dos copias del mismo hueso teniendo
-    solo una copia; debe mostrar error y no dejar cambios parciales.
-11. Presionar Apply una vez y confirmar que el boton cambia a "Confirm?" y el
-    equipo NO cambia todavia; presionar de nuevo dentro de unos segundos y
-    confirmar que ahora si aplica. Presionar Apply una vez y esperar mas de
-    4 segundos sin presionar de nuevo; confirmar que el boton vuelve a decir
-    "Apply" y no paso nada.
-12. Guardar sobre un build ya ocupado y confirmar que tambien pide una
-    segunda pulsacion; guardar sobre un build vacio y confirmar que NO la
-    pide (aplica directo).
 
 ## Historial de cambios
 
@@ -2575,73 +2102,6 @@ En `TESTING ENVIRONMENT`:
   ahora puede ajustar cajas de dano por pieza usando campos `hitbox_*`.
 - 2026-07-14: Se separo el consumo de hurtboxes entre jugador y enemigos usando
   grupos distintos sin duplicar los campos de authoring.
-- 2026-07-15: Se agregaron campos de durabilidad authorable y helpers puros
-  para perfiles de durabilidad, mutacion y resumen de sinergias equipadas.
-- 2026-07-15: Equipamiento adopto seis slots canonicos (`head`, `torso`,
-  `left_arm`, `right_arm`, `left_leg`, `right_leg`). `body` y `legs` quedan como
-  aliases legacy normalizados por `EquipmentRulesService`; el rig conserva sus
-  sockets `body`/`body_lower` sin usarlos como ids de estado de equipo.
-- 2026-07-15: Se agregaron build presets de equipamiento. La persistencia vive
-  en `PlayerEquipmentBuildsComponent`, la aplicacion usa
-  `PlayerEquipmentComponent`, y cada apply revalida copias, torso y
-  compatibilidad de slots.
-- 2026-07-15: `BoneRulesService` aplica calidad, modificadores porcentuales y
-  carga equipada al calculo determinista de stats del jugador.
-- 2026-07-15: Se documentaron unidades y formula exacta de peso/calidad. Se
-  corrigio `aggregate_player_bonuses` para sumar bonuses de dano/vida como
-  floats y redondear una sola vez (antes cada pieza equipada redondeaba por
-  separado, inflando el total con mas piezas equipadas). Se expusieron
-  `equipment_weight`, `inventory_weight`, `load_speed_penalty` y los
-  `quality_*_percent` en `Player.get_inventory_stats_snapshot()`, que antes
-  se calculaban y se descartaban sin ningun consumidor. No se agrego
-  defensa, stamina ni movilidad: esos stats no existen en el proyecto.
-- 2026-07-15 (correccion): `_slot_for_request` resolvia el slot por defecto
-  de un hueso bilateral (`legs`, o `right_arm` sin `limb_key`) llamando a
-  `EquipmentRulesService.slot_for_bone`, una funcion pura sin estado que
-  siempre devuelve el primer slot compatible. Equipar-siguiente con dos
-  huesos de pierna genericos nunca podia alcanzar `left_leg`. Se agrego
-  `PlayerEquipmentComponent._first_open_compatible_slot`, que consulta el
-  `equipped` real del componente y elige el primer slot compatible vacio.
-  Verificado en Godot 4.7 headless: dos `leg_bone` equipados via
-  equip-next ahora terminan en `{"left_leg": "leg_bone", "right_leg":
-  "leg_bone"}`. De paso se encontro y corrigio un bug de tipado de
-  GDScript: `compatible_slots_for_bone` devolvia arrays literales sin
-  tipar explicitamente, lo cual fallaba en runtime ("Trying to assign an
-  array of type Array to a variable of type Array[String]") para
-  cualquier llamador externo a la clase que asignara el resultado a una
-  variable tipada; ahora construye el array con `.append()`.
-- 2026-07-15: Se eliminaron 7 de los 9 aliases legacy de slot (`ribs`,
-  `ribcage`, `chest`, `arm_left`, `arm_right`, `leg_left`, `leg_right`):
-  ningun archivo en `data/bones/*.tres` ni codigo en `scripts/` los produce
-  (verificado por grep). Solo quedan `body` y `legs`, que si tienen datos
-  reales. `tools/validate_bone_data.py` actualizado para no exigirlos.
-- 2026-07-15: Se elimino `PlayerEquipmentComponent.get_equipped_bone_defs`
-  (cero llamadores; existe una funcion homonima pero distinta en
-  `ModularSkeletonRig` que si se usa).
-- 2026-07-15: El panel de informacion del inventario ahora compara el hueso
-  bajo el cursor contra el equipado en el mismo slot (deltas de
-  move_speed/attack_range/attack_damage/max_health via
-  `BoneRulesService.adjusted_player_bonus_for`, los unicos stats de hueso
-  que existen). No se inventaron stats de defensa/peso para la comparacion.
-- 2026-07-15: `BoneSlotWidget` pinta el borde del slot en verde/rojo
-  mientras un drag lo sobrevuela, segun `can_equip_bone_in_slot`, y lo
-  restaura en `NOTIFICATION_DRAG_END`.
-- 2026-07-15 (correccion): `PlayerEquipmentBuildsComponent.apply_build`
-  aplicaba el estado objetivo y solo reportaba si no coincidia del todo;
-  nunca deshacia el cambio parcial. Ahora guarda un snapshot del
-  equipamiento antes de aplicar y reaplica ese snapshot si la
-  verificacion post-apply falla. Verificado en Godot 4.7 headless con 5
-  escenarios (build valido, build vacio, pieza no disponible, slot
-  incompatible, y un rollback forzado): el estado final tras el rollback
-  forzado coincidio exactamente con el estado previo a la aplicacion. De
-  paso se encontro y corrigio un bug preexistente desde el primer commit
-  de esta rama: `_summary_for_state` llamaba
-  `BoneRulesService.display_name` (nunca existio), lo cual rompia la
-  compilacion de GDScript de `player.gd` completo -- el validador estatico
-  nunca pudo detectarlo porque no ejecuta GDScript.
-- 2026-07-15: Guardar sobre un build no vacio y Aplicar un build ahora
-  requieren una segunda pulsacion del mismo boton dentro de 4 segundos
-  para confirmar (sin dialogo nativo, mismo estilo DIY del resto de la UI).
 
 ## docs/flow_index.md
 
@@ -2675,12 +2135,6 @@ gameplay debe actualizar el archivo de flujo correspondiente.
      evidencia de PR.
 2. `docs/roadmap_progress.md`
    - Tabla operativa de lotes, ramas, evidencia, PRs y pendientes.
-3. `docs/p0_runtime_validation_suite.md`
-   - Guia especifica para la suite P0 dentro de `scenes/testing_environment.tscn`.
-4. `docs/roadmap_1_165.md`
-   - Fuente numerada y auditable del roadmap tecnico.
-5. `docs/repo_stability_and_graphify.md`
-   - Politica de Graphify, line endings, caches y preflight de commits.
 
 ## Politica
 
@@ -2698,6 +2152,427 @@ funcional.
 - combate
 - drops
 - equipamiento
+
+## docs/generic_locomotion.md
+
+# MARROW Procedural Animation — plan & progress
+
+A ground-up **morphology-driven** procedural animation system: it accepts a
+creature assembled at runtime from interchangeable, differently-proportioned,
+detachable rigid parts and produces locomotion, balance, attacks and damage
+reactions with NO authored clips and no fixed rig. It replaces — for these
+bodies — the hardcoded biped in `scripts/rig/procedural_player_animator.gd`,
+which stays as-is and keeps driving the current player while this grows beside it
+under `scripts/locomotion/`, built and tested stage by stage. A later milestone
+adds an adapter so the shipping rig can feed this system.
+
+## Authoritative design — the Morphology-Driven TDD
+
+The spec is **`Morphology_Driven_Procedural_Animation_Godot.pdf`** (Technical
+Design Document, 2026-07-18; the user's copy lives in `~/Downloads/`). This
+document tracks our implementation against it. Extract the PDF's text with
+`python3` + `pypdf` (poppler / `pdftotext` are not installed on this machine).
+
+Its load-bearing decisions, which everything here follows:
+
+- **The body is a runtime graph; the connected component containing the active
+  head IS the character.** Identity and control belong to a persistent **Core
+  Agent** represented by the head, not to the torso.
+- **Pipeline:** compile the creature into a kinematic body graph → discover
+  viable support configurations → schedule contacts → solve balance and root
+  pose → solve each chain with topology-appropriate IK → switch disconnected
+  components to physics. **Possession always follows the head.**
+- **Animate tasks, not poses.** Never store "the knee is at 42°"; store "the foot
+  must reach this contact while the knee bends toward this pole within its
+  limits." IK/constraint solvers turn tasks into joint transforms valid for the
+  *current* body.
+- **The custom BodyGraph is authoritative.** Godot's `Skeleton3D`,
+  `TwoBoneIK3D`, `FABRIK3D`, `SkeletonModifier3D` may be used as calculation
+  helpers, but must not define ownership or anatomy.
+
+## Our modules ↔ TDD components
+
+Our headless `RefCounted` classes implement the TDD's compiler/planner concepts.
+(Renaming the classes to the TDD's names is a deferred mechanical refactor; the
+concepts map 1:1 today.)
+
+| TDD component | Our class (`scripts/locomotion/`) | Status |
+|---|---|---|
+| BodyGraph (parts, links, traversal) | `body_graph.gd` + `body_part.gd` | ✅ (tree; no cut/components yet) |
+| MorphologyCompiler / CompiledMorphology | `body_measure.gd` | ✅ (mass, COM, chains, reach, joint limits) |
+| Support-polygon / stability math | `geom2d.gd` | ✅ |
+| StanceSelector | `stance_generator.gd` (+ `resting_stance`) | ✅ (margin scoring; comfort/energy terms pending) |
+| ContactPlanner (foot lock) | `contact_lock.gd` | ✅ (lock + reach bookkeeping) |
+| GenericIKController | `chain_ik.gd` | ✅ (hinge / two-bone / FABRIK) |
+| GaitGenerator / oscillators | `gait_oscillator.gd` + `gait_controller.gd` + `gait_pattern.gd` | ✅ (walk / trot / tripod / wave) |
+| BalanceController / RootPoseSolver | `gait_controller.gd` + `root_pose_solver.gd` | ✅ (lateral sway + pitch/roll/height from contacts) |
+| DetachmentManager / ConnectedComponentFinder | `body_graph.gd` (components/subgraph) + `detachment.gd` | ✅ cut + recompile (physics hand-off = scene layer) |
+| CoreAgent / PossessionController | — | ◻ M8 |
+| Attack task system | `attack_controller.gd` | ✅ (task-space paths, reach policy; hit detection = scene layer) |
+| Debug visualization | `locomotion_gallery.gd` + `locomotion_zoo.gd` | ✅ (stances, support polygons, CoM) |
+
+## Roadmap — TDD milestones
+
+This supersedes the earlier ad-hoc "12 stages" (whose numbers the code/tests
+still use; the mapping is noted per milestone).
+
+| Milestone | Deliverable | Our coverage | Status |
+|---|---|---|---|
+| **M1 Modular assembly** | Part scenes, sockets, connection validation, graph traversal | stages 1–2 topology | ✅ (pure-class; scene parts + `AttachmentLink`s deferred to M7) |
+| **M2 Compilation** | Measure chains, mass, COM, reach, supports; debug viz | stage 2 + gallery | ✅ |
+| **M3 Static stance** | Generate & score stable biped + quadruped poses | stage 3 | ✅ |
+| **M4 One procedural leg** | Lock one contact, solve one chain, place rigid visible segments | stage 4 (lock ✅) + stage 5 (IK ✅) | ✅ |
+| **M5 Biped locomotion** | Alternating gait phase, contact prediction, root/pelvis correction, turning | stage 6 (walk + terrain + turning ✅, all tested) | ✅ |
+| **M6 Generalized supports** | 4+ limbs, quadruped walk/trot, topology-independent oscillator sets | stages 7-9 (walk/trot/tripod/wave + torso pose ✅) | ✅ |
+| **M7 Damage & detachment** | Graph cuts, physics transfer, collision grace, live recompilation | `detachment.gd` (cut + recompile ✅; physics/possession = scene layer) | ◨ |
+| **M8 Head possession** | Detach head, head-only movement, compatible-socket search, reattachment | (new — not in old plan) | ◻ |
+| **M9 Procedural attacks** | Task-space attack paths, root stepping, hit windows, missing-limb fallback | `attack_controller.gd` (paths + reach + impact ✅; hit/damage wiring = scene layer) | ◨ |
+| **M10 Polish & scale** | Emergency reactions, LOD, pooling, networking, save/load, tools | stage 12 | ◻ |
+
+**Minimum viable prototype** (TDD §16.1): two torso types, three interchangeable
+limb lengths, automatic biped/quadruped stance selection, one walk gait each, one
+severable limb, head detachment, and one reattachable body. Prove topology
+changes recompile locomotion without authored clips — *before* chasing every
+creature family or advanced physics.
+
+## Key design decisions carried from the TDD
+
+- **IK by topology (§8):** 1 segment → direct/hinge; 2 → analytical two-bone IK
+  with a **pole target**; 3+ → constrained CCD / FABRIK; spine/tail → spline or
+  multi-joint iterative. Clamp the target distance to `[|a−b|, a+b]`; never
+  silently stretch a part unless it declares scaling.
+- **Avoid singular fully-extended poses.** Derive a stable pole from the socket
+  bend axis + torso orientation + previous-frame direction and smooth it so knees
+  don't flip. Addressed in the gallery via `StanceGenerator`'s `reach_fraction`
+  (stand at 90% of full reach → the two-segment legs land on a bent knee instead
+  of the singular straight pose). The default is still 1.0; a gait/comfort profile
+  lowers it.
+- **Visible-segment placement (§4.4):** put the rigid mesh at the midpoint of two
+  solved joints, orient it start→end, scale ONLY along its length axis and only if
+  allowed. Prefer moving joints to the true socket-to-socket length over stretching
+  meshes. (The gallery already draws bones this way.)
+- **Attached vs detached physics (§10.3):** an attached part is driven by the
+  solver and contributes to the assembled COM; a detached part/subassembly becomes
+  a `RigidBody3D` under gravity/impulse. Detachment = deactivate a graph edge →
+  find connected components → transfer velocity+impulse → recompile the head's
+  component → new stance or collapse.
+- **Possession rule (§11.1):** the connected component containing the Core Agent's
+  head receives input, camera, abilities and identity — this one rule covers head
+  on a biped, on a quadruped, on a single arm, or alone.
+- **Stance scoring (§6.2):** the full score is
+  `stability_margin·w + joint_comfort·w + ground_clearance·w + orientation_pref −
+  energy_cost − joint_limit_penalty − self_collision_penalty`. We currently score
+  on margin + tiebreaks only; the other terms are a natural M3 enrichment.
+- **Locomotion families (§6.4):** biped, quadruped, multi-leg, hop, crawl,
+  serpentine, rolling, head-only. The stance selector chooses a *compatible*
+  family rather than forcing one formula. (Our snake is the serpentine seed.)
+
+---
+
+# Built so far
+
+## M1 / stage 1 (done) — the body graph
+- **`body_part.gd` (BodyPart)** — one rigid box: `size`, `mass`, `center_offset`,
+  and named **sockets** (each a `Transform3D` frame in the part's own origin
+  space). Carries NO notion of "arm"/"leg" — a torso is a part with five sockets,
+  a leg a part with two (`root` mount, `tip` endpoint).
+- **`body_graph.gd` (BodyGraph)** — parts + **joints**. A joint pins a child's
+  mount socket onto a parent's socket; `assemble(root_transform)` walks the tree
+  and returns a world `Transform3D` per part:
+  `child_world = parent_world * parentSocket * childSocket⁻¹`. `validate()`
+  rejects no/unknown root, two parents, orphan, cycle, missing socket. Tree-only
+  for now; closed loops and the `AttachmentLink`/`cut_link`/`connected_component`
+  machinery arrive with **M7 detachment**.
+- **Tested**: `test_body_graph.gd` builds a biped and quadruped from the SAME
+  assembler and checks placement, coplanar stances, rotated-socket propagation and
+  all four validation failures. `BODY_GRAPH_TEST: ALL PASS`.
+
+## M2 / stage 2 (done) — compilation / measure
+- **Model extension**: `BodyPart.endpoints` (`mark_endpoint()`), and joints carry
+  a `dof` Array — `{axis, min, max}` rotational freedoms in the parent-socket
+  frame; `[]` = rigid weld. Helpers `BodyGraph.hinge` and `.ball`. `assemble()`
+  uses the rest pose (all angles 0); dof is metadata until the IK solver drives it.
+- **Topology queries**: `parent_joint_of`, `leaves`, `joints_to`, `endpoints_world`.
+- **`body_measure.gd` (BodyMeasure)** — name-agnostic `total_mass()`,
+  `center_of_mass()`, `chains()` (per endpoint: `reach_rest`,
+  `reach_max` = Σ segment lengths, `limb_mass`, `limb_com`, per-joint DOF/limits)
+  and `describe()`. This is the TDD's MorphologyCompiler.
+- **Tested**: `test_body_measure.gd` — 2-segment legs (thigh+shin+knee), a 50°
+  bent knee proves `reach_rest < reach_max`. `BODY_MEASURE_TEST: ALL PASS`.
+
+## M3 / stage 3 (done) — static stance selection
+- **`geom2d.gd` (Geom2d)** — `convex_hull` (monotone chain), `signed_margin`
+  (positive inside a convex CCW polygon; handles 1-/2-point hulls), `area`,
+  `centroid`.
+- **`stance_generator.gd` (StanceGenerator / StanceSelector)** — the torso stands
+  at height H; each endpoint drops to the ground within reach and splays outward by
+  fraction s. It sweeps (H, s), builds the support polygon from foot patches
+  (`contact_radius` 0.08), projects the CoM, and keeps the largest balance MARGIN.
+  **Tiebreaks: least spread, then tallest torso** — a biped's margin is
+  foot-radius-capped fore-aft so spread AND height tie; least-spread stops the
+  splits, tallest-torso stands it at near-full extension (valid for rigid legs;
+  see the ⚠ above — bent knees arrive with M4 IK). A quadruped's margin grows with
+  spread, so it still splays wide. **`reach_fraction`** sets how upright it stands
+  (leg usage) and **`stance_width`** (optional; default lets the search choose)
+  fixes the lateral splay as a fraction of the reach available at that height — two
+  independent knobs, verified by `test_stance_generator.gd` (same height, splay
+  0.46→0.74).
+- **`resting_stance()`** (static) — the LIMBLESS family (snake): drop the body
+  until its lowest endpoints touch, run the SAME hull/margin check with no
+  height/spread search. Same return shape as `generate()` plus a centring
+  `root_offset`.
+- **Tested**: `test_stance_generator.gd` — stable hip-width biped (+0.08), wide
+  4-corner quadruped (+0.45), stub legs → none, off-centre load → `unstable`
+  (−0.31). `STANCE_TEST: ALL PASS`.
+
+## M4 / stage 4 (done — the lock half) — contact locking
+- **`contact_lock.gd` (ContactLock / ContactPlanner)** — once a stance plants the
+  endpoints, their world positions are LOCKED. The torso can sway, bob, lean and
+  turn while every foot stays exactly put; it reports, per proposed torso pose,
+  whether each limb can still REACH its contact and how much reach it has to spare
+  (the signal the gait scheduler reads to decide when a foot must be lifted). It
+  does NOT bend the legs — that's the IK half (below).
+- **Rests on one fact**: a limb's base is a socket on the ROOT part, so
+  `hip_world = root_transform * base_local` — no re-assembly as the torso moves.
+  Per contact: `hip`, `foot` (locked), `dist`, `margin` (= reach_max − dist),
+  `strain` (= dist / reach_max), `reachable`; per body: `all_reachable` + tightest
+  limb. `max_travel(dir)` bisects how far the torso can move before a lock breaks;
+  `set_contact()` re-plants a foot after a step.
+- **Tested**: `test_contact_lock.gd` — under translation feet stay fixed and hips
+  move by exactly the same vector; crouch adds margin, over-extension breaks a
+  lock; the standing biped crouches ~1.24 m but rises ~0.001 m and sways ±0.035 m
+  (full-extension); yaw keeps feet planted; a quadruped locks four the same way.
+  `CONTACT_LOCK_TEST: ALL PASS`.
+
+## M4 (done — the IK half) / stage 5 — generic chain IK
+- **`chain_ik.gd` (ChainIK)** — bend a limb so its tip reaches a target, solving by
+  TOPOLOGY: 1 segment → hinge (point at target); 2 → **analytical two-bone IK with
+  a pole target** (deterministic, exact); 3+ → **FABRIK** (pole-seeded iterative).
+  Pure static math on world points + segment lengths — knows nothing about
+  BodyGraph, so `test_chain_ik.gd` unit-tests it directly. Reachability per TDD
+  §8.2: a target beyond `a+b` straightens the chain toward it, a target too close
+  folds as far as it can; segments never stretch (verified to ±1e-4).
+- **Fed by** `BodyMeasure.chains()[i].segments` — the per-segment lengths (thigh,
+  shin, …) added this stage; the hip is the chain `base`.
+- **Two-segment legs**: `LocomotionZoo.add_leg()` now builds thigh + shin + a
+  hinged knee (same total reach, so the stance search is unchanged). The gallery
+  stands each creature at `reach_fraction` 0.9 and runs `ChainIK` from hip to
+  planted foot with a forward pole, drawing one bone per solved segment plus a
+  knee joint — so **the biped, quadruped and hexapod now stand on visibly bent
+  knees** instead of straight sticks.
+- **Tested**: `test_chain_ik.gd` (two-bone exact + clamped + pole flips the knee
+  side + mirror symmetry; 1-segment hinge; 3-segment FABRIK converges) →
+  `CHAIN_IK_TEST: ALL PASS`; and `test_gallery.gd` now asserts every leg's IK
+  reaches its planted foot. Re-run:
+  `<godot> --headless --path . --script res://scripts/locomotion/test_chain_ik.gd`
+
+## M5 (walk done) / stage 6 — gait: it walks
+- **`gait_oscillator.gd` (GaitOscillator)** — one normalised phase per support
+  limb (TDD §7.4). A global phase advances with cadence; each limb reads it through
+  its own OFFSET and is in STANCE for `duty` of the cycle, then SWING. Coupled
+  offsets ARE the gait: biped walk = two limbs half a cycle apart; quadruped trot =
+  diagonal pairs together — no recorded poses.
+- **`gait_controller.gd` (GaitController)** — the per-frame walk (TDD §7). Planted
+  feet are **world-locked** (no sliding); a swing foot arcs (`sin` lift, smoothed
+  lerp) to the next predicted plant **ahead** of the body; the root advances by the
+  desired velocity and **sways laterally toward its support** for balance; every leg
+  is posed by `ChainIK`. All distances scale from morphology (§7.5): `stride` and
+  `step_height` from reach. Not biped-specific — hand it N offsets and it schedules
+  N supports (that's how the quadruped trots).
+- **Bug the test caught**: feet were planting at the last *sampled* swing point (a
+  discrete `t≈0.9`, ~3 cm up) and then floating through stance. Fixed by planting at
+  the planned **landing** (exactly on the ground).
+- **Tested** (`test_gait.gd`): walking a biped 5 s — at least one foot always down,
+  planted feet never move (0 slip), planted feet exactly on the ground, swing feet
+  lift to exactly the step height, the body advances at the commanded 0.6 m/s, and
+  no foot ever leaves reach. `GAIT_TEST: ALL PASS`. Re-run:
+  `<godot> --headless --path . --script res://scripts/locomotion/test_gait.gd`
+- **Terrain-following** (M5 refinement): `GaitController.set_ground(height_fn)` drops
+  each plant onto the terrain and re-projects the stance; the `RootPoseSolver` pitch
+  built in M6 then tilts the torso to the slope. `test_terrain.gd` walks a quadruped
+  up a 0.12 ramp — it **climbs 0.39 m over 3 m, feet exactly on the slope, torso
+  nose-up (0.11 rad), no slide, still 3+ supported**. `TERRAIN_TEST: ALL PASS`.
+- **Turning** (M5 finish): `GaitController.set_intent(speed, turn_rate)` turns a
+  heading over time; the body walks where it faces, feet plant under the turned hips
+  (`facing * rest_offset`), and `RootPoseSolver` yaws the torso to match. `test_turning.gd`
+  turns a walking quadruped ~100°: the path curves, the torso yaws, feet don't slide,
+  and it stays 3+ supported and in reach. `TURNING_TEST: ALL PASS`.
+- **Only longer-horizon trajectory prediction** remains as an M5 nicety; walk,
+  terrain and turning are done.
+
+## M6 (done) / stages 7-9 — generalized supports & torso pose
+- **`gait_pattern.gd` (GaitPattern)** — classify each leg by side and column
+  (front/mid/rear) from its ground position, then emit the phase offsets + duty for
+  a FAMILY: `biped_walk`, `quadruped_walk` (lateral-sequence, statically stable —
+  duty 0.78, one foot swinging at a time → 3 always down), `quadruped_trot`
+  (diagonal pairs), `tripod` (alternating insect gait), and a metachronal `wave`
+  for any N. `recommend()` picks by leg count. Coupled offsets are the only thing
+  that differs between families.
+- **`root_pose_solver.gd` (RootPoseSolver)** — derive the torso pose from the
+  PLANTED contacts (TDD §7.6): height rides the mean contact; PITCH comes from the
+  front-vs-rear contact groups, ROLL from right-vs-left. Level on flat ground, tilts
+  on a slope/step. Wired into `GaitController` (a lifted swing foot is excluded, so
+  it can't tilt the body).
+- **Tuning learned**: a walking quadruped stands more upright than the splayed
+  max-stability stance (`reach_fraction` ~0.72) with a shorter stride, and a
+  statically stable body barely weight-shifts. That last point is now **automatic**:
+  `GaitController` scales the sway by support count (`_balance_base * (3 − planted)/2`),
+  so a biped in single support swings fully and a 3+-foot body ~0 — no manual
+  `balance_gain` to mis-set. (Stance splay is now its own `stance_width` knob,
+  independent of `reach_fraction`; see Stage 3.)
+- **Tested**: `test_gait_pattern.gd` — classification; each family's support count
+  (walk 3+, trot 2, tripod 3+); and a live quadruped WALK and hexapod TRIPOD (both
+  stay 3+ supported, never slide, keep feet in reach — max strain 0.92 / 0.86 — and
+  hold the torso level). `test_root_pose.gd` — flat→level, front-higher→nose-up,
+  right-higher→roll, height rides the mean. Both `ALL PASS`.
+
+## M7 (core done) — damage, detachment & recompilation
+- **`body_graph.gd`** grew `connected_components(cut_joint)`, `component_containing`,
+  and `subgraph(part_ids, root, cut_joint)` — treat joints as undirected
+  attachments, so cutting one edge of the tree yields exactly two connected groups,
+  and a group can be rebuilt into a fresh standalone `BodyGraph`.
+- **`detachment.gd` (Detachment)** — `sever(graph, joint, core_id)` (TDD §10): split
+  the graph, keep the component holding the CORE part (the head — identity, §11) as
+  `controlled`, recompile it (fresh sub-graph + a new `StanceGenerator` pass →
+  `standing` or `collapsed`), and hand every other component back as `detached`.
+  `joint_attaching(part)` lets a caller sever a limb by name.
+- **Tested** (`test_detachment.gd`): a biped that loses a leg keeps the head but
+  **collapses** (can't stand on one); when the **head detaches**, control follows
+  the head (a headless body is just `detached` debris, no longer the character); and
+  a **quadruped that loses a leg recompiles into a stable tripod** (fresh stance,
+  margin +0.14). `DETACHMENT_TEST: ALL PASS`.
+- **Deferred to the scene/node layer**: turning detached components into
+  `RigidBody3D` physics (gravity, inherited velocity, hit impulse), collision grace,
+  and transferring player possession — those need the node architecture (§12), not
+  the pure-`RefCounted` core. The graph "brain" of M7 is done and headless-tested.
+
+## M9 (core done) — procedural attacks
+- **Manipulation effectors**: `BodyPart.manipulators` (a hand) parallel to support
+  `endpoints` (a foot) — `graph.manipulators_world()`, `BodyMeasure.manipulation_chains()`.
+  Hands are reached by attacks but **never planted**, so an armed biped still stands
+  on its two feet. `LocomotionZoo.add_arm` / `biped_with_arms(arm_len)`.
+- **`attack_controller.gd` (AttackController)** — an attack is a TASK-SPACE path, not
+  a clip (TDD §9): the hand runs **wind-up → strike → follow-through** in a frame
+  aimed at the target, sampled by phase and fed to `ChainIK`. `plan()` is the reach
+  policy — hit in place, or report the `root_step` needed to close the distance;
+  `sample()` gives the hand target, the **impact window**, and a torso lunge.
+  `pick_chain()` selects the longest-reach hand, or returns none so a body without a
+  hand falls back. Everything scales from morphology: a long arm hits what a short
+  arm must step toward.
+- **Tested** (`test_attack.gd`): hands don't bear weight; reach policy (in-reach vs a
+  0.95 m root step); the swing winds up high & back and lands on the target; the
+  impact window opens only at the strike; arm IK reaches every point on the path
+  (err 0.0); and long-arm-hits / short-arm-steps. `ATTACK_TEST: ALL PASS`.
+- **Deferred to the scene layer**: actual hit detection / sever damage during the
+  impact window, and weapon meshes — those need the node architecture (§12).
+
+## Watch it walk — the walk demo
+`scenes/locomotion_walk.tscn`. In a running build press **6** anywhere to open it
+(the `LocomotionDemoLauncher` autoload, `scripts/locomotion_demo_launcher.gd`);
+**Esc** returns to the main menu, **R** resets. From the editor you can also open
+the scene and press F6. A biped WALKS, a quadruped WALKS (statically stable), and a
+hexapod does a TRIPOD gait — all across a striped ground from the SAME
+`GaitController` + `GaitPattern`, differing only in family/offsets; swing feet glow
+green, planted feet are amber, and the side-view camera tracks them.
+
+Controls note: key **6** is a global demo hotkey, so the dummy testing
+environment's ranged-enemy spawn moved from 6 to **7** (`testing_environment.gd`),
+losing nothing. Headless scene-loads contend with an open editor's import lock, so
+the walk *logic* is verified by `test_gait.gd`, not a scene smoke.
+
+## Tuning it — the locomotion lab
+`scenes/locomotion_lab.tscn` — in a running build press **8** (LocomotionDemoLauncher).
+One creature walks while a live menu (top-right) exposes **every M2–M6 variable** and a
+readout (top-left) shows the consequences: measured reach/mass (M2), the chosen stance's
+height/margin/foot-count (M3), and the live support count / max reach strain / heading
+(M5–M6). **Tab** hides the menu, **Esc** returns, **R** resets. The whole variable set is
+the `SPEC` array at the top of `scripts/locomotion/locomotion_lab.gd` — the single place
+to add or drop a knob:
+- **M2 morphology**: creature (biped/quadruped/hexapod), leg_length.
+- **M3 stance**: reach_fraction (height), **stance_width** (lateral splay, independent of
+  height), contact_radius (foot patch).
+- **M5 gait**: speed, turn_rate, stride_ratio, step_ratio, duty. *(Balance is now automatic —
+  the sway is scaled by support count, so a biped in single support swings fully and a
+  statically-stable quadruped barely sways; no manual knob.)*
+- **M6**: family (auto / walk / trot / tripod / wave), slope (terrain).
+
+Motion knobs (speed, turn_rate) apply live; structural ones re-stance and rebuild without
+teleporting the creature. The variable set has been cleaned up from the first draft:
+`stance_width` was **added** (previously `reach_fraction` conflated height and splay);
+`balance_gain` was **removed** as a manual knob (now auto). `contact_radius` is kept but is a
+weak knob for wide bases (it's the biped's whole margin, though). A cadence decoupled from
+speed was considered and **skipped** — `stride_ratio` already trades step length for frequency
+at a fixed speed.
+
+### Gotcha: a short stride makes the legs look GLUED to the ground
+Cadence is derived (`speed / stride`), so a **short stride means a high cadence and a
+very brief swing**. The quadruped demo originally used `stride_ratio` 0.28 → stride
+0.14 m → 3.6 Hz → each swing lasted **3.7 frames** at 60 fps: the foot did lift 8 cm,
+but too briefly to see, so the legs read as glued. (The hexapod was the same at 5.6
+frames; the biped was fine at 9.6.)
+
+The stride couldn't simply be lengthened — the max-stability stance splays feet near
+the reach limit, so a longer stride pushed them out of reach. The fix is
+**`stance_width`**: rein the splay in (0.40) and the feet sit under the body, freeing
+fore-aft room for a long stride. Demo/lab walkers now use `reach_fraction` 0.80,
+`stance_width` 0.40, `stride_ratio` 0.75, `step_ratio` 0.28 → **11 frames of swing for
+the quadruped, 22 for the hexapod**, larger foot lift (0.14 m), *lower* strain (0.89)
+and a *better* stability margin than before. `test_gait_pattern.gd` now asserts
+swing ≥ 8 frames and that feet visibly leave the ground, so this can't regress.
+
+## Hitting things — the combat lab (action & reaction)
+`scenes/locomotion_combat.tscn` — press **9** in a running build. An armed biped
+swings a task-space attack at a receiver; at the impact window **the hand's world
+position IS the contact point**.
+
+- **`impact_response.gd` (ImpactResponse)** — an impulse at a contact point kicks a
+  spring-damper that offsets a body's root: LINEAR knockback from the impulse, and
+  ANGULAR tilt/twist from the torque **`r × F` about the centre of mass**. So *where*
+  the blow lands shapes the motion — high hit → pitches away, side hit → twists, hit
+  through the CoM → pure knockback — then it decays back to neutral (flinch → recover).
+  Scales with morphology via `BodyMeasure.total_mass()` and the new
+  `inertia_about_com()` (Σ m·r², TDD §4.3 "inertia hints").
+- **Action AND reaction**: the receiver takes `+impulse` and the attacker takes
+  `−impulse` at the same contact point (Newton's third law), each through its own
+  `ImpactResponse`, so recoil is free and scaled by the attacker's own mass.
+- **Tested** (`test_impact.gd`): a high hit pitches the top the way of the push
+  (+0.385 rad), a side hit yaws instead, a CoM hit rotates ~0 but still knocks back,
+  a 4× heavier body moves 4× less, the attacker recoils opposite, and it settles.
+  `IMPACT_TEST: ALL PASS`.
+- **Menu** (Space: strike · A: auto-repeat · Tab: hide · R: reset): aim
+  (`target_height` / `target_side` / `target_distance` — move these to see the
+  contact point change the reaction), attack (style, duration, impulse), receiver
+  reaction (knockback/torque scale, stiffness, damping) and attacker `recoil_scale`.
+- **Save / bake** → `res://data/locomotion_profiles/`:
+  - **Save profile (.json)** — the tuned numbers, reusable and morphology-independent
+    (the motion is regenerated procedurally on any body). This is the real output.
+  - **Bake last strike (.tres)** — records the strike into a Godot `Animation` with
+    position/rotation tracks per part, for inspection or export. ⚠ A baked clip is
+    tied to the exact body it was recorded on and breaks on different proportions or
+    after limb loss — the thing this system exists to avoid. Use it as a reference,
+    not as the pipeline.
+
+## Viewing it — the locomotion gallery
+`scenes/locomotion_gallery.tscn` — press **F6** (Play Scene). For every creature
+in `locomotion_zoo.gd` it runs the real StanceSelector and draws, per ground
+tile: parts as their assembled boxes, each leg as a bone from hip to planted foot,
+the support polygon, foot patches, and the CoM plumb line — **green inside the
+base (stable), red outside (tips over)**. Biped, quadruped and hexapod stand from
+the SAME code; a **snake** (curved 10-segment chain, no legs) rests on its belly;
+a biped with a heavy off-centre boom reads red. Legs are two-segment (thigh +
+shin) and solved with `ChainIK`, so knees bend from hip to planted foot. Data-layer
+smoke test:
+`<godot> --headless --path . --script res://scripts/locomotion/test_gallery.gd`
+(`GALLERY_TEST: ALL PASS`).
+
+### Conventions later milestones rely on
+- A part's ORIGIN is its own local (0,0,0); `size` is the full box centred at
+  `center_offset`. Sockets and CoM are all in that origin frame, so a part is
+  self-describing and reusable wherever it is socketed.
+- Endpoint sockets (a leg's `tip`) are the contact candidates the stance selector
+  plants and the contact planner locks.
+- All new modules are pure `RefCounted` and headless-testable; the shipping
+  animator is never touched.
 
 ## docs/godot_signal_guidelines.md
 
@@ -2777,8 +2652,6 @@ modificar controles desde la seccion de settings.
   `collect_bone`, expone snapshots y emite cambios por eventos.
 - `scripts/player_inventory_ui.gd`: construye la pantalla de inventario, tabs,
   grid, detalles, settings, paper doll y preview 3D.
-- `scripts/player_equipment_builds_component.gd`: guarda y aplica presets de
-  equipamiento usando el estado real de `PlayerEquipmentComponent`.
 - `scripts/ui_bone_item.gd`: tile arrastrable de un hueso en el grid.
 - `scripts/ui_bone_slot.gd`: slot visual del paper doll.
 - `scripts/ui_inventory_empty_slot.gd`: zona para soltar items/equipamiento
@@ -2830,37 +2703,6 @@ modificar controles desde la seccion de settings.
 - Lee datos mediante metodos publicos del player.
 - Puede llamar comandos del player cuando el usuario hace acciones de UI.
 - Mantiene el preview 3D en un `SubViewport` aislado.
-- Cachea el snapshot de equipamiento ya aplicado con exito para evitar
-  recrear piezas del rig preview cuando llegan eventos redundantes (ver
-  `docs/inventory_flow.md` seccion de historial, 2026-07-15: el snapshot solo
-  se guarda despues de equipar cada pieza, no antes).
-- Muestra filtros por los seis slots canonicos de equipo: `head`, `torso`,
-  `left_arm`, `right_arm`, `left_leg` y `right_leg`.
-- Ordena los stacks visibles por slot corporal, rareza, calidad y nombre antes
-  de crear tiles.
-
-### Slots de inventario y equipamiento
-
-`EquipmentRulesService.CANONICAL_BODY_SLOTS` es la fuente de verdad para los
-slots de equipo que la UI debe mostrar. Los ids canonicos son:
-
-- `head`
-- `torso`
-- `left_arm`
-- `right_arm`
-- `left_leg`
-- `right_leg`
-
-`body` y `legs` son los unicos aliases legacy con datos reales hoy (verificado
-por grep en `data/bones/*.tres`); se normalizan en
-`EquipmentRulesService.normalize_slot_id`. La UI puede leer huesos viejos con
-esos slots, pero no debe crear nuevas categorias ni nuevo estado con esos ids,
-y no se deben agregar aliases especulativos sin un consumidor real. `body`
-sigue existiendo como socket del rig; `torso` es el slot de equipamiento.
-Un hueso legacy `legs` puede equiparse en `right_leg` o `left_leg` mediante
-drag/drop dirigido al slot visual, o mediante equipar-siguiente (tecla E),
-que ahora resuelve al primer lado libre en vez de forzar siempre
-`right_leg` (ver historial de cambios).
 
 ### Validacion estatica del preview
 
@@ -2972,19 +2814,8 @@ python -B tools/validate_inventory_stack_contract.py
   copias visibles con el mismo id en una sola tile y muestra `xN` cuando hay mas
   de una. El drag sigue enviando solo `bone_id`; equipar consume una copia por
   la ruta existente de `PlayerEquipmentComponent`.
-- Filtros: `All` muestra todos los huesos compatibles; las categorias de slot
-  usan `EquipmentRulesService.inventory_filter_matches_bone` para no duplicar
-  reglas entre UI y gameplay.
 - Pausa: la UI procesa mientras el arbol esta pausado.
 - Settings: controles modificados se guardan en `user://control_settings.cfg`.
-- Build presets: la pestaña de settings permite guardar y aplicar 3 builds de
-  equipamiento en `user://equipment_builds.cfg`. Cada build guarda slots
-  canonicos no-core; la cabeza fija no se reemplaza ni se guarda como pieza
-  aplicable.
-- Al aplicar un build, `PlayerEquipmentBuildsComponent` valida primero que las
-  copias necesarias existan en inventario, que los slots sean compatibles y que
-  cualquier extremidad venga acompanada de torso. La UI solo muestra el resultado
-  de esa validacion.
 - El tutorial de controles debe leer los bindings actuales con
   `DropPickupRulesService.action_binding_text`, para que el texto visible siga
   los cambios hechos en settings.
@@ -3008,37 +2839,6 @@ En `TESTING ENVIRONMENT`:
 7. Intentar equipar brazo/pierna sin torso y confirmar que se bloquea.
 8. Equipar `torso_bone`, luego brazo/pierna, y confirmar que el preview agrega
    solo las partes recuperadas.
-9. Arrastrar `arm_bone` a `Left Arm` y luego a `Right Arm`; debe aceptar ambos
-   lados si hay torso.
-10. Arrastrar `leg_bone` a `Left Leg` y luego a `Right Leg`; cada lado debe
-    mostrar solo su pierna correspondiente en jugador y preview.
-11. Cambiar filtros `Head`, `Torso`, `L. Arm`, `R. Arm`, `L. Leg` y `R. Leg`;
-    cada filtro debe mostrar solo piezas compatibles con ese slot.
-12. En Settings, guardar un build con torso + extremidades, cambiar piezas y
-    aplicar el build; debe restaurar los slots guardados si existen copias.
-13. Guardar un build que use el mismo `bone_id` en dos lados y confirmar que al
-    aplicarlo sin dos copias disponibles muestra error sin cambiar parcialmente
-    el equipamiento.
-
-### Pruebas manuales especificas del preview 3D (pendientes de ejecutar en editor)
-
-Godot esta disponible en este equipo (ver `docs/p0_runtime_validation_suite.md`
-para el procedimiento headless), pero estas pruebas requieren un humano
-observando el render y no se pueden confirmar solo con validadores de texto:
-
-1. Equipar una pieza y confirmar que el preview la muestra sin re-crear el
-   rig completo (sin parpadeo de todas las partes al equipar solo una).
-2. Desequipar esa pieza y confirmar que desaparece del preview.
-3. Abrir y cerrar el inventario varias veces seguidas con el mismo
-   equipamiento y confirmar que no hay parpadeo ni nodos duplicados (el
-   `sync_preview()` cacheado deberia omitir el re-render).
-4. Redimensionar la ventana o cambiar de resolucion (1280x720, 1366x768,
-   1920x1080, ultrawide) con el inventario abierto y confirmar que el
-   preview no queda en blanco ni con tamano cero.
-5. Si alguna pieza no aparece en el preview inmediatamente despues de
-   equipar, volver a abrir/cerrar el inventario y confirmar que aparece (el
-   fix de esta sesion depende de que sync_preview() reintente slots cuya
-   definicion no se resolvio en el primer intento).
 
 ## Historial de cambios
 
@@ -3069,28 +2869,6 @@ observando el render y no se pueden confirmar solo con validadores de texto:
 - 2026-07-14: Se limpio el layout responsive del inventario para no redimensionar
   manualmente paneles con anchors ni el `SubViewport` cuando el container ya
   esta en modo stretch.
-- 2026-07-15: El preview 3D cachea el equipamiento ya renderizado y omite syncs
-  redundantes cuando `equipped` no cambio desde el ultimo `sync_preview()`.
-  Esto evita reconstruir las piezas del rig en cada apertura del inventario
-  cuando el equipamiento no cambio.
-- 2026-07-15 (correccion): la entrada anterior tambien agrego un
-  redimensionamiento manual de `SubViewport` en el layout responsive
-  (`_sync_preview_viewport_size()`), revirtiendo sin decirlo la decision del
-  2026-07-14 de arriba. Se elimino de nuevo: `inventory_preview_container`
-  usa `stretch = true`, por lo que `SubViewportContainer` ya redimensiona su
-  unico `SubViewport` hijo automaticamente cuando el container cambia de
-  tamano. No se encontro evidencia de un render con tamano cero causado por
-  esto; si aparece un bug concreto de tamano, investigar la causa raiz antes
-  de reintroducir un resize manual una tercera vez.
-- 2026-07-15 (correccion): `sync_preview()` marcaba el snapshot de
-  equipamiento como sincronizado ANTES de intentar equipar cada pieza en el
-  rig de preview. Si `BoneRulesService.definition_for(bone_id)` devolvia un
-  diccionario vacio para alguna pieza (definicion todavia no resuelta), esa
-  pieza quedaba cacheada como "ya renderizada" sin haberse dibujado nunca, y
-  llamadas posteriores a `sync_preview()` con el mismo equipamiento no
-  reintentaban esa pieza. Ahora el snapshot solo incluye los slots donde la
-  definicion se aplico con exito, y se asigna despues del loop de equipar,
-  no antes.
 - 2026-07-15: `scripts/player.gd` — se elimino el fallback de teclado/mouse
   agregado el 2026-07-14 (la entrada de arriba ya no aplica). Ese fallback
   hardcodeaba las teclas fisicas (`KEY_W`, `KEY_E`, ...) y las OR-eaba dentro de
@@ -3103,138 +2881,6 @@ observando el render y no se pueden confirmar solo con validadores de texto:
   settings, rebindear Move Forward a otra tecla y confirmar que W ya no camina;
   reiniciar y confirmar que el binding persiste desde
   `user://control_settings.cfg`.
-- 2026-07-15: Se normalizo inventario/equipamiento a seis slots canonicos
-  (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`). Los slots
-  legacy siguen aceptandose como aliases de lectura, y la UI ahora filtra,
-  ordena y equipa por compatibilidad compartida desde `EquipmentRulesService`.
-- 2026-07-15: Se agregaron build presets de equipamiento con guardado local,
-  validacion de copias disponibles, compatibilidad de slots y aplicacion mediante
-  `PlayerEquipmentComponent`.
-- 2026-07-15: Se corrigio el equip-next para piernas (ver
-  `docs/equipment_flow.md` para el detalle completo del bug y el bug de
-  tipado que se encontro de paso), se removieron 7 aliases de slot legacy
-  sin datos reales, y se elimino un metodo de equipamiento sin llamadores.
-  Se agrego comparador con deltas de stats reales al pasar el mouse sobre
-  un hueso, y feedback verde/rojo en los slots del paper doll durante
-  drag and drop segun compatibilidad. El idioma visible de la UI ya era
-  consistente (ingles en toda la pantalla de inventario/settings); no se
-  cambio.
-
-Pruebas manuales pendientes para lo de arriba (Godot 4.7 disponible, ver
-`docs/p0_runtime_validation_suite.md`, pero esto requiere observar el
-render):
-1. Recoger dos `leg_bone` genericos, equipar-siguiente (`E` u la tecla
-   configurada) hasta que ambos esten puestos, y confirmar visualmente que
-   una pierna del rig es distinta del estado anterior a ambos lados (no
-   solo el diccionario de estado).
-2. Pasar el mouse sobre un hueso del mismo slot que uno ya equipado y
-   confirmar que aparece la linea "vs equipped ...".
-3. Arrastrar un hueso sobre un slot compatible e incompatible y confirmar
-   el color verde/rojo del borde; soltar fuera de cualquier slot y
-   confirmar que el borde vuelve a su color normal.
-
-- 2026-07-18 (correccion responsive): `_apply_paper_doll_responsive_layout`
-  escalaba cada `BoneSlotWidget` dos veces. `BoneSlotWidget.setup()` posiciona
-  sus hijos en offsets absolutos derivados del tamano 88x88 con el que se
-  construye y no se re-maqueta al cambiar de tamano, asi que `scale` es lo que
-  realmente redimensiona el slot. Al asignar ademas `size = 88 * doll_scale`,
-  el rect de *input* del control quedaba en `88 * doll_scale^2` mientras el
-  visual quedaba en `88 * doll_scale`. Como `doll_scale` esta clampeado a
-  0.55-1.75 y casi nunca vale exactamente 1.0, los blancos de drop de slots
-  vecinos se solapaban: a 1920x1080 y 2560x1080 los rects de brazo y pierna
-  se intersectaban, de modo que arrastrar un hueso podia equiparlo en el slot
-  equivocado. Ahora el rect del control queda en el tamano base (88x88) y solo
-  `scale` lo redimensiona.
-
-  Verificado con `tools/headless_inventory_check.gd` (Godot 4.7 headless), que
-  instancia el jugador real, recorre las 9 pestanas en 1280x720, 1366x768,
-  1920x1080, 2560x1080 y 1024x600, y afirma que el rect de input de cada slot
-  coincide con su visual y que ningun par de slots se solapa. El chequeo se
-  probo contra el codigo con el bug (falla, reportando los solapamientos
-  brazo/pierna) y contra el corregido (pasa).
-
-Pendiente de confirmacion visual humana: que el paper doll se vea centrado y
-sin recortes en cada resolucion (el chequeo headless valida geometria, no
-render).
-
-- 2026-07-18 (dimensiones y centrado): correcciones sobre lo reportado
-  visualmente (el paper doll no se veia centrado y los textos se pisaban).
-  Cuatro causas reales, todas verificadas por captura y no solo por lectura:
-
-  1. `BoneSlotWidget` y `BoneItemTile` maquetaban a offsets absolutos
-     derivados de un tamano de diseno fijo (82x80 y 96x86) y no se
-     re-maquetaban nunca. Ahora `BoneSlotWidget.resize()` re-posiciona todos
-     sus hijos para el tamano pedido, y el paper doll lo llama en cada pasada
-     responsive en lugar de usar `scale`. Esto elimina de raiz el doble
-     escalado corregido el 2026-07-18 anterior.
-  2. Los labels de nombre tenian `autowrap` pero altura fija. Godot no
-     recorta labels por defecto, asi que un nombre de dos lineas ("Enemy Left
-     Arm Bone") se dibujaba encima del caption del slot de abajo. Ahora las
-     bandas de texto se reservan por separado y los labels usan
-     `max_lines_visible` + `OVERRUN_TRIM_ELLIPSIS` + `clip_text`.
-  3. El doll vivia en un `MarginContainer` que lo estiraba a todo el panel
-     (medido: >1000 px de ancho contra una figura de ~500 px) mientras sus
-     hijos se posicionaban desde el origen del doll, dejando toda la holgura
-     a la derecha y abajo. Con `SIZE_SHRINK_CENTER` el contenedor lo
-     dimensiona a su minimo y lo centra por layout.
-  4. La pestana Builds no tenia layout responsive: previews de tamano fijo
-     que ademas absorbian la altura sobrante del card (custom_minimum_size es
-     solo un piso), empujando el resumen y los botones Save/Apply fuera del
-     panel a 1280x720. Ahora hay `_apply_builds_responsive_layout`, los
-     previews estan fijados con `SHRINK_CENTER`, el resumen esta limitado a 3
-     lineas con altura reservada, y los cards son mas anchos (hasta 340 px) y
-     quedan centrados verticalmente.
-
-  Ademas la grilla rellena `inventory_visible_rows` filas en vez de 4 fijas,
-  que era lo que dejaba una banda vacia bajo la ultima fila a 1080p.
-
-  Verificacion: `tools/headless_inventory_check.gd` (geometria: rect de input
-  == visual, sin solapes entre slots, bandas de texto disjuntas, doll centrado
-  dentro de su panel, en 1280x720 / 1366x768 / 1920x1080 / 2560x1080 /
-  1024x600) y `tools/screenshot_inventory.gd`, que renderiza la escena real y
-  guarda PNGs de Inventario y Builds a 1280x720 y 1920x1080 para inspeccion
-  visual. Este segundo tool existe porque la pasada anterior aprobo la
-  geometria mientras la pantalla seguia viendose mal: revisar solo numeros no
-  alcanzaba. Correr sin `--headless` (headless no tiene renderer).
-
-Pendiente: no se ejercito drag and drop real (equipar arrastrando) ni la
-navegacion con teclado; eso sigue requiriendo una sesion manual.
-
-- 2026-07-18 (centrado de extremidades): brazos y piernas subieron 48 unidades
-  de diseno (arms y 190 -> 142, legs y 286 -> 238) para que el bloque
-  brazos+piernas quede centrado con el frame del preview. El frame va de y 92 a
-  y 376 (centro 234); antes el bloque iba de 190 a 374 (centro 282), 48 abajo.
-  Ahora va de 142 a 326, centro 234 exacto. Cabeza y torso no se movieron.
-
-  De paso la geometria del paper doll pasa a constantes `PAPER_DOLL_*` con una
-  sola definicion. Antes las posiciones estaban escritas dos veces
-  (`_build_paper_doll` y la pasada responsive) y que esas dos copias se
-  desincronizaran es literalmente el bug que ya se documento arriba; ahora no
-  puede repetirse.
-
-  `tools/headless_inventory_check.gd` afirma el centrado: compara el centro
-  vertical del bloque brazos+piernas contra el centro del frame del preview en
-  las cinco resoluciones. Probado contra las posiciones viejas (falla en las 5,
-  desviacion de 30-61 px segun resolucion) y contra las nuevas (pasa).
-
-- 2026-07-18 (calidad en el ciclo de vida): la instancia conserva
-  `bone_id` + `quality_id` en inventario, equipar/desequipar, stacks, builds,
-  rollback y preview. `unequip_slot` solo borra el mapeo de slot, asi que la
-  pieza sigue en `bone_inventory` y vuelve siendo la misma instancia.
-  `PlayerStatsComponent.calculate` recibe el equipment state con instance_ids,
-  de modo que ya opera sobre stats efectivos.
-
-  Stack key = `bone_id | quality_id | mutacion | durabilidad`. La durabilidad
-  hoy es authored por tipo (no hay desgaste por pieza), pero entra en la clave
-  ahora para que agregar desgaste luego no pueda fusionar en silencio una
-  pieza intacta con una agrietada.
-
-  UI: filtro de calidad (All + las 5) y orden (Default / Quality: Lowest first
-  / Quality: Highest first), ambos combinables con el filtro corporal. Cada
-  tarjeta muestra la calidad como texto y un acento del color del tier. El
-  panel de detalles muestra nombre, slot, calidad, multiplicador,
-  `base -> efectivo` y la comparacion contra la pieza equipada, con efectivos
-  en ambos lados.
 
 ## docs/manual_gameplay_qa_checklist.md
 
@@ -3469,185 +3115,6 @@ Once the layout feels readable, move enemies/trials into the matching stage regi
 - 2026-07-14: Tutorial island builder now uses local positions for existing
   scene nodes and generated spawns. This avoids `global_transform` errors before
   nodes are fully inside the scene tree.
-
-## docs/p0_runtime_validation_suite.md
-
-# P0 Runtime Validation Suite
-
-Fecha base: 2026-07-15
-
-Esta suite agrupa las validaciones runtime de mayor riesgo dentro de
-`scenes/testing_environment.tscn`. No corrige P0 por si sola: prepara una pasada
-manual reproducible para observar backstab, preview, jitter, inventario,
-equipamiento, pickups, enemigos, camara y rig antes de aplicar fixes.
-
-## Escena
-
-- `scenes/testing_environment.tscn`
-- Script: `scripts/testing_environment.gd`
-- Validador estatico: `python -B tools/validate_p0_runtime_suite.py`
-
-La escena muestra un panel con enemigos activos, controles de spawn, una guia
-P0 por seccion y un registro de resultados por chequeo. Usa:
-
-- `F1`: siguiente guia P0.
-- `F2`: guia P0 anterior.
-- `O`: escribir el resultado observado (libera el mouse, `Enter` guarda, `Esc` cancela).
-- `P`: registrar PASS para la guia P0 activa.
-- `F`: registrar FAIL para la guia P0 activa.
-- `1`: enemigo normal.
-- `2`: gorilla.
-- `3`: lizard.
-- `4`: ranged.
-- `5`: dummy pasivo.
-- `Backspace`: eliminar el ultimo enemigo.
-- `R`: reiniciar la escena.
-- `Esc`: volver al menu (o cancelar edicion de notas si esta activa).
-
-## Registro De Resultados (PASS/FAIL/observado/evidencia)
-
-Cada vez que se presiona `P` o `F`, la escena escribe una entrada en
-`user://p0_validation_log.txt` (fuera del repo, en la carpeta de datos de
-usuario de Godot) con:
-
-- Marca de tiempo (`Time.get_datetime_string_from_system()`).
-- Numero y titulo de la guia P0 activa.
-- Resultado (`PASS` o `FAIL`).
-- Texto observado escrito con `O` (o `"(no notes typed with O)"` si no se
-  escribio nada).
-- Evidencia automatica: FPS, tasa de fisica, modo de mouse, enemigos vivos y
-  sus nombres, posicion y estado `is_dead` del jugador si existe, y el estado
-  de equipamiento del jugador si el metodo esta disponible.
-
-El panel en pantalla muestra el conteo de PASS/FAIL de la sesion y el ultimo
-resultado registrado. Esto es una herramienta de captura de evidencia para un
-humano frente al teclado, **no** un test automatizado: la evidencia es un
-respaldo objetivo de lo que la maquina puede observar en el momento del
-registro, no un reemplazo del juicio del tester sobre si el comportamiento es
-correcto.
-
-## Ejecucion Headless Real (No Solo Estatica)
-
-A diferencia de los validadores en `tools/*.py` (que solo revisan texto fuente
-o reimplementan formulas en Python), esta escena SI puede ejecutarse con el
-motor real en modo headless. Requiere un paso previo que no estaba
-documentado antes:
-
-```powershell
-# 1. Una sola vez por checkout: construir el cache de class_name globales.
-#    Sin este paso, cargar la escena falla con "Parse Error: Identifier
-#    'X' not declared in the current scope" para casi todas las clases
-#    con class_name (BoneRulesService, EquipmentRulesService, etc.),
-#    porque .godot/global_script_class_cache.cfg todavia no existe.
-Godot_v4.7-stable_win64_console.exe --headless --editor --quit --path .
-
-# 2. Correr la escena real N frames y salir solo:
-Godot_v4.7-stable_win64_console.exe --headless --path . scenes/testing_environment.tscn --quit-after 60
-```
-
-Verificado en este repositorio (2026-07-15, Godot 4.7.stable): tras el
-warmup, la escena carga sin `SCRIPT ERROR`, el jugador spawnea, el
-inventario de prueba se siembla (`Collected bone: ...` por consola) y los
-enemigos se generan. Esto prueba que la escena y el arbol de nodos son
-validos en runtime, no solo por inspeccion de codigo.
-
-Limite honesto: correr la escena sin interaccion no ejerce las teclas de
-juego (mover, atacar, equipar, backstab) ni las teclas `O/P/F` de este
-registro. Confirmar esos flujos sigue requiriendo un humano jugando la
-escena; esta ejecucion automatizada solo prueba que la escena arranca y
-corre sin excepciones durante N frames.
-
-Nota: el paso 1 y la ejecucion de la escena reimportan algunos `.import`
-binarios (modelos/texturas). Revisar `git status` despues y descartar ese
-ruido si no es intencional (`git checkout -- '*.import'`), para no
-commitear cambios de import accidentales.
-
-## Secciones P0
-
-### Movement, Camera, And Jitter
-
-Objetivo: reproducir o descartar jitter persistente antes de tocar camara,
-player o animador.
-
-Registrar:
-
-- FPS aproximado si el editor lo muestra.
-- Si el jugador esta en piso, rampa, pared cercana o aire.
-- Si el inventario fue abierto/cerrado antes del jitter.
-- Si el jitter aparece con ataque, idle, salto o movimiento continuo.
-
-### Inventory, Equipment, And Preview
-
-Objetivo: comprobar que el inventario seeded permite equipar cuerpo completo y
-que el preview no duplica nodos ni comparte mundo jugable.
-
-Registrar:
-
-- Pieza equipada o desequipada.
-- Si el tile desaparece solo cuando corresponde.
-- Si los stacks `xN` siguen representando duplicados.
-- Si preview y jugador real coinciden.
-
-### Pickups, Drops, And Enemy Profiles
-
-Objetivo: comprobar que los perfiles de enemigo siguen spawneando, reaccionan y
-generan drops/pickups observables.
-
-Registrar:
-
-- Perfil usado.
-- Drop observado.
-- Si el pickup se puede recoger.
-- Si el inventario se actualiza sin reabrir.
-
-### Backstab Runtime Geometry
-
-Objetivo: validar el comportamiento real, no solo el producto punto estatico.
-
-Registrar:
-
-- Angulo aproximado: frente, lateral o detras.
-- Perfil del enemigo.
-- Si aparece prompt o se ejecuta stealth finish.
-- Si hubo dano duplicado o estado bloqueado.
-
-### Rig And Body Progression
-
-Objetivo: observar progresion visual y estabilidad del rig con piezas equipadas.
-
-Registrar:
-
-- Estado corporal: head-only, torso, brazos, piernas.
-- Si izquierda/derecha se ven invertidas.
-- Si el preview coincide con el rig del jugador.
-- Si el ataque o movimiento deja piezas flotantes.
-
-## Resultado Esperado
-
-Cada pasada manual debe terminar con una evidencia corta (complementaria al
-registro automatico en `user://p0_validation_log.txt` descrito arriba):
-
-```text
-Rama:
-Commit:
-Escena:
-Resolucion:
-Guia P0:
-Sistemas habilitados:
-Pasos ejecutados:
-Resultado observado:
-Errores de consola:
-Pendientes:
-```
-
-Si Godot no esta disponible, no marcar como validado runtime. Ejecutar los
-validadores estaticos y dejar esta guia lista para una pasada manual en
-editor. Si Godot SI esta disponible pero solo en modo headless (sin un
-humano frente al teclado), seguir sin marcar los chequeos interactivos
-(equipar, atacar, backstab, etc.) como validados: la ejecucion headless sin
-interaccion solo prueba que la escena carga y corre sin excepciones, no que
-el comportamiento observado sea correcto. Ver la seccion "Ejecucion Headless
-Real" arriba para el procedimiento exacto y sus limites.
 
 ## docs/project_graph_map.md
 
@@ -3994,95 +3461,198 @@ enemy, and rig boundaries before the component refactor.
 `docs/tutorial_flow.md` describes the demo controls tutorial and onboarding
 checklist.
 
-## docs/repo_stability_and_graphify.md
-
-# Repo Stability And Graphify Policy
-
-Fecha base: 2026-07-15
-
-Este documento define como mantener estable el repositorio mientras el roadmap
-avanza por ramas de hito. No cambia gameplay.
-
-## Estado Actual
-
-- `graphify-out/` y `graphify-corpus/` siguen versionados como artefactos
-  revisables del mapa de arquitectura.
-- `graphify-out/cache/` y `graphify-corpus/graphify-out/cache/` son caches y no
-  deben entrar al control de versiones.
-- El workflow de Graphify solo debe ejecutarse en `main` y `develop`.
-- Las ramas feature, fix y test no deben incluir regeneraciones de Graphify.
-- Los cambios de line endings deben controlarse mediante `.gitattributes`, no
-  por normalizaciones masivas accidentales.
-
-## Politica De Ramas
-
-- Las ramas de gameplay no deben modificar `graphify-out/` ni
-  `graphify-corpus/` salvo que el hito sea explicitamente de arquitectura o
-  estabilidad del repositorio.
-- Si Graphify aparece modificado en una rama de gameplay, tratarlo como salida
-  generada accidental y no incluirlo en el commit.
-- No usar `Accept Both Changes` en JSON generado.
-- No configurar `merge=ours` como solucion silenciosa permanente.
-- Si un conflicto de Graphify bloquea un PR, resolverlo en una rama de
-  estabilidad o regenerarlo desde la rama oficial, no mezclarlo con la feature.
-
-## Regeneracion
-
-Graphify se regenera con el workflow `.github/workflows/update-graphify.yml`.
-El flujo esperado es:
-
-1. Cambios funcionales entran primero por PR normal.
-2. El workflow corre en `main` o `develop`.
-3. El bot crea un commit `chore: actualiza grafo de arquitectura` solo si la
-   salida cambia.
-4. Las ramas siguientes parten de la punta actualizada de `origin/main`.
-
-No regenerar Graphify manualmente en ramas de inventario, combate, camara,
-preview, jitter, enemigos, stats, animaciones o progresion.
-
-## Line Endings
-
-`.gitattributes` define LF para scripts, escenas, resources, documentacion,
-workflows, JSON y archivos `.import`.
-
-Esta politica no normaliza archivos ya existentes por si sola. Si un archivo
-aparece modificado solo por CRLF/LF, no debe incluirse automaticamente. Crear
-una rama exclusiva de normalizacion solo si hay evidencia de que el ruido de
-line endings bloquea el trabajo.
-
-## Preflight De Commit
-
-Antes de cada commit:
-
-```powershell
-git status --short --branch
-git diff --check
-git diff --stat
-git diff --name-status
-git diff
-```
-
-Comprobar especificamente:
-
-- Sin conflictos.
-- Sin caches.
-- Sin Graphify accidental.
-- Sin archivos `.import` accidentales.
-- Sin normalizacion masiva de line endings.
-- Sin cambios fuera del hito.
-
-## Fuente Del Roadmap
-
-El roadmap numerado vive en `docs/roadmap_1_165.md`. Ese archivo es la fuente
-auditable para clasificar objetivos como no iniciados, preparados, parciales,
-integrados o validados.
-
 ## docs/rig_notes.md
 
 # Marrow — Modular Rig / Procedural Animation notes
 
 Isolated prototype for the "Modular Rigging and Procedural Animation" brief.
 **Not wired into the real player yet** (brief Phase G) — test it in `rig_test.tscn` first.
+
+## Live tuning menu (key 4, in game)
+`TuningMenuUI` (scripts/tuning_menu_ui.gd, a CanvasLayer in player.tscn) opens
+with **4** (Esc or 4 closes; the testing environment's ranged-enemy spawn moved
+from 4 to 6 to free the key) and live-edits the most-tuned values without
+hunting exports: walk speed (`base_move_speed`, routed through
+`recalculate_player_stats()` so bone bonuses keep stacking), step jump height
+(`ik_leap_height`), leg forward reach (`ik_stride_reach_boost`), stance
+width (`ik_stance_width`), and the whole-body rotation on all three axes
+(`whole_body_rotation_deg`, a new animator export applied to the rig node —
+zero for enemies, guarded so their transform never dirties). Values are LIVE
+only — "Reset to defaults" restores what the scene loaded with; to make a value
+permanent, copy it into the export/scene. The mouse is released while the menu
+is open and re-captured on close.
+
+## Running spine arch (waist vertical, chest pitched forward)
+Author-directed 2026-07-16: *"make the waist be a little more vertical than the
+chest so there is an arch, when moving or running."* The spine has two visible
+segments: the `body` socket carries the ABDOMEN (the waist region), and its child
+`waist_joint` carries the CHEST — so **`waist_joint.rotation.x` IS the
+chest-relative-to-waist differential, i.e. the arch**. `run_arch_deg` (20) adds a
+steady FORWARD chest pitch through `_waist_target_angle`, scaled by speed_ratio
+so it is 0 when idle and grows into the run; the abdomen (`body` socket) stays
+vertical because `torso_lean_amount` is 0 on the player. Measured: STAND
+waist +13.9° / chest +13.9° (idle guard leans the whole torso together, no arch);
+**WALK waist +0.0° / chest +9.8°; RUN waist +0.0° / chest +8.1°** — the chest sits
+~8-10° forward of the vertical waist, consistently (never dips back), 0.0% skate.
+The old `waist_bend_lean` back-tilt (−0.08, from the superseded "tilt back"
+request) is now 0. `ik_leap_pitch_up_deg` was gentled 32→20 so the push-off
+bounce no longer swings the chest back past the steady arch — the leap cycle is
+preserved, just re-centred forward. `waist_bend_limit` raised 0.35→0.55 rad for
+headroom. Gated on the waist joint, so enemies (no waist) are untouched.
+
+## Smooth brake — feet do not fuss when stopping
+Author-reported 2026-07-16: *"smooth out the brake on moving forward, feet adjust
+too much."* Trace of a stop showed the feet re-centring AFTER the body halted: a
+settling step plus the underdamped magnet overshooting the now-still target and
+springing back. Two fixes:
+- **Settle SLIDE not step** (`_ik_update_steps`): below `ik_idle_settle_speed`
+  (0.22) each planted foot gently LERPs its plant toward the idle anchor
+  (`ik_idle_settle_rate` 5) instead of the trigger firing a discrete adjustment
+  step — the magnet just follows the drifting plant. Settling steps per stop
+  3 → 1. The idle step-trigger could then stay loose (0.14).
+- **Speed-scaled magnet damping**: the moving spring is underdamped (bouncy,
+  `ik_magnet_damping` 20) which OVERSHOT the stopped target. `_ik_magnet_foot`
+  now blends toward `ik_magnet_damping_idle` (46, ~critical) as speed_ratio
+  falls, so the stop settles without oscillation while the walk keeps its bounce.
+Measured: brake post-stop peak foot-move 0.034 → 0.020-0.024, overshoot
+direction-reversals → 0, walk bounce preserved (0.077), walk skate still 0%.
+
+**Direction changes** (author follow-up "fix the change in direction in feet")
+whip the foot targets to the new heading; the feet chased at ~2× normal speed
+(reverse 0.152, 90-turn 0.140 vs steady 0.094). Two more pieces:
+- A **transition detector** (`_ik_transition`): the magnet damping now blends to
+  critical when the move velocity CHANGES sharply (brake, turn, reversal — not
+  just when slow), spiking on the change and decaying over the catch-up
+  (`ik_magnet_transition_thresh`/`_decay`). Kills overshoot in all three.
+- A **foot-speed ceiling** (`ik_foot_max_speed` 6 m/s) on the magnet velocity: a
+  whipped target can no longer snap the foot — it slides over at a walk-step pace.
+  A normal swing sits under the cap, so it is untouched.
+Measured after: reverse/turn peak 0.15/0.14 → **0.10** (≈ the 0.094 steady step),
+steady walk unchanged, no non-finite.
+
+## Standing feet sit under the (tilted) body, biased behind the hips
+Author-reported 2026-07-16, in two passes: first *"feet are set a little more
+forward than the body when standing"*, then — after pulling them to under the hip
+POINTS — *"they still have to be set a little more behind ... because of the
+tiltation of the body ... so it makes the perspective of being under the body."*
+The insight: the socket ORIGINS all sit at z≈0, but the torso's forward tilt
+shifts the visible MESH forward, so feet under the hip points read as forward of
+the body. `idle_foot_forward` (**−0.10**) is the standing +Z foot offset, negative
+= behind the hips to sit under the leaning mass; `_ik_anchor_world` blends it to the socket's
+natural offset with speed (`lerpf(idle_foot_forward, rest_foot.z, stance_engage)`),
+so moving is unchanged. The step trigger also TIGHTENS at idle
+(`lerpf(0.05, ik_step_trigger, ...)`) — the stride's 0.18 m deadzone would leave a
+stopped foot resting up to that far forward of the pulled-back anchor, so without
+it the feet never fully settle. Measured: fresh stand −0.102 m vs hip (behind); three walk-then-stop cycles
+settle to −0.07..−0.09 (the idle trigger deadzone); leg extension 89%; walking
+stride (−0.36..+0.23) and 0.0% skate preserved. The bias is one tunable knob
+(idle_foot_forward) — toward 0 for feet under the hip points, more negative for
+further back.
+
+## Bug sweep (2026-07-18) — found & fixed
+Author-requested "check for bugs" over the recent magnet-gait / altitude work.
+- **SETTLE-SLIDE broke altitude** (`_ik_update_steps`): the idle settle-slide
+  lerped the WHOLE plant toward `_ik_anchor_world`, whose Y is a rig-rest height
+  not the probed ground — it sank standing feet ~8 mm on flat ground and would
+  pull them to the wrong altitude on a slope/step. Fixed to slide XZ only, keeping
+  each plant's own ground Y. Measured: stand foot Y −0.008 → ~0.
+- **MAGNET re-seeded at the plant on IK activation** (`_ik_reset_plants`),
+  snapping the leg to the plant in one frame when the IK turned on from a
+  different pose (the head-only→full transition when the legs are equipped).
+  Fixed to seed at the foot socket's CURRENT world position so the magnet springs
+  in at the capped speed. Measured: activation foot move 0.56 → 0.10.
+Ruled out (verified, not bugs): a fresh player is HEAD-ONLY by design (only the
+head equipped), so `_ik_active()` is correctly false until a body+legs are
+equipped through progression — the gait runs only on the fully-equipped player.
+Idle-stance/arch are bit-clean when disabled (chest 0.0°, waist 0.4°). No NaN
+through a 0.5 s delta spike or a 1200-frame speed/turn/jump run. The foot-speed
+cap sits right at the sprint swing speed (6.0 m/s) but feet still converge — raise
+`ik_foot_max_speed` if sprint ever feels throttled.
+
+## Per-foot altitude / uneven ground (was crashing)
+Author-directed 2026-07-18: *"fix the altitude offset — each foot has a different
+target; if either foot's target is at a different altitude, account for it."* The
+whole uneven-ground path had never actually run: the foot-to-ground-normal
+alignment in `_ik_solve_leg` built a degenerate/non-rotation Basis whenever the
+spherecast returned a non-vertical normal (a step EDGE or ledge returns the
+vertical FACE normal), which crashed `get_quaternion` in the slerp — only ever
+hit off flat ground. Fixes:
+- **Reject non-walkable normals** (`up.y < 0.5` → keep the foot level) so a step
+  face never feeds the basis.
+- **Re-derive the basis orthonormal** (forward = right×up, `.orthonormalized()`)
+  and slerp on the rotation QUATERNION preserving the foot's scale — a hair of
+  float non-orthogonality or a chain scale can no longer make it a non-rotation.
+Altitude itself was already correct once it stopped crashing: each foot probes
+its OWN ground (`_ik_probe_ground` per foot at step time), the magnet springs to
+that per-foot plant, the foot tilts to the ground normal, and the pelvis rides
+the AVERAGE foot Y (`_ik_update_pelvis`), with the capsule owning the gross climb.
+Verified: standing straddling a 0.12 m lateral step each foot reaches its ground
+(±0.01 m) and the pelvis rises 0.10 m; walking up an 8° ramp the character climbs
+0.77 m, feet track the slope and tilt to it (~9° ≈ the ramp), 0 non-finite. Note
+the foot-speed cap makes a foot lag briefly when stepping UP a slope (max ~0.19 m
+transient) — raise `ik_foot_max_speed` if that reads badly on steep terrain.
+
+## Cartoon MAGNET feet (jump-like walk)
+Author-directed 2026-07-16: *"make a jump like / walk animation. set the targets
+for the foot (the foot must touch the target) but it works more like a magnet
+than a fix point. cartoonish look."* This is a MODE switch (`ik_foot_magnet`,
+default on) in the foot-IK solve, replacing the rigid-plant + skate-guard with a
+spring.
+
+- **`_ik_magnet_foot`**: each foot is a semi-implicit spring (`ik_magnet_stiffness`
+  500, `ik_magnet_damping` 20 → underdamped, bouncy) chasing its target
+  (`_ik_foot_world` = plant or swing arc). It CONVERGES to a still, in-range
+  target — a planted foot touches the ground and holds (measured stand foot y
+  0.001) — but LAGS and overshoots in motion: the loose cartoon foot.
+- **The reach shortfall became the look, not a bug**: after the spring, the foot
+  is clamped to the leg's reach (only the outward velocity is killed, so it slides
+  along the reach sphere toward the target). An out-of-reach target leaves the
+  foot STRETCHED to the limit reaching for it — never a dragged plant. Measured
+  skate **0.0%** at walk and sprint (the whole skate saga is moot in this mode).
+- **This unlocked tall, extended legs**: with no skate to fear, `ik_hip_drop_moving`
+  dropped to 0.05 (near-zero crouch) — planted-leg extension **90%→98%**, which
+  also answers the earlier "extend the legs more".
+- **Cartoon tuning**: `ik_leap_height` 0.10 (body bounce ~0.09; THIS is the
+  jump-vs-walk dial — 0.18 → 10% ground contact/very hoppy, 0.08 → 29%/grounded),
+  `ik_step_height` 0.20 (high 0.22 m foot lift). Magnet stiffness/damping are the
+  looseness dial (lower damping = bouncier).
+- Idle, jumps, enemies unaffected (gated inside the split-player IK path; magnet
+  seeds at the plant on reset, falls back to `target` on any non-finite).
+- Set `ik_foot_magnet=false` to restore the rigid-plant realistic gait.
+
+## Idle combat stance
+
+## Idle combat stance (key: standing still is a READY pose)
+Author-directed 2026-07-16: *"the still stance has to be legs spread, the chest,
+not the waist, the chest leaning forward and moving slightly to simulate
+breathing, and both arms in a ready to fight pose guard down."* This SUPERSEDES
+the earlier "feet under the hips so the character stands normally" — standing is
+now a fighting stance, not a neutral stand. `_apply_idle_stance()`, all of it
+faded by `_idle_stance_blend()` = `1 - speed_ratio*2.5` and gated on
+`_ik_active()`, so it is the split player only and every enemy / head-only /
+torso / crawl / demo mode stays bit-identical.
+
+- **Legs spread**: `idle_stance_width` (0.10) is blended against the moving
+  `ik_stance_width` (0.08) inside `_ik_anchor_world` — the anchor re-aims with
+  speed, the old plants exceed `ik_step_trigger`, and the feet re-settle on their
+  own. Measured (after a 2026-07-16 "feet a little more under the body" pull-in that
+  took idle_stance_width 0.10→0.05 and ik_stance_width 0.08→0.04): **0.333 m
+  standing, 0.305 walking** (hips are 0.24 apart) — still a slight athletic
+  spread, closer to under the body; 0.0% skate (narrower = less lateral reach).
+- **CHEST, not the waist**: the author was explicit, so the lean rides the `body`
+  socket's own rotation (`idle_chest_lean_deg` 14) and the waist joint is left to
+  the gait. Measured: **chest +14.0°, waist −0.1°**.
+- **Breathing**: `idle_chest_breath_deg` (2.2) oscillates the chest LEAN rather
+  than bobbing it, so the ribcage swells and settles. Measured: chest pitch
+  cycles **11.8°..16.2°**.
+- **Guard down**: shoulders forward (`idle_guard_arm_raise_deg` 42) and tucked in
+  (`idle_guard_arm_tuck_deg` 13 — note the +Z-forward handedness flips the roll
+  sign per side), elbows folded up (`idle_guard_elbow_deg` 68). Measured: arms
+  +43°/+40°, both elbows −75°.
+- **ORDER**: runs after `_animate_limbs`/`_animate_joints` (so it overrides the
+  idle rest pose) but BEFORE the attack/aim overlays, which must stay free to
+  take the arms. Verified: an attack from the guard sweeps the arm 85.7° away
+  (−21.6°..64.1°) and the guard restores afterwards.
 
 ## How to test
 Open `scenes/rig_test.tscn` in Godot and run it (F6 / "Run Current Scene").
@@ -4093,8 +3663,9 @@ Open `scenes/rig_test.tscn` in Godot and run it (F6 / "Run Current Scene").
   then a heavier two-arm/torso finisher.
 - **Q** — cycles equipping **Arm → Leg → Heavy** into their slots. The grey limb is
   swapped for a bone-colored one; Heavy is bigger (visual_scale) and heavier.
-- Walk **forward onto the ramp** (in front of spawn) to see foot placement (Phase F):
-  each foot raycasts down and plants on the surface, tilting to the slope.
+- Walk **forward onto the ramp** (in front of spawn) to see the foot IK (see
+  "Foot IK locomotion" below): feet plant in world space and the legs solve to
+  reach them. Only the split player rig has the knee socket this needs.
 
 ### Animation A/B demo (rig sandbox only)
 `2` and `3` play the SAME head lunge authored two ways, so the two styles can be
@@ -4330,8 +3901,8 @@ byte-identical. Remaining cuts:
 - **Cut 3 — proportions + delete the flag.** `apply_gorilla_proportions` /
   `apply_lizard_proportions` resize whole limbs; applied to a half they render a
   ~1.3 m arm. Then remove the flag. If it outlives cut 3 it is permanent debt.
-- `foot_placement_enabled` (off by default) assigns `foot.position` in the foot's
-  parent space, which is now the ROTATING knee. Resolve that before enabling it.
+- The old `foot_placement_enabled` planter (which assigned `foot.position` in the
+  ROTATING knee's space) is **deleted** — replaced by the foot IK below.
 
 ## Socket markers (model-swap build aid)
 `ModularSkeletonRig.show_socket_markers` (on in `player.tscn`) puts a small
@@ -4383,8 +3954,8 @@ turn_smoothing 12.0 · idle_breath_amount 0.025 · heavy_weight_swing_slowdown 0
 
 ## Phase E/F tuning (exports on ProceduralAnimator)
 attack_overlay_duration 0.16 · attack_overlay_blend_speed 18 · attack_arm_forward 1.1 ·
-attack_torso_twist 0.35 · foot_raycast_up/down 0.6/1.4 · foot_lift 0.06 ·
-foot_smoothing 14 · foot_align_to_normal true (uncheck foot_placement_enabled to disable).
+attack_torso_twist 0.35. Foot IK exports are in the "Foot IK locomotion" section
+above (the old `foot_*` raycast planter has been deleted).
 Head-only attack tuning: `head_only_attack_duration`,
 `head_only_attack_charge_portion`, `head_only_attack_lunge`,
 `head_only_attack_arc`, `head_only_attack_charge_squash`,
@@ -4582,211 +4153,420 @@ Combo overlay:
   flip the sign (orientation not verified visually).
 - Attack overlay sign (arm forward/back) not visually verified — flip
   `attack_arm_forward` if it thrusts the wrong way.
-- Feet are independent of the swinging leg boxes (no knee IK yet, per the brief's
-  grey-box rule); on steep slopes there may be a visible leg/foot gap.
-- Foot placement done on flat ground + a ramp; steps not added (CharacterBody3D
-  needs step-up logic to climb vertical steps).
 - Not merged into the real player (Phase G) — do that only after this feels good.
 
-## docs/roadmap_1_165.md
+## Foot IK locomotion (2026-07-15)
 
-# Roadmap Tecnico 1-165
+Replaces the dead `foot_placement_enabled` planter. **Inverts the leg chain from
+FK to IK**: the walk cycle used to rotate the hip and drag the foot along; now the
+foot is planted in WORLD space and the hip+knee rotations are *solved* to reach it.
+Lives entirely in `procedural_player_animator.gd` (`_update_foot_ik` and the
+`_ik_*` helpers); the FK writers for the arms are untouched.
 
-Fecha base: 2026-07-15. Ultima actualizacion: 2026-07-16 (integracion de 9
-ramas de hito en `origin/develop`, ver `docs/roadmap_progress.md`).
+- **Scripts touched:** `scripts/rig/procedural_player_animator.gd` only.
+- **New behaviour:** feet stay pinned to the ground in world space while the body
+  moves/turns; each foot steps to a spherecast-probed ground point when it drifts
+  past `ik_step_trigger`; legs strictly alternate (one airborne at a time); the
+  pelvis (and everything a real pelvis would carry) rides the average foot height.
+- **Gate — `_ik_active()`.** On only when `ik_feet_enabled` (default true) AND the
+  rig has a waist joint (split player only) AND not head-only / torso-spring /
+  crawl / demo. Every enemy is unsplit → no waist → **IK never runs**, so their
+  FK/crawl/lizard-climb paths are bit-identical. Same for the head-only and
+  torso-only player states. Verified headless: `_ik_active()==false` and
+  `_ik_pelvis_dy==0` for the default (head-only) player and for `enemy.tscn`.
+- **Proportion-agnostic.** Leg lengths, the ankle rest tilt (`knee_rest`, ~12.5°
+  forward — the rest shin is NOT collinear with the thigh, so `knee.rotation.x=0`
+  is a slightly broken knee and +X straightens before it bends) and the pelvis
+  baseline are all read from the captured rest pose, never from `SOCKET_LAYOUT`.
+  A gorilla (0.44 leg) or lizard (0.40) would solve correctly the day it is split.
+- **The swing cycle (author-directed, 2026-07-15).** A step is shaped, not a
+  symmetric hop: the LIFT peaks early (`sin(pow(t,0.7)*PI)`) and the forward travel
+  is back-loaded (`pow(t,1.6)`), so the foot lifts with the knee coming forward and
+  UP first, then EXTENDS down-and-forward to plant. Measured knee flexion over a
+  walk: ~24°..92°. The hips also lean forward into the move (`ik_run_lean`, +Z is
+  forward) so the reach reads as "the feet pull the body along," not the hips.
+  `ik_step_height` 0.14 drives how high the knee lifts — drop it if the walk reads
+  too marchy.
+- **The body's motion comes from the feet (author-directed, 2026-07-15; took
+  three iterations, each killed by a measurement).** The capsule glides at
+  constant speed, so a rig glued to it reads hip-led no matter what the legs do —
+  measured: body world speed dead-flat at capsule speed. What finally works is a
+  composed system; removing any one part collapses back to a glide:
+  1. **The pelvis rides the feet horizontally** (the other half of "use average
+     feet position for body position"), applied RAW — a filtered/high-passed pulse
+     was tried first and its ±4 cm was invisible.
+  2. **Swing-weighting** (`ik_step_drive`): an even mean of two alternating feet
+     moves at exactly capsule speed by construction — zero read. Weighting the
+     stepping foot makes the body load back as the knee lifts and get dragged
+     forward by the extending leg.
+  3. **Cadence coupled to speed** (`_ik_step_duration_now` = `ik_step_reach` /
+     speed): with a fixed duration the capsule advances further per step than the
+     leg can stride (~0.24 m), so the plants trail permanently, the raw offset
+     saturates any clamp, and the sprint skated ~196% of its path. Duration =
+     reach/speed keeps each step's travel expressible. Side effect: this KILLED
+     the sprint skate (196% → 2.1%).
+  4. **Plants straddle the capsule** (`ik_stride_lead`, in units of one step's
+     capsule travel; the anchor itself moves one travel during the swing, so 1.5
+     lands ~half a stride ahead): centred plants give the raw offset (near) zero
+     steady component, so `ik_body_follow_recenter` is only a very slow safety
+     bleed, not a signal filter.
+  Measured after: body world speed **0.07..5.04 m/s around a 2.5 m/s capsule**
+  (the body stops between steps and doubles the capsule at each surge; was
+  2.50..2.50 flat), 2.18..10.14 at 6 m/s; true skate 0.0% at 2.5 m/s, 2.1% at 6;
+  follow DC ≈ 0 at all speeds; circles and 1 s reversals bounded (|follow| ≤ 0.33
+  vs the 0.45 clamp), plants pinned to ground throughout.
+- **Longer strides, slower feet (author-directed, 2026-07-16).** Because cadence
+  is `ik_step_reach / speed`, raising the reach IS the slow-the-feet knob — but
+  the standing envelope caps the stride at ~0.24 m (hip 0.534 m up, leg 0.587 m).
+  Three mechanisms buy the rest, each earned by a measured failure:
+  1. **Stride dip** (`ik_stride_dip` 0.10): pure leg-triangle geometry —
+     `dy ≤ sqrt(L² − spread²) − span` — the pelvis gives vertically only when a
+     leg's spread would put its plant out of reach, and releases between strides.
+     Envelope table: dip 0 → 0.24 m, 0.04 → 0.31, 0.08 → 0.37, 0.12 → 0.41.
+  2. **Asymmetric dip response** (drop at 3× `ik_pelvis_response`, rise at 0.8×):
+     a symmetric τ≈0.1 s arrives after the skate guard has already dragged the
+     plant — measured 9.5% skate at 2.5 m/s from lag alone.
+  3. **Anticipatory spread + hysteresis**: the dip estimator measures against
+     THIS frame's follow (where the hips are heading — at each step handoff the
+     weights snap and a one-frame-behind estimator under-dips exactly when the
+     leading leg is longest), and uses leg×0.96 vs the guard's 0.99 so the pelvis
+     arrives below the drag threshold, not exactly at it.
+  Reach sweep (skate % at 1.5/2.5/6.0 m/s, all mechanisms in): 0.28 → 1.0/0.0/5.6;
+  **0.32 → 0.0/0.5/3.6 (chosen)**; 0.34 → 0.4/2.9/3.8; 0.40 → 7.3/10.0/3.4.
+  Net vs the original 0.24: **feet step ~53% slower with ~33% longer strides**
+  (0.147 vs 0.096 s/step at 2.5 m/s). The 6 m/s residual is the
+  `ik_step_duration_min` floor, identical at every reach.
+  Adversarial review verified the dip is feedforward (no limit cycle — the bob is
+  step-synchronized and decaying), ramp-safe both directions, and NaN-free.
+- **Swing overlap — the smooth-vs-grounded knob (author-directed, 2026-07-16:
+  "feet look like near teleportation").** Strict one-foot-at-a-time forced every
+  swing to fit inside stride/speed: 8 frames at a walk, 4 at a sprint. With
+  `ik_step_overlap`, the next swing launches while the previous is landing
+  (launch order still strictly alternating), stretching every swing's airtime by
+  1/(1−overlap) at the same ground coverage — the cadence formula divides by the
+  LAUNCH interval, and so does the stride lead. THE BUG THAT ATE THE FIRST
+  ATTEMPT: the lead scaled by swing duration (which overlap had just stretched
+  54%), throwing every plant ~50% too far ahead — metre-long swings, no
+  smoothness gain, and all of the low-speed skate. Lead must scale by
+  duration×(1−overlap). Two arc fixes ride along: forward travel eases OUT into
+  the plant (pow(t,1.6) peaked foot speed at the landing frame), and the lift is
+  eased through smoothstep first (pow(t,0.7) alone has infinite slope at t=0 —
+  a ~7 cm first-frame pop). Measured at 2.5 m/s (tele = max foot movement per
+  frame): old gait 0.142 m, overlap 0.15 → 0.124, **0.25 → 0.108 (default)**,
+  0.35 → 0.095 but both feet airborne 49% of the time and the body surge
+  flattens (1.7..3.9 vs 1.0..4.5 at 0.25). Bonus: the lead fix + overlap lifting
+  sprint duration off its floor removed ALL remaining skate — 0.00% at every
+  speed tested, sprint included (was 3.6%).
+- **The leap gait (author-directed, 2026-07-16, twice).** First cut was a
+  two-feet BOUND (both feet push off together — it halves rel-to-body foot
+  speed, tele 0.074 at 2.5 m/s), but the author corrected it: *"still have the
+  feet move one after the other. the jump its not meant to be a two feet
+  jump."* So the shipped gait keeps the strictly alternating stepper (overlap
+  0.35, swings 0.197 s at 2.5 m/s, tele 0.094) and layers a per-stride LEAP on
+  top, driven by the foot CLOSEST to touchdown (keying on the newest swing
+  instead played the chest's landing compression before every touchdown —
+  measured, wrong):
+  - `_ik_leap_lift`: ballistic pelvis parabola over each swing (`ik_leap_height`
+    0.05), applied through `_ik_pelvis_offset`. The stride-dip estimator
+    subtracts the lift — it eats leg reach, and without that the planted foot
+    skated 13% of the path (measured; 0.00% with it).
+  - `_ik_leap_pitch`: the chest pitches UP at push-off (`ik_leap_pitch_up_deg`
+    25) and COMPRESSES through to slightly down (`ik_leap_pitch_down_deg` 7) as
+    the foot touches — "chest and waist compress". Rides the waist joint (added
+    to `_animate_waist`'s bend, so `_apply_waist_carry` moves head/arms with
+    it), exactly 0 whenever the IK is inactive — special modes stay
+    bit-identical. Both outputs are SMOOTHED (`ik_leap_pitch_response` 14): the
+    max-t driver is a sawtooth at swing handoffs, and at ~4 steps/s the full
+    ±sweep would bobblehead — realized range at 2.5 m/s is a held-up chest
+    (mean ≈ −7°) nodding ~8° into each landing; the full range emerges at
+    slower cadences. Raise the response for a snappier sweep.
+  - Jump landings are a CATCH, not a snap: `_ik_land_plants` turns each foot
+    into a normal step from wherever the fall left it down to the probed
+    ground (a straight snap dropped the sockets 0.44 m in one frame —
+    adversarial review, measured; the catch's worst frame is 0.025 m).
+  The two bound-only defects the adversarial review found (reversal landing
+  teleport, walk→bound adoption pop) were removed along with the bound itself.
+  Known remaining: an instant 180° reversal at speed produces one catch-up
+  swing of up to ~0.27 m/frame — inherent to plant-ahead stepping under
+  un-ramped velocity flips.
+- **The walking speed was the real ceiling (author-directed, 2026-07-16: "if
+  needed, have the character's overall walking speed lower").** `base_move_speed`
+  was 6.0 with sprint ×1.55 = 9.3 — proportionally absurd for a 0.92 m skeleton
+  (a human walks 1.4 m/s at twice the height), and it pinned the foot IK in its
+  scurry zone during ALL normal play: speed IS foot speed when the legs can only
+  express a 0.32 m stride. Lowered to **2.6 (sprint 4.03)** in player.gd.
+  Measured at the new in-game speeds: walk tele 0.103 (was 0.258 at the old
+  walk), swings 0.189 s (was 0.082), full leap cycle with a visible ~7 cm hop
+  (`ik_leap_height` 0.08) and chest nod; sprint tele 0.153, skate 0.04%. The
+  flat `player_stats.move_speed` bone bonuses in bone_data_catalog.gd were
+  rescaled ×0.43 (3.0→1.3, −1.5→−0.65, 1.5→0.65) to keep their
+  percent-of-base design; enemy_stats speeds untouched.
+  Follow-up (author-directed, same day: "higher jumps so feet make a smoother
+  move"): `ik_leap_height` 0.08→0.13, `ik_step_overlap` 0.35→0.45,
+  `ik_stride_dip` 0.13→0.16. The higher jump and the extra overlap are one
+  mechanism: with more airtime per stride the next swing launches earlier, the
+  feet ride the jump instead of racing around a planted twin, and swings get
+  1.8× strict-alternation airtime. Measured at play speeds: walk tele 0.087
+  (swing 0.224 s, realized hop 0.107 m), sprint tele 0.129 / 0.00% skate, jump
+  catch 0.025, strict LRLR order. Trade accepted: stances become brief
+  touch-and-go contacts, so the stall-surge pulse narrows (1.98..3.51 at walk).
+  Second follow-up ("torso tilt back more, feet slower via higher jumps"):
+  `ik_leap_height` 0.13→0.18 (realized hop 0.149 m), `ik_step_overlap`
+  0.45→**0.5 — the zero-stance limit**: each foot relaunches the moment it
+  lands, a foot averages exactly ground speed during a swing, the mathematical
+  floor for an alternating gait. The swing's velocity profile became a
+  back-loaded TRAPEZOID (`_swing_forward_curve`, ease 25/cruise/ease 18 — peak
+  ~1.27× average vs ~1.6× for an eased hump). The back-tilt is three pieces:
+  `waist_bend_lean` +0.10→**−0.08** (the walk lean now tilts BACK),
+  `ik_leap_pitch_up_deg` 32 / `down_deg` 0 (the cycle settles to level, never
+  forward), and `torso_lean_amount = 0.0` overridden on the PLAYER instance in
+  player.tscn (the shared default 0.14 stays for enemies — it was adding 8°
+  forward that ate half the tilt). Measured: **net chest pitch −19..−11° back**
+  through the walk cycle, walk tele 0.064 (started at 0.258 — 4× smoother),
+  sprint tele 0.096, skate 0.00% both speeds, jump catch 0.021. **BALANCE FLAG: enemy
+  chase/flee speeds were tuned against a 6.0 player and are now relatively
+  ~2.3× faster — they likely need their own pass.** `ik_stride_dip` raised to
+  0.16 (full-ratio posture + leap lift both draw on the dip budget). Residual
+  walk skate 1.8% — millimetre-scale drags, visually negligible.
+- **Less crouch / normal-walking look (author-directed 2026-07-16: "legs not
+  crouch as much when moving, simulate normal walking").** The unlock was the
+  LEAP: `ik_leap_height` (0.10) lifted the hips each step, stealing reach from the
+  planted foot, which forced the crouch to avoid skate. Halving it (**0.05**) freed
+  that reach, so the crouch could ease (`ik_hip_drop_moving` 0.17→**0.12**) and the
+  stride shrink a touch (`ik_step_reach` 0.36→**0.34**, `ik_stride_dip` 0.10→0.14)
+  WITHOUT adding skate. Measured: walk knee **89%→91% avg, deepest bend 74%→79%**
+  (visibly straighter), hipY 0.447→0.461 (−4 cm from the 0.500 stand vs −5.4 cm
+  before), hop flatter, skate 3.5% (was 3.7%), 2.64 steps/m, sprint skate 0.9%.
+  A fully upright walk is still not reachable: with the stride kept ≥⅓ m for the
+  3-steps/m cap, a 0.59 m leg must bend to plant it — going straighter means a
+  smaller stride (more steps/m, past the cap) or accepting skate. Tried and
+  rejected: a purely DYNAMIC crouch (tiny constant drop, big reach-driven dip)
+  straightened the legs to 95% but the smoothed dip lagged the plant → 11-15%
+  skate.
 
-Este archivo es la fuente auditable del roadmap tecnico. Los estados son
-conservadores: un objetivo no se marca como cumplido si solo existe metadata,
-documentacion o una prueba estatica sin integracion/runtime cuando el objetivo
-requiere gameplay.
+- **Raise the hips when walking + more airtime (author-directed 2026-07-16:
+  "raise the hips more ... feet feel staggered with very little room ... to
+  maintain smoothness just give more airtime").** A HIP-HEIGHT vs SKATE trade,
+  and a tight one: with the stride fixed by the 3-steps/m cap, the planted legs
+  are already near their reach limit, so raising the hips straightens them into
+  a drag. Measured: `ik_hip_drop_moving` 0.20→hipY 0.428/0.3% skate,
+  **0.17→0.447 (+2 cm)/3.7%**, 0.15→0.458 (+3 cm)/5.7%. Chose 0.17 (visible
+  raise, skate still low). Reducing the stride to raise them more breaks the
+  cap; reducing the stride LEAD made it WORSE (the foot then only trails back,
+  further from the hip) — the straddle lead is optimal. The airtime is
+  `ik_step_overlap` 0.30→0.40 and `ik_step_duration` 0.42→0.48: swing-foot speed
+  2.64→2.29 m/s, tele 0.095→0.081, planted 33%→25% (still a real stance),
+  2.50 steps/m, sprint skate 0.7%. The ~2-3 cm hip ceiling is inherent to a
+  0.59 m leg with a stride this size — the only way past it is a smaller stride
+  (more steps/m) or a longer leg.
 
-Estados usados:
+- **Slower feet, take 4 (author-reported "legs still moving too fast", 2026-07-16).**
+  With the 3-steps/m cap the stride can't shrink, so the levers are walk speed and
+  swing airtime. Raising `ik_step_duration` (0.32→0.42) is the enabler: it lets a
+  SLOWER walk keep its cadence under the cap instead of the duration-ceiling forcing
+  extra steps. `base_move_speed` 2.0→**1.4** (sprint 2.17), bone speed bonuses
+  rescaled ×0.7. Measured: swing-foot speed **3.75→2.64 m/s (−29%)**, tele
+  0.134→0.095, while the stance holds (33% planted) and cadence stays legal
+  (2.57 steps/m walk, 2.58 sprint), 0.3% skate. Slowest levers if still too fast:
+  drop speed toward 1.2 with `ik_step_duration`→0.50 (measured 2.25 m/s swing, still
+  ~2.6 steps/m and 32% planted), or raise `ik_step_overlap` for more airtime at the
+  cost of stance.
 
-- No iniciado.
-- Preparado.
-- Parcial.
-- Integrado.
-- Validacion pendiente.
-- Validado estaticamente.
-- Validado manualmente.
-- Bloqueado.
-- Obsoleto por implementacion existente.
+- **THE STANCE FIX — the gait had no ground contact at all (author-reported
+  2026-07-16: "legs still kind of teleporting… is the back leg able to be behind
+  the hip when the hip moves forward?").** That question exposed the real bug.
+  Measured: **right foot PLANTED 0% of frames, BOTH feet airborne 100%** — at
+  `ik_step_overlap` 0.5 each foot relaunches the instant it lands, so the figure
+  never planted anything; it cycled its legs in the air. Every "0.0% skate" win
+  reported before this was VACUOUS — there were no planted frames to skate. Two
+  root causes, both now fixed:
+  1. LAUNCH SPIKE. `sin(pow(t,0.8)*PI)` in the reach boost: an exponent BELOW 1
+     has an INFINITE derivative at t=0, so the reach snapped on ~0.12 m in ONE
+     frame at every swing start (traced: arcMove 0.133 at t≈0.05 = 3x body speed,
+     decaying to 0.011 — a spike, not sustained speed). Exactly the old
+     `pow(t,0.7)` lift trap, reintroduced. Fixed with a smoothstep feed and an
+     exponent ABOVE 1: `sin(pow(smoothstep(0,1,t),1.3)*PI)` — smooth at both ends
+     AND peaks late (~0.55) as originally intended (0.8 actually peaked EARLY, at
+     0.42; the comment claiming otherwise was wrong).
+  2. NO STANCE. Overlap 0.5 → 0.3, so each foot is planted ~33% of its cycle and
+     the body rides over it. This instantly exposed 35%+ skate, which led to:
+- **THE CROUCH — why a jumping gait needs bent legs.** Pure geometry: a planted
+  foot 0.36 m from its hip on a 0.587 m leg requires the hip BELOW 0.455 m
+  (`sqrt(0.36² + h²) ≤ 0.58`), but a straight-legged rig stands at 0.53 and the
+  leap lift pushed it higher still — so every planted frame the foot was out of
+  reach and got dragged. **You cannot raise the pelvis 0.18 m while a foot is
+  planted far from the hip on a leg with no bend.** Real legs solve it by being
+  bent: crouch, then extend the planted leg to push off. New
+  `ik_hip_drop_moving` (0.20) vs `ik_hip_drop` (0.05), blended by
+  `_ik_hip_drop_now()` on the same speed ramp as the stance width — so standing
+  stays TALL and straight-legged (author's "stands normally") and the crouch only
+  engages to walk. Sweep at walk: hip_drop 0.05→0.20 took skate 35%→3% and the
+  planted knee from 99% to ~62% extension (real bend, reserve to push with).
+  Jump-height sweep at the crouch: leap 0.06→3.8%, **0.10→5.7%**, 0.14→14.4%,
+  0.18→22% skate — 0.10 is the most jump the leg reserve affords.
+  Final config (walk 2.0 / sprint 3.1): **2.55 steps/m, 33% planted, back foot
+  0.33 m BEHIND its hip, forward reach +0.28, tele 0.135 (was 0.226), skate
+  0.0%, knee 75%, jump-catch 0.021**; standing bodyY 0.846 at 87% leg extension,
+  stance 0.243 (under hips), returning to 0.873 after stopping. `base_move_speed`
+  2.6→**2.0**: slower is strictly better here — it lengthens the swing, so it cut
+  tele AND raised forward reach at once. Bone speed bonuses rescaled ×0.77 to hold
+  their percent-of-base.
+- **Bigger, wider steps (author-directed 2026-07-16: "maximum three steps per
+  metre; legs well separated / good distance between them; target points not
+  under the hips").** NOTE: the 0.42 reach / 0.12 stance / 0.22 dip tuned here
+  were re-swept by the stance fix above (0.36 / 0.08 / 0.10) — the numbers below
+  describe the method, the values above are what ships. Two coordinated changes, both measured:
+  1. STEPS/METRE cap. Steps/metre ≈ 1/`ik_step_reach` (each launch interval
+     covers `ik_step_reach` of ground). 0.32 measured 2.81/m — just under the
+     cap. Raised to **0.42** → **2.35/m walk, 2.13/m sprint**, a comfortable
+     margin under 3, with bigger strides. `ik_stride_dip` 0.16→**0.22** pays the
+     extra leg reach the longer stride demands (skate stayed 0.0%).
+  2. STANCE WIDTH. The anchor planted each foot directly under its hip (±0.12),
+     a narrow 0.24 m stance. New `ik_stance_width` (0.12) pushes each target
+     OUTBOARD along its own hip's side (right_leg at +X, left at −X via
+     `signf(leg_rest.x)`), so feet plant **0.46 m apart** while moving. It costs
+     leg reach (foot farther from hip laterally), which the same dip covers.
+     MOVEMENT-GATED (author-directed: "when standing still the targets have to be
+     under the hips so the character stands normally"): the width scales by
+     `clampf(speed_ratio * 2.5, 0, 1)` — the same quick ramp the leap uses — so
+     it is 0 at a standstill and full once past ~40% of walk speed. No extra
+     state was needed for the settle: when the player stops, the anchor narrows,
+     the wide plants exceed `ik_step_trigger` on their own, and the feet take a
+     natural little step inward. Measured: fresh stand 0.243 m (= hip width),
+     walking 0.459 m, settles back under the hips 0.63 s after stopping, then
+     dead still (0.0000 m/frame foot movement, no oscillation).
+  Measured after, walk+sprint: 0.0% skate, 99% extension, no collapse, no
+  non-finite, idle feet wide-and-still, jump-catch 0.020, reversals bounded.
+  Cost of the bigger stride: the pelvis dips ~0.20 m mid-stride (weight
+  transfer) to keep the wide/long plants reachable — a pronounced athletic bob,
+  the honest price of big steps on a 0.59 m leg. `ik_stance_width` is a live
+  slider ("Stance width") in the tuning menu; `ik_step_reach` stays an export
+  (it is the steps/metre constraint, not a feel dial).
+- **Forward leg reach — the swing overshoots ahead (author-directed
+  2026-07-16: "exaggerate the extension of the legs when moving forward, really
+  noticeable").** Baseline measurement exposed the real gap: the foot **never
+  reached ahead of its hip** (max +0.00 m), it planted under the hip and only
+  trailed back to −0.30 — legs read as dragging, never reaching. The obvious
+  levers all failed: bigger `ik_stride_lead` throws the plant past leg reach so
+  it clamps and the stride COLLAPSES over ~10 s (span 0.24→0.08, pelvis crouches
+  0.37 m — a short probe misses it, a 600-frame one catches it); bigger
+  `ik_step_reach` sends the foot further BEHIND. Both move where the foot
+  *plants*, which must stay stable. The fix moves the *swing arc* instead:
+  `ik_stride_reach_boost` (0.42) bulges the airborne foot forward along the
+  rig's facing, peaking just after mid-swing (`sin(pow(t,0.8)*PI)`) so the leg
+  is at full forward extension on the way down into the plant, scaled by
+  speed_ratio (inert standing) and zero at both swing ends. The PLANT is
+  untouched, so it costs no skate and cannot collapse the stride — the reach is
+  a pure mid-air flourish, which is also how a real reaching stride works (the
+  foot overreaches, then draws back to contact). Measured, foot-ahead-of-hip:
+  boost 0→+0.00, 0.20→+0.07, 0.34→+0.20, **0.42→+0.25 (default)**, 0.48→+0.33 —
+  and skate stayed 2.7% at 0.42 / 0.0% at sprint (baseline was worse), span
+  healthy, idle inert, jump-catch 0.03, reversals bounded. Exposed as a live
+  slider ("Leg forward reach") in the F3/key-4 tuning menu.
+- **The jump-height knob was cancelling itself (author-reported "step jump
+  doesn't do anything", fixed 2026-07-16).** The stride-dip estimator subtracted
+  `_ik_leap_lift` for EVERY foot each frame, so raising the jump dipped the
+  pelvis by the same amount — net body-Y barely moved, and what did move was
+  drowned in up to 27% skate. Three coupled fixes so the knob has real,
+  measured authority now:
+  1. The dip clause skips IN-FLIGHT feet (`_ik_step_t < 1.0`) — a swinging foot
+     that can't reach its arc just clamps in the solve (a tucked leg under a
+     jump), it is not what the skate guard drags. Only PLANTED feet still
+     subtract the lift.
+  2. `_ik_snap_dip_for_landing()` fires on the plant event: the smoothed lift
+     lags its zero-at-touchdown target, so a still-high pelvis would hand the
+     fresh plant to the skate guard; snapping the dip down at the landing is the
+     compression thud and keeps the foot reachable on the frame it lands.
+  3. The lift target tapers to 0 over t∈[0.72,0.96] (`1 - smoothstep`), so the
+     smoothed lift is already low before touchdown instead of lagging high into
+     it.
+  Measured, body-Y jump amplitude vs `ik_leap_height` at walk 2.6: 0.05→0.067,
+  0.12→0.103, 0.18→0.192, 0.24→0.274, 0.30→0.295 — a 4.4× span the slider now
+  visibly drives (was a compressed 1.6× buried in skate). Cost: the taller the
+  jump the more per-frame foot travel (tele 0.064 at 0.12, 0.195 at 0.18) and a
+  little skate returns (3–4.6% above ~0.18) — inherent, the foot arcs higher in
+  the same swing time. So `ik_leap_height` is now the smooth-vs-jumpy dial
+  itself: low = smoothest feet, high = bigger hop. Jump-catch landing 0.021,
+  unchanged.
+- **Landing re-grounds the plants (found by adversarial review, fixed
+  2026-07-16).** The airborne hang leaves each plant ~v/14 m above the floor at
+  touchdown, and nothing else restores plant Y — steps fire on XZ error alone, so
+  a standing landing never steps and the skeleton stood on air indefinitely
+  (measured: both feet 0.23 m up, forever, after a 5 m/s fall; running landings
+  dragged a floating foot ~0.9 m behind for ~0.27 s). `_ik_land_plants()` runs on
+  the airborne→grounded edge: keeps the hang XZ (the feet gathered under the hips
+  during the fall — that is a landing pose) and probes Y/normal down to the ground
+  actually under each foot. Measured after: worst |plant y| after landing 0.0000
+  in both scenarios.
+- **The carry's frame invariant (found by adversarial review, fixed).** The pelvis
+  carry `+=`s six sockets and NEEDS their positions re-assigned from rest earlier
+  in the same frame or it compounds. The wobble's position assign is that reset;
+  with `wobble_enabled` off (it is an exported tunable) nothing wrote the four limb
+  sockets and the carry sent an arm 202 m off the rig in 10 s. `_update_foot_ik`
+  now re-bases the four limb sockets itself when the wobble is off (measured after:
+  worst drift 0.29 m = the bounded offset, over the same 600 frames).
+- **THE LOAD-BEARING CONSTRAINT — the leg is too short for the game's run speed.**
+  Standing, the leg rests at 99.9% extension (hip→ankle 0.586 m vs 0.587 m reach):
+  ~0.5 mm of slack. `ik_hip_drop` (0.05 m after the author asked to reduce the
+  crouch) lowers the pelvis a little to buy the knees room to bend; the reach the
+  gait actually needs now comes from the stepping cycle, not a deep hip drop. The
+  reachable foot excursion is only ~0.25–0.32 m, while a 6 m/s run
+  (`base_move_speed`) demands a ~1.4 m stride per step. Above that ceiling a
+  planted foot **skates** forward (`_ik_reachable_target` clamps the target onto
+  reachable ground) rather than floating toward an unreachable point. Shallower
+  crouch = a bit more skate; the author chose that trade. The remaining honest
+  fixes are longer leg sockets or a lower run speed — logged, not taken here.
+- **Body-from-feet is `_apply_pelvis_carry`, not a `_animate_body` edit.** Every
+  socket is a child of the RIG (body/head/arms/legs are SIBLINGS), so moving the
+  body socket alone would tear the figure at the waist. The carry offsets all six
+  pelvis-carried sockets by `_ik_pelvis_dy`, mirroring `_apply_waist_carry`. The
+  waist carry's rest pivot is shifted by `_ik_pelvis_dy` so the bend still pivots
+  on the (now-lowered) waist plane.
+- **Coexistence with the wobble.** `_animate_wobble` no longer rattles the foot
+  sockets under IK (the foot IS the plant, and its rest offset is the shin length
+  the solver measures). The legs stay in the wobble list: the solver runs after
+  it and reads the wobbled hip, so the rattle survives as absorbed hip motion.
+- **Recommended tests:** headless probes covered plant-invariance under 180° yaw
+  (0.000 m drift), standing solve accuracy (<1 cm), ramp ground-tracking (≤2.1 cm
+  vs true ground height on an 11° slope), finite output over 60 frames, and the
+  bit-identical gates above. **Manual, still owed:** how the crouch silhouette and
+  the gait/skate READ on-screen — none of that is headless-testable.
+- **Tuning** (all `@export`, "Foot IK" group): `ik_hip_drop` (0.05),
+  `ik_step_trigger` (0.18), `ik_step_duration` (0.32 ceiling),
+  `ik_step_reach` (0.32 — the stride; cadence = reach/speed, so this is ALSO the
+  slow-the-feet knob; above 0.32 plants start to slide, see the sweep),
+  `ik_stride_dip` (0.10 — extra pelvis give at stride extremes; the weight bob),
+  `ik_step_duration_min` (0.06 — cadence floor; past ~4 m/s the feet scurry),
+  `ik_step_overlap` (0.3 — each foot planted ~(1-2*ovl) of its swing; 0.5 is a
+  ZERO-STANCE degenerate that never plants a foot),
+  `ik_leap_height` (0.10 — more than the crouch's leg reserve affords with a real stance), `ik_leap_pitch_up_deg` (32),
+  `ik_leap_pitch_down_deg` (0), `ik_leap_pitch_response` (14 — raise for a
+  snappier chest sweep),
+  `ik_step_height` (0.14), `ik_stride_lead` (1.7 launch-interval travels),
+  `ik_run_lean` (0.07), `ik_body_follow` (1.0),
+  `ik_step_drive` (0.85 — raise toward 1.0 for a harder per-step surge),
+  `ik_body_follow_max` (0.45), `ik_body_follow_response` (22),
+  `ik_body_follow_recenter` (0.8 — safety bleed only, NOT a signal filter; raising
+  it re-glues the body to the capsule and kills the read),
+  `ik_probe_radius/up/down`, `ik_max_drop`, `ik_pelvis_response`,
+  `ik_foot_response`, `ik_align_to_normal`.
 
-## Tabla
-
-| N | Sistema | Objetivo | Estado actual | Evidencia / pendiente |
-| --- | --- | --- | --- | --- |
-| 1 | Repo | Mantener trabajo fuera de `main` mediante ramas de hito. | Integrado | 2026-07-16: 9 ramas de hito trabajadas, validadas y fusionadas en `origin/develop` (no en `main`); ver `docs/roadmap_progress.md`. |
-| 2 | Repo | Mantener commits pequenos y reversibles dentro de cada rama. | Parcial | Commits anteriores pequenos; seguir auditando por PR. |
-| 3 | Repo | Evitar force-push y reescritura de historial. | Preparado | Politica en goal y docs; sin evidencia de force-push local. |
-| 4 | Repo | Crear preflight de commits reproducible. | Integrado | `docs/repo_stability_and_graphify.md`. |
-| 5 | Repo | Definir politica de line endings. | Integrado | `.gitattributes`. |
-| 6 | Repo | Evitar commits accidentales de `.import`. | Preparado | Politica documentada; requiere disciplina en PRs. |
-| 7 | Repo | Definir politica de caches. | Integrado | `.gitignore` y politica Graphify. |
-| 8 | Repo | Definir politica Graphify para ramas feature. | Integrado | Workflow limitado y politica documentada. |
-| 9 | Arquitectura | Confirmar componentes de inventario existentes. | Preparado | `PlayerInventoryComponent` documentado; requiere auditoria puntual por rama. |
-| 10 | Arquitectura | Confirmar componentes de equipamiento existentes. | Preparado | `PlayerEquipmentComponent` documentado; requiere auditoria puntual. |
-| 11 | Arquitectura | Confirmar componentes de stats existentes. | Preparado | `PlayerStatsComponent` documentado; requiere auditoria puntual. |
-| 12 | Arquitectura | Evitar duplicar reglas entre UI y gameplay. | Parcial | Politica documentada; validacion continua pendiente. |
-| 13 | Arquitectura | Usar servicios compartidos para reglas de slots. | Integrado | 2026-07-16: seis slots canonicos (`head`, `torso`, `left_arm`, `right_arm`, `left_leg`, `right_leg`) integrados en `develop` via `feat/inventory-equipment-ux-core`; solo `body` y `legs` como aliases legacy con datos reales (7 aliases especulativos sin consumidor eliminados). |
-| 14 | Arquitectura | Usar catalogo de huesos como fuente de datos. | Parcial | `BoneDataCatalog` existe; migracion incompleta. |
-| 15 | Arquitectura | Mantener `Player` como orquestador. | Parcial | Estado documentado; hotspots siguen grandes. |
-| 16 | Arquitectura | Documentar arquitectura por flujos. | Integrado | `docs/flow_index.md` y docs de flujo. |
-| 17 | QA | Probar inventario con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
-| 18 | QA | Probar combate con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
-| 19 | QA | Probar camara y movimiento con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
-| 20 | QA | Probar rig y preview con checklist manual. | Preparado | Checklist existe; ejecucion runtime pendiente. |
-| 21 | Docs | Mantener docs de inventario actualizadas. | Parcial | `docs/inventory_flow.md`; actualizar por cada hito. |
-| 22 | Docs | Mantener docs de equipamiento actualizadas. | Parcial | `docs/equipment_flow.md`; seis slots pendiente. |
-| 23 | Docs | Mantener docs de combate actualizadas. | Parcial | `docs/combat_flow.md`; backstab runtime pendiente. |
-| 24 | Docs | Mantener docs de camara actualizadas. | Parcial | `docs/camera_flow.md`; jitter runtime pendiente. |
-| 25 | Docs | Mantener docs de drops actualizadas. | Parcial | `docs/drops_flow.md`; drops side-aware pendiente. |
-| 26 | Docs | Mantener docs de tutorial actualizadas. | Parcial | `docs/tutorial_flow.md`. |
-| 27 | Docs | Mantener estado actual del sistema. | Parcial | `docs/current_system_status.md`; revisar tras hitos. |
-| 28 | Docs | Mantener mapa de arquitectura. | Parcial | Graphify versionado; politica actualizada. |
-| 29 | Datos | Definir ids estables de huesos. | Parcial | Resources existentes; auditoria de ids pendiente. |
-| 30 | Datos | Definir nombres visibles. | Parcial | Resources existentes; glosario UI pendiente. |
-| 31 | Datos | Definir rarezas. | Integrado | Documentado en historial y `BoneDefinition`. |
-| 32 | Datos | Definir mutaciones. | Integrado | Documentado en historial y `BoneDefinition`. |
-| 33 | Datos | Definir peso. | Integrado | 2026-07-16: `BoneRulesService.player_stats_with_equipment` aplica `equipment_weight` a una penalizacion de velocidad con umbral y techo; verificado en Godot 4.7 headless con datos reales (`equipment_weight: 3.2`, `load_speed_penalty: 0.012`). |
-| 34 | Datos | Definir stats base. | Parcial | Metadata existe; comparador pendiente. |
-| 35 | Datos | Definir sets y sinergias. | Parcial | Metadata pasiva; reglas activas pendientes. |
-| 36 | Datos | Definir ataque y combo. | Parcial | Metadata pasiva; combate avanzado pendiente. |
-| 37 | Datos | Definir modificadores porcentuales de calidad. | Integrado | 2026-07-16: `quality_damage_percent`/`speed_percent`/`health_percent`/`weight_percent` se suman y limitan (+-75%) y se aplican al calculo final de stats; verificado headless con datos reales de hueso. |
-| 38 | Datos | Definir calidades. | Integrado | Documentado en `docs/bone_data_structure.md`. |
-| 39 | Datos | Definir rarezas y mutaciones en docs. | Integrado | Documentacion existente. |
-| 40 | Datos | Documentar estructura de datos de huesos. | Integrado | `docs/bone_data_structure.md`. |
-| 41 | Inventario | Stacks visuales reales. | Parcial | Contador `xN` integrado; runtime pendiente. |
-| 42 | Inventario | Tiles con cantidad y drag and drop. | Parcial | `ui_bone_item.gd` y validador; runtime pendiente. |
-| 43 | Inventario | Comparador de stats. | Integrado | 2026-07-16: panel de info compara hueso bajo cursor vs equipado en el mismo slot (deltas reales via `BoneRulesService.adjusted_player_bonus_for`); verificado headless: "vs equipped Torso Bone: Speed -1.7, Damage +2.3, HP +0.3". |
-| 44 | Inventario | Mostrar subidas y bajadas de stats. | Integrado | 2026-07-16: mismo cambio que 43; deltas con signo (+/-) por stat. |
-| 45 | Inventario | Filtro por slot. | Integrado | Preexistente a esta sesion; confirmado funcional por `EquipmentRulesService.inventory_filter_matches_bone` y las 6 tabs de la UI. |
-| 46 | Inventario | Filtro por rareza. | No iniciado | Pendiente; sin dato de rareza expuesto en filtro. |
-| 47 | Inventario | Filtro por peso. | No iniciado | Pendiente. |
-| 48 | Inventario | Filtro por dano. | No iniciado | Pendiente. |
-| 49 | Inventario | Filtro por defensa. | No iniciado | No aplica: el proyecto no tiene stat de defensa (ver fila 67). |
-| 50 | Inventario | Ordenar por nuevo. | No iniciado | Pendiente; no existe campo de orden de adquisicion. |
-| 51 | Inventario | Ordenar por rareza o calidad. | Integrado | Preexistente; `compare_bones_for_inventory` ordena por slot -> rareza -> calidad -> nombre (compuesto, no seleccionable por el usuario). |
-| 52 | Inventario | Ordenar por slot. | Integrado | Mismo comparador que fila 51. |
-| 53 | Inventario | Ordenar por poder. | No iniciado | Pendiente; no existe metrica de "poder". |
-| 54 | Inventario | Ordenar por nombre. | Integrado | Mismo comparador que fila 51 (ultimo criterio de desempate). |
-| 55 | Inventario | Tooltip con color por calidad. | Integrado | Preexistente a esta sesion; panel de info ya mostraba calidad. |
-| 56 | Inventario | Tooltip con resumen. | Integrado | Preexistente; `show_bone_info` ya incluia efecto y descripcion. |
-| 57 | Inventario | Feedback de slot valido. | Integrado | 2026-07-16: `BoneSlotWidget` pinta el borde verde durante un drag compatible, via `can_equip_bone_in_slot`. |
-| 58 | Inventario | Feedback de slot invalido. | Integrado | 2026-07-16: mismo cambio que 57, borde rojo para drag incompatible; se restaura en `NOTIFICATION_DRAG_END`. |
-| 59 | Inventario | Confirmacion o animacion al equipar. | No iniciado | Solo hay `print()` de consola y el evento `bone_equipped`; sin confirmacion visual de usuario. |
-| 60 | Builds | Guardar builds de equipamiento. | Integrado | 2026-07-16: `PlayerEquipmentBuildsComponent` persiste 3 slots en `user://equipment_builds.cfg`; verificado headless (guardar, recargar). |
-| 61 | Builds | Cambiar builds de equipamiento. | Integrado | 2026-07-16: `apply_build` aplica un build guardado via `PlayerEquipmentComponent`; ahora con rollback real si la aplicacion falla a mitad de camino (snapshot previo + reaplicacion si la verificacion post-apply falla). Verificado headless en 5 escenarios: valido, vacio, pieza ausente, slot incompatible, rollback forzado. |
-| 62 | Builds | Validar builds disponibles. | Integrado | `validate_build_state` revisa copias disponibles, torso requerido para extremidades, y compatibilidad de slot antes de aplicar. |
-| 63 | Stats | Formula determinista de stats. | Parcial | `PlayerStatsComponent` existe; ampliar reglas. |
-| 64 | Stats | Comparacion contra pieza equipada. | No iniciado | Pendiente. |
-| 65 | Stats | Balance inicial de calidad. | Integrado | 2026-07-16: `quality_multiplier` escala bonuses directos; unidades y formula documentadas en `docs/equipment_flow.md`. |
-| 66 | Stats | Balance inicial de peso. | Integrado | 2026-07-16: `EQUIPMENT_FREE_WEIGHT`/`EQUIPMENT_LOAD_SPEED_PENALTY_*` activos y documentados con ejemplo numerico. |
-| 67 | Stats | Defensa en calculo final. | No iniciado | Pendiente. |
-| 68 | Stats | Movilidad en calculo final. | Parcial | Stats actuales; auditoria pendiente. |
-| 69 | Stats | Stamina en calculo final. | No iniciado | Pendiente. |
-| 70 | Durabilidad | Durabilidad de huesos. | No iniciado | Pendiente. |
-| 71 | Durabilidad | Estado roto o agrietado. | No iniciado | Pendiente. |
-| 72 | Durabilidad | Reparacion de huesos. | No iniciado | Pendiente. |
-| 73 | Sinergias | Bonus de set completos. | No iniciado | Pendiente. |
-| 74 | Sinergias | Bonus de set parciales. | No iniciado | Pendiente. |
-| 75 | Sinergias | Efectos negativos y mutaciones. | No iniciado | Pendiente. |
-| 76 | Backstab | Validar frente bloqueado. | Validado estaticamente | `validate_backstab_geometry.py` (ahora con exit code real); geometria confirmada en Godot 4.7 headless con enemigo real, pero solo para el caso "detras", no explicitamente "frente" en runtime. |
-| 77 | Backstab | Validar laterales bloqueados. | Validado estaticamente | Igual que fila 76; caso lateral no ejercido en runtime esta sesion. |
-| 78 | Backstab | Validar detras permitido. | Validado manualmente | 2026-07-16: confirmado en Godot 4.7 headless con jugador y enemigo reales, geometria rotada (`can_be_stealth_finished_by` = true, ejecucion completa). |
-| 79 | Backstab | Validar enemigos rotados. | Validado manualmente | 2026-07-16: `_facing_from_rotation()` corregido a `global_transform.basis.z` (antes mezclaba yaw local con posicion global); caso de prueba con `rotation.y = PI` confirmado en headless. |
-| 80 | Backstab | Confirmar forward logico y visual. | Validado manualmente | 2026-07-16: confirmado logicamente (headless); confirmacion visual en editor sigue pendiente. |
-| 81 | Backstab | Centralizar regla compartida. | Integrado | `BackstabRulesService.is_attacker_behind_target` ya centralizada; sin duplicacion encontrada. |
-| 82 | Backstab | Ajustar distancia valida. | No iniciado | Sin evidencia de que la distancia actual (`stealth_finish_range = 2.2`) sea incorrecta; no se toco. |
-| 83 | Backstab | Ajustar umbral angular. | No iniciado | Sin evidencia de que `stealth_behind_dot = 0.45` sea incorrecto; no se toco. |
-| 84 | Backstab | Prevenir doble dano. | Integrado | Preexistente (guardas en 3 capas); ahora con un segundo camino de disparo (senal del animador) que pasa por la MISMA guarda `backstab_execution_damage_applied`, verificado headless. |
-| 85 | Backstab | Cooldown o ventana de ejecucion. | Integrado | Preexistente; `backstab_execution_recovery_timer` y bloqueo de input durante ejecucion. |
-| 86 | Backstab | Animacion base de ejecucion. | Validado manualmente | 2026-07-16: `trigger_stealth_finish_attack()` fuerza la pose de finisher (antes `trigger_attack(3, false)` caia silenciosamente al swing generico con un solo brazo equipado). Confirmacion visual en pantalla sigue pendiente. |
-| 87 | Backstab | Reaccion del enemigo. | Integrado | Preexistente: `apply_stealth_finish_impact` llama `take_hit()` (flash + punch scale) o `die()`; confirmado por lectura de codigo, no se agrego nada nuevo. |
-| 88 | Backstab | Sincronizar momento de impacto. | Validado manualmente | 2026-07-16: nueva senal `attack_impact_reached` del animador, emitida en la fase de golpe real; timer fijo queda como respaldo. Disparo de la senal confirmado en headless. |
-| 89 | Backstab | Restaurar control tras ejecucion. | Validado manualmente | 2026-07-16: corregidos 2 bugs de freeze (jugador muere/pausa a mitad de ejecucion; objetivo liberado a mitad de ejecucion). Confirmado headless: `can_attack` se restaura correctamente en ambos casos. |
-| 90 | Backstab | Fallback para enemigos incompatibles. | Integrado | Preexistente; rama `elif backstab_execution_target.has_method("take_damage")` en `_apply_backstab_impact_once` (defensivo, dificil de alcanzar en la practica). |
-| 91 | Backstab | Documentar flujo final. | Integrado | `docs/combat_flow.md` actualizado 2026-07-16 con todos los fixes, evidencia runtime y pendientes de prueba manual explicitos. |
-| 92 | Cuerpo jugador | Contrato de dano corporal. | No iniciado | Pendiente. |
-| 93 | Cuerpo jugador | Perdida de partes. | No iniciado | Pendiente. |
-| 94 | Cuerpo jugador | Partes permitidas. | No iniciado | Pendiente. |
-| 95 | Cuerpo jugador | Penalizaciones por parte perdida. | No iniciado | Pendiente. |
-| 96 | Cuerpo jugador | Recuperacion de partes. | No iniciado | Pendiente. |
-| 97 | Cuerpo jugador | Tiempo de recogida. | No iniciado | Pendiente. |
-| 98 | Cuerpo jugador | Feedback visual de perdida. | No iniciado | Pendiente. |
-| 99 | Cuerpo jugador | Feedback sonoro de perdida. | No iniciado | Pendiente. |
-| 100 | Cuerpo jugador | Integracion con inventario. | No iniciado | Pendiente. |
-| 101 | Cuerpo jugador | Integracion con equipamiento. | No iniciado | Pendiente. |
-| 102 | Cuerpo jugador | Integracion con animacion. | No iniciado | Pendiente. |
-| 103 | Cuerpo jugador | Compatibilidad con slots corporales. | Integrado | 2026-07-16: seis slots canonicos integrados via `feat/inventory-equipment-ux-core`. |
-| 104 | Cuerpo jugador | Compatibilidad con camara. | No iniciado | Pendiente. |
-| 105 | Cuerpo jugador | Validacion de recuperacion. | No iniciado | Pendiente. |
-| 106 | Enemigos | Variante rapida. | Parcial | Enemigos existentes; catalogacion pendiente. |
-| 107 | Enemigos | Variante tanque. | Parcial | Enemigos existentes; catalogacion pendiente. |
-| 108 | Enemigos | Variante crawler. | Parcial | Crawling documentado; runtime pendiente. |
-| 109 | Enemigos | Variante lanzadora. | Parcial | Ranged/gorilla/lizard existen; auditoria pendiente. |
-| 110 | Enemigos | Minijefes. | No iniciado | Pendiente. |
-| 111 | Enemigos | Estado corporal enemigo. | Parcial | Limb detachment existe; consolidar reglas. |
-| 112 | Enemigos | Perdida de brazos. | Parcial | Existe en drops/limbs; validar side-aware. |
-| 113 | Enemigos | Perdida de piernas. | Parcial | Existe en drops/limbs; validar side-aware. |
-| 114 | Enemigos | Perdida de torso. | Parcial | Existe parcialmente; validar. |
-| 115 | Enemigos | Partes recuperables. | Parcial | Documentado; runtime pendiente. |
-| 116 | Enemigos | Alertas grupales. | Parcial | Estado actual documentado; validar. |
-| 117 | Enemigos | Ruido. | Parcial | Documentado en combate; validar. |
-| 118 | Enemigos | Reaccion a muerte. | Parcial | Drops/eventos existentes; validar. |
-| 119 | Enemigos | Drop inteligente. | Parcial | Servicios existentes; ampliar. |
-| 120 | Enemigos | Claridad visual del drop. | Parcial | Pendiente UX. |
-| 121 | Drops | Preservar slot canonico del drop. | Integrado | 2026-07-16: `DropPickupRulesService`/`EquipmentRulesService` ya usan los seis slots canonicos; `slot_for_bone` para huesos bilaterales ahora resuelve al primer lado libre en vez de forzar siempre el mismo lado (ver fila 43 del backlog original de equip-next). |
-| 122 | Drops | Preservar lado de origen cuando aplique. | No iniciado | Pendiente. |
-| 123 | Camara | Reproducir jitter. | Preparado | Validador diagnostico; runtime pendiente. |
-| 124 | Camara | Aislar camara habilitada/deshabilitada. | No iniciado | Pendiente runtime. |
-| 125 | Camara | Aislar rig procedural. | No iniciado | Pendiente runtime. |
-| 126 | Camara | Comparar `_process` y `_physics_process`. | Integrado | Follow de camara movido a `_physics_process` (rama previa a esta sesion); 2026-07-16: confirmado que sigue coherente tras los merges posteriores (orden padre-antes-que-hijo intacto). Comportamiento sobre 60 FPS y relacion con `physics_interpolation` documentados en `docs/camera_flow.md`. |
-| 127 | Camara | Corregir causa demostrada del jitter. | No iniciado | Pendiente causa. |
-| 128 | Camara | Sensibilidad configurable. | No iniciado | Pendiente. |
-| 129 | Camara | Invertir eje Y. | No iniciado | Pendiente. |
-| 130 | Camara | Persistencia de controles. | No iniciado | Pendiente. |
-| 131 | Camara | Modo crawler. | No iniciado | Pendiente. |
-| 132 | Camara | Modo combate. | No iniciado | Pendiente. |
-| 133 | Camara | Lock-on. | No iniciado | Pendiente. |
-| 134 | Animacion | Animaciones por equipamiento. | No iniciado | Pendiente. |
-| 135 | Animacion | Animacion de pickup. | No iniciado | Pendiente. |
-| 136 | Animacion | Animacion de crawlers. | Parcial | Rig tiene estados; validar. |
-| 137 | Animacion | Feedback sonoro. | No iniciado | Pendiente. |
-| 138 | Animacion | Feedback visual. | Parcial | Algunos flashes existen; consolidar. |
-| 139 | Animacion | Transiciones de ataque. | Parcial | Combo visual existe; validar. |
-| 140 | Animacion | Transiciones de dano. | Parcial | Enemigos tienen feedback; validar. |
-| 141 | Animacion | Transiciones de muerte. | Parcial | Enemigos tienen muerte/drops; validar. |
-| 142 | Progresion | Arbol de mejoras. | No iniciado | Pendiente. |
-| 143 | Progresion | NPC. | No iniciado | Pendiente. |
-| 144 | Progresion | Mesa de ensamblaje. | No iniciado | Pendiente. |
-| 145 | Mundo | Zonas por salto. | No iniciado | Pendiente. |
-| 146 | Mundo | Zonas por escalada. | No iniciado | Pendiente. |
-| 147 | Mundo | Zonas por alas. | No iniciado | Pendiente. |
-| 148 | Mundo | Zonas por fuerza. | No iniciado | Pendiente. |
-| 149 | Mundo | Pruebas por brazos. | Parcial | Trial gates existen; validar y ampliar. |
-| 150 | Mundo | Pruebas por piernas. | Parcial | Trial gates existen; validar y ampliar. |
-| 151 | Mundo | Pruebas por torso. | Parcial | Trial gates existen; validar y ampliar. |
-| 152 | Mundo | Pruebas por cabeza. | Parcial | Trial gates existen; validar y ampliar. |
-| 153 | Objetivos | ArenaGoalManager narrativo. | Parcial | Manager existe; ampliar narrativa. |
-| 154 | Objetivos | Misiones. | Parcial | Tutorial/checklist existe; sistema formal pendiente. |
-| 155 | Objetivos | Tutoriales. | Parcial | Tutorial flow existe; validar runtime. |
-| 156 | Objetivos | Recompensas de arenas. | Parcial | Arena flow existe; validar. |
-| 157 | Objetivos | Salida/portal de objetivo. | Parcial | Exit portal existe; validar. |
-| 158 | Objetivos | Registro de progreso de demo. | Parcial | ArenaGoalManager; persistencia pendiente. |
-| 159 | Mantenimiento | Actualizar docs por cambio funcional. | Parcial | Politica existe; aplicar por PR. |
-| 160 | Mantenimiento | Ejecutar validadores por rama. | Parcial | Validadores existen; checklist por PR. |
-| 161 | Mantenimiento | Revisar caches por rama. | Preparado | Politica documentada. |
-| 162 | Mantenimiento | Revisar conflictos por rama. | Preparado | Preflight documentado. |
-| 163 | Mantenimiento | Mantener commits pequenos. | Preparado | Politica documentada. |
-| 164 | Mantenimiento | Registrar decisiones arquitectonicas. | Preparado | Docs de flujo y politica. |
-| 165 | Mantenimiento | Refrescar roadmap tras grupos de ramas integradas. | Integrado | 2026-07-16: este archivo refrescado tras integrar 9 ramas en `origin/develop`; `docs/roadmap_progress.md` actualizado con la tabla de ramas. Sigue siendo un proceso manual, no automatizado. |
+### Known limits
+- Sprint skate is nearly gone (2.1% of path at 6 m/s) since the cadence coupling,
+  but past ~4 m/s the `ik_step_duration_min` floor bites and the feet scurry —
+  rapid small steps rather than long strides. That is the honest ceiling of these
+  leg proportions.
+- World-space plants assume static ground — teleports/level loads/moving platforms
+  strand a plant until the next step re-probes.
+- Vertical steps taller than the capsule can climb block the body (CharacterBody3D
+  step-up), unrelated to the IK; ramps are fine.
+- Enemies keep FK forever (unsplit). Splitting them is the separate Cut 2/3 work.
 
 ## docs/roadmap_progress.md
 
 # Roadmap Progress
 
-Fecha base: 2026-07-15. Ultima actualizacion: 2026-07-16.
+Fecha base: 2026-07-15
 
 Este archivo mantiene una tabla operativa de lotes pequenos para MARROW. Su
 objetivo es que cada cambio tenga rama, evidencia y estado verificable sin
@@ -4808,24 +4588,7 @@ tocar `main` directamente.
 
 | Fecha | Rama | Tipo | Objetivo | Estado | Evidencia | Pendiente |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-07-15 | `docs/qa-validation-baseline` | Docs / QA | Crear checklist manual y tablero de seguimiento para futuros lotes. | Integrado en `main`; validado estaticamente. | Incluido por la cascada de integracion; `git diff --check`; revision documental. | Ejecutar checklist manual dentro de Godot. |
-| 2026-07-15 | `chore/data-bone-validator` | Tools / Datos | Validar integridad de definiciones de huesos y compatibilidad del catalogo. | Integrado en `main`; validado estaticamente. | PR #1; `python -B tools\validate_bone_data.py` OK. | Ejecutar flujo manual de pickups/equipamiento con datos reales. |
-| 2026-07-15 | `test/p0-backstab-validation` | Tools / Combate | Cubrir casos de backstab frente, detras, laterales y enemigos rotados sin tocar IA general. | Integrado en `main`; validado estaticamente. | PR #2; `python -B tools\validate_backstab_geometry.py` OK. | Confirmar manualmente en `scenes/testing_environment.tscn` o escena equivalente. |
-| 2026-07-15 | `test/p0-preview-validation` | Tools / Preview | Registrar contrato estatico del preview de inventario sin reconstruir `SubViewport` ni `World3D`. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_preview_contract.py` OK. | Validar render, equip/unequip y lifecycle dentro de Godot. |
-| 2026-07-15 | `test/p0-jitter-diagnostics` | Tools / Camara / Rig | Diagnosticar contrato de actualizacion de movimiento, camara y rig sin aplicar correccion especulativa. | Integrado en `main`; validado estaticamente con advertencias. | PR #3; `python -B tools\validate_jitter_update_contract.py` OK; advierte hipotesis runtime no demostradas. | Reproducir jitter en runtime antes de cualquier fix. |
-| 2026-07-15 | `test/inventory-stack-contract` | Tools / Inventario | Validar que el inventario oculte solo las copias equipadas y conserve duplicados visibles. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_stack_contract.py` OK. | Probar abrir inventario, recoger duplicados y equipar/desequipar en juego. |
-| 2026-07-15 | `feature/inventory-stack-count` | UI / Inventario | Mostrar cantidades `xN` agrupando duplicados visibles sin cambiar payload de drag and drop. | Integrado en `main`; validado estaticamente. | PR #3; `python -B tools\validate_inventory_stack_count.py` OK. | Confirmar layout responsive y comportamiento drag/drop en runtime. |
-| 2026-07-15 | `integration/marrow-validation-cascade` | Integracion | Juntar lotes de validacion en cascada y limitar Graphify Actions a `main` y `develop`. | Integrado en `main`; remoto de ramas de trabajo ya podado. | PR #3; `45be471` incluido en `origin/main`; Graphify limitado por workflow. | Monitorear checks de GitHub y ejecutar QA manual post-merge. |
-| 2026-07-15 | `chore/repo-stability-and-graphify` | Repo / CI / Docs | Definir politica de Graphify, line endings y fuente auditable del roadmap 1-165. | Integrado en `develop`; validado estaticamente. | `.gitattributes`, `docs/repo_stability_and_graphify.md`, `docs/roadmap_1_165.md`; merge a `develop`. | Abrir PR `develop` hacia `main` solo despues de validar la cascada completa. |
-| 2026-07-16 | `chore/repo-stability-and-graphify` | Repo / CI | Cerrar el pendiente de `.gitignore` para el output anidado accidental de Graphify. | Integrado en `develop`. | `.gitignore` actualizado; verificado que 0 archivos requerian renormalizacion (`git ls-files --eol`). | Ninguno. |
-| 2026-07-16 | `test/p0-runtime-validation-suite` | Tools / QA | Convertir la guia P0 en un flujo de registro PASS/FAIL/observado/evidencia. | Integrado en `develop`. | Teclas O/P/F en `testing_environment.gd`; log en `user://p0_validation_log.txt`; verificado headless (Godot 4.7, escena real corre 60 frames sin error tras warmup de cache de clases). | Ejecucion manual interactiva de las teclas O/P/F (headless no simula input). |
-| 2026-07-16 | `feat/bone-stats-quality-and-weight` | Datos / Stats | Corregir orden de redondeo, exponer claves sin consumidor, documentar unidades. | Integrado en `develop`. | Fix de `aggregate_player_bonuses` (sumar floats, redondear una vez); `get_inventory_stats_snapshot` expone weight/quality; verificado headless con datos reales de hueso. | Ninguno. |
-| 2026-07-16 | `fix/inventory-preview-stability` | Inventario / Preview | Corregir orden del snapshot y eliminar resize manual redundante. | Integrado en `develop`. | `sync_preview` cachea solo tras aplicar con exito; `_sync_preview_viewport_size` eliminado (redundante bajo `stretch=true`); verificado headless, escena corre sin error. | Pruebas manuales de render (equipar/desequipar, reapertura, resoluciones). |
-| 2026-07-16 | `fix/player-camera-movement-stability` | Camara | Documentar comportamiento sobre 60 FPS y examinar escrituras directas de `global_position`. | Integrado en `develop`. | Documentacion agregada; asimetria encontrada entre detach (compensado) y reattach (sin compensar) de torso/cabeza, registrada sin corregir. | Confirmar/descartar jitter con un humano jugando; QA runtime del reattach. |
-| 2026-07-16 | `feat/inventory-equipment-ux-core` | Inventario / Equipamiento | Corregir bug de piernas, limpiar aliases, agregar comparador/deltas/feedback de drag. | Integrado en `develop`. | Bug real de equip-next (siempre `right_leg`) corregido; bug de tipado de GDScript encontrado y corregido de paso; verificado headless: `{"left_leg": "leg_bone", "right_leg": "leg_bone"}`. | Ninguno de lo especificado; UI en ingles ya consistente. |
-| 2026-07-16 | `feat/inventory-build-presets` | Inventario / Builds | Implementar aplicacion transaccional real con rollback. | Integrado en `develop`. | Snapshot previo + reaplicacion si falla la verificacion post-apply; bug preexistente de compilacion (`display_name` inexistente) encontrado y corregido; verificado headless en 5 escenarios (valido, vacio, pieza ausente, slot incompatible, rollback forzado). | Ninguno. |
-| 2026-07-16 | `feat/bone-durability-mutations-and-synergies` | Datos | Elegir Ruta A (esquema de datos puro) y documentar honestamente el alcance. | Integrado en `develop`. | Cero llamadores externos confirmado por grep; validador y docs corregidos para no sugerir funcionalidad runtime. | Ruta B (runtime real) queda para una rama futura si se decide implementarla. |
-| 2026-07-16 | `fix/combat-backstab-stability` | Combate | Corregir freeze, animacion faltante, sincronizacion de impacto. | Integrado en `develop`. | 2 bugs de freeze corregidos (muerte/pausa a mitad de ejecucion; objetivo liberado a mitad de ejecucion); pose de finisher forzada; senal de impacto del animador; verificado headless con jugador y enemigo reales. | Pausa real en editor (mismo codigo que muerte, no ejercido); confirmacion visual de pose/reaccion/camara. |
+| 2026-07-15 | `codex/qa-validation-baseline` | Docs / QA | Crear checklist manual y tablero de seguimiento para futuros lotes. | En progreso | `git status`, `git diff --check`, revision documental. | Commit, push y PR draft. |
 
 ## Backlog Tecnico Inmediato
 

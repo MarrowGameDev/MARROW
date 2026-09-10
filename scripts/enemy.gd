@@ -115,7 +115,6 @@ const ARROW_PROJECTILE_SCRIPT: Script = preload("res://scripts/arrow_projectile.
 @export var stealth_finish_range: float = 2.2
 @export_range(0.0, 1.0, 0.05) var stealth_behind_dot: float = 0.45
 @export var failed_stealth_damage_multiplier: int = 2
-@export var stealth_execution_reaction_lock: float = 0.45
 @export var respawn_enabled: bool = true
 @export var near_respawn_delay: float = 120.0
 @export var far_respawn_delay: float = 30.0
@@ -175,8 +174,6 @@ var recovering_limb_key: String = ""
 var detached_limb_bodies: Dictionary = {}
 var limb_detach_damage_progress: float = 0.0
 var last_hit_body_part: String = ""
-var stealth_execution_player: Node3D = null
-var stealth_execution_impact_applied: bool = false
 
 # Tier 1D polish: one reusable tween so hit-squash, attack-lunge, and death-pop
 # never fight over the scale, plus a procedurally built placeholder "hit" sound.
@@ -191,7 +188,11 @@ const HIT_COLOR: Color = Color(1, 0.95, 0.45, 1)
 @onready var vision_mesh: MeshInstance3D = $VisionMesh
 @onready var visual_root: Node3D = $VisualRoot
 @onready var rig: ModularSkeletonRig = $VisualRoot/ModularSkeletonRig
-@onready var animator: ProceduralPlayerAnimator = $VisualRoot/ProceduralAnimator
+# The procedural animator is gone; kept null so its old guarded call sites no-op.
+var animator = null
+# Clip-driven skeleton-character visual (AnimatedCharacter) for NORMAL enemies.
+# Disabled for lizard/gorilla variants, which keep their own proportioned rig.
+@onready var retargeted_body: Node = get_node_or_null("VisualRoot/AnimatedCharacter")
 
 
 # _ready runs once when this enemy enters the running scene.
@@ -226,6 +227,12 @@ func _ready() -> void:
 	if lizard_profile_active:
 		normal_color = lizard_body_color
 	_set_enemy_color(normal_color)
+	# Normal enemies wear the new skeleton character; special variants keep theirs.
+	if retargeted_body != null:
+		if lizard_profile_active or gorilla_profile_active:
+			retargeted_body.disable()
+		else:
+			retargeted_body.set_body_tint(normal_color)
 	_update_health_label()
 	_build_vision_cone()
 	_set_player_visible(false, true)
@@ -261,9 +268,6 @@ func _physics_process(delta: float) -> void:
 		velocity.x = knockback_velocity.x
 		velocity.z = knockback_velocity.z
 		move_and_slide()
-		return
-
-	if _update_stealth_execution_hold():
 		return
 
 	if dummy_target_enabled:
@@ -458,6 +462,8 @@ func _try_attack_player(player: Node) -> void:
 	_lunge()
 	if animator != null:
 		animator.trigger_attack()
+	if retargeted_body != null:
+		retargeted_body.trigger_attack()
 	if player.has_method("take_player_damage"):
 		player.take_player_damage(contact_damage, global_position)
 
@@ -711,8 +717,6 @@ func _get_rock_throw_socket() -> Node3D:
 func can_be_stealth_finished_by(player: Node3D) -> bool:
 	if not alive or player == null:
 		return false
-	if stealth_execution_player != null:
-		return false
 	if returning_to_spawn:
 		return false
 	if global_position.distance_to(player.global_position) > stealth_finish_range:
@@ -720,16 +724,9 @@ func can_be_stealth_finished_by(player: Node3D) -> bool:
 	return _is_player_behind(player)
 
 
-# True when a stealth finish would EXECUTE (instant kill) rather than only
-# deal ambush damage. The prompt, the impact branch and the player's choice
-# of animation all read this one method so they can never disagree.
-func is_stealth_finish_lethal() -> bool:
-	return health <= stealth_finish_max_health
-
-
 func get_stealth_prompt_text() -> String:
 	var bone_name: String = BoneRulesService.display_name_with_slot(dropped_bone_id)
-	if is_stealth_finish_lethal():
+	if health <= stealth_finish_max_health:
 		return "F: Finish " + bone_name + " enemy"
 	return "F: Ambush " + bone_name + " enemy"
 
@@ -739,38 +736,25 @@ func get_drop_display_name() -> String:
 
 
 func _is_player_behind(player: Node3D) -> bool:
+	var to_player := player.global_position - global_position
+	to_player.y = 0.0
+	if to_player.length() <= 0.01:
+		return false
+
 	var enemy_forward := facing_direction
 	enemy_forward.y = 0.0
 	if enemy_forward.length() <= 0.01:
 		enemy_forward = _facing_from_rotation()
 
-	return BackstabRulesService.is_attacker_behind_target(
-		global_position,
-		enemy_forward,
-		player.global_position,
-		stealth_behind_dot
-	)
+	return enemy_forward.normalized().dot(to_player.normalized()) <= -stealth_behind_dot
 
 
 func try_stealth_finish(player: Node3D, player_damage: int, hit_from: Vector3) -> bool:
 	if not can_be_stealth_finished_by(player):
 		return false
 
-	_begin_stealth_execution(player, hit_from)
-	return true
-
-
-func apply_stealth_finish_impact(player: Node3D, player_damage: int, hit_from: Vector3) -> bool:
-	if not alive:
-		return false
-	if stealth_execution_player != player:
-		return false
-	if stealth_execution_impact_applied:
-		return false
-
-	stealth_execution_impact_applied = true
 	last_hit_from_position = hit_from
-	if is_stealth_finish_lethal():
+	if health <= stealth_finish_max_health:
 		health = 0
 		_update_health_label()
 		_play_hit_sound()
@@ -787,63 +771,9 @@ func apply_stealth_finish_impact(player: Node3D, player_damage: int, hit_from: V
 		returning_to_spawn = false
 		_set_player_visible(true)
 		_turn_toward((player.global_position - global_position).normalized())
-		attack_timer = maxf(attack_timer, stealth_execution_reaction_lock)
-	return true
-
-
-func finish_stealth_execution(player: Node3D) -> void:
-	if stealth_execution_player != player:
-		return
-	_clear_stealth_execution()
-
-
-func cancel_stealth_execution(player: Node3D) -> void:
-	if stealth_execution_player != player:
-		return
-	_clear_stealth_execution()
-
-
-func _begin_stealth_execution(player: Node3D, hit_from: Vector3) -> void:
-	stealth_execution_player = player
-	stealth_execution_impact_applied = false
-	last_hit_from_position = hit_from
-	returning_to_spawn = false
-	ranged_attack_windup_timer = 0.0
-	rock_throw_windup_timer = 0.0
-	saliva_spit_windup_timer = 0.0
-	_cancel_held_rock()
-	attack_timer = maxf(attack_timer, stealth_execution_reaction_lock)
-	# Deliberately does NOT turn toward the player: a backstab only
-	# triggers when the enemy is facing away (see can_be_stealth_finished_by
-	# / BackstabRulesService.is_attacker_behind_target), and spinning the
-	# victim to face its attacker would give away the whole point of a
-	# stealth take-down from behind.
-
-
-func _clear_stealth_execution() -> void:
-	stealth_execution_player = null
-	stealth_execution_impact_applied = false
-
-
-func _update_stealth_execution_hold() -> bool:
-	if stealth_execution_player == null:
-		return false
-	if not is_instance_valid(stealth_execution_player):
-		_clear_stealth_execution()
-		return false
-	if not alive:
-		_clear_stealth_execution()
-		return false
-
-	# No _turn_toward() here either: the victim stays facing away from its
-	# attacker for the whole hold, matching _begin_stealth_execution.
-	ranged_attack_windup_timer = 0.0
-	rock_throw_windup_timer = 0.0
-	saliva_spit_windup_timer = 0.0
-	velocity.x = knockback_velocity.x
-	velocity.z = knockback_velocity.z
-	move_and_slide()
-	return true
+		attack_timer = 0.0
+		_try_attack_player(player)
+	return false
 
 
 # Vision check: player must be inside the enemy's cone, inside detection range,
@@ -1508,9 +1438,7 @@ func _attach_pickup_to_detached_limb(body: RigidBody3D, pickup_bone_id: String) 
 	pickup_area.collision_layer = 0
 	pickup_area.collision_mask = 1
 	pickup_area.set_script(LIMB_BONE_PICKUP_SCRIPT)
-	# Creation point for a dropped limb: roll its quality once, here.
-	var instance_id := BoneInstanceService.create_instance(pickup_bone_id)
-	pickup_area.set("bone_id", instance_id)
+	pickup_area.set("bone_id", pickup_bone_id)
 
 	var pickup_shape := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()
@@ -1770,17 +1698,8 @@ func _set_collision_enabled(enabled: bool) -> void:
 	collision_shape.set_deferred("disabled", not enabled)
 
 
-# Vector3(sin(rotation.y), 0, cos(rotation.y)) is this enemy's own
-# convention for "forward" from yaw (see _turn_toward's
-# rotation.y = atan2(facing_direction.x, facing_direction.z)), but rotation.y
-# is LOCAL to this node's parent while callers like _is_player_behind()
-# compare it against global_position. global_transform.basis.z is the exact
-# global-space equivalent of that same formula (Godot's Y-axis Basis maps
-# local +Z to (sin(yaw), 0, cos(yaw)) before any parent transform is
-# applied), so it stays correct if this enemy is ever parented under a
-# rotated node.
 func _facing_from_rotation() -> Vector3:
-	return global_transform.basis.z.normalized()
+	return Vector3(sin(rotation.y), 0.0, cos(rotation.y)).normalized()
 
 
 # Polish: a quick squash-and-recover so a surviving hit has some weight.
@@ -1838,15 +1757,10 @@ func _drop_standard_bone_pickup() -> void:
 		# Drop the pickup at ground height under wherever the enemy died.
 		bone_node.global_position = Vector3(global_position.x, 0.05, global_position.z)
 
-	# This is where a new piece comes into existence, so this is where its
-	# quality is rolled -- exactly once. The pickup carries the instance_id
-	# from here on; collecting it later only moves that identity into the
-	# inventory and never re-rolls.
-	var instance_id := BoneInstanceService.create_instance(dropped_bone_id)
 	if bone.has_method("set_bone_id"):
-		bone.call("set_bone_id", instance_id)
+		bone.call("set_bone_id", dropped_bone_id)
 	limb_pickup_spawned = true
-	GameEvents.drop_spawned.emit(instance_id, bone, self)
+	GameEvents.drop_spawned.emit(dropped_bone_id, bone, self)
 
 
 func _force_limb_pickup_drop() -> bool:
@@ -1915,21 +1829,16 @@ func _set_enemy_color(new_color: Color) -> void:
 
 
 func _setup_procedural_character() -> void:
-	if animator == null or rig == null:
+	# The procedural animator is gone; keep only the rig's proportions/hitbox wiring.
+	if rig == null:
 		return
 
 	if lizard_profile_active and rig.has_method("apply_lizard_proportions"):
 		rig.apply_lizard_proportions()
 	elif gorilla_profile_active and rig.has_method("apply_gorilla_proportions"):
 		rig.apply_gorilla_proportions()
-	animator.rig = rig
-	animator.turn_target = null
 	if rig.has_method("set_body_hitbox_owner"):
 		rig.call("set_body_hitbox_owner", self, "enemy_body_hurtboxes")
-	if animator.has_method("set_player_body_progression_enabled"):
-		animator.set_player_body_progression_enabled(false)
-	if animator.has_method("set_crawl_mode"):
-		animator.set_crawl_mode(crawling_due_to_leg_loss)
 	_setup_ranged_bow_visual()
 
 
