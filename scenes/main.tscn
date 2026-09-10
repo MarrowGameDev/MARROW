@@ -105,11 +105,20 @@ transform = Transform3D(-11.006281, 0, -41.075993, 0, 42.524998, 0, 41.075993, 0
 [node name="abandoned house" parent="." unique_id=1093156791 instance=ExtResource("15_muem4")]
 transform = Transform3D(-9.536743e-07, 0, -46.2, 0, 46.2, 0, 46.2, 0, -9.536743e-07, 33.3, 0, 57.3)
 
-[node name="wood_pillar2" parent="abandoned house" unique_id=18379121 instance=ExtResource("16_jscy8")]
+[node name="pilar_prison 2" parent="abandoned house" unique_id=18379121 instance=ExtResource("16_jscy8")]
 transform = Transform3D(8.398062e-17, 2.536054e-09, 0.093073584, 0.093073584, -5.370256e-09, 0, 4.0683754e-09, 0.12285714, -1.9212523e-09, -0.04978347, 0.43636358, 0.40541112)
 
-[node name="wood_pillar3" parent="abandoned house" unique_id=869189508 instance=ExtResource("16_jscy8")]
+[node name="wood_hanger_rod" parent="abandoned house/pilar_prison 2" unique_id=1529034020 instance=ExtResource("9_2wyq8")]
+transform = Transform3D(9.653085e-09, 0.658, -1.5229391e-08, 0.12851156, -2.1326116e-08, -0.49686652, -0.6330883, 5.7039156e-09, -0.100859694, -0.453, 0.477, -0.113)
+
+[node name="marionette_prison_2" parent="abandoned house/pilar_prison 2/wood_hanger_rod" unique_id=1254135790 instance=ExtResource("27_2f3dj")]
+transform = Transform3D(-1.7562288, 0, 0.47058013, 0, 1.818182, 0, -0.47058013, 0, -1.7562288, 0.032815933, -1.4121218, -0.5088451)
+
+[node name="pillar_prison 1" parent="abandoned house" unique_id=869189508 instance=ExtResource("16_jscy8")]
 transform = Transform3D(8.398063e-17, 2.536054e-09, 0.093073584, 0.093073584, -5.370256e-09, 0, 4.0683754e-09, 0.12285714, -1.9212527e-09, 0.27489185, 0.37142855, 0.38376617)
+
+[node name="marionette_prison" parent="abandoned house/pillar_prison 1" unique_id=1136384999 instance=ExtResource("26_vxglm")]
+transform = Transform3D(2.2587608e-08, 1.0334884, 3.9122884e-08, 0.39147288, -3.4223643e-08, 0.6780509, 0.8950273, 0, -0.51674426, -1.1744187, 0.80514455, -0.004650116)
 
 [node name="puppets_group_2" parent="abandoned house" unique_id=1655218277 instance=ExtResource("21_jscy8")]
 transform = Transform3D(0.15806058, 0, -0.0423522, 0, 0.16363637, 0, 0.0423522, 0, 0.15806058, -0.24458867, 0, 0.50432897)
@@ -170,12 +179,3 @@ transform = Transform3D(-7.1525574e-07, 5, 2.1855696e-07, 8.8817825e-15, -2.1855
 
 [node name="stone_floor_incomplete3" parent="." unique_id=822084102 instance=ExtResource("20_yc10j")]
 transform = Transform3D(5.9624405e-08, -5, -2.1855695e-07, 0, -2.1855695e-07, 5, -5, -5.9624405e-08, -2.6062657e-15, 4, 0, 19)
-
-[node name="marionette_prison" parent="." unique_id=1136384999 instance=ExtResource("26_vxglm")]
-transform = Transform3D(-2.2220001, 0, -3.8486168, 0, 4.444, 0, 3.8486168, 0, -2.2220001, 11, 12.11, 69.98)
-
-[node name="marionette_prison_2" parent="." unique_id=1254135790 instance=ExtResource("27_2f3dj")]
-transform = Transform3D(0, 0, -5.9999995, 0, 6, 0, 5.9999995, 0, 0, 11.35, 13.12, 54.33)
-
-[node name="wood_hanger_rod" parent="." unique_id=1529034020 instance=ExtResource("9_2wyq8")]
-transform = Transform3D(-0.85410285, 0, 3.187555, 0, 3.2999997, 0, -3.187555, 0, -0.85410285, 13, 17.78, 54)

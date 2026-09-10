@@ -1,71 +1,27 @@
-extends Area3D
+extends InteractStation
 class_name CraftStation
-## Drop-in workbench trigger. Put this as a CHILD of the workbench (puppet_workshop) and size
-## the box to cover the bench. When the player (group "player") is inside and presses
-## "interact" (E), it opens the crafting dashboard on its own CanvasLayer (the UI pauses the
-## game underneath). A floating prompt shows while the player is in range. Same drop-in
-## pattern as torch_fire.tscn, so main.tscn never needs hand-editing.
+## The workbench station: E opens the crafting dashboard, wired to the CraftingSystem autoload
+## so Craft / Improve actually consume materials and produce / level up items. Auto-attached to
+## every puppet_workshop by workbench_root.gd; also droppable by hand as craft_station.tscn.
 
 const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 
-## Sizes are in WORLD metres: the station divides by its own global scale, so it stays the
-## same real size whether it sits under a 1x or a 7x-scaled workbench.
-@export var trigger_size: Vector3 = Vector3(3.0, 2.5, 3.0)   # size to cover the bench
-@export var prompt_text: String = "Press E to craft"
-@export var prompt_height: float = 1.6
-
-var _player: Node3D = null
-var _prompt: Label3D
 var _layer: CanvasLayer = null
 var _ui: CraftingUI = null
 
 
-func _ready() -> void:
-	var s: Vector3 = global_transform.basis.get_scale()
-	s = Vector3(maxf(s.x, 0.001), maxf(s.y, 0.001), maxf(s.z, 0.001))
-
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = trigger_size / s
-	shape.shape = box
-	shape.position.y = (trigger_size.y * 0.5) / s.y   # box rests on the floor rather than centring on it
-	add_child(shape)
-
-	_prompt = Label3D.new()
-	_prompt.text = prompt_text
-	_prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_prompt.no_depth_test = true
-	_prompt.font_size = 48
-	_prompt.pixel_size = 0.004 / s.y
-	_prompt.outline_size = 10
-	_prompt.modulate = Color(0.97, 0.95, 0.90)          # cream text, ink outline — matches the UI
-	_prompt.outline_modulate = Color(0.22, 0.13, 0.05)
-	_prompt.position.y = prompt_height / s.y
-	_prompt.visible = false
-	add_child(_prompt)
-
-	body_entered.connect(_on_body_entered)
-	body_exited.connect(_on_body_exited)
+func _init() -> void:
+	prompt_text = "Press E to craft"
 
 
-func _on_body_entered(body: Node3D) -> void:
-	if body.is_in_group("player"):
-		_player = body
-		_prompt.visible = _ui == null
+func _can_interact() -> bool:
+	return _ui == null
 
+func _prompt_allowed() -> bool:
+	return _ui == null
 
-func _on_body_exited(body: Node3D) -> void:
-	if body == _player:
-		_player = null
-		_prompt.visible = false
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if _player == null or _ui != null:
-		return
-	if event.is_action_pressed("interact"):
-		open_menu()
-		get_viewport().set_input_as_handled()
+func _on_interact() -> void:
+	open_menu()
 
 
 func open_menu() -> void:
@@ -78,11 +34,50 @@ func open_menu() -> void:
 	_ui = CRAFTING_UI.instantiate() as CraftingUI
 	_layer.add_child(_ui)
 	_ui.closed.connect(_on_menu_closed)
-	# the real crafting system plugs in here (Phase 1 parts model); for now just log the intent
-	_ui.craft_requested.connect(func(id: String): print("[craft_station] craft requested: ", id))
-	_ui.improve_requested.connect(func(id: String): print("[craft_station] improve requested: ", id))
+	_ui.craft_requested.connect(_on_craft)
+	_ui.improve_requested.connect(_on_improve)
+	var sys = system()
+	if sys == null:
+		_ui.show_message("No crafting system loaded.", false)
+	else:
+		_ui.material_names = sys.MATERIAL_NAMES
+		_ui.set_recipes(sys.recipes)
+		_sync_state()
 	_ui.open()
 	_prompt.visible = false
+
+
+## Push the system's current materials + crafted items into the UI (keeps the selection).
+func _sync_state() -> void:
+	var sys = system()
+	if sys == null or _ui == null:
+		return
+	_ui.set_owned(sys.items)
+	_ui.set_inventory(sys.materials)
+
+
+func _on_craft(recipe_id: String) -> void:
+	var sys = system()
+	if sys == null:
+		return
+	var item: Dictionary = sys.craft(recipe_id)
+	_sync_state()
+	if item.is_empty():
+		_ui.show_message("Not enough materials.", false)
+	else:
+		_ui.show_message("Crafted %s!" % item.get("name", recipe_id), true)
+
+
+func _on_improve(recipe_id: String) -> void:
+	var sys = system()
+	if sys == null:
+		return
+	var item: Dictionary = sys.improve(recipe_id)
+	_sync_state()
+	if item.is_empty():
+		_ui.show_message("Can't improve that yet.", false)
+	else:
+		_ui.show_message("%s improved to Lv %d!" % [item.get("name", recipe_id), int(item.get("level", 1))], true)
 
 
 func _on_menu_closed() -> void:

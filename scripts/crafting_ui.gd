@@ -1,13 +1,12 @@
 extends Control
 class_name CraftingUI
 ## CRAFTING DASHBOARD — the workbench screen: craft new parts / weapons / armor / torsos and
-## IMPROVE the ones you have. Same apothecary theme and atoms as inventory_ui.gd (brown
+## IMPROVE the ones you own. Same apothecary theme and atoms as inventory_ui.gd (brown
 ## line-art on cream) so the two screens read as one system.
 ##
-## Data-driven and decoupled: feed it recipes + the player's item counts, and it emits
-## craft_requested / improve_requested. The real crafting system (Phase 1 parts model)
-## connects to those signals; the placeholder recipes below define the data contract.
-## Opened by craft_station.gd when the hand is at the workbench.
+## Pure view: the CraftStation feeds it the CraftingSystem's recipes, materials and owned
+## items (set_recipes / set_inventory / set_owned) and it emits craft_requested /
+## improve_requested. It never mutates game state itself.
 
 signal craft_requested(recipe_id: String)
 signal improve_requested(recipe_id: String)
@@ -21,50 +20,12 @@ const PAPER := Color(0.972, 0.957, 0.930)
 const SLOT_TEX: Texture2D = preload("res://assets/ui/inv_slot.svg")
 const SKULL_TEX: Texture2D = preload("res://assets/ui/inv_skull.svg")
 const CATEGORIES := ["PARTS", "WEAPONS", "ARMOR", "TORSOS"]
+const MAX_LEVEL := 5
 
-## Recipe contract (placeholders until the parts data model lands):
-##   id, name, category, desc, result, level,
-##   ingredients: [{id, name, qty}]   -> needed to CRAFT
-##   improve:     [{id, name, qty}]   -> needed to IMPROVE (level + 1)
-var recipes: Array = [
-	{"id": "wooden_arm", "name": "Wooden Arm", "category": "PARTS", "level": 1,
-	 "desc": "A jointed puppet limb. Grants Strike I and a little reach.", "result": "Arm part",
-	 "ingredients": [{"id": "wood_limb", "name": "Wood limb", "qty": 2}, {"id": "brass_pin", "name": "Brass pin", "qty": 1}],
-	 "improve": [{"id": "wood_limb", "name": "Wood limb", "qty": 1}, {"id": "marrow", "name": "Marrow", "qty": 5}]},
-	{"id": "spring_leg", "name": "Spring Leg", "category": "PARTS", "level": 1,
-	 "desc": "A coiled leg. Grants Jump I and Speed I.", "result": "Leg part",
-	 "ingredients": [{"id": "wood_limb", "name": "Wood limb", "qty": 2}, {"id": "iron_spring", "name": "Iron spring", "qty": 1}],
-	 "improve": [{"id": "iron_spring", "name": "Iron spring", "qty": 1}, {"id": "marrow", "name": "Marrow", "qty": 5}]},
-	{"id": "jaw_head", "name": "Jaw Head", "category": "PARTS", "level": 1,
-	 "desc": "A carved head with a hinged jaw. Grants Bite I.", "result": "Head part",
-	 "ingredients": [{"id": "wood_block", "name": "Wood block", "qty": 1}, {"id": "brass_pin", "name": "Brass pin", "qty": 2}],
-	 "improve": [{"id": "wood_block", "name": "Wood block", "qty": 1}, {"id": "marrow", "name": "Marrow", "qty": 6}]},
-	{"id": "splinter_blade", "name": "Splinter Blade", "category": "WEAPONS", "level": 1,
-	 "desc": "A sharpened splinter lashed to a grip. Strike damage up.", "result": "Weapon",
-	 "ingredients": [{"id": "wood_limb", "name": "Wood limb", "qty": 1}, {"id": "iron_nail", "name": "Iron nail", "qty": 3}],
-	 "improve": [{"id": "iron_nail", "name": "Iron nail", "qty": 3}, {"id": "marrow", "name": "Marrow", "qty": 8}]},
-	{"id": "nail_spitter", "name": "Nail Spitter", "category": "WEAPONS", "level": 1,
-	 "desc": "A spring-loaded tube. Grants Spit I.", "result": "Weapon",
-	 "ingredients": [{"id": "iron_spring", "name": "Iron spring", "qty": 1}, {"id": "iron_nail", "name": "Iron nail", "qty": 5}],
-	 "improve": [{"id": "iron_spring", "name": "Iron spring", "qty": 1}, {"id": "marrow", "name": "Marrow", "qty": 8}]},
-	{"id": "plank_chest", "name": "Plank Chestplate", "category": "ARMOR", "level": 1,
-	 "desc": "Strapped planks over the torso. Health up.", "result": "Armor",
-	 "ingredients": [{"id": "wood_block", "name": "Wood block", "qty": 2}, {"id": "rope", "name": "Rope", "qty": 1}],
-	 "improve": [{"id": "wood_block", "name": "Wood block", "qty": 1}, {"id": "marrow", "name": "Marrow", "qty": 6}]},
-	{"id": "tin_shell", "name": "Tin Shell", "category": "ARMOR", "level": 1,
-	 "desc": "Hammered tin plates. Health up, Sneak down.", "result": "Armor",
-	 "ingredients": [{"id": "tin_plate", "name": "Tin plate", "qty": 2}, {"id": "brass_pin", "name": "Brass pin", "qty": 2}],
-	 "improve": [{"id": "tin_plate", "name": "Tin plate", "qty": 1}, {"id": "marrow", "name": "Marrow", "qty": 8}]},
-	{"id": "animal_torso", "name": "Animal Torso", "category": "TORSOS", "level": 1,
-	 "desc": "A carved quadruped core: 4 leg sockets, head, tail. Becomes your body.", "result": "Torso core",
-	 "ingredients": [{"id": "wood_block", "name": "Wood block", "qty": 3}, {"id": "brass_pin", "name": "Brass pin", "qty": 4}, {"id": "marrow", "name": "Marrow", "qty": 20}],
-	 "improve": [{"id": "wood_block", "name": "Wood block", "qty": 2}, {"id": "marrow", "name": "Marrow", "qty": 15}]},
-	{"id": "mech_torso", "name": "Mechanical Torso", "category": "TORSOS", "level": 1,
-	 "desc": "A tin-and-gear core: 2 wheel mounts, 2 arm mounts, head. Becomes your body.", "result": "Torso core",
-	 "ingredients": [{"id": "tin_plate", "name": "Tin plate", "qty": 3}, {"id": "iron_spring", "name": "Iron spring", "qty": 2}, {"id": "marrow", "name": "Marrow", "qty": 25}],
-	 "improve": [{"id": "tin_plate", "name": "Tin plate", "qty": 2}, {"id": "marrow", "name": "Marrow", "qty": 15}]},
-]
-var inventory: Dictionary = {}     # item_id -> count the player is carrying
+var recipes: Array = []              # from CraftingSystem.recipes
+var inventory: Dictionary = {}       # material id -> count
+var owned: Array = []                # crafted items {uid, recipe_id, name, category, level}
+var material_names: Dictionary = {}  # material id -> display name
 
 var _tab := 0
 var _selected_id := ""
@@ -73,6 +34,7 @@ var _list: VBoxContainer
 var _detail: VBoxContainer
 var _craft_btn: Button
 var _improve_btn: Button
+var _status: Label
 
 
 func _ready() -> void:
@@ -108,14 +70,25 @@ func close() -> void:
 	visible = false
 	closed.emit()
 
-func set_inventory(items: Dictionary) -> void:
-	inventory = items
-	_refresh()
-
 func set_recipes(r: Array) -> void:
 	recipes = r
 	_selected_id = ""
 	_refresh()
+
+func set_inventory(items: Dictionary) -> void:
+	inventory = items
+	_refresh()
+
+func set_owned(items: Array) -> void:
+	owned = items
+	_refresh()
+
+## One-line feedback under the buttons ("Crafted Wooden Arm!" / "Not enough materials.").
+func show_message(text: String, ok: bool) -> void:
+	if _status == null:
+		return
+	_status.text = text
+	_status.add_theme_color_override("font_color", OK_GREEN if ok else NO_RED)
 
 func selected_recipe() -> Dictionary:
 	for r in recipes:
@@ -137,11 +110,35 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+# ---- state helpers -------------------------------------------------------------
+func _owned_for(recipe_id: String) -> Dictionary:
+	var best: Dictionary = {}
+	for it in owned:
+		if it.get("recipe_id", "") == recipe_id and int(it.get("level", 1)) > int(best.get("level", 0)):
+			best = it
+	return best
+
+func _owned_count(recipe_id: String) -> int:
+	var n := 0
+	for it in owned:
+		if it.get("recipe_id", "") == recipe_id:
+			n += 1
+	return n
+
+func _mat_name(id: String) -> String:
+	return str(material_names.get(id, id.capitalize()))
+
+func _can_afford(req: Array) -> bool:
+	for ing in req:
+		if int(inventory.get(str(ing.get("id", "")), 0)) < int(ing.get("qty", 1)):
+			return false
+	return true
+
+
 # ---- refresh -------------------------------------------------------------------
 func _refresh() -> void:
 	if _tab_row == null:
 		return
-	# tabs
 	for c in _tab_row.get_children():
 		c.queue_free()
 	for i in CATEGORIES.size():
@@ -156,7 +153,6 @@ func _refresh() -> void:
 		b.custom_minimum_size.x = 110
 		b.pressed.connect(_on_tab.bind(i))
 		_tab_row.add_child(b)
-	# recipe list for the current tab
 	for c in _list.get_children():
 		c.queue_free()
 	var visible_recipes: Array = recipes.filter(func(r): return r.get("category", "") == CATEGORIES[_tab])
@@ -170,11 +166,11 @@ func _refresh() -> void:
 
 
 func _row(r: Dictionary) -> Control:
+	var id: String = str(r.get("id", ""))
 	var b := Button.new()
 	b.flat = true
 	b.custom_minimum_size = Vector2(0, 64)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var selected: bool = r.get("id", "") == _selected_id
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 12)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -183,16 +179,19 @@ func _row(r: Dictionary) -> Control:
 	var v := VBoxContainer.new()
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var name_l := _text("%s  ·  Lv %d" % [r.get("name", "?"), int(r.get("level", 1))], 18)
+	var it := _owned_for(id)
+	var title: String = str(r.get("name", "?")) + ("  ·  Lv %d" % int(it.get("level", 1)) if not it.is_empty() else "")
+	var name_l := _text(title, 18)
 	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var status := _text("craftable" if _can_afford(r.get("ingredients", [])) else "missing materials", 13)
+	var ok := _can_afford(r.get("ingredients", []))
+	var status := _text("craftable" if ok else "missing materials", 13)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	status.add_theme_color_override("font_color", OK_GREEN if _can_afford(r.get("ingredients", [])) else NO_RED)
+	status.add_theme_color_override("font_color", OK_GREEN if ok else NO_RED)
 	v.add_child(name_l)
 	v.add_child(status)
 	h.add_child(v)
 	b.add_child(h)
-	if selected:
+	if id == _selected_id:
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(INK.r, INK.g, INK.b, 0.10)
 		sb.border_color = INK
@@ -200,7 +199,7 @@ func _row(r: Dictionary) -> Control:
 		sb.set_corner_radius_all(6)
 		b.add_theme_stylebox_override("normal", sb)
 		b.add_theme_stylebox_override("hover", sb)
-	b.pressed.connect(_on_select.bind(r.get("id", "")))
+	b.pressed.connect(_on_select.bind(id))
 	return b
 
 
@@ -213,19 +212,29 @@ func _refresh_detail() -> void:
 		_craft_btn.disabled = true
 		_improve_btn.disabled = true
 		return
+	var id: String = str(r.get("id", ""))
+	var it := _owned_for(id)
+	var level: int = int(it.get("level", 1))
 	_detail.add_child(_center(_icon_frame(96)))
-	var title := _text("%s  ·  Lv %d" % [r.get("name", "?"), int(r.get("level", 1))], 24)
-	_detail.add_child(title)
+	_detail.add_child(_text(str(r.get("name", "?")), 24))
 	var desc := _text(str(r.get("desc", "")), 14)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.custom_minimum_size.x = 300
 	_detail.add_child(desc)
 	_detail.add_child(_text("Makes: %s" % r.get("result", ""), 14))
+	var own_l := _text("Owned: Lv %d  (×%d)" % [level, _owned_count(id)] if not it.is_empty() else "Not crafted yet", 14)
+	own_l.add_theme_color_override("font_color", OK_GREEN if not it.is_empty() else INK_FAINT)
+	_detail.add_child(own_l)
 	_detail.add_child(_rule())
 	_detail.add_child(_section("TO CRAFT", r.get("ingredients", [])))
-	_detail.add_child(_section("TO IMPROVE  →  Lv %d" % (int(r.get("level", 1)) + 1), r.get("improve", [])))
+	if it.is_empty():
+		_detail.add_child(_section("TO IMPROVE  (craft one first)", r.get("improve", [])))
+	elif level >= MAX_LEVEL:
+		_detail.add_child(_text("Max level reached.", 13))
+	else:
+		_detail.add_child(_section("TO IMPROVE  →  Lv %d" % (level + 1), r.get("improve", [])))
 	_craft_btn.disabled = not _can_afford(r.get("ingredients", []))
-	_improve_btn.disabled = not _can_afford(r.get("improve", []))
+	_improve_btn.disabled = it.is_empty() or level >= MAX_LEVEL or not _can_afford(r.get("improve", []))
 
 
 func _section(label: String, req: Array) -> Control:
@@ -235,26 +244,21 @@ func _section(label: String, req: Array) -> Control:
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	v.add_child(head)
 	for ing in req:
-		var have: int = int(inventory.get(ing.get("id", ""), 0))
+		var mid: String = str(ing.get("id", ""))
+		var have: int = int(inventory.get(mid, 0))
 		var need: int = int(ing.get("qty", 1))
-		var line := _text("  %s   %d / %d" % [ing.get("name", "?"), have, need], 15)
+		var line := _text("  %s   %d / %d" % [_mat_name(mid), have, need], 15)
 		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		line.add_theme_color_override("font_color", OK_GREEN if have >= need else NO_RED)
 		v.add_child(line)
 	return v
 
 
-func _can_afford(req: Array) -> bool:
-	for ing in req:
-		if int(inventory.get(ing.get("id", ""), 0)) < int(ing.get("qty", 1)):
-			return false
-	return true
-
-
 # ---- handlers ------------------------------------------------------------------
 func _on_tab(i: int) -> void:
 	_tab = i
 	_selected_id = ""
+	show_message("", true)
 	_refresh()
 
 func _on_select(id: String) -> void:
@@ -298,7 +302,6 @@ func _body() -> Control:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 28)
 	h.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	# left: scrollable recipe list
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -308,7 +311,6 @@ func _body() -> Control:
 	_list.add_theme_constant_override("separation", 8)
 	scroll.add_child(_list)
 	h.add_child(scroll)
-	# right: detail + actions
 	var right := VBoxContainer.new()
 	right.custom_minimum_size.x = 340
 	right.add_theme_constant_override("separation", 12)
@@ -324,6 +326,9 @@ func _body() -> Control:
 	actions.add_child(_labeled(_craft_btn, "Craft"))
 	actions.add_child(_labeled(_improve_btn, "Improve"))
 	right.add_child(actions)
+	_status = _text("", 14)
+	_status.custom_minimum_size.y = 22
+	right.add_child(_status)
 	h.add_child(right)
 	return h
 
