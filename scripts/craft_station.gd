@@ -14,9 +14,9 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_transition: bool = true
 @export var camera_transition_time: float = 2.0   # matched to the ink -> hold -> void fx (~2.1s)
 @export var camera_return_time: float = 1.2       # leaving is a little snappier
-@export var camera_distance: float = 0.25    # fraction of the bench's size from its work surface (lower = closer)
-@export var camera_pitch_deg: float = 70.0   # how steeply the bench camera looks down
-@export var camera_height: float = 0.3       # extra world metres added to the distance
+@export var camera_distance: float = 1.0       # METRES from the work surface (clutter can pull it closer)
+@export var camera_pitch_deg: float = 75.0     # how steeply the bench camera looks down
+@export var camera_focus_height: float = 0.6   # where the tabletop is, as a fraction of the bench's height
 ## Bench-local horizontal direction the camera sits toward. Fixed, so the landing pose is
 ## identical no matter where the hand's camera started. Flip Z if it lands behind the bench.
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
@@ -90,15 +90,28 @@ func _start_fx() -> void:
 ## Independent of where the hand's camera started, so it's always centred the same way.
 func bench_view_transform() -> Transform3D:
 	var bench_h: float = trigger_size.y / 1.6                       # trigger = bench bounds x1.6 tall
-	var bench_d: float = maxf(trigger_size.x, trigger_size.z) / 1.5  # ... x1.5 wide
-	var focus: Vector3 = global_position + Vector3.UP * (bench_h * 0.85)   # the work surface
+	var focus: Vector3 = global_position + Vector3.UP * (bench_h * camera_focus_height)   # the tabletop
 	var front: Vector3 = global_transform.basis * camera_front
 	front.y = 0.0
 	front = front.normalized() if front.length() > 0.001 else Vector3.BACK
-	var dist: float = bench_d * camera_distance + camera_height
 	var pitch: float = deg_to_rad(camera_pitch_deg)
-	var pos: Vector3 = focus + front * (dist * cos(pitch)) + Vector3.UP * (dist * sin(pitch))
+	var pos: Vector3 = focus + front * (camera_distance * cos(pitch)) + Vector3.UP * (camera_distance * sin(pitch))
+	pos = _clear_of_clutter(focus, pos)
 	return Transform3D(Basis.looking_at(focus - pos, Vector3.UP), pos)
+
+
+## If bench clutter sits between the tabletop and the ideal spot, stop just in front of it.
+func _clear_of_clutter(focus: Vector3, pos: Vector3) -> Vector3:
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return pos
+	var q := PhysicsRayQueryParameters3D.create(focus + Vector3.UP * 0.05, pos)
+	var hit := space.intersect_ray(q)
+	if hit.is_empty():
+		return pos
+	var dir: Vector3 = (pos - focus).normalized()
+	var d: float = maxf(hit.position.distance_to(focus) - 0.15, 0.3)
+	return focus + dir * d
 
 
 func _fly_to_bench() -> void:
