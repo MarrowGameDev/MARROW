@@ -1,14 +1,18 @@
 extends InteractStation
 class_name ScavengeStation
 ## A box / pile / group you can pick over. While it still holds materials its mesh wears a
-## pulsing white-grey OUTLINE glow. E rolls the loot table and SPILLS the materials out as
-## glowing spheres (MaterialPickup) that hop onto the floor around it — walk over them to
-## collect. A few charges, then it's picked clean and the outline fades out.
+## pulsing white-grey OUTLINE glow. E rolls the loot table and puts the materials STRAIGHT
+## into the inventory ("+2 Screws, +1 Glue"). A few charges, then it's picked clean and the
+## outline fades out. (spill_as_spheres flips it to burst glowing MaterialPickup spheres
+## instead — spheres are otherwise the form materials take when lying on the ground.)
 ## Auto-attached to the box/pile/group models by scavenge_root.gd; also droppable by hand.
 
 @export var loot: Array = []       # [{id, min, max, chance}] — rolled independently per entry
 @export var charges: int = 3       # how many times it can be scavenged
-@export var drop_height: float = 1.0      # world m above the station: where spheres start (top of the thing)
+## Off (default): scavenged materials go STRAIGHT to the inventory. On: they spill out as
+## glowing MaterialPickup spheres you walk over (spheres are otherwise for materials on the ground).
+@export var spill_as_spheres: bool = false
+@export var drop_height: float = 1.0      # world m above the station: where spilled spheres start
 @export var drop_radius: float = 1.2      # world m: how far from the centre they land
 @export var outline_target_path: NodePath # optional: mesh to outline when placed by hand
 
@@ -52,18 +56,39 @@ func _can_interact() -> bool:
 func _on_interact() -> void:
 	var bundle := roll()
 	_left -= 1
+	if bundle.is_empty():
+		flash("Nothing useful...")
+	elif spill_as_spheres:
+		_spill(bundle)
+		flash("Materials spill out!")
+	else:
+		_grant(bundle)
+	_refresh_prompt()
+
+
+## Default: straight into the inventory, with a "+2 Screws, +1 Glue" flash.
+func _grant(bundle: Dictionary) -> void:
+	var sys = system()
+	if sys == null:
+		flash("No crafting system loaded.")
+		return
+	sys.add_materials(bundle)
+	var parts: Array = []
+	for id in bundle:
+		parts.append("+%d %s" % [int(bundle[id]), sys.material_name(str(id))])
+	flash(", ".join(parts))
+
+
+## Optional: burst the materials out as glowing spheres that land on the floor around us.
+func _spill(bundle: Dictionary) -> void:
 	var host: Node = get_tree().current_scene if get_tree().current_scene != null else get_tree().root
 	var origin: Vector3 = global_position + Vector3.UP * drop_height
-	var spawned := 0
 	for id in bundle:
 		var a := randf() * TAU
 		var r: float = drop_radius * randf_range(0.6, 1.0)
 		var land: Vector3 = global_position + Vector3(cos(a) * r, 0.0, sin(a) * r)
 		land.y = _floor_y(land, origin.y)
 		MaterialPickup.spawn(host, str(id), int(bundle[id]), origin, land)
-		spawned += 1
-	flash("Materials spill out!" if spawned > 0 else "Nothing useful...")
-	_refresh_prompt()
 
 
 ## Roll the loot table into a {material_id: qty} bundle.
