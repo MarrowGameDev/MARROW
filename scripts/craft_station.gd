@@ -29,10 +29,17 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var focus_fx: bool = true            # the ink-out / void transition
 @export var blueprint: bool = true           # a blueprint unrolls on the tabletop once the camera locks in
 @export var blueprint_hover: float = 0.3     # metres it floats above the table, clear of the tools
+## While at the bench, the light in-world mesh is swapped for the ORIGINAL high-detail model
+## (the close-up deserves it); the light one comes back when you leave. Collision stays on the
+## light mesh (hidden meshes still collide).
+@export var hd_on_enter: bool = true
+@export var hd_bench_path: String = "res://assets/puppet_workshop_hd.glb"
 
 var _layer: CanvasLayer = null
 var _ui: CraftingUI = null
 var _blueprint: BlueprintProp = null
+var _hd: Node3D = null                       # cached high-detail bench, hidden when not at the bench
+var _ld_meshes: Array = []                   # the bench's own light meshes, hidden while the HD shows
 var _prev_cam: Camera3D = null
 var _bench_cam: Camera3D = null
 var _fx: BenchFocusFX = null
@@ -61,6 +68,8 @@ func open_menu() -> void:
 	_prompt.visible = false
 	_transitioning = true
 	_pending_enter = 0
+	if hd_on_enter:
+		_swap_to_hd()      # before the focus fx scans the scene, so it keeps the HD bench
 	if camera_transition and get_viewport().get_camera_3d() != null:
 		_pending_enter += 1
 		_fly_to_bench()
@@ -207,7 +216,45 @@ func _restore_camera() -> void:
 	_bench_cam = null
 	_prev_cam = null
 	_transitioning = false
+	_swap_to_ld()          # only once the camera is back, so the close-up never shows the light mesh
 	_update_prompt_visibility()
+
+
+# ---- high-detail bench swap ---------------------------------------------------------
+func _bench_root() -> Node3D:
+	return get_parent() as Node3D if get_parent() is Node3D else null
+
+
+func _swap_to_hd() -> void:
+	var root := _bench_root()
+	if root == null:
+		return
+	if _hd == null or not is_instance_valid(_hd):
+		var ps := load(hd_bench_path) as PackedScene
+		if ps == null:
+			return
+		_hd = ps.instantiate() as Node3D
+		_hd.name = "WorkbenchHD"
+		root.add_child(_hd)
+		_hd.transform = Transform3D.IDENTITY            # same origin + scale as the light model
+		for vi in _hd.find_children("*", "VisualInstance3D", true, false):
+			vi.add_to_group("bench_keep")               # the ink-out fx leaves these alone
+		_ld_meshes.clear()
+		for mi in root.find_children("*", "MeshInstance3D", true, false):
+			if mi.owner == root:                        # the light model's own meshes (collision lives under them)
+				_ld_meshes.append(mi)
+	for mi in _ld_meshes:
+		if is_instance_valid(mi):
+			mi.visible = false
+	_hd.visible = true
+
+
+func _swap_to_ld() -> void:
+	if _hd != null and is_instance_valid(_hd):
+		_hd.visible = false
+	for mi in _ld_meshes:
+		if is_instance_valid(mi):
+			mi.visible = true
 
 
 # ---- dashboard --------------------------------------------------------------------

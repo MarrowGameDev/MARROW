@@ -143,8 +143,9 @@ func hidden_count() -> int:
 # ---- internals -------------------------------------------------------------------
 ## Only the bench's OWN imported meshes are kept — nodes the user nests under the bench
 ## (a crate dragged under it) belong to their own scene instance and vanish like the rest.
+## Anything in the "bench_keep" group (the swapped-in high-detail bench) is kept too.
 static func _is_kept(vi: Node, keep_root: Node) -> bool:
-	if vi == keep_root:
+	if vi == keep_root or vi.is_in_group("bench_keep"):
 		return true
 	if not keep_root.is_ancestor_of(vi):
 		return false
