@@ -81,6 +81,10 @@ func setup(owner_player: Node) -> void:
 	_load_control_settings()
 	_build_inventory_ui()
 	get_viewport().size_changed.connect(Callable(self, "_queue_inventory_responsive_layout"))
+	# the Materials tab mirrors the CraftingSystem autoload; refresh it live while open
+	var crafting = _crafting_system()
+	if crafting != null and crafting.has_signal("materials_changed"):
+		crafting.connect("materials_changed", _on_materials_changed)
 	rebuild_item_tiles()
 	update_inventory_ui()
 	_apply_inventory_responsive_layout()
@@ -121,7 +125,7 @@ func set_open(open: bool) -> void:
 
 
 func cycle_category() -> void:
-	var categories: Array[String] = ["all", "right_arm", "legs", "body", "head", "settings"]
+	var categories: Array[String] = ["all", "right_arm", "legs", "body", "head", "materials", "settings"]
 	var index: int = categories.find(inventory_category)
 	if index < 0:
 		index = 0
@@ -430,6 +434,7 @@ func _build_inventory_tabs(parent: VBoxContainer) -> void:
 	_add_inventory_tab(inventory_tabs_container, "legs", "Legs")
 	_add_inventory_tab(inventory_tabs_container, "body", "Torsos")
 	_add_inventory_tab(inventory_tabs_container, "head", "Heads")
+	_add_inventory_tab(inventory_tabs_container, "materials", "Materials")
 	_add_inventory_tab(inventory_tabs_container, "settings", "Settings")
 	_refresh_inventory_tabs()
 
@@ -1381,6 +1386,12 @@ func rebuild_item_tiles() -> void:
 	for child in items_grid.get_children():
 		child.free()
 
+	if inventory_category == "materials":
+		_rebuild_material_tiles()
+		return
+	if inventory_sort_label != null:
+		inventory_sort_label.text = "Sort: Newest    Empty slots show room for new pieces"
+
 	var equipped_counts := _equipped_bone_counts()
 	var skipped_equipped_counts: Dictionary = {}
 	var visible_counts: Dictionary = {}
@@ -1420,6 +1431,73 @@ func _bone_matches_inventory_category(bone_id: String) -> bool:
 	return slot == inventory_category
 
 
+# ---- Materials tab: the crafting materials held by the CraftingSystem autoload -------------
+func _crafting_system() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_tree().root.get_node_or_null("CraftingSystem")
+
+
+func _on_materials_changed(_materials: Dictionary) -> void:
+	if inventory_category == "materials":
+		rebuild_item_tiles()
+		update_inventory_ui()
+
+
+## Fill the grid with one tile per known material: owned first, then the rest dimmed at x0
+## so the tutorial economy (wood plank, screws, rope, glue) is always visible.
+func _rebuild_material_tiles() -> void:
+	var sys = _crafting_system()
+	var names: Dictionary = sys.MATERIAL_NAMES if sys != null else {}
+	var counts: Dictionary = sys.materials if sys != null else {}
+	var ids: Array = names.keys()
+	ids.sort_custom(func(a, b): return int(counts.get(a, 0)) > int(counts.get(b, 0)))
+	var shown := 0
+	for id in ids:
+		items_grid.add_child(_make_material_tile(str(id), str(names[id]), int(counts.get(id, 0))))
+		shown += 1
+	var target_slots: int = maxi(12, items_grid.columns * 4)
+	for i in range(shown, target_slots):
+		items_grid.add_child(_make_empty_inventory_slot())
+	if inventory_sort_label != null:
+		inventory_sort_label.text = "Materials are spent at the workbench to craft and improve parts, weapons, armor and torsos."
+
+
+func _make_material_tile(id: String, shown_name: String, count: int) -> Control:
+	var owned := count > 0
+	var ink := Color(0.03, 0.33, 0.38, 1.0 if owned else 0.5)
+	var tile := PanelContainer.new()
+	tile.name = "Material_" + id
+	tile.custom_minimum_size = get_inventory_tile_size()
+	tile.tooltip_text = "%s x%d — crafting material" % [shown_name, count]
+	tile.add_theme_stylebox_override("panel", _make_inventory_style(
+		Color(1.0, 1.0, 1.0, 0.34 if owned else 0.12), Color(0.87, 0.63, 0.19, 0.85 if owned else 0.35), 1, 0))
+	var column := VBoxContainer.new()
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_theme_constant_override("separation", 4)
+	var dot := Panel.new()          # the white-grey material sphere, as an icon
+	dot.custom_minimum_size = Vector2(22, 22)
+	dot.add_theme_stylebox_override("panel", _make_inventory_style(
+		Color(0.86, 0.86, 0.82, 1.0 if owned else 0.35), Color(0.03, 0.33, 0.38, 0.9), 1, 11))
+	var dot_center := CenterContainer.new()
+	dot_center.add_child(dot)
+	column.add_child(dot_center)
+	var name_label := Label.new()
+	name_label.text = shown_name
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_color_override("font_color", ink)
+	column.add_child(name_label)
+	var count_label := Label.new()
+	count_label.text = "x%d" % count
+	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	count_label.add_theme_font_size_override("font_size", 18)
+	count_label.add_theme_color_override("font_color", ink)
+	column.add_child(count_label)
+	tile.add_child(column)
+	return tile
+
+
 func update_inventory_ui() -> void:
 	for slot in slot_widgets:
 		var widget = slot_widgets[slot]
@@ -1436,7 +1514,15 @@ func update_inventory_ui() -> void:
 
 	var bones := _bone_inventory()
 	if inventory_status_label != null:
-		inventory_status_label.text = "Bones: " + str(bones.size())
+		if inventory_category == "materials":
+			var sys = _crafting_system()
+			var total := 0
+			if sys != null:
+				for id in sys.materials:
+					total += int(sys.materials[id])
+			inventory_status_label.text = "Materials: " + str(total)
+		else:
+			inventory_status_label.text = "Bones: " + str(bones.size())
 
 	var stats := _inventory_stats_snapshot()
 	var root_size := inventory_root.size if inventory_root != null else get_viewport().get_visible_rect().size

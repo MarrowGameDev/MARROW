@@ -27,6 +27,7 @@ var inventory: Dictionary = {}       # material id -> count
 var owned: Array = []                # crafted items {uid, recipe_id, name, category, level}
 var material_names: Dictionary = {}  # material id -> display name
 
+var _prev_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED   # restored on close
 var _tab := 0
 var _selected_id := ""
 var _tab_row: HBoxContainer
@@ -40,6 +41,7 @@ var _status: Label
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS     # keeps working while the game is paused underneath
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_STOP    # the whole screen owns the mouse while open
 	_background()
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -63,11 +65,15 @@ func _ready() -> void:
 func open() -> void:
 	visible = true
 	get_tree().paused = true
+	# free the cursor: the third-person camera keeps it captured during play
+	_prev_mouse_mode = Input.mouse_mode
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_refresh()
 
 func close() -> void:
 	get_tree().paused = false
 	visible = false
+	Input.mouse_mode = _prev_mouse_mode   # hand the cursor back to the camera
 	closed.emit()
 
 func set_recipes(r: Array) -> void:
@@ -279,7 +285,9 @@ func _background() -> void:
 	var bg := ColorRect.new()
 	bg.color = PAPER
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# STOP, not IGNORE: swallow clicks on empty space so the camera controller (which
+	# re-captures the mouse on any unhandled click) never sees them while we're open
+	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)
 
 func _title_bar() -> Control:
