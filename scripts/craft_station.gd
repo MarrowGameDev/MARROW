@@ -129,11 +129,38 @@ func _show_blueprint() -> void:
 	_blueprint.width = depth * 0.35        # short side runs front -> back
 	_scene_root().add_child(_blueprint)
 	# the roll starts at the LEFT end (origin) and unrolls to the right (+Z = right); the sheet
-	# floats over the tabletop centre, clear of the tools
-	var surface: Vector3 = tabletop_surface() + Vector3.UP * blueprint_hover
+	# floats blueprint_hover above the TALLEST thing under its whole footprint, so it never
+	# passes through the tools on the table
+	var centre: Vector3 = tabletop_surface()
+	var top_y: float = _highest_under(centre, right, front, _blueprint.length, _blueprint.width)
+	var surface: Vector3 = Vector3(centre.x, top_y + blueprint_hover, centre.z)
 	_blueprint.global_transform = Transform3D(Basis.looking_at(-right, Vector3.UP), surface - right * (_blueprint.length * 0.5))
 	_blueprint.unrolled.connect(_show_ui, CONNECT_ONE_SHOT)
 	_blueprint.unroll()
+
+
+## Highest collision point under a length x width footprint centred on `centre` — a dense grid
+## of downward rays against the bench (thin tools need a fine sweep), plus a small safety
+## margin for anything the decimated collision mesh flattens. Never lower than the tabletop.
+const CLEAR_MARGIN := 0.08
+
+func _highest_under(centre: Vector3, right: Vector3, front: Vector3, length: float, width: float) -> float:
+	var top: float = centre.y
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return top
+	var bench_h: float = trigger_size.y / 1.6
+	var cols: int = maxi(9, int(ceil(length / 0.15)))   # a ray every ~15cm
+	var rows: int = maxi(5, int(ceil(width / 0.15)))
+	for i in cols:
+		for j in rows:
+			var u: float = (float(i) / float(cols - 1)) - 0.5
+			var v: float = (float(j) / float(rows - 1)) - 0.5
+			var p: Vector3 = centre + right * (u * length) + front * (v * width)
+			var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(p + Vector3.UP * bench_h, p - Vector3.UP * bench_h))
+			if not hit.is_empty():
+				top = maxf(top, hit.position.y)
+	return top + CLEAR_MARGIN
 
 
 func _on_selection_changed(recipe: Dictionary) -> void:
