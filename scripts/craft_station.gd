@@ -8,6 +8,8 @@ class_name CraftStation
 
 const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 
+## Sizes are in WORLD metres: the station divides by its own global scale, so it stays the
+## same real size whether it sits under a 1x or a 7x-scaled workbench.
 @export var trigger_size: Vector3 = Vector3(3.0, 2.5, 3.0)   # size to cover the bench
 @export var prompt_text: String = "Press E to craft"
 @export var prompt_height: float = 1.6
@@ -19,11 +21,14 @@ var _ui: CraftingUI = null
 
 
 func _ready() -> void:
+	var s: Vector3 = global_transform.basis.get_scale()
+	s = Vector3(maxf(s.x, 0.001), maxf(s.y, 0.001), maxf(s.z, 0.001))
+
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = trigger_size
+	box.size = trigger_size / s
 	shape.shape = box
-	shape.position.y = trigger_size.y * 0.5   # box rests on the floor rather than centring on it
+	shape.position.y = (trigger_size.y * 0.5) / s.y   # box rests on the floor rather than centring on it
 	add_child(shape)
 
 	_prompt = Label3D.new()
@@ -31,11 +36,11 @@ func _ready() -> void:
 	_prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_prompt.no_depth_test = true
 	_prompt.font_size = 48
-	_prompt.pixel_size = 0.004
+	_prompt.pixel_size = 0.004 / s.y
 	_prompt.outline_size = 10
 	_prompt.modulate = Color(0.97, 0.95, 0.90)          # cream text, ink outline — matches the UI
 	_prompt.outline_modulate = Color(0.22, 0.13, 0.05)
-	_prompt.position.y = prompt_height
+	_prompt.position.y = prompt_height / s.y
 	_prompt.visible = false
 	add_child(_prompt)
 
