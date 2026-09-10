@@ -11,6 +11,7 @@ extends Node
 ## autoloads aren't registered.
 
 signal materials_changed(materials: Dictionary)
+signal material_gained(id: String, qty: int)     # per-gain: drives the Raft-style pickup feed
 signal items_changed(items: Array)
 signal item_crafted(item: Dictionary)
 signal item_improved(item: Dictionary)
@@ -75,6 +76,14 @@ var items: Array = []             # crafted: {uid, recipe_id, name, category, le
 var _next_uid := 1
 
 
+func _ready() -> void:
+	# the Raft-style pickup feed lives under the autoload so it needs no scene wiring
+	if get_node_or_null("PickupFeed") == null:
+		var feed: Node = load("res://scenes/pickup_feed.tscn").instantiate()
+		feed.name = "PickupFeed"
+		add_child(feed)
+
+
 # ---- materials ---------------------------------------------------------------
 static func material_name(id: String) -> String:
 	return MATERIAL_NAMES.get(id, id.capitalize())
@@ -87,6 +96,7 @@ func add_material(id: String, qty: int) -> void:
 		return
 	materials[id] = count(id) + qty
 	materials_changed.emit(materials)
+	material_gained.emit(id, qty)
 
 func add_materials(bundle: Dictionary) -> void:
 	for id in bundle:
@@ -94,6 +104,9 @@ func add_materials(bundle: Dictionary) -> void:
 		if q > 0:
 			materials[id] = count(id) + q
 	materials_changed.emit(materials)
+	for id in bundle:
+		if int(bundle[id]) > 0:
+			material_gained.emit(str(id), int(bundle[id]))
 
 func has_all(req: Array) -> bool:
 	for ing in req:

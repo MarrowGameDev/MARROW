@@ -72,11 +72,8 @@ func _grant(bundle: Dictionary) -> void:
 	if sys == null:
 		flash("No crafting system loaded.")
 		return
-	sys.add_materials(bundle)
-	var parts: Array = []
-	for id in bundle:
-		parts.append("+%d %s" % [int(bundle[id]), sys.material_name(str(id))])
-	flash(", ".join(parts))
+	sys.add_materials(bundle)     # the Raft-style pickup feed itemizes the gains on the HUD
+	flash("Scavenged!")
 
 
 ## Optional: burst the materials out as glowing spheres that land on the floor around us.
