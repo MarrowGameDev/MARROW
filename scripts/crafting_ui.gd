@@ -31,7 +31,9 @@ var owned: Array = []                # crafted items {uid, recipe_id, name, cate
 var material_names: Dictionary = {}  # material id -> display name
 
 var _prev_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED   # restored on close
-var _panel: Control
+var _panel: Control                    # right side: recipes (parts / weapons / armor / torsos)
+var _materials_panel: PanelContainer   # top-left: the player's materials
+var _materials_box: VBoxContainer
 var _tab := 0
 var _selected_id := ""
 var _tab_row: HBoxContainer
@@ -70,6 +72,7 @@ func _ready() -> void:
 	col.add_child(_center(_tab_row))
 	col.add_child(_body())
 	col.add_child(_bottom_bar())
+	_build_materials_panel()   # top-left tally of what the player is carrying
 	_refresh()
 
 
@@ -181,6 +184,7 @@ func _refresh() -> void:
 	if _selected_id == "" and not visible_recipes.is_empty():
 		_selected_id = visible_recipes[0].get("id", "")
 	_refresh_detail()
+	_refresh_materials()
 
 
 func _row(r: Dictionary) -> Control:
@@ -290,6 +294,91 @@ func _on_craft() -> void:
 func _on_improve() -> void:
 	if _selected_id != "":
 		improve_requested.emit(_selected_id)
+
+
+# ---- materials tally (top-left) ---------------------------------------------------
+func _build_materials_panel() -> void:
+	_materials_panel = PanelContainer.new()
+	_materials_panel.anchor_left = 0.0
+	_materials_panel.anchor_top = 0.0
+	_materials_panel.anchor_right = 0.0
+	_materials_panel.anchor_bottom = 0.0
+	_materials_panel.offset_left = 24.0
+	_materials_panel.offset_top = 24.0
+	_materials_panel.custom_minimum_size = Vector2(300, 0)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(PAPER.r, PAPER.g, PAPER.b, 0.9)
+	sb.border_color = INK
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 16.0
+	sb.content_margin_right = 16.0
+	sb.content_margin_top = 12.0
+	sb.content_margin_bottom = 12.0
+	_materials_panel.add_theme_stylebox_override("panel", sb)
+	_materials_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	var head := HBoxContainer.new()
+	head.alignment = BoxContainer.ALIGNMENT_CENTER
+	head.add_theme_constant_override("separation", 10)
+	head.add_child(_vcenter(_skull(22)))
+	head.add_child(_text("M A T E R I A L S", 16))
+	v.add_child(head)
+	v.add_child(_rule())
+	_materials_box = VBoxContainer.new()
+	_materials_box.add_theme_constant_override("separation", 4)
+	v.add_child(_materials_box)
+	_materials_panel.add_child(v)
+	add_child(_materials_panel)
+
+
+## One row per known material: white-grey dot, name, xN — owned first, the rest dimmed at x0.
+func _refresh_materials() -> void:
+	if _materials_box == null:
+		return
+	for c in _materials_box.get_children():
+		c.queue_free()
+	var ids: Array = material_names.keys()
+	for id in inventory:
+		if not ids.has(id):
+			ids.append(id)
+	ids.sort_custom(func(a, b): return int(inventory.get(a, 0)) > int(inventory.get(b, 0)))
+	if ids.is_empty():
+		_materials_box.add_child(_text("No materials yet — scavenge the piles.", 13))
+		return
+	for id in ids:
+		var count: int = int(inventory.get(id, 0))
+		var owned := count > 0
+		var ink: Color = INK if owned else INK_FAINT
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var dot := Panel.new()
+		dot.custom_minimum_size = Vector2(14, 14)
+		var dsb := StyleBoxFlat.new()
+		dsb.bg_color = Color(0.86, 0.86, 0.82, 1.0 if owned else 0.35)
+		dsb.border_color = INK
+		dsb.set_border_width_all(1)
+		dsb.set_corner_radius_all(7)
+		dot.add_theme_stylebox_override("panel", dsb)
+		row.add_child(_vcenter(dot))
+		var name_l := _text(_mat_name(str(id)), 15)
+		name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_l.add_theme_color_override("font_color", ink)
+		row.add_child(name_l)
+		var cnt := _text("×%d" % count, 15)
+		cnt.add_theme_color_override("font_color", ink)
+		row.add_child(cnt)
+		_materials_box.add_child(row)
+
+
+func _vcenter(c: Control) -> Control:
+	var v := VBoxContainer.new()
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(c)
+	return v
 
 
 # ---- layout pieces -------------------------------------------------------------
