@@ -60,14 +60,14 @@ var recipes: Array = [
 	 "ingredients": [{"id": "wood_plank", "qty": 2}, {"id": "glue", "qty": 2}],
 	 "improve": [{"id": "glue", "qty": 1}, {"id": "screws", "qty": 1}]},
 	# ---- TORSOS ----
-	{"id": "animal_torso", "name": "Animal Torso", "category": "TORSOS", "result": "Torso core",
-	 "desc": "A carved quadruped core: 4 leg sockets, head, tail. Becomes your body.",
+	# The tutorial has ONE plain torso. "animal" and "mechanical" are anatomy CATEGORIES that
+	# unlock later — they'll be added as torso recipes with their own socket layouts, keyed by
+	# the same "anatomy" field.
+	{"id": "wooden_torso", "name": "Wooden Torso", "category": "TORSOS", "result": "Torso core",
+	 "anatomy": "normal",
+	 "desc": "A plain carved torso — the core your parts attach to. Becomes your body.",
 	 "ingredients": [{"id": "wood_plank", "qty": 4}, {"id": "screws", "qty": 4}, {"id": "rope", "qty": 2}, {"id": "glue", "qty": 1}],
 	 "improve": [{"id": "wood_plank", "qty": 2}, {"id": "screws", "qty": 2}]},
-	{"id": "mech_torso", "name": "Mechanical Torso", "category": "TORSOS", "result": "Torso core",
-	 "desc": "A screw-and-plank core: 2 wheel mounts, 2 arm mounts, head. Becomes your body.",
-	 "ingredients": [{"id": "wood_plank", "qty": 4}, {"id": "screws", "qty": 6}, {"id": "glue", "qty": 2}],
-	 "improve": [{"id": "screws", "qty": 3}, {"id": "glue", "qty": 1}]},
 ]
 
 var materials: Dictionary = {}    # material id -> count
