@@ -28,7 +28,7 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
 @export var focus_fx: bool = true            # the ink-out / void transition
 @export var blueprint: bool = true           # a blueprint unrolls on the tabletop once the camera locks in
-@export var blueprint_hover: float = 0.15    # metres it floats above the table, clear of the tools
+@export var blueprint_hover: float = 0.3     # metres it floats above the table, clear of the tools
 
 var _layer: CanvasLayer = null
 var _ui: CraftingUI = null
