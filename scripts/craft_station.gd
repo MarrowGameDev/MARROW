@@ -14,9 +14,9 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_transition: bool = true
 @export var camera_transition_time: float = 2.0   # matched to the ink -> hold -> void fx (~2.1s)
 @export var camera_return_time: float = 1.2       # leaving is a little snappier
-@export var camera_distance: float = 0.4     # fraction of the bench's size from its work surface (lower = closer)
-@export var camera_pitch_deg: float = 65.0   # how steeply the bench camera looks down
-@export var camera_height: float = 0.6       # extra world metres added to the distance
+@export var camera_distance: float = 0.25    # fraction of the bench's size from its work surface (lower = closer)
+@export var camera_pitch_deg: float = 70.0   # how steeply the bench camera looks down
+@export var camera_height: float = 0.3       # extra world metres added to the distance
 ## Bench-local horizontal direction the camera sits toward. Fixed, so the landing pose is
 ## identical no matter where the hand's camera started. Flip Z if it lands behind the bench.
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
