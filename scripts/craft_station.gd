@@ -14,9 +14,12 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_transition: bool = true
 @export var camera_transition_time: float = 2.0   # matched to the ink -> hold -> void fx (~2.1s)
 @export var camera_return_time: float = 1.2       # leaving is a little snappier
-@export var camera_distance: float = 0.45    # fraction of the bench's size from its centre (lower = closer)
-@export var camera_pitch_deg: float = 60.0   # how steeply the bench camera looks down
+@export var camera_distance: float = 0.4     # fraction of the bench's size from its work surface (lower = closer)
+@export var camera_pitch_deg: float = 65.0   # how steeply the bench camera looks down
 @export var camera_height: float = 0.6       # extra world metres added to the distance
+## Bench-local horizontal direction the camera sits toward. Fixed, so the landing pose is
+## identical no matter where the hand's camera started. Flip Z if it lands behind the bench.
+@export var camera_front: Vector3 = Vector3(0, 0, 1)
 @export var focus_fx: bool = true            # the ink-out / void transition
 
 var _layer: CanvasLayer = null
@@ -82,22 +85,20 @@ func _start_fx() -> void:
 
 
 # ---- camera -----------------------------------------------------------------------
-## Where the bench camera ends up: `dist` from the bench centre, pulled toward the side the
-## hand's camera was on, at a fixed down-tilt. Lower camera_distance = closer.
+## Where the bench camera ends up: a FIXED pose — `dist` from the bench's work surface, on the
+## bench's own front side (camera_front), at a fixed down-tilt, looking at the surface centre.
+## Independent of where the hand's camera started, so it's always centred the same way.
 func bench_view_transform() -> Transform3D:
 	var bench_h: float = trigger_size.y / 1.6                       # trigger = bench bounds x1.6 tall
 	var bench_d: float = maxf(trigger_size.x, trigger_size.z) / 1.5  # ... x1.5 wide
-	var center: Vector3 = global_position + Vector3.UP * (bench_h * 0.5)
-	var side: Vector3 = Vector3.BACK
-	if _prev_cam != null:
-		var from_cam: Vector3 = _prev_cam.global_position - center
-		from_cam.y = 0.0
-		if from_cam.length() > 0.01:
-			side = from_cam.normalized()
+	var focus: Vector3 = global_position + Vector3.UP * (bench_h * 0.85)   # the work surface
+	var front: Vector3 = global_transform.basis * camera_front
+	front.y = 0.0
+	front = front.normalized() if front.length() > 0.001 else Vector3.BACK
 	var dist: float = bench_d * camera_distance + camera_height
 	var pitch: float = deg_to_rad(camera_pitch_deg)
-	var pos: Vector3 = center + side * (dist * cos(pitch)) + Vector3.UP * (dist * sin(pitch))
-	return Transform3D(Basis.looking_at(center - pos, Vector3.UP), pos)
+	var pos: Vector3 = focus + front * (dist * cos(pitch)) + Vector3.UP * (dist * sin(pitch))
+	return Transform3D(Basis.looking_at(focus - pos, Vector3.UP), pos)
 
 
 func _fly_to_bench() -> void:
