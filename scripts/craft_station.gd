@@ -12,7 +12,9 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 
 @export var camera_transition: bool = true
 @export var camera_transition_time: float = 0.8
-@export var camera_height: float = 1.2       # extra world metres above the bench top
+@export var camera_distance: float = 0.6     # fraction of the bench's size from its centre (lower = closer)
+@export var camera_pitch_deg: float = 60.0   # how steeply the bench camera looks down
+@export var camera_height: float = 0.6       # extra world metres added to the distance
 
 var _layer: CanvasLayer = null
 var _ui: CraftingUI = null
@@ -59,7 +61,10 @@ func bench_view_transform() -> Transform3D:
 		from_cam.y = 0.0
 		if from_cam.length() > 0.01:
 			side = from_cam.normalized()
-	var pos: Vector3 = center + side * (bench_d * 0.55) + Vector3.UP * (bench_h * 0.5 + camera_height + bench_d * 0.35)
+	# sit `dist` from the bench centre at a fixed down-tilt: closer = smaller camera_distance
+	var dist: float = bench_d * camera_distance + camera_height
+	var pitch: float = deg_to_rad(camera_pitch_deg)
+	var pos: Vector3 = center + side * (dist * cos(pitch)) + Vector3.UP * (dist * sin(pitch))
 	return Transform3D(Basis.looking_at(center - pos, Vector3.UP), pos)
 
 
