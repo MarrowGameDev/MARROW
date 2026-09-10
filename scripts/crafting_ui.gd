@@ -22,12 +22,16 @@ const SKULL_TEX: Texture2D = preload("res://assets/ui/inv_skull.svg")
 const CATEGORIES := ["PARTS", "WEAPONS", "ARMOR", "TORSOS"]
 const MAX_LEVEL := 5
 
+## The dashboard is a SIDE PANEL on the right; the rest of the screen shows the bench camera.
+@export var panel_fraction: float = 0.42
+
 var recipes: Array = []              # from CraftingSystem.recipes
 var inventory: Dictionary = {}       # material id -> count
 var owned: Array = []                # crafted items {uid, recipe_id, name, category, level}
 var material_names: Dictionary = {}  # material id -> display name
 
 var _prev_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED   # restored on close
+var _panel: Control
 var _tab := 0
 var _selected_id := ""
 var _tab_row: HBoxContainer
@@ -41,15 +45,23 @@ var _status: Label
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS     # keeps working while the game is paused underneath
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_STOP    # the whole screen owns the mouse while open
+	mouse_filter = Control.MOUSE_FILTER_STOP    # the whole screen owns the mouse while open (transparent left side included)
+	# the visible dashboard lives in a panel on the right; the bench view shows to its left
+	_panel = Control.new()
+	_panel.anchor_left = 1.0 - panel_fraction
+	_panel.anchor_right = 1.0
+	_panel.anchor_top = 0.0
+	_panel.anchor_bottom = 1.0
+	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_panel)
 	_background()
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for m in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(m, 48)
-	add_child(margin)
+		margin.add_theme_constant_override(m, 28)
+	_panel.add_child(margin)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 18)
+	col.add_theme_constant_override("separation", 14)
 	margin.add_child(col)
 	col.add_child(_title_bar())
 	_tab_row = HBoxContainer.new()
@@ -283,49 +295,55 @@ func _on_improve() -> void:
 # ---- layout pieces -------------------------------------------------------------
 func _background() -> void:
 	var bg := ColorRect.new()
-	bg.color = Color(PAPER.r, PAPER.g, PAPER.b, 0.9)   # slightly translucent: the bench shows faintly beneath
+	bg.color = Color(PAPER.r, PAPER.g, PAPER.b, 0.9)   # slightly translucent paper, panel only
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# STOP, not IGNORE: swallow clicks on empty space so the camera controller (which
 	# re-captures the mouse on any unhandled click) never sees them while we're open
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(bg)
+	_panel.add_child(bg)
+	var edge := ColorRect.new()                          # ink rule along the panel's left edge
+	edge.color = INK
+	edge.anchor_top = 0.0
+	edge.anchor_bottom = 1.0
+	edge.offset_right = 2.0
+	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(edge)
 
 func _title_bar() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
-	box.add_child(_center(_skull(40)))
+	box.add_child(_center(_skull(32)))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 16)
+	row.add_theme_constant_override("separation", 12)
 	row.add_child(_rule())
-	row.add_child(_text("C R A F T I N G", 40))
+	row.add_child(_text("C R A F T I N G", 30))
 	row.add_child(_rule())
 	box.add_child(row)
-	var sub := _text("the workbench  ·  craft and improve parts, weapons, armor, torsos", 13)
+	var sub := _text("the workbench  ·  craft and improve parts, weapons, armor, torsos", 12)
 	sub.add_theme_color_override("font_color", INK_FAINT)
 	box.add_child(sub)
 	return box
 
 func _body() -> Control:
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 28)
-	h.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# narrow panel: recipe list on top, the selected recipe's detail + actions below
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	v.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_list = VBoxContainer.new()
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_list.add_theme_constant_override("separation", 8)
+	_list.add_theme_constant_override("separation", 6)
 	scroll.add_child(_list)
-	h.add_child(scroll)
-	var right := VBoxContainer.new()
-	right.custom_minimum_size.x = 340
-	right.add_theme_constant_override("separation", 12)
+	v.add_child(scroll)
+	v.add_child(_rule())
 	_detail = VBoxContainer.new()
-	_detail.add_theme_constant_override("separation", 8)
-	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(_detail)
+	_detail.add_theme_constant_override("separation", 6)
+	_detail.custom_minimum_size.y = 230
+	v.add_child(_detail)
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 24)
@@ -333,12 +351,11 @@ func _body() -> Control:
 	_improve_btn = _circle_button("Improve", _on_improve)
 	actions.add_child(_labeled(_craft_btn, "Craft"))
 	actions.add_child(_labeled(_improve_btn, "Improve"))
-	right.add_child(actions)
+	v.add_child(actions)
 	_status = _text("", 14)
 	_status.custom_minimum_size.y = 22
-	right.add_child(_status)
-	h.add_child(right)
-	return h
+	v.add_child(_status)
+	return v
 
 func _bottom_bar() -> Control:
 	var box := VBoxContainer.new()

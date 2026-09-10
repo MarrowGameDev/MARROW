@@ -20,6 +20,9 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_distance: float = 3.0          # METRES from the tabletop centre (lower = closer; tools leave the frame below ~2.8)
 @export var camera_pitch_deg: float = 75.0        # how far the view tilts down (75 = near top-down)
 @export var camera_focus_height: float = 0.6      # where the tabletop is, as a fraction of the bench's height
+## The dashboard is a panel on the RIGHT of the screen, so the view is shifted (Camera3D.h_offset,
+## metres) to put the tabletop in the open area on the left. Tweened in with the flight.
+@export var camera_side_shift: float = 1.7
 ## Bench-local horizontal direction the camera sits toward. Fixed, so the landing pose is
 ## identical no matter where the hand's camera started. Flip Z if it lands behind the bench.
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
@@ -128,7 +131,9 @@ func _fly_to_bench() -> void:
 	_bench_cam.global_transform = _prev_cam.global_transform
 	_bench_cam.current = true
 	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tw.set_parallel(true)
 	tw.tween_property(_bench_cam, "global_transform", bench_view_transform(), camera_transition_time)
+	tw.tween_property(_bench_cam, "h_offset", camera_side_shift, camera_transition_time)   # make room for the panel
 	tw.finished.connect(_on_enter_part_done)
 
 
@@ -137,7 +142,9 @@ func _fly_back() -> void:
 		_restore_camera()
 		return
 	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tw.set_parallel(true)
 	tw.tween_property(_bench_cam, "global_transform", _prev_cam.global_transform, camera_return_time)
+	tw.tween_property(_bench_cam, "h_offset", 0.0, camera_return_time)
 	tw.finished.connect(_restore_camera)
 
 
