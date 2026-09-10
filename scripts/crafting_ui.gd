@@ -10,6 +10,7 @@ class_name CraftingUI
 
 signal craft_requested(recipe_id: String)
 signal improve_requested(recipe_id: String)
+signal selection_changed(recipe: Dictionary)   # the blueprint on the table shows the selected recipe
 signal closed
 
 const INK := Color(0.55, 0.34, 0.15)
@@ -31,8 +32,11 @@ var owned: Array = []                # crafted items {uid, recipe_id, name, cate
 var material_names: Dictionary = {}  # material id -> display name
 
 var _prev_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED   # restored on close
-var _panel: Control                    # right side: recipes (parts / weapons / armor / torsos)
-var _materials_panel: PanelContainer   # top-left: the player's materials
+var _panel: Control                    # right side: the book page with recipes (parts / weapons / armor / torsos)
+var _page: Control                     # the page content that flips when you change section
+var _page_label: Label                 # "PARTS · page 1 / 4"
+var _flipping := false
+var _materials_panel: PanelContainer   # bottom-left: the player's materials
 var _materials_box: VBoxContainer
 var _tab := 0
 var _selected_id := ""
@@ -59,8 +63,9 @@ func _ready() -> void:
 	_background()
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for m in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+	for m in ["margin_right", "margin_top", "margin_bottom"]:
 		margin.add_theme_constant_override(m, 28)
+	margin.add_theme_constant_override("margin_left", 48)   # room for the spine
 	_panel.add_child(margin)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 14)
@@ -70,7 +75,8 @@ func _ready() -> void:
 	_tab_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_tab_row.add_theme_constant_override("separation", 14)
 	col.add_child(_center(_tab_row))
-	col.add_child(_body())
+	_page = _body()
+	col.add_child(_page)
 	col.add_child(_bottom_bar())
 	_build_materials_panel()   # top-left tally of what the player is carrying
 	_refresh()
@@ -125,9 +131,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		close()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_focus_next"):
-		_tab = (_tab + 1) % CATEGORIES.size()
-		_selected_id = ""
-		_refresh()
+		_on_tab((_tab + 1) % CATEGORIES.size())
 		get_viewport().set_input_as_handled()
 
 
@@ -183,6 +187,8 @@ func _refresh() -> void:
 		_list.add_child(_row(r))
 	if _selected_id == "" and not visible_recipes.is_empty():
 		_selected_id = visible_recipes[0].get("id", "")
+	if _page_label != null:
+		_page_label.text = "%s  ·  page %d / %d" % [CATEGORIES[_tab], _tab + 1, CATEGORIES.size()]
 	_refresh_detail()
 	_refresh_materials()
 
@@ -229,6 +235,7 @@ func _refresh_detail() -> void:
 	for c in _detail.get_children():
 		c.queue_free()
 	var r := selected_recipe()
+	selection_changed.emit(r)
 	if r.is_empty():
 		_detail.add_child(_text("Select a recipe.", 16))
 		_craft_btn.disabled = true
@@ -277,11 +284,21 @@ func _section(label: String, req: Array) -> Control:
 
 
 # ---- handlers ------------------------------------------------------------------
+## Turn the page: the content folds toward the spine, the new section is laid out, and it opens.
 func _on_tab(i: int) -> void:
-	_tab = i
-	_selected_id = ""
-	show_message("", true)
-	_refresh()
+	if i == _tab or _flipping or _page == null:
+		return
+	_flipping = true
+	_page.pivot_offset = Vector2(0.0, _page.size.y * 0.5)   # hinge on the spine
+	var tw := create_tween()
+	tw.tween_property(_page, "scale:x", 0.0, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func() -> void:
+		_tab = i
+		_selected_id = ""
+		show_message("", true)
+		_refresh())
+	tw.tween_property(_page, "scale:x", 1.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _flipping = false)
 
 func _on_select(id: String) -> void:
 	_selected_id = id
@@ -300,11 +317,13 @@ func _on_improve() -> void:
 func _build_materials_panel() -> void:
 	_materials_panel = PanelContainer.new()
 	_materials_panel.anchor_left = 0.0
-	_materials_panel.anchor_top = 0.0
 	_materials_panel.anchor_right = 0.0
-	_materials_panel.anchor_bottom = 0.0
+	_materials_panel.anchor_top = 1.0            # bottom-left, growing upward
+	_materials_panel.anchor_bottom = 1.0
+	_materials_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_materials_panel.offset_left = 24.0
-	_materials_panel.offset_top = 24.0
+	_materials_panel.offset_top = -24.0
+	_materials_panel.offset_bottom = -24.0
 	_materials_panel.custom_minimum_size = Vector2(300, 0)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(PAPER.r, PAPER.g, PAPER.b, 0.9)
@@ -390,13 +409,33 @@ func _background() -> void:
 	# re-captures the mouse on any unhandled click) never sees them while we're open
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.add_child(bg)
-	var edge := ColorRect.new()                          # ink rule along the panel's left edge
-	edge.color = INK
-	edge.anchor_top = 0.0
-	edge.anchor_bottom = 1.0
-	edge.offset_right = 2.0
-	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(edge)
+	# the book's spine along the panel's left edge: a darker paper band, an ink line, stitches
+	var spine := ColorRect.new()
+	spine.color = Color(0.86, 0.79, 0.66, 0.95)
+	spine.anchor_top = 0.0
+	spine.anchor_bottom = 1.0
+	spine.offset_right = 16.0
+	spine.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(spine)
+	var line := ColorRect.new()
+	line.color = INK
+	line.anchor_top = 0.0
+	line.anchor_bottom = 1.0
+	line.offset_left = 16.0
+	line.offset_right = 18.0
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(line)
+	for i in 7:                                          # stitch marks down the spine
+		var st := ColorRect.new()
+		st.color = INK_FAINT
+		st.anchor_top = (i + 1) / 8.0
+		st.anchor_bottom = (i + 1) / 8.0
+		st.offset_left = 4.0
+		st.offset_right = 12.0
+		st.offset_top = -1.0
+		st.offset_bottom = 1.0
+		st.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_panel.add_child(st)
 
 func _title_bar() -> Control:
 	var box := VBoxContainer.new()
@@ -459,6 +498,11 @@ func _bottom_bar() -> Control:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_END
 	row.add_theme_constant_override("separation", 28)
+	_page_label = _text("", 13)                          # "PARTS · page 1 / 4"
+	_page_label.add_theme_color_override("font_color", INK_FAINT)
+	_page_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	row.add_child(_page_label)
 	row.add_child(_labeled(_circle_button("Back", close), "Back  (Esc)"))
 	box.add_child(row)
 	return box

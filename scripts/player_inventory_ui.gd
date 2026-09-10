@@ -30,6 +30,9 @@ var hover_info_label: Label = null
 var inventory_status_label: Label = null
 var inventory_category: String = "all"
 var inventory_tab_buttons: Dictionary = {}
+var inventory_page_label: Label = null    # "Page 2 / 7  ·  Arms" — the inventory reads as a book
+var _page_flipping: bool = false
+const INVENTORY_PAGES: Array[String] = ["all", "right_arm", "legs", "body", "head", "materials", "settings"]
 var inventory_safe_area: Control = null
 var inventory_panel: PanelContainer = null
 var inventory_panel_margin: MarginContainer = null
@@ -330,6 +333,42 @@ func _build_inventory_ui() -> void:
 	inventory_footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_footer.add_theme_constant_override("separation", 16)
 	inventory_content_root.add_child(inventory_footer)
+	# the book's page number, bottom-left of the page
+	inventory_page_label = Label.new()
+	inventory_page_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	inventory_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	inventory_page_label.add_theme_font_size_override("font_size", 15)
+	inventory_page_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 0.75))
+	inventory_footer.add_child(inventory_page_label)
+	_update_page_label()
+	# the book's spine down the page's left edge: darker band, ink line, stitches
+	var spine := ColorRect.new()
+	spine.color = Color(0.87, 0.63, 0.19, 0.22)
+	spine.anchor_top = 0.0
+	spine.anchor_bottom = 1.0
+	spine.offset_right = 14.0
+	spine.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inventory_safe_area.add_child(spine)
+	var spine_line := ColorRect.new()
+	spine_line.color = Color(0.87, 0.63, 0.19, 0.96)
+	spine_line.anchor_top = 0.0
+	spine_line.anchor_bottom = 1.0
+	spine_line.offset_left = 14.0
+	spine_line.offset_right = 16.0
+	spine_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inventory_safe_area.add_child(spine_line)
+	for i in 7:
+		var stitch := ColorRect.new()
+		stitch.color = Color(0.03, 0.33, 0.38, 0.45)
+		stitch.anchor_top = (i + 1) / 8.0
+		stitch.anchor_bottom = (i + 1) / 8.0
+		stitch.offset_left = 4.0
+		stitch.offset_right = 10.0
+		stitch.offset_top = -1.0
+		stitch.offset_bottom = 1.0
+		stitch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inventory_safe_area.add_child(stitch)
 	_add_footer_hint(inventory_footer, "Right Click", "Unequip")
 	_add_footer_hint(inventory_footer, "Esc / Inventory", "Back")
 	clear_bone_info()
@@ -453,7 +492,22 @@ func _add_inventory_tab(parent: HBoxContainer, category: String, text: String) -
 	inventory_tab_buttons[category] = button
 
 
+## Turning a page: the current page folds toward the spine, the new section is laid out on it,
+## and it opens again. Tab-cycling and the tab buttons both come through here.
 func _select_inventory_category(category: String) -> void:
+	if category == inventory_category or _page_flipping or inventory_content_root == null:
+		_apply_inventory_category(category)
+		return
+	_page_flipping = true
+	inventory_content_root.pivot_offset = Vector2(0.0, inventory_content_root.size.y * 0.5)   # hinge on the spine
+	var tw := inventory_content_root.create_tween()
+	tw.tween_property(inventory_content_root, "scale:x", 0.0, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_callback(Callable(self, "_apply_inventory_category").bind(category))
+	tw.tween_property(inventory_content_root, "scale:x", 1.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _page_flipping = false)
+
+
+func _apply_inventory_category(category: String) -> void:
 	inventory_category = category
 	_refresh_inventory_tabs()
 	_refresh_inventory_mode()
@@ -462,6 +516,15 @@ func _select_inventory_category(category: String) -> void:
 	else:
 		rebuild_item_tiles()
 	update_inventory_ui()
+	_update_page_label()
+
+
+func _update_page_label() -> void:
+	if inventory_page_label == null:
+		return
+	var index: int = INVENTORY_PAGES.find(inventory_category)
+	var names := {"all": "All", "right_arm": "Arms", "legs": "Legs", "body": "Torsos", "head": "Heads", "materials": "Materials", "settings": "Settings"}
+	inventory_page_label.text = "Page %d / %d  ·  %s" % [maxi(index, 0) + 1, INVENTORY_PAGES.size(), names.get(inventory_category, inventory_category)]
 
 
 func _refresh_inventory_tabs() -> void:

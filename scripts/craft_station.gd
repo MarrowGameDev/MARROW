@@ -27,9 +27,11 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 ## identical no matter where the hand's camera started. Flip Z if it lands behind the bench.
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
 @export var focus_fx: bool = true            # the ink-out / void transition
+@export var blueprint: bool = true           # a blueprint unrolls on the tabletop once the camera locks in
 
 var _layer: CanvasLayer = null
 var _ui: CraftingUI = null
+var _blueprint: BlueprintProp = null
 var _prev_cam: Camera3D = null
 var _bench_cam: Camera3D = null
 var _fx: BenchFocusFX = null
@@ -69,16 +71,57 @@ func open_menu() -> void:
 		_show_ui()
 
 
-## Each entering effect (camera flight, focus fx) calls this when done; the last one opens the UI.
+## Each entering effect (camera flight, focus fx) calls this when done; the last one unrolls the
+## blueprint on the tabletop, and the dashboard opens once it's open.
 func _on_enter_part_done() -> void:
 	_pending_enter -= 1
 	if _pending_enter <= 0:
 		_transitioning = false
-		_show_ui()
+		if blueprint:
+			_show_blueprint()
+		else:
+			_show_ui()
 
 
 func _scene_root() -> Node:
 	return get_tree().current_scene if get_tree().current_scene != null else get_tree().root
+
+
+# ---- blueprint ---------------------------------------------------------------------
+## The actual tabletop height under the bench centre (raycast), so the sheet lies on the surface.
+func tabletop_surface() -> Vector3:
+	var bench_h: float = trigger_size.y / 1.6
+	var focus: Vector3 = global_position + Vector3.UP * (bench_h * camera_focus_height)
+	var space := get_world_3d().direct_space_state
+	if space != null:
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(focus + Vector3.UP * bench_h, focus - Vector3.UP * bench_h))
+		if not hit.is_empty():
+			return Vector3(focus.x, hit.position.y, focus.z)
+	return focus
+
+
+func _show_blueprint() -> void:
+	if _blueprint != null and is_instance_valid(_blueprint):
+		_blueprint.queue_free()
+	var front: Vector3 = global_transform.basis * camera_front
+	front.y = 0.0
+	front = front.normalized() if front.length() > 0.001 else Vector3.BACK
+	var depth: float = (absf(camera_front.x) * trigger_size.x + absf(camera_front.z) * trigger_size.z) / 1.5
+	_blueprint = BlueprintProp.new()
+	_blueprint.name = "Blueprint"
+	_blueprint.length = depth * 0.45
+	_blueprint.width = depth * 0.35
+	_scene_root().add_child(_blueprint)
+	# origin = near edge; centre the sheet on the tabletop and unroll it away from the viewer (+Z = -front)
+	var surface: Vector3 = tabletop_surface() + Vector3.UP * 0.01
+	_blueprint.global_transform = Transform3D(Basis.looking_at(front, Vector3.UP), surface + front * (_blueprint.length * 0.5))
+	_blueprint.unrolled.connect(_show_ui, CONNECT_ONE_SHOT)
+	_blueprint.unroll()
+
+
+func _on_selection_changed(recipe: Dictionary) -> void:
+	if _blueprint != null and is_instance_valid(_blueprint):
+		_blueprint.set_title(str(recipe.get("name", "")) if not recipe.is_empty() else "")
 
 
 # ---- focus fx ---------------------------------------------------------------------
@@ -172,6 +215,7 @@ func _show_ui() -> void:
 	_ui.closed.connect(_on_menu_closed)
 	_ui.craft_requested.connect(_on_craft)
 	_ui.improve_requested.connect(_on_improve)
+	_ui.selection_changed.connect(_on_selection_changed)   # the blueprint shows the selected recipe
 	var sys = system()
 	if sys == null:
 		_ui.show_message("No crafting system loaded.", false)
@@ -221,6 +265,11 @@ func _on_menu_closed() -> void:
 	_layer = null
 	_ui = null
 	_transitioning = true
+	if _blueprint != null and is_instance_valid(_blueprint):
+		var bp := _blueprint
+		bp.rolled_up.connect(bp.queue_free, CONNECT_ONE_SHOT)
+		bp.roll_up()       # the sheet rolls back up as the world returns
+		_blueprint = null
 	if _fx != null and is_instance_valid(_fx):
 		_fx.end()          # world comes back (frees itself when restored)
 		_fx = null
