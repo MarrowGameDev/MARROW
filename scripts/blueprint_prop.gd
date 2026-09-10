@@ -1,50 +1,62 @@
 extends Node3D
 class_name BlueprintProp
 ## A blueprint that appears on the tabletop and UNROLLS once the bench camera has locked in:
-## a parchment sheet with a procedural ink grid that extends out from a paper roll travelling
-## along it, plus the selected recipe's name written on the sheet. roll_up() reverses it.
-## Local +Z is the unroll direction (away from the viewer); the origin is the near edge.
+## a blue sheet with a procedural ink grid that extends out from a paper roll travelling along
+## it, the selected recipe's SCHEMATIC drawn on it (BlueprintArt, rendered by a SubViewport),
+## and its name floating over the near edge. roll_up() reverses it.
+## Picking a different recipe rolls the sheet back up, swaps the drawing, and unrolls it again.
+## Local +Z is the unroll direction (viewer's left -> right); the origin is the left end.
+## Local +X is the far edge of the bench (the top of the drawing).
 
 signal unrolled
 signal rolled_up
+signal picture_changed(recipe_id: String)   # a new drawing is on the sheet (after a swap)
 
 const SHEET_SHADER := """
 shader_type spatial;
 render_mode cull_disabled;
 uniform vec4 paper : source_color = vec4(0.10, 0.30, 0.62, 1.0);   // blueprint blue
 uniform vec4 ink : source_color = vec4(0.86, 0.93, 1.0, 1.0);      // pale white-blue lines
+uniform sampler2D art : hint_default_black, filter_linear, repeat_disable;   // the schematic (alpha = ink)
 uniform float grid = 12.0;
 uniform float length = 1.0;
 uniform float reveal : hint_range(0.0, 1.0) = 0.0;   // fraction of the length unrolled
-varying float along;                                   // 0 at the near edge .. 1 at the far edge
+varying float along;                                   // 0 at the left end .. 1 at the right end
 void vertex() { along = (VERTEX.z + length * 0.5) / length; }
 void fragment() {
 	if (along > reveal) { discard; }
 	vec2 g = abs(fract(UV * grid) - 0.5);
 	float line = 1.0 - smoothstep(0.0, 0.06, min(g.x, g.y));
 	float border = step(UV.x, 0.025) + step(0.975, UV.x) + step(along, 0.025) + step(0.975, along);
-	float k = clamp(line * 0.35 + border, 0.0, 1.0);
+	float pic = texture(art, vec2(along, 1.0 - UV.x)).a;   // image left->right along the sheet, top at the far edge
+	float k = clamp(line * 0.35 + border + pic, 0.0, 1.0);
 	ALBEDO = mix(paper.rgb, ink.rgb, k);
 	ROUGHNESS = 0.9;
 }
 """
+const ART_SIZE := Vector2i(1024, 512)
 
-@export var length: float = 1.0        # world metres along +Z (front -> back of the bench)
-@export var width: float = 0.8
+@export var length: float = 1.0        # world metres along +Z (viewer's left -> right)
+@export var width: float = 0.8         # front -> back of the bench
 @export var unroll_time: float = 0.7
 @export var roll_radius: float = 0.035
 @export var hover_bob: float = 0.012   # metres: it floats, so it breathes up and down a little
 @export var paper_color: Color = Color(0.10, 0.30, 0.62)   # blueprint blue
-@export var line_color: Color = Color(0.86, 0.93, 1.0)     # pale white-blue grid, border and title
+@export var line_color: Color = Color(0.86, 0.93, 1.0)     # pale white-blue grid, border, drawing and title
 
 var _body: Node3D                      # sheet + roll + title, bobbed together
 var _sheet: MeshInstance3D
 var _mat: ShaderMaterial
 var _roll: MeshInstance3D
 var _title: Label3D
+var _viewport: SubViewport
+var _art: BlueprintArt
 var _reveal := 0.0
 var _tw: Tween = null
 var _t := 0.0
+var _shown_id := ""                    # recipe currently drawn on the sheet
+var _next: Dictionary = {}             # the latest pick while a swap is in flight
+var _swapping := false
 
 
 func _process(delta: float) -> void:
@@ -54,13 +66,14 @@ func _process(delta: float) -> void:
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS   # the dashboard pauses the tree; the sheet keeps swapping and bobbing
 	_body = Node3D.new()
 	add_child(_body)
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(width, length)
 	_sheet = MeshInstance3D.new()
 	_sheet.mesh = plane
-	_sheet.position = Vector3(0.0, 0.004, length * 0.5)   # near edge at the origin, a hair above the table
+	_sheet.position = Vector3(0.0, 0.004, length * 0.5)   # left end at the origin, a hair above the table
 	var sh := Shader.new()
 	sh.code = SHEET_SHADER
 	_mat = ShaderMaterial.new()
@@ -72,6 +85,18 @@ func _ready() -> void:
 	_sheet.material_override = _mat
 	_sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_body.add_child(_sheet)
+
+	# the drawing: a Control painting the schematic, rendered off-screen into the sheet
+	_viewport = SubViewport.new()
+	_viewport.size = ART_SIZE
+	_viewport.transparent_bg = true
+	_viewport.disable_3d = true
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(_viewport)
+	_art = BlueprintArt.new()
+	_art.size = Vector2(ART_SIZE)
+	_viewport.add_child(_art)
+	_mat.set_shader_parameter("art", _viewport.get_texture())
 
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = roll_radius
@@ -94,7 +119,7 @@ func _ready() -> void:
 	_title.outline_size = 0
 	_title.billboard = BaseMaterial3D.BILLBOARD_ENABLED     # always readable from the bench camera
 	_title.no_depth_test = true
-	_title.position = Vector3(0.0, 0.05, length * 0.5)      # hovering over the sheet's centre
+	_title.position = Vector3(-width * 0.36, 0.05, length * 0.5)   # over the near edge, under the drawing
 	_body.add_child(_title)
 	_set_reveal(0.0)
 
@@ -107,19 +132,69 @@ func reveal() -> float:
 	return _reveal
 
 
+func shown_recipe_id() -> String:
+	return _shown_id
+
+
+func is_swapping() -> bool:
+	return _swapping
+
+
+## Put a recipe on the sheet. While the sheet is still rolled it is simply drawn (the unroll
+## comes later); once open, a NEW recipe rolls the sheet back up, swaps the drawing and unrolls
+## it again. Picks landing during a swap fold into it — the latest one wins.
+func show_recipe(recipe: Dictionary) -> void:
+	var id := str(recipe.get("id", ""))
+	if _swapping:
+		_next = recipe
+		return
+	if id == _shown_id:
+		return
+	if _reveal < 0.001 and (_tw == null or not _tw.is_valid()):
+		_apply(recipe)
+		return
+	_swapping = true
+	_next = recipe
+	_animate(0.0, unroll_time * 0.6, Tween.EASE_IN, _swap_middle)
+
+
 func unroll() -> void:
-	_animate(1.0, unroll_time, Tween.EASE_OUT, unrolled)
+	_animate(1.0, unroll_time, Tween.EASE_OUT, func() -> void: unrolled.emit())
 
 func roll_up() -> void:
-	_animate(0.0, unroll_time * 0.6, Tween.EASE_IN, rolled_up)
+	_swapping = false
+	_next = {}
+	_animate(0.0, unroll_time * 0.6, Tween.EASE_IN, func() -> void: rolled_up.emit())
 
 
-func _animate(to: float, seconds: float, ease: Tween.EaseType, done: Signal) -> void:
+# ---- internals -------------------------------------------------------------------
+func _swap_middle() -> void:
+	_apply(_next)
+	_animate(1.0, unroll_time, Tween.EASE_OUT, _swap_done)
+
+func _swap_done() -> void:
+	_swapping = false
+	var latest := _next
+	_next = {}
+	if str(latest.get("id", "")) != _shown_id:   # another pick landed mid-swap
+		show_recipe(latest)
+
+
+func _apply(recipe: Dictionary) -> void:
+	_shown_id = str(recipe.get("id", ""))
+	_title.text = str(recipe.get("name", "")) if not recipe.is_empty() else ""
+	_art.recipe = recipe
+	_art.queue_redraw()
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE   # re-render the drawing once
+	picture_changed.emit(_shown_id)
+
+
+func _animate(to: float, seconds: float, ease: Tween.EaseType, done: Callable) -> void:
 	if _tw != null and _tw.is_valid():
 		_tw.kill()
 	_tw = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(ease)
 	_tw.tween_method(_set_reveal, _reveal, to, seconds)
-	_tw.tween_callback(func() -> void: done.emit())
+	_tw.tween_callback(done)
 
 
 func _set_reveal(v: float) -> void:

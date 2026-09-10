@@ -135,8 +135,20 @@ func _show_blueprint() -> void:
 	var top_y: float = _highest_under(centre, right, front, _blueprint.length, _blueprint.width)
 	var surface: Vector3 = Vector3(centre.x, top_y + blueprint_hover, centre.z)
 	_blueprint.global_transform = Transform3D(Basis.looking_at(-right, Vector3.UP), surface - right * (_blueprint.length * 0.5))
+	_blueprint.show_recipe(_first_recipe())   # drawn before it opens: the dashboard will pick this one
 	_blueprint.unrolled.connect(_show_ui, CONNECT_ONE_SHOT)
 	_blueprint.unroll()
+
+
+## The recipe the dashboard selects when it opens (first of its first page).
+func _first_recipe() -> Dictionary:
+	var sys = system()
+	if sys == null:
+		return {}
+	for r in sys.recipes:
+		if r.get("category", "") == CraftingUI.CATEGORIES[0]:
+			return r
+	return {}
 
 
 ## Highest collision point under a length x width footprint centred on `centre` — a dense grid
@@ -163,9 +175,10 @@ func _highest_under(centre: Vector3, right: Vector3, front: Vector3, length: flo
 	return top + CLEAR_MARGIN
 
 
+## A different recipe picked on the dashboard: the sheet rolls up and a new blueprint unrolls.
 func _on_selection_changed(recipe: Dictionary) -> void:
 	if _blueprint != null and is_instance_valid(_blueprint):
-		_blueprint.set_title(str(recipe.get("name", "")) if not recipe.is_empty() else "")
+		_blueprint.show_recipe(recipe)
 
 
 # ---- focus fx ---------------------------------------------------------------------
