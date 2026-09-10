@@ -11,8 +11,8 @@ signal rolled_up
 const SHEET_SHADER := """
 shader_type spatial;
 render_mode cull_disabled;
-uniform vec4 paper : source_color = vec4(0.93, 0.89, 0.80, 1.0);
-uniform vec4 ink : source_color = vec4(0.30, 0.20, 0.10, 1.0);
+uniform vec4 paper : source_color = vec4(0.10, 0.30, 0.62, 1.0);   // blueprint blue
+uniform vec4 ink : source_color = vec4(0.86, 0.93, 1.0, 1.0);      // pale white-blue lines
 uniform float grid = 12.0;
 uniform float length = 1.0;
 uniform float reveal : hint_range(0.0, 1.0) = 0.0;   // fraction of the length unrolled
@@ -33,16 +33,29 @@ void fragment() {
 @export var width: float = 0.8
 @export var unroll_time: float = 0.7
 @export var roll_radius: float = 0.035
+@export var hover_bob: float = 0.012   # metres: it floats, so it breathes up and down a little
+@export var paper_color: Color = Color(0.10, 0.30, 0.62)   # blueprint blue
+@export var line_color: Color = Color(0.86, 0.93, 1.0)     # pale white-blue grid, border and title
 
+var _body: Node3D                      # sheet + roll + title, bobbed together
 var _sheet: MeshInstance3D
 var _mat: ShaderMaterial
 var _roll: MeshInstance3D
 var _title: Label3D
 var _reveal := 0.0
 var _tw: Tween = null
+var _t := 0.0
+
+
+func _process(delta: float) -> void:
+	_t += delta
+	if _body != null:
+		_body.position.y = (sin(_t * 1.3) * 0.5 + 0.5) * hover_bob
 
 
 func _ready() -> void:
+	_body = Node3D.new()
+	add_child(_body)
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(width, length)
 	_sheet = MeshInstance3D.new()
@@ -54,9 +67,11 @@ func _ready() -> void:
 	_mat.shader = sh
 	_mat.set_shader_parameter("length", length)
 	_mat.set_shader_parameter("reveal", 0.0)
+	_mat.set_shader_parameter("paper", paper_color)
+	_mat.set_shader_parameter("ink", line_color)
 	_sheet.material_override = _mat
 	_sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_sheet)
+	_body.add_child(_sheet)
 
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = roll_radius
@@ -66,20 +81,21 @@ func _ready() -> void:
 	_roll.mesh = cyl
 	_roll.rotation.z = PI * 0.5                            # lie across the sheet
 	var rm := StandardMaterial3D.new()
-	rm.albedo_color = Color(0.90, 0.85, 0.74)
+	rm.albedo_color = Color(0.16, 0.36, 0.68)              # rolled blueprint paper
 	rm.roughness = 0.95
 	_roll.material_override = rm
-	add_child(_roll)
+	_body.add_child(_roll)
 
 	_title = Label3D.new()
 	_title.text = ""
 	_title.font_size = 64
-	_title.pixel_size = width / 700.0
-	_title.modulate = Color(0.30, 0.20, 0.10, 0.0)
+	_title.pixel_size = length / 900.0
+	_title.modulate = Color(line_color.r, line_color.g, line_color.b, 0.0)   # fades in with the sheet
 	_title.outline_size = 0
-	_title.rotation.x = -PI * 0.5                          # lie flat on the sheet, readable from above
-	_title.position = Vector3(0.0, 0.01, length * 0.5)
-	add_child(_title)
+	_title.billboard = BaseMaterial3D.BILLBOARD_ENABLED     # always readable from the bench camera
+	_title.no_depth_test = true
+	_title.position = Vector3(0.0, 0.05, length * 0.5)      # hovering over the sheet's centre
+	_body.add_child(_title)
 	_set_reveal(0.0)
 
 

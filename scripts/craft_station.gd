@@ -28,6 +28,7 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
 @export var focus_fx: bool = true            # the ink-out / void transition
 @export var blueprint: bool = true           # a blueprint unrolls on the tabletop once the camera locks in
+@export var blueprint_hover: float = 0.15    # metres it floats above the table, clear of the tools
 
 var _layer: CanvasLayer = null
 var _ui: CraftingUI = null
@@ -103,18 +104,25 @@ func tabletop_surface() -> Vector3:
 func _show_blueprint() -> void:
 	if _blueprint != null and is_instance_valid(_blueprint):
 		_blueprint.queue_free()
+	# bench axes: `front` faces the viewer, `right` is the viewer's right (along the bench's width)
+	var right_local: Vector3 = Vector3.UP.cross(camera_front)
 	var front: Vector3 = global_transform.basis * camera_front
+	var right: Vector3 = global_transform.basis * right_local
 	front.y = 0.0
+	right.y = 0.0
 	front = front.normalized() if front.length() > 0.001 else Vector3.BACK
-	var depth: float = (absf(camera_front.x) * trigger_size.x + absf(camera_front.z) * trigger_size.z) / 1.5
+	right = right.normalized() if right.length() > 0.001 else Vector3.RIGHT
+	var bench_w: float = (absf(right_local.x) * trigger_size.x + absf(right_local.z) * trigger_size.z) / 1.5   # left-right
+	var depth: float = (absf(camera_front.x) * trigger_size.x + absf(camera_front.z) * trigger_size.z) / 1.5     # front-back
 	_blueprint = BlueprintProp.new()
 	_blueprint.name = "Blueprint"
-	_blueprint.length = depth * 0.45
-	_blueprint.width = depth * 0.35
+	_blueprint.length = bench_w * 0.45     # long side runs left -> right
+	_blueprint.width = depth * 0.35        # short side runs front -> back
 	_scene_root().add_child(_blueprint)
-	# origin = near edge; centre the sheet on the tabletop and unroll it away from the viewer (+Z = -front)
-	var surface: Vector3 = tabletop_surface() + Vector3.UP * 0.01
-	_blueprint.global_transform = Transform3D(Basis.looking_at(front, Vector3.UP), surface + front * (_blueprint.length * 0.5))
+	# the roll starts at the LEFT end (origin) and unrolls to the right (+Z = right); the sheet
+	# floats over the tabletop centre, clear of the tools
+	var surface: Vector3 = tabletop_surface() + Vector3.UP * blueprint_hover
+	_blueprint.global_transform = Transform3D(Basis.looking_at(-right, Vector3.UP), surface - right * (_blueprint.length * 0.5))
 	_blueprint.unrolled.connect(_show_ui, CONNECT_ONE_SHOT)
 	_blueprint.unroll()
 
