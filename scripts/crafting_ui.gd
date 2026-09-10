@@ -283,7 +283,7 @@ func _on_improve() -> void:
 # ---- layout pieces -------------------------------------------------------------
 func _background() -> void:
 	var bg := ColorRect.new()
-	bg.color = PAPER
+	bg.color = Color(PAPER.r, PAPER.g, PAPER.b, 0.9)   # slightly translucent: the bench shows faintly beneath
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# STOP, not IGNORE: swallow clicks on empty space so the camera controller (which
 	# re-captures the mouse on any unhandled click) never sees them while we're open
