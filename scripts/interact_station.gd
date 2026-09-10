@@ -4,10 +4,19 @@ class_name InteractStation
 ## prompt above itself, and calls _on_interact() when "interact" (E) is pressed in range.
 ## Sizes are WORLD metres — divided by the node's global scale, so a station stays the same
 ## real size under a 1x or a 7x-scaled parent. Subclasses: craft_station.gd, scavenge_station.gd.
+##
+## FOCUS: when the player stands inside several stations at once (a crate beside the bench),
+## only the one the CAMERA is looking at is "focused" — it alone shows its prompt and takes E.
+## A station with require_camera_facing only ever counts when looked at (the workbench), so
+## a neighbour can always be reached by turning toward it.
+
+static var _active: Array = []     # stations the player is currently inside
 
 @export var trigger_size: Vector3 = Vector3(3.0, 2.5, 3.0)
 @export var prompt_text: String = "Press E"
 @export var prompt_height: float = 1.6
+@export var require_camera_facing: bool = false   # only respond when the camera looks at it
+@export var facing_threshold: float = 0.45        # cos of the widest accepted angle (~63°)
 
 var _player: Node3D = null
 var _prompt: Label3D
@@ -45,24 +54,68 @@ func _ready() -> void:
 	body_exited.connect(_on_body_exited)
 
 
+func _exit_tree() -> void:
+	_active.erase(self)
+
+
 func _on_body_entered(body: Node3D) -> void:
 	if body.is_in_group("player"):
 		_player = body
-		_prompt.visible = _prompt_allowed()
+		if not _active.has(self):
+			_active.append(self)
+		_update_prompt_visibility()
 
 
 func _on_body_exited(body: Node3D) -> void:
 	if body == _player:
 		_player = null
+		_active.erase(self)
 		_prompt.visible = false
 
 
+func _process(_delta: float) -> void:
+	if _player != null:
+		_update_prompt_visibility()   # focus follows the camera, so re-evaluate each frame
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if _player == null or not _can_interact():
+	if _player == null or not _can_interact() or not is_focused():
 		return
 	if event.is_action_pressed("interact"):
 		_on_interact()
 		get_viewport().set_input_as_handled()
+
+
+# ---- focus (which station gets E when several overlap) --------------------------
+## How squarely the camera is looking at this station: 1 = dead centre, 0 = 90° off.
+func facing_score() -> float:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return 1.0
+	var target: Vector3 = global_position + Vector3.UP * (prompt_height * 0.5)
+	var dir: Vector3 = (target - cam.global_position).normalized()
+	return (-cam.global_transform.basis.z).dot(dir)
+
+func _eligible() -> bool:
+	return not require_camera_facing or facing_score() >= facing_threshold
+
+## True if this is the station the player should interact with right now: among all the
+## stations the player is inside, the eligible one the camera is looking at most.
+func is_focused() -> bool:
+	if _player == null:
+		return false
+	if get_viewport().get_camera_3d() == null:
+		return true   # no camera (headless / tests): everything is reachable
+	var best: InteractStation = null
+	var best_score := -2.0
+	for s in _active:
+		if not is_instance_valid(s) or s._player == null or not s._eligible():
+			continue
+		var sc: float = s.facing_score()
+		if sc > best_score:
+			best_score = sc
+			best = s
+	return best == self
 
 
 # ---- subclass hooks -----------------------------------------------------------
@@ -80,13 +133,17 @@ func _on_interact() -> void:
 func player_near() -> bool:
 	return _player != null
 
+func _update_prompt_visibility() -> void:
+	if _prompt != null:
+		_prompt.visible = _player != null and _prompt_allowed() and is_focused()
+
 ## The persistent prompt (e.g. "Press E to scavenge (2 left)").
 func set_prompt(text: String) -> void:
 	_base_prompt = text
 	if not _flashing and _prompt != null:
 		_prompt.text = text
 
-## Briefly replace the prompt (e.g. "+2 Wood limb"), then fall back to the persistent one.
+## Briefly replace the prompt (e.g. "Scavenged!"), then fall back to the persistent one.
 func flash(text: String, seconds: float = 1.6) -> void:
 	_flash_id += 1
 	var my_id := _flash_id

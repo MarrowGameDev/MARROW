@@ -12,6 +12,7 @@ var _ui: CraftingUI = null
 
 func _init() -> void:
 	prompt_text = "Press E to craft"
+	require_camera_facing = true   # the bench only takes E when the camera is looking at it
 
 
 func _can_interact() -> bool:

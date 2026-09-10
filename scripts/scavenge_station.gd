@@ -42,6 +42,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	super(delta)               # keeps the focus/prompt logic of the base running
 	if _outline == null:
 		return
 	_t += delta
