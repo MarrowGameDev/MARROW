@@ -4,6 +4,9 @@ extends Node
 ## renders what it's given. Materials come from scavenge stations on the puppet piles; items
 ## are what the Phase 1 parts model will turn into real sockets/abilities.
 ##
+## TUTORIAL ECONOMY: four materials — wood plank, screws, rope, glue. Every tutorial recipe is
+## built from these; later phases add more.
+##
 ## Reached via get_node("/root/CraftingSystem") so it also works in headless tests where
 ## autoloads aren't registered.
 
@@ -16,50 +19,55 @@ signal craft_failed(recipe_id: String, reason: String)
 const MAX_LEVEL := 5
 
 const MATERIAL_NAMES := {
-	"wood_limb": "Wood limb", "wood_block": "Wood block", "brass_pin": "Brass pin",
-	"iron_nail": "Iron nail", "iron_spring": "Iron spring", "tin_plate": "Tin plate",
-	"rope": "Rope", "marrow": "Marrow",
+	"wood_plank": "Wood plank",
+	"screws": "Screws",
+	"rope": "Rope",
+	"glue": "Glue",
 }
 
 ## Recipe contract: id, name, category (PARTS/WEAPONS/ARMOR/TORSOS), desc, result,
 ## ingredients [{id, qty}] to craft, improve [{id, qty}] per level-up.
 var recipes: Array = [
+	# ---- PARTS ----
 	{"id": "wooden_arm", "name": "Wooden Arm", "category": "PARTS", "result": "Arm part",
 	 "desc": "A jointed puppet limb. Grants Strike I and a little reach.",
-	 "ingredients": [{"id": "wood_limb", "qty": 2}, {"id": "brass_pin", "qty": 1}],
-	 "improve": [{"id": "wood_limb", "qty": 1}, {"id": "marrow", "qty": 5}]},
-	{"id": "spring_leg", "name": "Spring Leg", "category": "PARTS", "result": "Leg part",
-	 "desc": "A coiled leg. Grants Jump I and Speed I.",
-	 "ingredients": [{"id": "wood_limb", "qty": 2}, {"id": "iron_spring", "qty": 1}],
-	 "improve": [{"id": "iron_spring", "qty": 1}, {"id": "marrow", "qty": 5}]},
-	{"id": "jaw_head", "name": "Jaw Head", "category": "PARTS", "result": "Head part",
+	 "ingredients": [{"id": "wood_plank", "qty": 2}, {"id": "screws", "qty": 2}, {"id": "glue", "qty": 1}],
+	 "improve": [{"id": "wood_plank", "qty": 1}, {"id": "screws", "qty": 1}]},
+	{"id": "wooden_leg", "name": "Wooden Leg", "category": "PARTS", "result": "Leg part",
+	 "desc": "A sturdy puppet leg. Grants Speed I and Jump I.",
+	 "ingredients": [{"id": "wood_plank", "qty": 2}, {"id": "screws", "qty": 2}, {"id": "rope", "qty": 1}],
+	 "improve": [{"id": "wood_plank", "qty": 1}, {"id": "rope", "qty": 1}]},
+	{"id": "wooden_head", "name": "Wooden Head", "category": "PARTS", "result": "Head part",
 	 "desc": "A carved head with a hinged jaw. Grants Bite I.",
-	 "ingredients": [{"id": "wood_block", "qty": 1}, {"id": "brass_pin", "qty": 2}],
-	 "improve": [{"id": "wood_block", "qty": 1}, {"id": "marrow", "qty": 6}]},
-	{"id": "splinter_blade", "name": "Splinter Blade", "category": "WEAPONS", "result": "Weapon",
-	 "desc": "A sharpened splinter lashed to a grip. Strike damage up.",
-	 "ingredients": [{"id": "wood_limb", "qty": 1}, {"id": "iron_nail", "qty": 3}],
-	 "improve": [{"id": "iron_nail", "qty": 3}, {"id": "marrow", "qty": 8}]},
-	{"id": "nail_spitter", "name": "Nail Spitter", "category": "WEAPONS", "result": "Weapon",
-	 "desc": "A spring-loaded tube. Grants Spit I.",
-	 "ingredients": [{"id": "iron_spring", "qty": 1}, {"id": "iron_nail", "qty": 5}],
-	 "improve": [{"id": "iron_spring", "qty": 1}, {"id": "marrow", "qty": 8}]},
+	 "ingredients": [{"id": "wood_plank", "qty": 1}, {"id": "screws", "qty": 1}, {"id": "glue", "qty": 1}],
+	 "improve": [{"id": "glue", "qty": 1}, {"id": "screws", "qty": 1}]},
+	# ---- WEAPONS ----
+	{"id": "plank_club", "name": "Plank Club", "category": "WEAPONS", "result": "Weapon",
+	 "desc": "A plank with a rope grip. Strike damage up.",
+	 "ingredients": [{"id": "wood_plank", "qty": 2}, {"id": "rope", "qty": 1}],
+	 "improve": [{"id": "wood_plank", "qty": 1}, {"id": "screws", "qty": 2}]},
+	{"id": "screw_spike", "name": "Screw Spike", "category": "WEAPONS", "result": "Weapon",
+	 "desc": "Screws driven through a plank. Grants Charge I.",
+	 "ingredients": [{"id": "wood_plank", "qty": 1}, {"id": "screws", "qty": 3}],
+	 "improve": [{"id": "screws", "qty": 2}, {"id": "glue", "qty": 1}]},
+	# ---- ARMOR ----
 	{"id": "plank_chest", "name": "Plank Chestplate", "category": "ARMOR", "result": "Armor",
-	 "desc": "Strapped planks over the torso. Health up.",
-	 "ingredients": [{"id": "wood_block", "qty": 2}, {"id": "rope", "qty": 1}],
-	 "improve": [{"id": "wood_block", "qty": 1}, {"id": "marrow", "qty": 6}]},
-	{"id": "tin_shell", "name": "Tin Shell", "category": "ARMOR", "result": "Armor",
-	 "desc": "Hammered tin plates. Health up, Sneak down.",
-	 "ingredients": [{"id": "tin_plate", "qty": 2}, {"id": "brass_pin", "qty": 2}],
-	 "improve": [{"id": "tin_plate", "qty": 1}, {"id": "marrow", "qty": 8}]},
+	 "desc": "Planks lashed over the torso. Health up.",
+	 "ingredients": [{"id": "wood_plank", "qty": 3}, {"id": "rope", "qty": 2}],
+	 "improve": [{"id": "wood_plank", "qty": 1}, {"id": "rope", "qty": 1}]},
+	{"id": "glued_shell", "name": "Glued Shell", "category": "ARMOR", "result": "Armor",
+	 "desc": "Layered plank shell, glued tight. Health up, Sneak down.",
+	 "ingredients": [{"id": "wood_plank", "qty": 2}, {"id": "glue", "qty": 2}],
+	 "improve": [{"id": "glue", "qty": 1}, {"id": "screws", "qty": 1}]},
+	# ---- TORSOS ----
 	{"id": "animal_torso", "name": "Animal Torso", "category": "TORSOS", "result": "Torso core",
 	 "desc": "A carved quadruped core: 4 leg sockets, head, tail. Becomes your body.",
-	 "ingredients": [{"id": "wood_block", "qty": 3}, {"id": "brass_pin", "qty": 4}, {"id": "marrow", "qty": 20}],
-	 "improve": [{"id": "wood_block", "qty": 2}, {"id": "marrow", "qty": 15}]},
+	 "ingredients": [{"id": "wood_plank", "qty": 4}, {"id": "screws", "qty": 4}, {"id": "rope", "qty": 2}, {"id": "glue", "qty": 1}],
+	 "improve": [{"id": "wood_plank", "qty": 2}, {"id": "screws", "qty": 2}]},
 	{"id": "mech_torso", "name": "Mechanical Torso", "category": "TORSOS", "result": "Torso core",
-	 "desc": "A tin-and-gear core: 2 wheel mounts, 2 arm mounts, head. Becomes your body.",
-	 "ingredients": [{"id": "tin_plate", "qty": 3}, {"id": "iron_spring", "qty": 2}, {"id": "marrow", "qty": 25}],
-	 "improve": [{"id": "tin_plate", "qty": 2}, {"id": "marrow", "qty": 15}]},
+	 "desc": "A screw-and-plank core: 2 wheel mounts, 2 arm mounts, head. Becomes your body.",
+	 "ingredients": [{"id": "wood_plank", "qty": 4}, {"id": "screws", "qty": 6}, {"id": "glue", "qty": 2}],
+	 "improve": [{"id": "screws", "qty": 3}, {"id": "glue", "qty": 1}]},
 ]
 
 var materials: Dictionary = {}    # material id -> count

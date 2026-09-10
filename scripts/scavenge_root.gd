@@ -7,29 +7,27 @@ extends Node3D
 const STATION: PackedScene = preload("res://scenes/scavenge_station.tscn")
 
 ## Loot tables: [{id, min, max, chance}], rolled independently per entry.
-const LOOT_BROKEN := [   # broken marionettes — pins, limbs, a little metal
-	{"id": "brass_pin", "min": 1, "max": 2, "chance": 0.9},
-	{"id": "wood_limb", "min": 1, "max": 2, "chance": 0.8},
-	{"id": "wood_block", "min": 1, "max": 1, "chance": 0.5},
-	{"id": "iron_nail", "min": 1, "max": 3, "chance": 0.5},
-	{"id": "marrow", "min": 2, "max": 4, "chance": 1.0},
+## TUTORIAL materials only: wood_plank, screws, rope, glue.
+const LOOT_BROKEN := [   # broken marionettes — screws and planks, a little glue
+	{"id": "screws", "min": 2, "max": 3, "chance": 1.0},
+	{"id": "wood_plank", "min": 1, "max": 2, "chance": 0.8},
+	{"id": "glue", "min": 1, "max": 1, "chance": 0.5},
+	{"id": "rope", "min": 1, "max": 1, "chance": 0.3},
 ]
-const LOOT_GROUP := [    # puppet groups — limbs and blocks
-	{"id": "wood_limb", "min": 2, "max": 3, "chance": 1.0},
-	{"id": "wood_block", "min": 1, "max": 1, "chance": 0.6},
-	{"id": "rope", "min": 1, "max": 1, "chance": 0.5},
-	{"id": "marrow", "min": 1, "max": 3, "chance": 1.0},
+const LOOT_GROUP := [    # puppet groups — planks and rope
+	{"id": "wood_plank", "min": 2, "max": 3, "chance": 1.0},
+	{"id": "rope", "min": 1, "max": 2, "chance": 0.8},
+	{"id": "screws", "min": 1, "max": 2, "chance": 0.6},
 ]
-const LOOT_PILE := [     # the mountain of failed puppets — marrow-rich, rare metal
-	{"id": "marrow", "min": 4, "max": 8, "chance": 1.0},
-	{"id": "wood_limb", "min": 1, "max": 2, "chance": 0.7},
-	{"id": "brass_pin", "min": 1, "max": 1, "chance": 0.5},
-	{"id": "tin_plate", "min": 1, "max": 1, "chance": 0.35},
-	{"id": "iron_spring", "min": 1, "max": 1, "chance": 0.35},
+const LOOT_PILE := [     # the mountain of failed puppets — glue-rich, plenty of screws
+	{"id": "glue", "min": 1, "max": 2, "chance": 1.0},
+	{"id": "screws", "min": 2, "max": 4, "chance": 0.9},
+	{"id": "rope", "min": 1, "max": 2, "chance": 0.7},
+	{"id": "wood_plank", "min": 1, "max": 2, "chance": 0.6},
 ]
 const LOOT_DEFAULT := [
-	{"id": "wood_limb", "min": 1, "max": 2, "chance": 1.0},
-	{"id": "marrow", "min": 1, "max": 3, "chance": 1.0},
+	{"id": "wood_plank", "min": 1, "max": 2, "chance": 1.0},
+	{"id": "screws", "min": 1, "max": 2, "chance": 0.8},
 ]
 
 
