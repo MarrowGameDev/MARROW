@@ -25,6 +25,12 @@ const LOOT_PILE := [     # the mountain of failed puppets — glue-rich, plenty 
 	{"id": "rope", "min": 1, "max": 2, "chance": 0.7},
 	{"id": "wood_plank", "min": 1, "max": 2, "chance": 0.6},
 ]
+const LOOT_BOX := [      # crates / boxes — a supply cache, the richest and most rounded source
+	{"id": "screws", "min": 2, "max": 4, "chance": 1.0},
+	{"id": "glue", "min": 1, "max": 2, "chance": 0.8},
+	{"id": "rope", "min": 1, "max": 2, "chance": 0.7},
+	{"id": "wood_plank", "min": 1, "max": 3, "chance": 0.6},
+]
 const LOOT_DEFAULT := [
 	{"id": "wood_plank", "min": 1, "max": 2, "chance": 1.0},
 	{"id": "screws", "min": 1, "max": 2, "chance": 0.8},
@@ -36,8 +42,12 @@ func _ready() -> void:
 		return
 	var aabb := AABB()
 	var first := true
+	var mesh_node: MeshInstance3D = null
 	for mi in find_children("*", "MeshInstance3D", true, false):
-		var b: AABB = (mi as MeshInstance3D).get_aabb()
+		var m := mi as MeshInstance3D
+		if mesh_node == null:
+			mesh_node = m
+		var b: AABB = m.get_aabb()
 		if first:
 			aabb = b
 			first = false
@@ -50,12 +60,18 @@ func _ready() -> void:
 	st.charges = 3
 	st.trigger_size = Vector3(aabb.size.x * 1.5 * s.x, aabb.size.y * 1.6 * s.y, aabb.size.z * 1.5 * s.z)
 	st.prompt_height = (aabb.end.y + aabb.size.y * 0.25) * s.y
+	# spheres start at the top of the thing and land in a ring just outside its footprint
+	st.drop_height = aabb.end.y * s.y
+	st.drop_radius = maxf(aabb.size.x * s.x, aabb.size.z * s.z) * 0.8
+	st.outline_target = mesh_node            # the pulsing "contains materials" outline
 	st.position = Vector3(aabb.get_center().x, 0.0, aabb.get_center().z)
 	add_child(st)
 
 
 static func loot_for(node_name: String) -> Array:
 	var n := node_name.to_lower()
+	if "crate" in n or "box" in n:
+		return LOOT_BOX
 	if "broken" in n:
 		return LOOT_BROKEN
 	if "pile" in n:

@@ -1,14 +1,24 @@
 extends InteractStation
 class_name ScavengeStation
-## A puppet pile you can pick over: E grants a random bundle of crafting materials from the
-## loot table, a few times, then the pile is picked clean. Auto-attached to the pile models
-## by scavenge_root.gd (loot chosen per pile type); also droppable by hand as
-## scavenge_station.tscn. Materials go straight into the CraftingSystem autoload.
+## A box / pile / group you can pick over. While it still holds materials its mesh wears a
+## pulsing white-grey OUTLINE glow. E rolls the loot table and SPILLS the materials out as
+## glowing spheres (MaterialPickup) that hop onto the floor around it — walk over them to
+## collect. A few charges, then it's picked clean and the outline fades out.
+## Auto-attached to the box/pile/group models by scavenge_root.gd; also droppable by hand.
 
-@export var loot: Array = []      # [{id, min, max, chance}] — rolled independently per entry
-@export var charges: int = 3      # how many times the pile can be scavenged
+@export var loot: Array = []       # [{id, min, max, chance}] — rolled independently per entry
+@export var charges: int = 3       # how many times it can be scavenged
+@export var drop_height: float = 1.0      # world m above the station: where spheres start (top of the thing)
+@export var drop_radius: float = 1.2      # world m: how far from the centre they land
+@export var outline_target_path: NodePath # optional: mesh to outline when placed by hand
+
+var outline_target: MeshInstance3D = null   # set by scavenge_root.gd (or resolved from the path)
 
 var _left: int = 0
+var _outline: OutlineGlow = null
+var _outline_level := 0.0    # 0..1 — fades out once picked clean
+var _t := 0.0
+var _seed := 0.0
 
 
 func _init() -> void:
@@ -18,7 +28,21 @@ func _init() -> void:
 func _ready() -> void:
 	super()
 	_left = charges
+	_seed = randf() * 100.0
 	_refresh_prompt()
+	if outline_target == null and not outline_target_path.is_empty():
+		outline_target = get_node_or_null(outline_target_path) as MeshInstance3D
+	if outline_target != null:
+		_outline = OutlineGlow.attach(outline_target)
+		_outline_level = 1.0
+
+
+func _process(delta: float) -> void:
+	if _outline == null:
+		return
+	_t += delta
+	_outline_level = move_toward(_outline_level, 1.0 if _left > 0 else 0.0, delta * 0.8)
+	_outline.set_intensity(_outline_level * GlowFX.fire(_t, _seed, 0.3))
 
 
 func _can_interact() -> bool:
@@ -26,17 +50,19 @@ func _can_interact() -> bool:
 
 
 func _on_interact() -> void:
-	var sys = system()
-	if sys == null:
-		flash("No crafting system loaded.")
-		return
 	var bundle := roll()
-	sys.add_materials(bundle)
 	_left -= 1
-	var parts: Array = []
+	var host: Node = get_tree().current_scene if get_tree().current_scene != null else get_tree().root
+	var origin: Vector3 = global_position + Vector3.UP * drop_height
+	var spawned := 0
 	for id in bundle:
-		parts.append("+%d %s" % [int(bundle[id]), sys.material_name(id)])
-	flash(", ".join(parts) if not parts.is_empty() else "Nothing useful...")
+		var a := randf() * TAU
+		var r: float = drop_radius * randf_range(0.6, 1.0)
+		var land: Vector3 = global_position + Vector3(cos(a) * r, 0.0, sin(a) * r)
+		land.y = _floor_y(land, origin.y)
+		MaterialPickup.spawn(host, str(id), int(bundle[id]), origin, land)
+		spawned += 1
+	flash("Materials spill out!" if spawned > 0 else "Nothing useful...")
 	_refresh_prompt()
 
 
@@ -50,6 +76,18 @@ func roll() -> Dictionary:
 				var id := str(e.get("id", ""))
 				out[id] = int(out.get(id, 0)) + q
 	return out
+
+
+func spheres_out() -> int:
+	return get_tree().get_nodes_in_group("material_pickups").size()
+
+
+## Where the floor is under a landing spot (so spheres rest on the real ground).
+func _floor_y(at: Vector3, from_y: float) -> float:
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(Vector3(at.x, from_y + 0.5, at.z), Vector3(at.x, from_y - 20.0, at.z))
+	var hit := space.intersect_ray(q)
+	return hit.position.y if not hit.is_empty() else global_position.y
 
 
 func _refresh_prompt() -> void:
