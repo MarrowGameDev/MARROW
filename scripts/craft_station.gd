@@ -12,7 +12,8 @@ class_name CraftStation
 const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 
 @export var camera_transition: bool = true
-@export var camera_transition_time: float = 0.8
+@export var camera_transition_time: float = 2.0   # matched to the ink -> hold -> void fx (~2.1s)
+@export var camera_return_time: float = 1.2       # leaving is a little snappier
 @export var camera_distance: float = 0.45    # fraction of the bench's size from its centre (lower = closer)
 @export var camera_pitch_deg: float = 60.0   # how steeply the bench camera looks down
 @export var camera_height: float = 0.6       # extra world metres added to the distance
@@ -117,7 +118,7 @@ func _fly_back() -> void:
 		_restore_camera()
 		return
 	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	tw.tween_property(_bench_cam, "global_transform", _prev_cam.global_transform, camera_transition_time)
+	tw.tween_property(_bench_cam, "global_transform", _prev_cam.global_transform, camera_return_time)
 	tw.finished.connect(_restore_camera)
 
 
