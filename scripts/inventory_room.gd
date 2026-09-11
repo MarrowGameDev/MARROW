@@ -1,7 +1,10 @@
 extends Node3D
 class_name InventoryRoom
-## A pitch-black enclosed room where the marionette sits in a chair under a standing lamp while
-## the inventory is open. The inventory page covers the LEFT ~45% of the screen, so the room's
+## A pitch-black enclosed room where a COPY of the marionette sits in a chair under a standing
+## lamp while the inventory is open: a scriptless duplicate of the player's visuals (the hand
+## and everything equipped on it), stood upright on the seat facing the camera and breathing its
+## idle — the same picture no matter where the real hand stands or what it was doing. The real
+## player never moves. The inventory page covers the LEFT ~45% of the screen, so the room's
 ## camera is shifted sideways (Camera3D.h_offset) to frame the chair + character in the RIGHT
 ## part of the view. Everything is built from primitives in _ready(); drop real models into
 ## `chair_scene` / `lamp_scene` later (a Marker3D named "Seat" inside the chair scene is used
@@ -26,8 +29,10 @@ class_name InventoryRoom
 ## RIGHT part of the frame (the left is covered by the inventory page).
 @export var camera_side_shift: float = -1.6
 @export var camera_fov: float = 50.0
-## Extra lift of the player's origin above the seat top (the marionette's origin isn't at its feet).
+## Extra lift of the copy above the seat top (its lowest visible point is put on the seat).
 @export var seat_player_lift: float = 0.0
+## Clip names tried, in order, for the copy's breathing pose (substring match, case-insensitive).
+@export var idle_clips: Array[String] = ["idle", "loop", "walk"]
 ## Lamp flicker depth (GlowFX.fire amount); 0 = steady.
 @export var flicker_strength: float = 0.08
 
@@ -48,7 +53,7 @@ var camera: Camera3D = null
 var seat: Marker3D = null
 
 var _player: Node3D = null
-var _player_transform: Transform3D = Transform3D.IDENTITY
+var _copy: Node3D = null           # the stand-in on the seat (freed by leave())
 var _prev_cam: Camera3D = null
 var _lights: Array[Light3D] = []
 var _light_energies: PackedFloat32Array = PackedFloat32Array()
@@ -76,42 +81,85 @@ func _process(delta: float) -> void:
 
 # ---------------------------------------------------------------- public API
 
-## Sit `player` on the Seat and show the room through `camera`. Remembers where the player and
-## the current camera were so leave() can put everything back. Keeps the player's scale.
+## Seat a copy of `player` and show the room through `camera`. Remembers the current camera so
+## leave() can hand the view back. The real player is left exactly where it is.
 func enter(player: Node3D) -> void:
 	if player == null or not is_instance_valid(player):
 		return
-	if _player != null:
+	if _copy != null:
 		leave()
 	_player = player
-	_player_transform = player.global_transform
 	var prev := get_viewport().get_camera_3d()
 	_prev_cam = prev if prev != camera else null
-
-	var seat_xf := seat_transform()
-	var face: Vector3 = seat_xf.basis.z          # a marker "faces" along its +Z (same as the player)
-	face.y = 0.0
-	var yaw: float = atan2(face.x, face.z) if face.length() > 0.001 else 0.0
-	var scale_v: Vector3 = _player_transform.basis.get_scale()
-	var origin: Vector3 = seat_xf.origin + seat_xf.basis.y.normalized() * seat_player_lift
-	player.global_transform = Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(scale_v), origin)
-	if player is CharacterBody3D:
-		(player as CharacterBody3D).velocity = Vector3.ZERO
+	_seat_copy(player)
 	camera.current = true
 
 
-## Put the player back where enter() found it and hand the view back to the previous camera.
+## Free the copy and hand the view back to the previous camera.
 func leave() -> void:
-	if _player != null and is_instance_valid(_player):
-		_player.global_transform = _player_transform
-		if _player is CharacterBody3D:
-			(_player as CharacterBody3D).velocity = Vector3.ZERO
+	if _copy != null and is_instance_valid(_copy):
+		_copy.queue_free()
+	_copy = null
 	_player = null
 	if _prev_cam != null and is_instance_valid(_prev_cam):
 		_prev_cam.current = true
 	elif camera.current:
 		camera.current = false      # the viewport picks the next available camera
 	_prev_cam = null
+
+
+## The stand-in: a duplicate of the player's visuals (its VisualRoot — the hand and everything
+## equipped on it, in its current state) with no scripts, signals or groups, stripped of any
+## collision, stood on the seat facing the camera at the real hand's scale, playing its idle.
+func _seat_copy(player: Node3D) -> void:
+	var src: Node3D = player.get_node_or_null("VisualRoot") as Node3D
+	if src == null:
+		src = player
+	_copy = src.duplicate(0) as Node3D
+	_copy.name = "PlayerCopy"
+	_copy.process_mode = Node.PROCESS_MODE_ALWAYS      # it breathes while the game is paused
+	add_child(_copy)
+	for co in _copy.find_children("*", "CollisionObject3D", true, false):
+		co.get_parent().remove_child(co)
+		co.queue_free()
+	# upright on the seat, facing +Z (the camera), same scale as the real hand
+	var seat_xf := seat_transform()
+	var face: Vector3 = seat_xf.basis.z
+	face.y = 0.0
+	var yaw: float = atan2(face.x, face.z) if face.length() > 0.001 else 0.0
+	var scale_v: Vector3 = src.global_transform.basis.get_scale()
+	_copy.global_transform = Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(scale_v), seat_xf.origin)
+	# its lowest visible point goes on the seat top
+	var lowest := INF
+	for mi in _copy.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null or not m.is_visible_in_tree():
+			continue
+		var box: AABB = m.global_transform * m.get_aabb()
+		lowest = minf(lowest, box.position.y)
+	if lowest != INF:
+		_copy.global_position.y += seat_xf.origin.y - lowest
+	_copy.global_position += seat_xf.basis.y.normalized() * seat_player_lift
+	# a neutral, breathing pose — whatever the real hand was doing
+	var aps := _copy.find_children("*", "AnimationPlayer", true, false)
+	if not aps.is_empty():
+		var ap := aps[0] as AnimationPlayer
+		var clip := ""
+		for want in idle_clips:
+			for a in ap.get_animation_list():
+				if String(a).to_lower().contains(want.to_lower()):
+					clip = a
+					break
+			if clip != "":
+				break
+		if clip == "" and not ap.get_animation_list().is_empty():
+			clip = ap.get_animation_list()[0]
+		if clip != "":
+			ap.play(clip)
+
+
+func copy() -> Node3D:
+	return _copy
 
 
 ## Global transform of the seat's top surface; +Z is the way a seated character faces.
