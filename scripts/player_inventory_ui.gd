@@ -207,7 +207,7 @@ func clear_bone_info() -> void:
 ## the spine: the inventory is ONE page of it — BOOK_PAGE picks which. The stitched spine runs
 ## down the page's inner edge, the leather cover round the other three sides. Texture pixels.
 const BOOK_TEX: Texture2D = preload("res://assets/ui/book_spread.png")
-const BOOK_PAGE := "left"      # "left" (spine on the right) or "right" (spine on the left)
+const BOOK_PAGE := "right"     # "left" (spine on the right) or "right" (spine on the left) — right: the cut spine sits on the screen's left edge
 const BOOK_COVER := Rect2(16, 55, 993, 917)
 const BOOK_SPINE_X := 512.0
 const BOOK_EDGE := 84          # leather + bevel down the page's outer edge, drawn 1:1

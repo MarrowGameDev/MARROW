@@ -20,17 +20,19 @@ class_name InventoryRoom
 ## Where the lamp stands, relative to the chair (chair faces +Z, the camera side).
 @export var lamp_offset: Vector3 = Vector3(-0.85, 0.0, -0.25)
 ## Metres from the chair to the camera, on the chair's +Z side.
-@export var camera_distance: float = 3.2
+@export var camera_distance: float = 2.4
 ## Camera height above the floor; it looks slightly down at `camera_focus_height`.
-@export var camera_height: float = 1.4
+@export var camera_height: float = 1.25
 ## Height above the floor the camera aims at (the seated character's centre).
-@export var camera_focus_height: float = 0.9
+@export var camera_focus_height: float = 0.85
 ## Camera3D.h_offset, metres. NEGATIVE moves the camera to its left, so the chair lands in the
 ## RIGHT part of the frame (the left is covered by the inventory page).
-@export var camera_side_shift: float = -1.6
+@export var camera_side_shift: float = -1.0
 @export var camera_fov: float = 50.0
 ## Extra lift of the copy above the seat top (its lowest visible point is put on the seat).
 @export var seat_player_lift: float = 0.0
+## Height the copy is scaled to, metres, so it fits the chair (0 = the real hand's size).
+@export var copy_height: float = 0.8
 ## Clip names tried, in order, for the copy's breathing pose (substring match, case-insensitive).
 @export var idle_clips: Array[String] = ["idle", "loop", "walk"]
 ## Radians of turn per pixel of mouse drag (drag anywhere on the room side to spin the character).
@@ -147,15 +149,22 @@ func _seat_copy(player: Node3D) -> void:
 	var yaw: float = atan2(face.x, face.z) if face.length() > 0.001 else 0.0
 	var scale_v: Vector3 = src.global_transform.basis.get_scale()
 	_copy.global_transform = Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(scale_v), seat_xf.origin)
-	# its lowest visible point goes on the seat top
+	# scaled to copy_height so it fits the chair, its lowest visible point on the seat top
 	var lowest := INF
+	var highest := -INF
 	for mi in _copy.find_children("*", "MeshInstance3D", true, false):
 		var m := mi as MeshInstance3D
 		if m.mesh == null or not m.is_visible_in_tree():
 			continue
 		var box: AABB = m.global_transform * m.get_aabb()
 		lowest = minf(lowest, box.position.y)
+		highest = maxf(highest, box.end.y)
 	if lowest != INF:
+		var height: float = highest - lowest
+		if copy_height > 0.0 and height > 0.001:
+			var k: float = copy_height / height
+			_copy.scale *= k
+			lowest = _copy.global_position.y + (lowest - _copy.global_position.y) * k   # scaled about the copy's origin
 		_copy.global_position.y += seat_xf.origin.y - lowest
 	_copy.global_position += seat_xf.basis.y.normalized() * seat_player_lift
 	# a neutral, breathing pose — whatever the real hand was doing

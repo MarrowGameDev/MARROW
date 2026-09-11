@@ -1912,6 +1912,8 @@ func _set_stealth_prompt(text: String) -> void:
 func _toggle_inventory() -> void:
 	if inventory_room != null and inventory_room.is_busy():
 		return                                   # mid-transition: ignore the key
+	if not inventory_open and get_tree().paused:
+		return                                   # something else owns the pause (the crafting bench): not now
 	inventory_open = not inventory_open
 	if inventory_room != null:
 		inventory_room.set_open(inventory_open)  # transitions, shows/hides the book at black, owns the pause
@@ -1920,7 +1922,12 @@ func _toggle_inventory() -> void:
 			inventory_ui.set_open(inventory_open)
 		get_tree().paused = inventory_open
 	GameEvents.inventory_open_changed.emit(self, inventory_open)
-	_update_mouse_mode()
+	if inventory_room != null and not inventory_open:
+		# mouse look comes back only once the hand's camera is current again, so a drag during
+		# the descent can't swing the camera the sky camera is landing on
+		inventory_room.closed.connect(_update_mouse_mode, CONNECT_ONE_SHOT)
+	else:
+		_update_mouse_mode()
 
 
 func _update_mouse_mode() -> void:
