@@ -15,14 +15,19 @@ class_name ScavengeStation
 @export var drop_height: float = 1.0      # world m above the station: where spilled spheres start
 @export var drop_radius: float = 1.2      # world m: how far from the centre they land
 @export var outline_target_path: NodePath # optional: mesh to outline when placed by hand
+## The outline only shows when the player is this close (world metres from the station's box —
+## edge distance, so a wide pile lights up as you walk up to any side of it).
+@export var glow_range: float = 1.0
 
 var outline_target: MeshInstance3D = null   # set by scavenge_root.gd (or resolved from the path)
 
 var _left: int = 0
 var _outline: OutlineGlow = null
-var _outline_level := 0.0    # 0..1 — fades out once picked clean
+var _outline_level := 0.0    # 0..1 — fades in when the player comes close, out once picked clean
 var _t := 0.0
 var _seed := 0.0
+var _near_player: Node3D = null   # the player, looked up by group when it isn't inside our trigger
+var _lookup_in := 0.0
 
 
 func _init() -> void:
@@ -46,8 +51,37 @@ func _process(delta: float) -> void:
 	if _outline == null:
 		return
 	_t += delta
-	_outline_level = move_toward(_outline_level, 1.0 if _left > 0 else 0.0, delta * 0.8)
+	var lit: bool = _left > 0 and _player_within(glow_range, delta)
+	# quick in/out as the player comes and goes; a slow fade once the station is picked clean
+	_outline_level = move_toward(_outline_level, 1.0 if lit else 0.0, delta * (0.8 if _left <= 0 else 3.0))
 	_outline.set_intensity(_outline_level * GlowFX.fire(_t, _seed, 0.3))
+
+
+## Is the player within `range_m` world metres of our trigger box (0 while touching it)?
+func _player_within(range_m: float, delta: float) -> bool:
+	var p: Node3D = _player
+	if p == null:
+		_lookup_in -= delta
+		if _lookup_in <= 0.0 or not is_instance_valid(_near_player):
+			_lookup_in = 0.5
+			_near_player = get_tree().get_first_node_in_group("player") as Node3D
+		p = _near_player
+	if p == null or not is_instance_valid(p):
+		return false
+	return distance_to_box(p.global_position) <= range_m
+
+
+## World-metre distance from a point to the station's trigger box (the same box the base class
+## builds: trigger_size wide/deep around our origin, trigger_size.y tall from the floor up).
+func distance_to_box(world_point: Vector3) -> float:
+	var s: Vector3 = global_transform.basis.get_scale()
+	var l: Vector3 = global_transform.affine_inverse() * world_point   # local, unscaled units
+	var half: Vector3 = trigger_size * 0.5 / s
+	var d := Vector3(
+		maxf(absf(l.x) - half.x, 0.0),
+		maxf(absf(l.y - half.y) - half.y, 0.0),
+		maxf(absf(l.z) - half.z, 0.0))
+	return (d * s).length()
 
 
 func _can_interact() -> bool:
