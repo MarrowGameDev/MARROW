@@ -128,6 +128,7 @@ var attack_damage: int = 0
 # Pressing Tab toggles the inventory screen (which also pauses the game).
 var inventory_open: bool = false
 var inventory_ui: PlayerInventoryUI = null
+var inventory_room: InventoryRoomController = null   # the room the inventory is shown in (owns the pause while open)
 var inventory_component: PlayerInventoryComponent = null
 var equipment_component: PlayerEquipmentComponent = null
 var stats_component: PlayerStatsComponent = null
@@ -227,6 +228,12 @@ func _ready() -> void:
 	inventory_ui = PlayerInventoryUI.new()
 	add_child(inventory_ui)
 	inventory_ui.setup(self)
+	# the inventory opens in its own room: the camera lifts to the sky, black, and the hand is
+	# seated under a lamp with the book on the left (see inventory_room_controller.gd)
+	inventory_room = InventoryRoomController.new()
+	inventory_room.name = "InventoryRoomController"
+	add_child(inventory_room)
+	inventory_room.setup(self, inventory_ui)
 	_build_health_ui()
 	_build_stealth_ui()
 	_build_aim_reticle_ui()
@@ -1903,11 +1910,16 @@ func _set_stealth_prompt(text: String) -> void:
 
 # Shows or hides the inventory screen — and pauses the whole game while it is open.
 func _toggle_inventory() -> void:
+	if inventory_room != null and inventory_room.is_busy():
+		return                                   # mid-transition: ignore the key
 	inventory_open = not inventory_open
-	if inventory_ui != null:
-		inventory_ui.set_open(inventory_open)
+	if inventory_room != null:
+		inventory_room.set_open(inventory_open)  # transitions, shows/hides the book at black, owns the pause
+	else:
+		if inventory_ui != null:
+			inventory_ui.set_open(inventory_open)
+		get_tree().paused = inventory_open
 	GameEvents.inventory_open_changed.emit(self, inventory_open)
-	get_tree().paused = inventory_open
 	_update_mouse_mode()
 
 

@@ -24,6 +24,8 @@ var equipped: Dictionary:
 	get:
 		return _equipment_state()
 
+var room_mode: bool = true   # the book lives in the 3D inventory room: page on the LEFT, the seated character on the right
+var inventory_world_blur: ColorRect = null   # the blurred-world veil; hidden in room mode so the room shows
 var inventory_root: Control = null
 var inventory_label: Label = null
 var hover_info_label: Label = null
@@ -254,7 +256,9 @@ func _build_inventory_ui() -> void:
 	inventory_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inventory_root.visible = false
 	canvas.add_child(inventory_root)
-	inventory_root.add_child(_build_inventory_blur_layer())
+	inventory_world_blur = _build_inventory_blur_layer()
+	inventory_world_blur.visible = not room_mode
+	inventory_root.add_child(inventory_world_blur)
 
 	inventory_safe_area = Control.new()
 	inventory_safe_area.name = "InventorySafeArea"
@@ -597,12 +601,19 @@ func _apply_inventory_responsive_layout() -> void:
 	var max_panel_width: int = int(minf(1800.0, width - float(outer_margin_x * 2)))
 	var panel_width: int = mini(available_panel_width, max_panel_width)
 	var panel_x: int = int(round((width - float(panel_width)) * 0.5))
+	if room_mode:
+		# the page takes the left ~45% of the screen; the character on the chair has the right
+		panel_width = clampi(int(width * 0.45), mini(480, available_panel_width), available_panel_width)
+		panel_x = outer_margin_x
 	var content_width: int = maxi(320, panel_width - left_margin - right_margin)
 	var content_height: int = maxi(280, panel_height - top_inner_margin - bottom_inner_margin)
 
 	var content_gap := int(clampf(height * 0.008, 4.0, 10.0))
 	var tab_gap := int(clampf(width * 0.018, 8.0, 42.0))
 	var tab_width := int(clampf(width * 0.068, 72.0, 108.0))
+	if room_mode:   # seven tabs across the narrower page: text-sized buttons, see _fit_inventory_tabs
+		tab_gap = clampi(int(float(content_width) * 0.012), 4, 24)
+		tab_width = clampi(int(float(content_width - tab_gap * 6) / 7.0 * 0.75), 40, 108)
 	var tab_height := int(clampf(height * 0.052, 32.0, 48.0))
 	var body_gap := int(clampf(width * 0.008, 8.0, 18.0))
 	var tile_gap := int(clampf(width * 0.006, 5.0, 12.0))
@@ -620,8 +631,14 @@ func _apply_inventory_responsive_layout() -> void:
 	var body_width: int = maxi(320, content_width - body_gap - 32)   # room for the grid/detail styleboxes' own padding
 	var min_left_width: int = 180 if very_compact else (260 if compact else 360)
 	var min_right_width: int = 220 if very_compact else (330 if compact else 360)
-	var max_right_width: int = mini(600, maxi(min_right_width, body_width - min_left_width))
 	var right_ratio := 0.39 if compact else 0.34
+	if room_mode:
+		# no paper doll: the right column is only the details card and the stats line, so the
+		# grid keeps room for three 58 px tiles at 1280x720 and four ~98 px tiles at 1920x1080
+		min_left_width = 204 if compact else 300
+		min_right_width = 140 if very_compact else (160 if compact else 200)
+		right_ratio = 0.30
+	var max_right_width: int = mini(600, maxi(min_right_width, body_width - min_left_width))
 	var right_width: int = clampi(int(float(body_width) * right_ratio), min_right_width, max_right_width)
 	var left_width: int = maxi(min_left_width, body_width - right_width)
 	if left_width + right_width > body_width:
@@ -646,6 +663,9 @@ func _apply_inventory_responsive_layout() -> void:
 		grid_columns = 4
 	elif grid_content_width < 980:
 		grid_columns = 5
+	if room_mode:   # the narrower page fits as many ~88 px tiles as it can, never fewer than three
+		var room_tile_width := 88
+		grid_columns = clampi(int(floor(float(grid_content_width + tile_gap) / float(room_tile_width + tile_gap))), 3, 6)
 	var tile_width: float = floor(float(grid_content_width - (tile_gap * (grid_columns - 1))) / float(grid_columns))
 	var tile_height: float = floor(float(grid_content_height - (tile_gap * (visible_rows - 1))) / float(visible_rows))
 	inventory_item_tile_size = Vector2(clampf(tile_width, 58.0, 170.0), clampf(tile_height, 52.0, 150.0))
@@ -681,16 +701,26 @@ func _apply_inventory_responsive_layout() -> void:
 	inventory_footer.visible = true
 	_apply_footer_responsive_layout(content_width, very_compact)
 
+	var tab_font_size: int = 14 if very_compact else (15 if compact else 18)
 	for category in inventory_tab_buttons:
 		var button := inventory_tab_buttons[String(category)] as Button
 		if button == null:
 			continue
 		button.custom_minimum_size = Vector2(tab_width, tab_height)
-		button.add_theme_font_size_override("font_size", 14 if very_compact else (15 if compact else 18))
+		button.add_theme_font_size_override("font_size", tab_font_size)
+	if room_mode:
+		_fit_inventory_tabs(content_width, tab_font_size)
 
 	if inventory_title_label != null:
-		inventory_title_label.custom_minimum_size = Vector2(190 if compact else 260, header_height)
+		var title_width: int = 190 if compact else 260
+		if room_mode:
+			title_width = clampi(int(float(content_width) * 0.42), 150, title_width)
+		inventory_title_label.custom_minimum_size = Vector2(title_width, header_height)
 		inventory_title_label.add_theme_font_size_override("font_size", int(clampf(height * 0.048, 28.0, 38.0)))
+	for child in inventory_header.get_children():
+		var rule := child as ColorRect
+		if rule != null:   # the header rules give way first on the narrow room page
+			rule.custom_minimum_size = Vector2(24 if room_mode else 80, 1)
 	inventory_status_label.custom_minimum_size = Vector2(86 if compact else 118, header_height)
 	inventory_status_label.add_theme_font_size_override("font_size", 12 if compact else 15)
 	inventory_left_panel.custom_minimum_size = Vector2(left_width, body_height)
@@ -698,11 +728,16 @@ func _apply_inventory_responsive_layout() -> void:
 	inventory_grid_panel.custom_minimum_size = Vector2(left_width, grid_height)
 	inventory_right_panel.custom_minimum_size = Vector2(right_width, body_height)
 	inventory_right_panel.add_theme_constant_override("separation", body_gap)
+	if inventory_world_blur != null:
+		inventory_world_blur.visible = not room_mode        # the room must show clearly beside the page
+	inventory_preview_panel.visible = not room_mode         # the seated 3D character replaces the paper doll
 	inventory_preview_panel.custom_minimum_size = Vector2(right_width, preview_height)
+	# in room mode the details card grows into the space the paper doll left
+	inventory_details_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL if room_mode else Control.SIZE_FILL
 	inventory_details_panel.custom_minimum_size = Vector2(right_width, details_height)
-	hover_info_label.custom_minimum_size = Vector2(maxi(180, right_width - 40), details_height - 24)
+	hover_info_label.custom_minimum_size = Vector2(maxi(90, right_width - 48) if room_mode else maxi(180, right_width - 40), details_height - 24)
 	hover_info_label.add_theme_font_size_override("font_size", 12 if very_compact else (14 if compact else 16))
-	inventory_label.custom_minimum_size = Vector2(maxi(180, right_width), label_height)
+	inventory_label.custom_minimum_size = Vector2(right_width if room_mode else maxi(180, right_width), label_height)
 	inventory_label.add_theme_font_size_override("font_size", 11 if very_compact else (12 if compact else 13))
 	inventory_sort_label.custom_minimum_size = Vector2(left_width, sort_height)
 	inventory_sort_label.add_theme_font_size_override("font_size", 11 if very_compact else (13 if compact else 16))
@@ -716,6 +751,20 @@ func _apply_inventory_responsive_layout() -> void:
 	_apply_settings_responsive_layout(content_width, body_height, compact, very_compact)
 	rebuild_item_tiles()
 	_refresh_inventory_tabs()
+
+
+## Room mode: seven text-sized tabs on a ~45%-wide page — step the tab font down (never below
+## 11) until the row's measured minimum fits the content width.
+func _fit_inventory_tabs(content_width: int, font_size: int) -> void:
+	if inventory_tabs_container == null:
+		return
+	var size: int = font_size
+	while size > 11 and inventory_tabs_container.get_combined_minimum_size().x > float(content_width):
+		size -= 1
+		for category in inventory_tab_buttons:
+			var button := inventory_tab_buttons[String(category)] as Button
+			if button != null:
+				button.add_theme_font_size_override("font_size", size)
 
 
 func _apply_settings_responsive_layout(content_width: int, content_height: int, compact: bool, very_compact: bool) -> void:
