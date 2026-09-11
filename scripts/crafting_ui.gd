@@ -22,13 +22,17 @@ const SLOT_TEX: Texture2D = preload("res://assets/ui/inv_slot.svg")
 const SKULL_TEX: Texture2D = preload("res://assets/ui/inv_skull.svg")
 const CATEGORIES := ["PARTS", "WEAPONS", "ARMOR", "TORSOS"]
 const MAX_LEVEL := 5
-## The painted pattern book (assets/ui/book_spread.png, 1024x1024, top-down open spread): the
-## dashboard is its RIGHT page. Cover bounds and the stitched spine column, in texture pixels.
+## The painted pattern book (assets/ui/book_spread.png, 1024x1024, top-down open spread), cut at
+## the spine: the dashboard is ONE page of it — BOOK_PAGE picks which. The stitched spine runs
+## down the page's inner edge, the leather cover round the other three sides. Texture pixels.
 const BOOK_TEX: Texture2D = preload("res://assets/ui/book_spread.png")
+const BOOK_PAGE := "left"      # "left" (spine on the right) or "right" (spine on the left)
 const BOOK_COVER := Rect2(16, 55, 993, 917)
 const BOOK_SPINE_X := 512.0
-const BOOK_BORDER := 72        # painted leather cover border, drawn 1:1
-const BOOK_SPINE := 64         # the page's stitched inner edge, drawn 1:1
+const BOOK_EDGE := 84          # leather + bevel down the page's outer edge, drawn 1:1
+const BOOK_BORDER := 72        # leather along the top and bottom, drawn 1:1
+const BOOK_SPINE := 64         # the stitched inner edge, drawn 1:1
+const BOOK_INSET := 60         # where the paper starts inside the top/bottom leather
 
 ## The dashboard is a SIDE PANEL on the right; the rest of the screen shows the bench camera.
 @export var panel_fraction: float = 0.42
@@ -40,6 +44,8 @@ var material_names: Dictionary = {}  # material id -> display name
 
 var _prev_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED   # restored on close
 var _panel: Control                    # right side: the book page with recipes (parts / weapons / armor / torsos)
+var _fit: Control                      # hosts the column on the paper; scales it down on small windows
+var _col: VBoxContainer                # the whole column: title, tabs, page, bottom bar
 var _page: Control                     # the page content that flips when you change section
 var _page_label: Label                 # "PARTS · page 1 / 4"
 var _flipping := false
@@ -68,25 +74,53 @@ func _ready() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
 	_background()
+	# the content sits on the paper: inside the top/bottom leather, past the stitches on the
+	# spine side and past the leather + bevel on the outer side
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for m in ["margin_right", "margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(m, BOOK_BORDER + 10)   # inside the painted cover
-	margin.add_theme_constant_override("margin_left", BOOK_SPINE + 12)   # past the spine stitches
+	margin.add_theme_constant_override("margin_top", BOOK_INSET)
+	margin.add_theme_constant_override("margin_bottom", BOOK_INSET)
+	margin.add_theme_constant_override("margin_left", BOOK_EDGE + 4 if _spine_right() else BOOK_SPINE + 8)
+	margin.add_theme_constant_override("margin_right", BOOK_SPINE + 8 if _spine_right() else BOOK_EDGE + 4)
 	_panel.add_child(margin)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 14)
-	margin.add_child(col)
-	col.add_child(_title_bar())
+	_fit = Control.new()
+	_fit.mouse_filter = Control.MOUSE_FILTER_STOP
+	_fit.resized.connect(_fit_column)
+	margin.add_child(_fit)
+	_col = VBoxContainer.new()
+	_col.add_theme_constant_override("separation", 14)
+	_fit.add_child(_col)
+	_col.add_child(_title_bar())
 	_tab_row = HBoxContainer.new()
 	_tab_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_tab_row.add_theme_constant_override("separation", 14)
-	col.add_child(_center(_tab_row))
+	_col.add_child(_center(_tab_row))
 	_page = _body()
-	col.add_child(_page)
-	col.add_child(_bottom_bar())
+	_col.add_child(_page)
+	_col.add_child(_bottom_bar())
 	_build_materials_panel()   # top-left tally of what the player is carrying
 	_refresh()
+
+
+## The column is laid out for a 1080p panel. On smaller windows it is scaled down uniformly to
+## fit the paper, so every button stays reachable and nothing lands on the leather or off-screen.
+func _fit_column() -> void:
+	if _fit == null or _col == null:
+		return
+	var need: Vector2 = _col.get_combined_minimum_size()
+	var s: float = minf(1.0, minf(_fit.size.x / maxf(need.x, 1.0), _fit.size.y / maxf(need.y, 1.0)))
+	_col.scale = Vector2(s, s)
+	_col.position = Vector2.ZERO
+	_col.size = _fit.size / s
+
+
+static func _spine_right() -> bool:
+	return BOOK_PAGE == "left"          # the left page's spine is on its right
+
+static func _page_region() -> Rect2:    # this page's half of the painting, cut at the spine
+	if BOOK_PAGE == "left":
+		return Rect2(BOOK_COVER.position.x, BOOK_COVER.position.y, BOOK_SPINE_X - BOOK_COVER.position.x, BOOK_COVER.size.y)
+	return Rect2(BOOK_SPINE_X, BOOK_COVER.position.y, BOOK_COVER.end.x - BOOK_SPINE_X, BOOK_COVER.size.y)
 
 
 # ---- public API ---------------------------------------------------------------
@@ -171,8 +205,7 @@ func _can_afford(req: Array) -> bool:
 func _refresh() -> void:
 	if _tab_row == null:
 		return
-	for c in _tab_row.get_children():
-		c.queue_free()
+	_clear(_tab_row)
 	for i in CATEGORIES.size():
 		if i > 0:
 			_tab_row.add_child(_text("♦", 14))
@@ -182,11 +215,10 @@ func _refresh() -> void:
 		b.add_theme_font_size_override("font_size", 16)
 		b.add_theme_color_override("font_color", INK if i == _tab else INK_FAINT)
 		b.add_theme_color_override("font_hover_color", INK)
-		b.custom_minimum_size.x = 110
+		b.custom_minimum_size.x = 92
 		b.pressed.connect(_on_tab.bind(i))
 		_tab_row.add_child(b)
-	for c in _list.get_children():
-		c.queue_free()
+	_clear(_list)
 	var visible_recipes: Array = recipes.filter(func(r): return r.get("category", "") == CATEGORIES[_tab])
 	if visible_recipes.is_empty():
 		_list.add_child(_text("Nothing to craft here yet.", 15))
@@ -198,6 +230,15 @@ func _refresh() -> void:
 		_page_label.text = "%s  ·  page %d / %d" % [CATEGORIES[_tab], _tab + 1, CATEGORIES.size()]
 	_refresh_detail()
 	_refresh_materials()
+	call_deferred("_fit_column")   # the column's minimum size changed
+
+
+## Drop a container's children NOW (queue_free alone keeps them in the tree — and in the
+## column's minimum size — until the end of the frame).
+static func _clear(c: Node) -> void:
+	for ch in c.get_children():
+		c.remove_child(ch)
+		ch.queue_free()
 
 
 func _row(r: Dictionary) -> Control:
@@ -239,8 +280,7 @@ func _row(r: Dictionary) -> Control:
 
 
 func _refresh_detail() -> void:
-	for c in _detail.get_children():
-		c.queue_free()
+	_clear(_detail)
 	var r := selected_recipe()
 	selection_changed.emit(r)
 	if r.is_empty():
@@ -296,7 +336,7 @@ func _on_tab(i: int) -> void:
 	if i == _tab or _flipping or _page == null:
 		return
 	_flipping = true
-	_page.pivot_offset = Vector2(0.0, _page.size.y * 0.5)   # hinge on the spine
+	_page.pivot_offset = Vector2(_page.size.x if _spine_right() else 0.0, _page.size.y * 0.5)   # hinge on the spine
 	var tw := create_tween()
 	tw.tween_property(_page, "scale:x", 0.0, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.tween_callback(func() -> void:
@@ -409,15 +449,14 @@ func _vcenter(c: Control) -> Control:
 
 # ---- layout pieces -------------------------------------------------------------
 func _background() -> void:
-	# the painted book's RIGHT page fills the panel, spine stitches down its left edge: a
-	# nine-patch, so the leather border and the stitches stay 1:1 and only the paper stretches
+	# the painted book's page fills the panel: a nine-patch, so the leather border and the
+	# stitched spine edge stay 1:1 and only the plain paper in the middle stretches
 	var page := NinePatchRect.new()
 	page.name = "Page"
 	page.texture = BOOK_TEX
-	var x0: float = BOOK_SPINE_X                         # the book is cut at the spine ...
-	page.region_rect = Rect2(x0, BOOK_COVER.position.y, BOOK_COVER.end.x - x0, BOOK_COVER.size.y)   # ... to the cover's right edge
-	page.patch_margin_left = BOOK_SPINE
-	page.patch_margin_right = BOOK_BORDER
+	page.region_rect = _page_region()
+	page.patch_margin_left = BOOK_EDGE if _spine_right() else BOOK_SPINE
+	page.patch_margin_right = BOOK_SPINE if _spine_right() else BOOK_EDGE
 	page.patch_margin_top = BOOK_BORDER
 	page.patch_margin_bottom = BOOK_BORDER
 	page.set_anchors_preset(Control.PRESET_FULL_RECT)

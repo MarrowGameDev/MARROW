@@ -201,13 +201,26 @@ func clear_bone_info() -> void:
 		hover_info_label.text = "Select an item to view details."
 
 
-## The painted pattern book (assets/ui/book_spread.png, 1024x1024, top-down open spread), cut
-## at the spine: the inventory is a single RIGHT page, spine down its left edge. Texture pixels.
+## The painted pattern book (assets/ui/book_spread.png, 1024x1024, top-down open spread), cut at
+## the spine: the inventory is ONE page of it — BOOK_PAGE picks which. The stitched spine runs
+## down the page's inner edge, the leather cover round the other three sides. Texture pixels.
 const BOOK_TEX: Texture2D = preload("res://assets/ui/book_spread.png")
+const BOOK_PAGE := "left"      # "left" (spine on the right) or "right" (spine on the left)
 const BOOK_COVER := Rect2(16, 55, 993, 917)
 const BOOK_SPINE_X := 512.0
-const BOOK_BORDER := 72        # painted leather cover border, drawn 1:1
-const BOOK_SPINE := 64         # the page's stitched inner edge, drawn 1:1
+const BOOK_EDGE := 84          # leather + bevel down the page's outer edge, drawn 1:1
+const BOOK_BORDER := 72        # leather along the top and bottom, drawn 1:1
+const BOOK_SPINE := 64         # the stitched inner edge, drawn 1:1
+const BOOK_INSET := 60         # where the paper starts inside the top/bottom leather
+
+
+static func _spine_right() -> bool:
+	return BOOK_PAGE == "left"          # the left page's spine is on its right
+
+static func _page_region() -> Rect2:    # this page's half of the painting, cut at the spine
+	if BOOK_PAGE == "left":
+		return Rect2(BOOK_COVER.position.x, BOOK_COVER.position.y, BOOK_SPINE_X - BOOK_COVER.position.x, BOOK_COVER.size.y)
+	return Rect2(BOOK_SPINE_X, BOOK_COVER.position.y, BOOK_COVER.end.x - BOOK_SPINE_X, BOOK_COVER.size.y)
 
 
 ## The book page behind the inventory: a nine-patch, so the leather border and the stitched
@@ -216,10 +229,9 @@ func _build_book_page(parent: Control) -> void:
 	var page := NinePatchRect.new()
 	page.name = "BookPage"
 	page.texture = BOOK_TEX
-	var x0: float = BOOK_SPINE_X                         # cut at the spine ... to the cover's right edge
-	page.region_rect = Rect2(x0, BOOK_COVER.position.y, BOOK_COVER.end.x - x0, BOOK_COVER.size.y)
-	page.patch_margin_left = BOOK_SPINE
-	page.patch_margin_right = BOOK_BORDER
+	page.region_rect = _page_region()
+	page.patch_margin_left = BOOK_EDGE if _spine_right() else BOOK_SPINE
+	page.patch_margin_right = BOOK_SPINE if _spine_right() else BOOK_EDGE
 	page.patch_margin_top = BOOK_BORDER
 	page.patch_margin_bottom = BOOK_BORDER
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -500,7 +512,7 @@ func _select_inventory_category(category: String) -> void:
 		_apply_inventory_category(category)
 		return
 	_page_flipping = true
-	inventory_content_root.pivot_offset = Vector2(0.0, inventory_content_root.size.y * 0.5)   # hinge on the spine
+	inventory_content_root.pivot_offset = Vector2(inventory_content_root.size.x if _spine_right() else 0.0, inventory_content_root.size.y * 0.5)   # hinge on the spine
 	var tw := inventory_content_root.create_tween()
 	tw.tween_property(inventory_content_root, "scale:x", 0.0, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.tween_callback(Callable(self, "_apply_inventory_category").bind(category))
@@ -571,18 +583,21 @@ func _apply_inventory_responsive_layout() -> void:
 
 	var outer_margin_x := int(clampf(width * 0.025, 10.0, 60.0))
 	var outer_margin_y := int(clampf(height * 0.022, 6.0, 24.0))
-	# the content sits on the paper inside the painted cover (BOOK_BORDER, drawn 1:1) and clear
-	# of the stitched spine down the page's left edge (BOOK_SPINE)
-	var inner_margin := BOOK_BORDER + int(clampf(minf(width, height) * 0.010, 4.0, 12.0))
+	# the content sits on the paper: inside the top/bottom leather (BOOK_INSET), past the leather
+	# + bevel on the outer edge (BOOK_EDGE) and past the stitches on the spine side (BOOK_SPINE)
+	var fudge := int(clampf(minf(width, height) * 0.010, 4.0, 12.0))
+	var inner_margin: int = BOOK_EDGE + fudge
 	var spine_margin: int = BOOK_SPINE + 8
-	var top_inner_margin: int = inner_margin
-	var bottom_inner_margin: int = inner_margin
+	var top_inner_margin: int = BOOK_INSET + fudge
+	var bottom_inner_margin: int = BOOK_INSET + fudge
+	var left_margin: int = inner_margin if _spine_right() else spine_margin
+	var right_margin: int = spine_margin if _spine_right() else inner_margin
 	var panel_height: int = maxi(320, int(height) - (outer_margin_y * 2))
 	var available_panel_width: int = maxi(360, int(width) - (outer_margin_x * 2))
 	var max_panel_width: int = int(minf(1800.0, width - float(outer_margin_x * 2)))
 	var panel_width: int = mini(available_panel_width, max_panel_width)
 	var panel_x: int = int(round((width - float(panel_width)) * 0.5))
-	var content_width: int = maxi(320, panel_width - inner_margin - spine_margin)
+	var content_width: int = maxi(320, panel_width - left_margin - right_margin)
 	var content_height: int = maxi(280, panel_height - top_inner_margin - bottom_inner_margin)
 
 	var content_gap := int(clampf(height * 0.008, 4.0, 10.0))
@@ -602,7 +617,7 @@ func _apply_inventory_responsive_layout() -> void:
 	var vertical_gaps := content_gap * 4
 	var fixed_vertical: int = header_height + tabs_height + divider_height + sort_height + footer_height + vertical_gaps
 	var body_height: int = maxi(190, content_height - fixed_vertical)
-	var body_width: int = maxi(320, content_width - body_gap)
+	var body_width: int = maxi(320, content_width - body_gap - 32)   # room for the grid/detail styleboxes' own padding
 	var min_left_width: int = 180 if very_compact else (260 if compact else 360)
 	var min_right_width: int = 220 if very_compact else (330 if compact else 360)
 	var max_right_width: int = mini(600, maxi(min_right_width, body_width - min_left_width))
@@ -644,7 +659,7 @@ func _apply_inventory_responsive_layout() -> void:
 	inventory_safe_area.size = Vector2(panel_width, panel_height)
 	inventory_safe_area.custom_minimum_size = Vector2(panel_width, panel_height)
 	inventory_panel.position = Vector2.ZERO
-	_set_margin(inventory_panel_margin, spine_margin, top_inner_margin, inner_margin, bottom_inner_margin)
+	_set_margin(inventory_panel_margin, left_margin, top_inner_margin, right_margin, bottom_inner_margin)
 	_set_margin(inventory_grid_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin)
 	_set_margin(inventory_preview_area, maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin))
 
