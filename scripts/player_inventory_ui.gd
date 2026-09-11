@@ -201,6 +201,33 @@ func clear_bone_info() -> void:
 		hover_info_label.text = "Select an item to view details."
 
 
+## The painted pattern book (assets/ui/book_spread.png, 1024x1024, top-down open spread), cut
+## at the spine: the inventory is a single RIGHT page, spine down its left edge. Texture pixels.
+const BOOK_TEX: Texture2D = preload("res://assets/ui/book_spread.png")
+const BOOK_COVER := Rect2(16, 55, 993, 917)
+const BOOK_SPINE_X := 512.0
+const BOOK_BORDER := 72        # painted leather cover border, drawn 1:1
+const BOOK_SPINE := 64         # the page's stitched inner edge, drawn 1:1
+
+
+## The book page behind the inventory: a nine-patch, so the leather border and the stitched
+## edge stay 1:1 and only the plain paper in the middle stretches.
+func _build_book_page(parent: Control) -> void:
+	var page := NinePatchRect.new()
+	page.name = "BookPage"
+	page.texture = BOOK_TEX
+	var x0: float = BOOK_SPINE_X                         # cut at the spine ... to the cover's right edge
+	page.region_rect = Rect2(x0, BOOK_COVER.position.y, BOOK_COVER.end.x - x0, BOOK_COVER.size.y)
+	page.patch_margin_left = BOOK_SPINE
+	page.patch_margin_right = BOOK_BORDER
+	page.patch_margin_top = BOOK_BORDER
+	page.patch_margin_bottom = BOOK_BORDER
+	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	page.process_mode = Node.PROCESS_MODE_ALWAYS
+	page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(page)
+
+
 func _build_inventory_ui() -> void:
 	var canvas := CanvasLayer.new()
 	canvas.name = "InventoryCanvas"
@@ -224,6 +251,7 @@ func _build_inventory_ui() -> void:
 	inventory_safe_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inventory_safe_area.clip_contents = true
 	inventory_root.add_child(inventory_safe_area)
+	_build_book_page(inventory_safe_area)   # the painted page, under everything else
 
 	inventory_panel = PanelContainer.new()
 	inventory_panel.name = "InventoryPanel"
@@ -231,7 +259,7 @@ func _build_inventory_ui() -> void:
 	inventory_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	inventory_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	inventory_panel.add_theme_stylebox_override("panel", _make_inventory_style(Color(0.99, 0.985, 0.955, 0.86), Color(0.87, 0.63, 0.19, 0.96), 2, 0))
+	inventory_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())   # the book page IS the panel
 	inventory_safe_area.add_child(inventory_panel)
 
 	inventory_panel_margin = MarginContainer.new()
@@ -342,33 +370,6 @@ func _build_inventory_ui() -> void:
 	inventory_page_label.add_theme_color_override("font_color", Color(0.03, 0.33, 0.38, 0.75))
 	inventory_footer.add_child(inventory_page_label)
 	_update_page_label()
-	# the book's spine down the page's left edge: darker band, ink line, stitches
-	var spine := ColorRect.new()
-	spine.color = Color(0.87, 0.63, 0.19, 0.22)
-	spine.anchor_top = 0.0
-	spine.anchor_bottom = 1.0
-	spine.offset_right = 14.0
-	spine.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inventory_safe_area.add_child(spine)
-	var spine_line := ColorRect.new()
-	spine_line.color = Color(0.87, 0.63, 0.19, 0.96)
-	spine_line.anchor_top = 0.0
-	spine_line.anchor_bottom = 1.0
-	spine_line.offset_left = 14.0
-	spine_line.offset_right = 16.0
-	spine_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inventory_safe_area.add_child(spine_line)
-	for i in 7:
-		var stitch := ColorRect.new()
-		stitch.color = Color(0.03, 0.33, 0.38, 0.45)
-		stitch.anchor_top = (i + 1) / 8.0
-		stitch.anchor_bottom = (i + 1) / 8.0
-		stitch.offset_left = 4.0
-		stitch.offset_right = 10.0
-		stitch.offset_top = -1.0
-		stitch.offset_bottom = 1.0
-		stitch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		inventory_safe_area.add_child(stitch)
 	_add_footer_hint(inventory_footer, "Right Click", "Unequip")
 	_add_footer_hint(inventory_footer, "Esc / Inventory", "Back")
 	clear_bone_info()
@@ -570,15 +571,18 @@ func _apply_inventory_responsive_layout() -> void:
 
 	var outer_margin_x := int(clampf(width * 0.025, 10.0, 60.0))
 	var outer_margin_y := int(clampf(height * 0.022, 6.0, 24.0))
-	var inner_margin := int(clampf(minf(width, height) * 0.018, 8.0, 24.0))
-	var top_inner_margin: int = maxi(6, inner_margin - 2)
-	var bottom_inner_margin: int = maxi(6, inner_margin - 2)
+	# the content sits on the paper inside the painted cover (BOOK_BORDER, drawn 1:1) and clear
+	# of the stitched spine down the page's left edge (BOOK_SPINE)
+	var inner_margin := BOOK_BORDER + int(clampf(minf(width, height) * 0.010, 4.0, 12.0))
+	var spine_margin: int = BOOK_SPINE + 8
+	var top_inner_margin: int = inner_margin
+	var bottom_inner_margin: int = inner_margin
 	var panel_height: int = maxi(320, int(height) - (outer_margin_y * 2))
 	var available_panel_width: int = maxi(360, int(width) - (outer_margin_x * 2))
 	var max_panel_width: int = int(minf(1800.0, width - float(outer_margin_x * 2)))
 	var panel_width: int = mini(available_panel_width, max_panel_width)
 	var panel_x: int = int(round((width - float(panel_width)) * 0.5))
-	var content_width: int = maxi(320, panel_width - (inner_margin * 2))
+	var content_width: int = maxi(320, panel_width - inner_margin - spine_margin)
 	var content_height: int = maxi(280, panel_height - top_inner_margin - bottom_inner_margin)
 
 	var content_gap := int(clampf(height * 0.008, 4.0, 10.0))
@@ -640,7 +644,7 @@ func _apply_inventory_responsive_layout() -> void:
 	inventory_safe_area.size = Vector2(panel_width, panel_height)
 	inventory_safe_area.custom_minimum_size = Vector2(panel_width, panel_height)
 	inventory_panel.position = Vector2.ZERO
-	_set_margin(inventory_panel_margin, inner_margin, top_inner_margin, inner_margin, bottom_inner_margin)
+	_set_margin(inventory_panel_margin, spine_margin, top_inner_margin, inner_margin, bottom_inner_margin)
 	_set_margin(inventory_grid_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin, grid_inner_margin)
 	_set_margin(inventory_preview_area, maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin), maxi(6, grid_inner_margin))
 

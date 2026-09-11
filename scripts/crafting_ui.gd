@@ -22,6 +22,13 @@ const SLOT_TEX: Texture2D = preload("res://assets/ui/inv_slot.svg")
 const SKULL_TEX: Texture2D = preload("res://assets/ui/inv_skull.svg")
 const CATEGORIES := ["PARTS", "WEAPONS", "ARMOR", "TORSOS"]
 const MAX_LEVEL := 5
+## The painted pattern book (assets/ui/book_spread.png, 1024x1024, top-down open spread): the
+## dashboard is its RIGHT page. Cover bounds and the stitched spine column, in texture pixels.
+const BOOK_TEX: Texture2D = preload("res://assets/ui/book_spread.png")
+const BOOK_COVER := Rect2(16, 55, 993, 917)
+const BOOK_SPINE_X := 512.0
+const BOOK_BORDER := 72        # painted leather cover border, drawn 1:1
+const BOOK_SPINE := 64         # the page's stitched inner edge, drawn 1:1
 
 ## The dashboard is a SIDE PANEL on the right; the rest of the screen shows the bench camera.
 @export var panel_fraction: float = 0.42
@@ -64,8 +71,8 @@ func _ready() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for m in ["margin_right", "margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(m, 28)
-	margin.add_theme_constant_override("margin_left", 48)   # room for the spine
+		margin.add_theme_constant_override(m, BOOK_BORDER + 10)   # inside the painted cover
+	margin.add_theme_constant_override("margin_left", BOOK_SPINE + 12)   # past the spine stitches
 	_panel.add_child(margin)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 14)
@@ -402,40 +409,22 @@ func _vcenter(c: Control) -> Control:
 
 # ---- layout pieces -------------------------------------------------------------
 func _background() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(PAPER.r, PAPER.g, PAPER.b, 0.9)   # slightly translucent paper, panel only
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# the painted book's RIGHT page fills the panel, spine stitches down its left edge: a
+	# nine-patch, so the leather border and the stitches stay 1:1 and only the paper stretches
+	var page := NinePatchRect.new()
+	page.name = "Page"
+	page.texture = BOOK_TEX
+	var x0: float = BOOK_SPINE_X                         # the book is cut at the spine ...
+	page.region_rect = Rect2(x0, BOOK_COVER.position.y, BOOK_COVER.end.x - x0, BOOK_COVER.size.y)   # ... to the cover's right edge
+	page.patch_margin_left = BOOK_SPINE
+	page.patch_margin_right = BOOK_BORDER
+	page.patch_margin_top = BOOK_BORDER
+	page.patch_margin_bottom = BOOK_BORDER
+	page.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# STOP, not IGNORE: swallow clicks on empty space so the camera controller (which
 	# re-captures the mouse on any unhandled click) never sees them while we're open
-	bg.mouse_filter = Control.MOUSE_FILTER_STOP
-	_panel.add_child(bg)
-	# the book's spine along the panel's left edge: a darker paper band, an ink line, stitches
-	var spine := ColorRect.new()
-	spine.color = Color(0.86, 0.79, 0.66, 0.95)
-	spine.anchor_top = 0.0
-	spine.anchor_bottom = 1.0
-	spine.offset_right = 16.0
-	spine.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(spine)
-	var line := ColorRect.new()
-	line.color = INK
-	line.anchor_top = 0.0
-	line.anchor_bottom = 1.0
-	line.offset_left = 16.0
-	line.offset_right = 18.0
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(line)
-	for i in 7:                                          # stitch marks down the spine
-		var st := ColorRect.new()
-		st.color = INK_FAINT
-		st.anchor_top = (i + 1) / 8.0
-		st.anchor_bottom = (i + 1) / 8.0
-		st.offset_left = 4.0
-		st.offset_right = 12.0
-		st.offset_top = -1.0
-		st.offset_bottom = 1.0
-		st.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_panel.add_child(st)
+	page.mouse_filter = Control.MOUSE_FILTER_STOP
+	_panel.add_child(page)
 
 func _title_bar() -> Control:
 	var box := VBoxContainer.new()
