@@ -22,7 +22,7 @@ const CRAFTING_UI: PackedScene = preload("res://scenes/crafting_ui.tscn")
 @export var camera_focus_height: float = 0.6      # where the tabletop is, as a fraction of the bench's height
 ## The dashboard is a panel on the RIGHT of the screen, so the view is shifted (Camera3D.h_offset,
 ## metres) to put the tabletop in the open area on the left. Tweened in with the flight.
-@export var camera_side_shift: float = 1.7
+@export var camera_side_shift: float = 0.9
 ## Bench-local horizontal direction the camera sits toward. Fixed, so the landing pose is
 ## identical no matter where the hand's camera started. Flip Z if it lands behind the bench.
 @export var camera_front: Vector3 = Vector3(0, 0, 1)
@@ -125,8 +125,8 @@ func _show_blueprint() -> void:
 	var depth: float = (absf(camera_front.x) * trigger_size.x + absf(camera_front.z) * trigger_size.z) / 1.5     # front-back
 	_blueprint = BlueprintProp.new()
 	_blueprint.name = "Blueprint"
-	_blueprint.length = bench_w * 0.45     # long side runs left -> right
-	_blueprint.width = depth * 0.35        # short side runs front -> back
+	_blueprint.length = bench_w * 0.30     # long side runs left -> right
+	_blueprint.width = depth * 0.23        # short side runs front -> back
 	_scene_root().add_child(_blueprint)
 	# the roll starts at the LEFT end (origin) and unrolls to the right (+Z = right); the sheet
 	# floats blueprint_hover above the TALLEST thing under its whole footprint, so it never
