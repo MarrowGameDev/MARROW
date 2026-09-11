@@ -387,6 +387,8 @@ func _build_inventory_ui() -> void:
 	inventory_footer.add_child(inventory_page_label)
 	_update_page_label()
 	_add_footer_hint(inventory_footer, "Right Click", "Unequip")
+	if room_mode:
+		_add_footer_hint(inventory_footer, "Drag", "Rotate")   # spin the seated character
 	_add_footer_hint(inventory_footer, "Esc / Inventory", "Back")
 	clear_bone_info()
 

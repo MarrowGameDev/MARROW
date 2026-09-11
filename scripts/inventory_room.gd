@@ -33,6 +33,8 @@ class_name InventoryRoom
 @export var seat_player_lift: float = 0.0
 ## Clip names tried, in order, for the copy's breathing pose (substring match, case-insensitive).
 @export var idle_clips: Array[String] = ["idle", "loop", "walk"]
+## Radians of turn per pixel of mouse drag (drag anywhere on the room side to spin the character).
+@export var rotate_sensitivity: float = 0.012
 ## Lamp flicker depth (GlowFX.fire amount); 0 = steady.
 @export var flicker_strength: float = 0.08
 
@@ -54,6 +56,7 @@ var seat: Marker3D = null
 
 var _player: Node3D = null
 var _copy: Node3D = null           # the stand-in on the seat (freed by leave())
+var _dragging := false             # left mouse button held over the room: spinning the copy
 var _prev_cam: Camera3D = null
 var _lights: Array[Light3D] = []
 var _light_energies: PackedFloat32Array = PackedFloat32Array()
@@ -66,6 +69,20 @@ func _ready() -> void:
 	_build_chair()
 	_build_lamp()
 	_build_camera()
+
+
+## Drag with the left mouse button over the room (the book's controls eat their own clicks) to
+## turn the seated character around; runs while the tree is paused. The hand's camera
+## controller ignores these clicks (look is disabled while the inventory is open).
+func _unhandled_input(event: InputEvent) -> void:
+	if _copy == null or not is_instance_valid(_copy) or camera == null or not camera.current:
+		return
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		_dragging = (event as InputEventMouseButton).pressed
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion and _dragging:
+		_copy.rotate_y(-(event as InputEventMouseMotion).relative.x * rotate_sensitivity)
+		get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
@@ -100,6 +117,7 @@ func leave() -> void:
 	if _copy != null and is_instance_valid(_copy):
 		_copy.queue_free()
 	_copy = null
+	_dragging = false
 	_player = null
 	if _prev_cam != null and is_instance_valid(_prev_cam):
 		_prev_cam.current = true
