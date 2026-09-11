@@ -137,7 +137,20 @@ func _at_black_leave() -> void:
 	_tw.chain().tween_callback(_finish_leave)
 
 
+## The descent lands on the lift-off pose; the hand camera may sit a hair away from it by now
+## (its spring arm settled again), so the sky camera glides that last bit before handing over.
 func _finish_leave() -> void:
+	var hand_cam: Camera3D = _player_camera()
+	if hand_cam != null and _sky_cam != null and _sky_cam.global_position.distance_to(hand_cam.global_position) > 0.005:
+		_kill()
+		_tw = create_tween()
+		_tw.tween_property(_sky_cam, "global_transform", hand_cam.global_transform, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_tw.tween_callback(_hand_over)
+		return
+	_hand_over()
+
+
+func _hand_over() -> void:
 	var hand_cam: Camera3D = _player_camera()
 	if hand_cam != null:
 		hand_cam.current = true
