@@ -23,6 +23,7 @@ var _ui: Node                      # PlayerInventoryUI: set_open(bool)
 var _room: Node3D = null           # InventoryRoom, created on first use
 var _overlay: ColorRect
 var _sky_cam: Camera3D = null      # the stand-in camera used for the rise / descent
+var _hand_xf := Transform3D.IDENTITY   # the hand camera's pose when the sky camera lifted off
 var _open := false
 var _busy := false
 var _tw: Tween = null
@@ -82,6 +83,7 @@ func _enter() -> void:
 	_scene_root().add_child(_sky_cam)
 	_sky_cam.global_transform = cam.global_transform
 	_sky_cam.current = true
+	_hand_xf = cam.global_transform          # where the descent lands on the way back
 	var up_basis: Basis = Basis(cam.global_transform.basis.x.normalized(), deg_to_rad(rise_pitch_deg)) * cam.global_transform.basis
 	var sky_xf := Transform3D(up_basis, cam.global_position + Vector3.UP * rise_height)
 	_kill()
@@ -123,13 +125,14 @@ func _at_black_leave() -> void:
 		_ui.set_open(false)
 	if _room != null:
 		_room.leave()                         # player back where it stood; the sky camera is current again
-	var hand_cam: Camera3D = _player_camera()
+	_snap_follow_camera()
 	_kill()
 	_tw = create_tween().set_parallel(true)
-	if _sky_cam != null and hand_cam != null:
+	if _sky_cam != null:
 		_sky_cam.current = true
-		# the sky camera lowers back onto the hand's camera while the black lifts
-		_tw.tween_property(_sky_cam, "global_transform", hand_cam.global_transform, rise_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		# the sky camera lowers back onto the pose the hand's camera had when it lifted off
+		# (the hand hasn't moved: the tree is paused) while the black lifts
+		_tw.tween_property(_sky_cam, "global_transform", _hand_xf, rise_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_tw.tween_property(_overlay, "color:a", 0.0, black_out_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_tw.chain().tween_callback(_finish_leave)
 
@@ -148,6 +151,17 @@ func _finish_leave() -> void:
 
 
 # ---- helpers ----------------------------------------------------------------------
+## The hand's follow camera (top_level, lerping after the player every frame) drifted down to
+## the room while the hand sat there; put it straight back on the player so the hand camera is
+## exactly where the descent lands when it takes over again.
+func _snap_follow_camera() -> void:
+	if _player == null:
+		return
+	var ctl: Node = _player.get("camera_controller")
+	if ctl is Node3D and ctl.has_method("_target_pivot_position"):
+		(ctl as Node3D).global_position = ctl.call("_target_pivot_position")
+
+
 ## The hand's own camera (the one that was current before the sky camera took over).
 func _player_camera() -> Camera3D:
 	if _player == null:
