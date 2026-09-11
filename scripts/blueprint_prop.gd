@@ -34,7 +34,7 @@ void fragment() {
 	ROUGHNESS = 0.9;
 }
 """
-const ART_SIZE := Vector2i(1024, 512)
+const ART_WIDTH := 1024                # the drawing's pixel width; its height follows the sheet's shape
 
 @export var length: float = 1.0        # world metres along +Z (viewer's left -> right)
 @export var width: float = 0.8         # front -> back of the bench
@@ -87,14 +87,16 @@ func _ready() -> void:
 	_body.add_child(_sheet)
 
 	# the drawing: a Control painting the schematic, rendered off-screen into the sheet
+	# same proportions as the sheet, so nothing in the drawing is stretched
+	var art_size := Vector2i(ART_WIDTH, clampi(roundi(ART_WIDTH * width / maxf(length, 0.01)), 128, ART_WIDTH))
 	_viewport = SubViewport.new()
-	_viewport.size = ART_SIZE
+	_viewport.size = art_size
 	_viewport.transparent_bg = true
 	_viewport.disable_3d = true
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS   # only lives while at the bench; a redraw is never missed
 	add_child(_viewport)
 	_art = BlueprintArt.new()
-	_art.size = Vector2(ART_SIZE)
+	_art.size = Vector2(art_size)
 	_viewport.add_child(_art)
 	_mat.set_shader_parameter("art", _viewport.get_texture())
 
@@ -185,7 +187,6 @@ func _apply(recipe: Dictionary) -> void:
 	_title.text = str(recipe.get("name", "")) if not recipe.is_empty() else ""
 	_art.recipe = recipe
 	_art.queue_redraw()
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE   # re-render the drawing once
 	picture_changed.emit(_shown_id)
 
 
